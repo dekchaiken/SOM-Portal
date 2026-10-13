@@ -6,6 +6,8 @@ import {
   PhasesFileSchema,
   LessonsFileSchema,
   ProgressFileSchema,
+  QuizzesFileSchema,
+  type Quiz,
   type Course,
   type Phase,
   type Lesson,
@@ -31,4 +33,12 @@ export function readLessons(team: string, courseId: string): Promise<Lesson[]> {
 
 export function readProgress(team: string): Promise<ProgressRow[]> {
   return read(team, 'courses/progress.json', (r) => ProgressFileSchema.parse(r), []);
+}
+
+export function readQuizzes(team: string, courseId: string): Promise<Quiz[]> {
+  return read(team, `courses/${courseId}/quizzes.json`, (r) => QuizzesFileSchema.parse(r), []);
+}
+
+export async function writeProgress(team: string, rows: ProgressRow[]): Promise<void> {
+  await getDataAdapter().write({ team }, 'courses/progress.json', rows);
 }

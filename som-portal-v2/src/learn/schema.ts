@@ -65,3 +65,29 @@ export const ProgressRowSchema = z
   .passthrough();
 export type ProgressRow = z.infer<typeof ProgressRowSchema>;
 export const ProgressFileSchema = z.array(ProgressRowSchema).catch([]);
+
+export const QuestionSchema = z
+  .object({
+    id: z.string(),
+    type: z.enum(['single', 'multi', 'truefalse', 'short']).catch('single'),
+    question: z.string().default(''),
+    choices: z.array(z.string()).default([]),
+    answer: z.unknown().optional(),
+    match_mode: z.enum(['exact', 'contains', 'regex']).catch('exact').default('exact'),
+    case_sensitive: z.boolean().default(false),
+    explain: z.string().default(''),
+  })
+  .passthrough();
+export type Question = z.infer<typeof QuestionSchema>;
+
+export const QuizSchema = z
+  .object({
+    id: z.string(),
+    phase_id: z.string(),
+    title: z.string().default('Quiz'),
+    description: z.string().default(''),
+    questions: z.array(QuestionSchema).default([]),
+  })
+  .passthrough();
+export type Quiz = z.infer<typeof QuizSchema>;
+export const QuizzesFileSchema = z.array(QuizSchema).catch([]);

@@ -1,6 +1,6 @@
 # HANDOFF: Learn and Exams for SOM Portal v2
 
-Status at hand-off: spec written, nothing implemented in v2 yet. Read this file, then `LEARN-EXAM-SPEC.md` (v1 behaviour, 100-item checklist in section 10).
+Status: rounds 1 and 2 done (see below). Rounds 3 to 5 not started. Read this file, then `LEARN-EXAM-SPEC.md` (v1 behaviour, 100-item checklist in section 10).
 
 ## What exists in v1 (to rebuild)
 
@@ -22,10 +22,16 @@ Status at hand-off: spec written, nothing implemented in v2 yet. Read this file,
 7. Course and phase endpoints do not check that the course is published for learners.
 8. No feature gate (`learning`) on any learn API. Add the gate.
 
+## Done
+
+- Round 1, learner read path: course list, course page, phase page with lessons. Locks per spec 2.3. Defects 1, 2 (rule level), 7 fixed. Lesson HTML sanitized (`src/learn/sanitize.ts`, no new dependency).
+- Round 2, quiz and progress: quiz read without answers, quiz submit with scoring (`src/learn/quiz.ts`, defect 3 fixed), best score kept and no un-pass (`src/learn/progress.ts`, defect 2 fixed), complete button for quiz-less phases, opening an unlocked phase marks it in progress (v1 side effect kept).
+- Known gaps in round 2: progress writes are read-modify-write with no lock (two simultaneous submits by one learner can lose a row). Acceptable at current volume, but fix with a file lock before exams. No CSRF on POST routes, same as the rest of v2.
+
 ## Plan (one step per PR, each with Playwright tests against the data copy)
 
-1. **Read model and access.** Team-scoped storage for courses and exams with the same file layout as v1. Learner list, course, phase and lessons, with the locks in spec section 2.3 and the defects 1 and 7 fixed. Pages: `/learn`, `/learn/[courseId]`, `/learn/[courseId]/[phaseId]`.
-2. **Learner quiz and progress.** Quiz submit with the correct scoring (defect 3), best score kept (defect 2), complete-phase for phases without quiz, progress page.
+1. (done) **Read model and access.** Team-scoped storage for courses and exams with the same file layout as v1. Learner list, course, phase and lessons, with the locks in spec section 2.3 and the defects 1 and 7 fixed. Pages: `/learn`, `/learn/[courseId]`, `/learn/[courseId]/[phaseId]`.
+2. (done) **Learner quiz and progress.** Quiz submit with the correct scoring (defect 3), best score kept (defect 2), complete-phase for phases without quiz, progress page.
 3. **Exams: learner side.** Exam list, start screen, attempt with timer, answer saving, heartbeat, submit, results with `show_results` modes (defect 4), retake limits and cooldown.
 4. **Admin authoring.** Course, phase and lesson editors, quiz builder, exam builder with preset config, question pool and validation (spec section 7). Shared-content owner guard.
 5. **Reports and reminders.** Course progress report, exam report (overview, distribution, leaderboard, question difficulty), reminder with Chat webhook (defect 6).

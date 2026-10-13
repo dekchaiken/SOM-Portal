@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/auth/session";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
-import { getPhaseLessons } from "@/learn/service";
+import { getPhaseLessons, getPhaseQuiz } from "@/learn/service";
+import { QuizPanel } from "./QuizPanel";
+import { CompleteButton } from "./CompleteButton";
 import { PulseHeader } from "@/ui/PulseHeader";
 import { Card, CardContent } from "@/ui/shadcn/card";
 import { AccessDenied } from "../../_shared";
@@ -28,7 +30,9 @@ export default async function PhasePage({
     if (e instanceof ForbiddenError) return <AccessDenied message={e.message} />;
     throw e;
   }
-  const { phase, lessons } = data;
+  const { phase, lessons, my_status } = data;
+  const hasQuiz = await getPhaseQuiz(session, phaseId).then(() => true, () => false);
+  const alreadyPassed = my_status === "passed";
 
   return (
     <div className="flex flex-col gap-5">
@@ -36,7 +40,7 @@ export default async function PhasePage({
         <Link href={`/learn/${courseId}`} className="text-xs text-[var(--text-muted)] hover:text-[var(--accent)]">
           Back to course
         </Link>
-        <PulseHeader title={`Phase ${phase.order}: ${phase.title}`} subtitle={phase.subtitle || undefined} />
+        <PulseHeader title={phase.title} subtitle={phase.subtitle || undefined} />
       </div>
 
       {lessons.length === 0 ? (
@@ -58,6 +62,12 @@ export default async function PhasePage({
             </CardContent>
           </Card>
         ))
+      )}
+
+      {hasQuiz ? (
+        <QuizPanel phaseId={phaseId} alreadyPassed={alreadyPassed} />
+      ) : (
+        <CompleteButton phaseId={phaseId} alreadyPassed={alreadyPassed} />
       )}
     </div>
   );

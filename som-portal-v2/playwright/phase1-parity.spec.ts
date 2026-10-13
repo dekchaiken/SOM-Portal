@@ -297,6 +297,94 @@ test.describe('learn (TC-LEARN)', () => {
   });
 });
 
+test.describe('learn quiz and progress (TC-LEARN-Q)', () => {
+  const courses = (): any[] => readJsonIf('sm/courses/courses.json', []);
+  const phasesOf = (courseId: string): any[] => readJsonIf(`sm/courses/${courseId}/phases.json`, []);
+  const quizzesOf = (courseId: string): any[] => readJsonIf(`sm/courses/${courseId}/quizzes.json`, []);
+
+  // First phase of a lockable course that has a quiz with questions.
+  function quizPhase() {
+    for (const c of courses().filter((x) => x.published && (x.prerequisites ?? []).length === 0)) {
+      const first = phasesOf(c.id).find((p) => p.order === 1);
+      const quiz = first && quizzesOf(c.id).find((q) => q.phase_id === first.id && q.questions?.length > 0);
+      if (first && quiz) return { course: c, phase: first, quiz };
+    }
+    return null;
+  }
+
+  // The answer key an honest learner would give, computed from the fixture.
+  function answerKey(quiz: any): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const q of quiz.questions) {
+      if (q.type === 'single') out[q.id] = q.answer;
+      else if (q.type === 'multi') out[q.id] = q.answer;
+      else if (q.type === 'truefalse') out[q.id] = q.answer;
+    }
+    return out;
+  }
+
+  test('quiz questions reach the learner without answers or explanations', async ({ request }) => {
+    const found = quizPhase();
+    test.skip(!found, 'fixture has no quiz with questions in an unlocked phase');
+    await login(request, 'qa.quiz');
+    const res = await request.get(`/v2/api/v1/learn/phases/${found!.phase.id}/quiz`);
+    expect(res.status()).toBe(200);
+    const text = await res.text();
+    expect(text).not.toMatch(/"answer"|"explain"|"match_mode"/);
+  });
+
+  test('a correct submission passes, an empty one does not, and a later failure keeps the pass', async ({ request }) => {
+    const found = quizPhase();
+    test.skip(!found, 'fixture has no quiz with questions in an unlocked phase');
+    await login(request, 'qa.quiz');
+    const url = `/v2/api/v1/learn/phases/${found!.phase.id}/quiz/submit`;
+
+    const good = await request.post(url, { data: { answers: answerKey(found!.quiz) } });
+    expect(good.status()).toBe(200);
+    const goodBody = (await good.json()).data;
+    expect(goodBody.score).toBe(100);
+    expect(goodBody.passed).toBe(true);
+
+    const bad = await request.post(url, { data: { answers: {} } });
+    const badBody = (await bad.json()).data;
+    expect(badBody.score).toBe(0);
+    expect(badBody.best_score).toBe(100);
+    expect(badBody.passed).toBe(true);
+  });
+
+  test('opening an unlocked phase marks it in progress, and the course shows it', async ({ request }) => {
+    const c = courses().find((x) => x.published && (x.prerequisites ?? []).length === 0 && phasesOf(x.id).length >= 2);
+    test.skip(!c, 'fixture has a lockable course');
+    const first = phasesOf(c.id).find((p) => p.order === 1);
+    await login(request, 'qa.quiz');
+    const opened = await request.get(`/v2/api/v1/learn/phases/${first.id}/lessons`);
+    expect(opened.status()).toBe(200);
+    const detail = (await (await request.get(`/v2/api/v1/learn/courses/${c.id}`)).json()).data;
+    const status = detail.phases.find((p: any) => p.id === first.id).my_status;
+    expect(['in_progress', 'passed']).toContain(status);
+  });
+
+  test('the phase page shows the quiz and submitting it shows a score', async ({ page }) => {
+    const found = quizPhase();
+    test.skip(!found, 'fixture has no quiz with questions in an unlocked phase');
+    await loginAs(page, 'qa.quiz');
+    await page.goto(`/v2/learn/${found!.course.id}/${found!.phase.id}`);
+    await expect(page.getByRole('button', { name: /submit answers/i })).toBeVisible();
+    await page.getByRole('button', { name: /submit answers/i }).click();
+    await expect(page.getByText(/Score \d+%/)).toBeVisible();
+  });
+
+  test('a phase without a quiz completes with a button and cannot be quiz-submitted', async ({ request }) => {
+    const c = courses().find((x) => x.published && (x.prerequisites ?? []).length === 0 && phasesOf(x.id).some((p) => p.order === 1 && !quizzesOf(x.id).some((q) => q.phase_id === p.id && q.questions?.length)));
+    test.skip(!c, 'fixture has a quiz-less first phase in a lockable course');
+    const first = phasesOf(c.id).find((p) => p.order === 1);
+    await login(request, 'qa.quiz');
+    const done = await request.post(`/v2/api/v1/learn/phases/${first.id}/complete`);
+    expect(done.status()).toBe(200);
+    expect((await done.json()).data.status).toBe('passed');
+  });
+});
+
 test.describe('security (TC-SESS)', () => {
   test('forgot-password does not log the reset URL', async () => {
     const src = fs.readFileSync(

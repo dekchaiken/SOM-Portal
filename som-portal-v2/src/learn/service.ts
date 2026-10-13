@@ -4,8 +4,10 @@
 import type { Session } from '@/auth/session';
 import { ADMIN_ROLES } from '@/auth/policy';
 import { requireTeamFeature } from '@/team/features';
-import { ForbiddenError, NotFoundError } from '@/lib/errors';
-import { readCourses, readLessons, readPhases, readProgress } from './store';
+import { ForbiddenError, NotFoundError, ValidationError } from '@/lib/errors';
+import { readCourses, readLessons, readPhases, readProgress, readQuizzes, writeProgress } from './store';
+import { markOpened, recordCompletion, recordQuizAttempt } from './progress';
+import { learnerQuestion, scoreQuiz, type Answers } from './quiz';
 import { courseStatus, percentPassed, phaseStatuses, type CourseStatus, type PhaseStatus } from './rules';
 import type { Course, Lesson, Phase, ProgressRow } from './schema';
 import { sanitizeLessonHtml } from './sanitize';
@@ -135,23 +137,109 @@ export interface LessonView extends Lesson {
 export async function getPhaseLessons(
   session: Session,
   phaseId: string,
-): Promise<{ phase: Phase; lessons: LessonView[] }> {
+): Promise<{ phase: Phase; lessons: LessonView[]; my_status: PhaseStatus }> {
   await requireLearnAccess(session);
   const admin = isLearnAdmin(session);
   const team = session.team;
   const found = await findPhase(team, phaseId);
   if (!found) throw new NotFoundError('Phase not found');
 
+  let myStatus: PhaseStatus = 'passed';
   if (!admin) {
     const detail = await getCourseDetail(session, found.courseId);
     const phase = detail.phases.find((p) => p.id === phaseId);
     if (!phase) throw new NotFoundError('Phase not found');
     if (phase.my_status === 'locked') throw new ForbiddenError('Phase is locked');
+    myStatus = phase.my_status;
+    if (phase.my_status === 'unlocked') {
+      const rows = await readProgress(team);
+      await writeProgress(team, markOpened(rows, session.sub, phaseId, new Date().toISOString()));
+    }
   }
 
   const lessons = (await readLessons(team, found.courseId))
     .filter((l) => l.phase_id === phaseId)
     .sort((a, b) => a.order - b.order)
     .map((l) => ({ ...l, content_html: sanitizeLessonHtml(l.content_html) }));
-  return { phase: found.phase, lessons };
+  return { phase: found.phase, lessons, my_status: myStatus };
+}
+
+/** Learner context for a phase: the phase must exist and must not be locked. */
+async function phaseForLearner(session: Session, phaseId: string) {
+  await requireLearnAccess(session);
+  const found = await findPhase(session.team, phaseId);
+  if (!found) throw new NotFoundError('Phase not found');
+  if (!isLearnAdmin(session)) {
+    const detail = await getCourseDetail(session, found.courseId);
+    const phase = detail.phases.find((p) => p.id === phaseId);
+    if (!phase) throw new NotFoundError('Phase not found');
+    if (phase.my_status === 'locked') throw new ForbiddenError('Phase is locked');
+  }
+  return found;
+}
+
+async function quizForPhase(team: string, courseId: string, phaseId: string) {
+  const quiz = (await readQuizzes(team, courseId)).find((q) => q.phase_id === phaseId);
+  return quiz && quiz.questions.length > 0 ? quiz : null;
+}
+
+export async function getPhaseQuiz(session: Session, phaseId: string) {
+  const { phase, courseId } = await phaseForLearner(session, phaseId);
+  const quiz = await quizForPhase(session.team, courseId, phaseId);
+  if (!quiz) throw new NotFoundError('Quiz not found for this phase');
+  return {
+    quiz: {
+      id: quiz.id,
+      title: quiz.title,
+      description: quiz.description,
+      questions: quiz.questions.map(learnerQuestion),
+    },
+    pass_score: phase.pass_score,
+  };
+}
+
+export interface QuizResult {
+  score: number;
+  best_score: number;
+  pass_score: number;
+  passed: boolean;
+  attempts: number;
+  correct_count: number;
+  total_count: number;
+  summary: { q_id: string; correct: boolean }[];
+}
+
+export async function submitPhaseQuiz(session: Session, phaseId: string, answers: Answers): Promise<QuizResult> {
+  const { phase, courseId } = await phaseForLearner(session, phaseId);
+  const quiz = await quizForPhase(session.team, courseId, phaseId);
+  if (!quiz) throw new NotFoundError('Quiz not found for this phase');
+
+  const result = scoreQuiz(quiz, answers);
+  const now = new Date().toISOString();
+  const rows = recordQuizAttempt(await readProgress(session.team), session.sub, phaseId, result.percent, phase.pass_score, now);
+  await writeProgress(session.team, rows);
+  const mine = rows.find((r) => r.user_id === session.sub && r.phase_id === phaseId)!;
+
+  return {
+    score: result.percent,
+    best_score: mine.score,
+    pass_score: phase.pass_score,
+    passed: mine.status === 'passed',
+    attempts: mine.attempts,
+    correct_count: result.correct,
+    total_count: result.total,
+    summary: result.summary,
+  };
+}
+
+/** Phases without questions are completed by a button (v1 complete-phase). */
+export async function completePhase(session: Session, phaseId: string) {
+  const { courseId } = await phaseForLearner(session, phaseId);
+  if (await quizForPhase(session.team, courseId, phaseId)) {
+    throw new ValidationError('This phase has a quiz. Submit your answers first.');
+  }
+  const rows = recordCompletion(await readProgress(session.team), session.sub, phaseId, new Date().toISOString());
+  await writeProgress(session.team, rows);
+  const mine = rows.find((r) => r.user_id === session.sub && r.phase_id === phaseId)!;
+  return { phase_id: phaseId, status: mine.status, attempts: mine.attempts };
 }
