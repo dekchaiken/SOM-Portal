@@ -16,6 +16,7 @@ const PUBLIC_PATHS = [
   '/api/auth/forgot-password',
   '/api/auth/reset-password',
   '/api/health',
+  '/api/internal/scheduler/tick',
 ];
 
 // Keep in sync with ADMIN_ROLES in src/auth/policy.ts. Duplicated here because
