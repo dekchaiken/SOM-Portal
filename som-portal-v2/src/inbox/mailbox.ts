@@ -56,9 +56,9 @@ export interface MailboxClient {
 
 export class MailboxError extends Error {}
 
-/** smtp.gmail.com -> imap.gmail.com. Other hosts follow the same smtp. -> imap. rule. */
-export function imapHostFor(cfg: Pick<MailConfig, 'smtp_host'>): string {
-  return cfg.smtp_host.trim().replace(/^smtp\./i, 'imap.');
+/** The team's IMAP host if set. Otherwise smtp.gmail.com -> imap.gmail.com. */
+export function imapHostFor(cfg: Pick<MailConfig, 'smtp_host' | 'imap_host'>): string {
+  return cfg.imap_host?.trim() || cfg.smtp_host.trim().replace(/^smtp\./i, 'imap.');
 }
 
 function withTimeout<T>(work: Promise<T>, label: string): Promise<T> {
@@ -95,7 +95,7 @@ export function createImapClient(cfg: MailConfig, password: string): MailboxClie
   async function session<T>(work: (c: ImapFlow) => Promise<T>): Promise<T> {
     const client = new ImapFlow({
       host,
-      port: 993,
+      port: cfg.imap_port || 993,
       secure: true,
       auth: { user: cfg.smtp_user || cfg.from_email, pass: password },
       logger: false,

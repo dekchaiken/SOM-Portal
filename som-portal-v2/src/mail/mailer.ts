@@ -10,6 +10,7 @@
 // this is additive).
 
 import { appendMailLog } from './logs';
+import { wrapEmailHtml } from './branding';
 import { resolveMailConfig, resolveSmtpPassword, type MailConfig } from './mail-config';
 
 export interface SendMailArgs {
@@ -108,6 +109,15 @@ export async function sendMail(args: SendMailArgs): Promise<SendMailResult> {
 
 async function deliver(args: SendMailArgs): Promise<SendMailResult> {
   const { config, configured } = await resolveMailConfig(args.team ?? null);
+  // Team branding (header and footer) wraps every mail, as in v1 _branding.php.
+  const branded = config.brand_enabled
+    ? wrapEmailHtml(args.html, args.subject, {
+        appName: config.from_name || 'SOM-Portal',
+        brandColor: config.brand_color,
+        headerText: config.header_text,
+        footerText: config.footer_text,
+      })
+    : args.html;
 
   const to = normaliseList(args.to);
   if (to.length === 0) return { ok: false, error: 'No valid recipient' };
@@ -122,7 +132,7 @@ async function deliver(args: SendMailArgs): Promise<SendMailResult> {
   const from = `${config.from_name || 'SOM-Portal'} <${config.from_email}>`;
 
   if (injected) {
-    const info = await injected.send({ from, to, cc, subject: args.subject, html: args.html, headers: args.headers });
+    const info = await injected.send({ from, to, cc, subject: args.subject, html: branded, headers: args.headers });
     return { ok: true, error: null, messageId: info.messageId };
   }
 
@@ -136,7 +146,7 @@ async function deliver(args: SendMailArgs): Promise<SendMailResult> {
 
   try {
     const transport = await buildNodemailerTransport(config);
-    const info = await transport.send({ from, to, cc, subject: args.subject, html: args.html, headers: args.headers });
+    const info = await transport.send({ from, to, cc, subject: args.subject, html: branded, headers: args.headers });
     return { ok: true, error: null, messageId: info.messageId };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'SMTP send failed' };

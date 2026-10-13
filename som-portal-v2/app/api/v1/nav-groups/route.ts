@@ -21,7 +21,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** v1 write roles for nav-groups. */
-export const NAV_GROUPS_WRITE_ROLES = [SM_ADMIN, DEV_SM, SUPER_ADMIN] as const;
+const NAV_GROUPS_WRITE_ROLES = [SM_ADMIN, DEV_SM, SUPER_ADMIN] as const;
 
 const BodySchema = z.object({
   groups: z

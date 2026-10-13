@@ -2,7 +2,10 @@
 // T-05 exact API. Session is pulled automatically from `getSession()` so pages
 // never prop-drill. Cross-team access requires `super_admin`; writes to SM-shared
 // files require `sm_*`. All cross-team reads emit a security log entry.
-import type { ZodSchema } from 'zod';
+import type { ZodType, ZodTypeDef } from 'zod';
+
+/** Accepts schemas with defaults or transforms, where input and output types differ. */
+type AnySchema<T> = ZodType<T, ZodTypeDef, unknown>;
 import { getSession, type Session } from '@/auth/session';
 import {
   SM_WRITE_SHARED_ROLES,
@@ -45,7 +48,7 @@ async function resolveTeam(scope: Scope | undefined): Promise<{ team: string; se
 
 export async function readTeamFile<T>(
   file: string,
-  schema: ZodSchema<T>,
+  schema: AnySchema<T>,
   scope?: Scope,
 ): Promise<T> {
   const { team } = await resolveTeam(scope);
@@ -68,7 +71,7 @@ export async function readTeamFile<T>(
 export async function writeTeamFile<T>(
   file: string,
   data: T,
-  schema: ZodSchema<T>,
+  schema: AnySchema<T>,
   scope?: Scope,
 ): Promise<void> {
   const { team, sess } = await resolveTeam(scope);
@@ -85,7 +88,7 @@ export async function writeTeamFile<T>(
   }
 }
 
-export async function readSharedFile<T>(file: string, schema: ZodSchema<T>): Promise<T> {
+export async function readSharedFile<T>(file: string, schema: AnySchema<T>): Promise<T> {
   const adapter = getDataAdapter();
   const raw = await adapter.read<unknown>({ team: SHARED_TEAM }, file);
   const parsed = schema.safeParse(raw);
@@ -102,7 +105,7 @@ export async function readSharedFile<T>(file: string, schema: ZodSchema<T>): Pro
 export async function writeSharedFile<T>(
   file: string,
   data: T,
-  schema: ZodSchema<T>,
+  schema: AnySchema<T>,
 ): Promise<void> {
   const sess = await session();
   const allowed: readonly string[] = SM_WRITE_SHARED_ROLES;
@@ -125,7 +128,7 @@ export async function writeSharedFile<T>(
 export async function readSectionScopedFile<T, K extends keyof T>(
   file: string,
   section: K,
-  schema: ZodSchema<T>,
+  schema: AnySchema<T>,
 ): Promise<T[K]> {
   const whole = await readSharedFile(file, schema);
   return whole[section];
