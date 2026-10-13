@@ -2360,3 +2360,4 @@ Cache-Control: no-store, no-cache, must-revalidate
 ---
 
 *Last updated: Sep 2026 · Source: PHP source code + SOM-Portal System Manual*
+# SOM-Portal
