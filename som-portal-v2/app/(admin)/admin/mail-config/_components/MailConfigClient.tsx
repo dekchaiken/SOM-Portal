@@ -45,14 +45,25 @@ export function MailConfigClient() {
   const [logs, setLogs] = React.useState<MailLog[]>([]);
   const [logsTotal, setLogsTotal] = React.useState(0);
 
+  const [teams, setTeams] = React.useState<{ slug: string; name: string }[]>([]);
+  // "" means the admin's own team. Only super_admin gets the team list.
+  const [teamSlug, setTeamSlug] = React.useState("");
+
   React.useEffect(() => {
-    fetchConfig();
+    fetch("/v2/api/mail/teams")
+      .then((r) => r.json())
+      .then((j) => { if (j.ok) setTeams(j.data); })
+      .catch(() => {});
     fetchLogs();
   }, []);
 
-  async function fetchConfig() {
+  React.useEffect(() => {
+    void fetchConfig(teamSlug);
+  }, [teamSlug]);
+
+  async function fetchConfig(slug: string) {
     try {
-      const res = await fetch("/v2/api/mail/config");
+      const res = await fetch(`/v2/api/mail/config${slug ? `?team=${encodeURIComponent(slug)}` : ""}`);
       const json = await res.json();
       if (json.ok) setConfig(json.data);
     } catch { /* ignore */ }
@@ -86,6 +97,7 @@ export function MailConfigClient() {
         email_signature: config.email_signature,
       };
       if (config.smtp_password) body.smtp_password = config.smtp_password;
+      if (teamSlug) body.team = teamSlug;
       const res = await fetch("/v2/api/mail/config", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -158,6 +170,21 @@ export function MailConfigClient() {
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Mail Configuration</h1>
+      {teams.length > 0 ? (
+        <label className="mt-3 flex max-w-sm flex-col gap-1 text-sm">
+          <span className="font-medium">Team</span>
+          <select
+            value={teamSlug}
+            onChange={(e) => setTeamSlug(e.target.value)}
+            className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-canvas)] px-3 py-2 text-sm"
+          >
+            <option value="">My team</option>
+            {teams.map((t) => (
+              <option key={t.slug} value={t.slug}>{t.name}</option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       {message && (
         <div

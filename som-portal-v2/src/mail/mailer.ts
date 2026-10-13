@@ -111,6 +111,9 @@ async function deliver(args: SendMailArgs): Promise<SendMailResult> {
   if (!args.subject || !args.html) {
     return { ok: false, error: 'Subject and body are required' };
   }
+  if (!configured) {
+    return { ok: false, error: 'This team has no mailbox set up. Ask a team admin to fill in Mail Config.' };
+  }
 
   const cc = normaliseList(args.cc ?? config.global_cc);
   const from = `${config.from_name || 'SOM-Portal'} <${config.from_email}>`;
@@ -126,10 +129,6 @@ async function deliver(args: SendMailArgs): Promise<SendMailResult> {
         `type=${args.log_type ?? 'transactional'}`,
     );
     return { ok: true, error: null, dryRun: true };
-  }
-
-  if (!configured) {
-    return { ok: false, error: 'SMTP host or from_email not configured' };
   }
 
   try {

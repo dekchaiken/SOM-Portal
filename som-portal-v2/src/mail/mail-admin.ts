@@ -24,6 +24,8 @@ const MailConfigFileSchema = MailConfigSchema.default({
 });
 
 export const UpdateMailConfigSchema = z.object({
+  /** Which team's mailbox to change. Only super_admin may name another team. */
+  team: z.string().optional(),
   smtp_host: z.string().optional(),
   smtp_port: z.coerce.number().min(1).max(65535).optional(),
   smtp_encryption: z.enum(['none', 'tls', 'ssl']).optional(),
@@ -40,13 +42,15 @@ export type UpdateMailConfig = z.infer<typeof UpdateMailConfigSchema>;
 /**
  * GET mail config — admin only. Password masked.
  */
-export async function getMailConfig(): Promise<MailConfig & { smtp_password_set: boolean }> {
+export async function getMailConfig(team?: string): Promise<MailConfig & { smtp_password_set: boolean; team: string }> {
   const session = await requireRole(...ADMIN_ROLES);
-  const cfg = await readTeamFile<MailConfig>(MAIL_CONFIG_FILE, MailConfigFileSchema);
+  const scope = team && team !== session.team ? { team } : undefined;
+  const cfg = await readTeamFile<MailConfig>(MAIL_CONFIG_FILE, MailConfigFileSchema, scope);
   return {
     ...cfg,
     smtp_password: '',
     smtp_password_set: Boolean(cfg.smtp_password),
+    team: scope?.team ?? session.team,
   };
 }
 
@@ -57,7 +61,8 @@ export async function updateMailConfig(
   updates: UpdateMailConfig,
 ): Promise<MailConfig & { smtp_password_set: boolean }> {
   const session = await requireRole(...ADMIN_ROLES);
-  const cfg = await readTeamFile<MailConfig>(MAIL_CONFIG_FILE, MailConfigFileSchema);
+  const scope = updates.team && updates.team !== session.team ? { team: updates.team } : undefined;
+  const cfg = await readTeamFile<MailConfig>(MAIL_CONFIG_FILE, MailConfigFileSchema, scope);
 
   if (updates.smtp_host !== undefined) cfg.smtp_host = updates.smtp_host;
   if (updates.smtp_port !== undefined) cfg.smtp_port = updates.smtp_port;
@@ -72,7 +77,7 @@ export async function updateMailConfig(
   if (updates.global_cc !== undefined) cfg.global_cc = updates.global_cc;
   if (updates.email_signature !== undefined) cfg.email_signature = updates.email_signature;
 
-  await writeTeamFile(MAIL_CONFIG_FILE, cfg, MailConfigFileSchema);
+  await writeTeamFile(MAIL_CONFIG_FILE, cfg, MailConfigFileSchema, scope);
 
   const changedKeys = Object.keys(updates).filter((k) => k !== 'smtp_password');
   await logActivity({

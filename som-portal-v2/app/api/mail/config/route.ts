@@ -6,9 +6,10 @@ import { errorJson, jsonBody, okJson } from '@/admin/route-helpers';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const config = await getMailConfig();
+    const team = new URL(req.url).searchParams.get('team') ?? undefined;
+    const config = await getMailConfig(team);
     return okJson(config);
   } catch (e) {
     return errorJson(e);
