@@ -10,7 +10,7 @@
 // this is additive).
 
 import { appendMailLog } from './logs';
-import { resolveMailConfig, type MailConfig } from './mail-config';
+import { resolveMailConfig, resolveSmtpPassword, type MailConfig } from './mail-config';
 
 export interface SendMailArgs {
   to: string | string[];
@@ -73,7 +73,7 @@ async function buildNodemailerTransport(cfg: MailConfig): Promise<MailTransport>
     port: Number(cfg.smtp_port) || 587,
     secure,
     requireTLS: String(cfg.smtp_encryption).toLowerCase() === 'tls',
-    auth: cfg.smtp_user ? { user: cfg.smtp_user, pass: cfg.smtp_password } : undefined,
+    auth: cfg.smtp_user ? { user: cfg.smtp_user, pass: resolveSmtpPassword(cfg) } : undefined,
   });
   return {
     async send(message) {
