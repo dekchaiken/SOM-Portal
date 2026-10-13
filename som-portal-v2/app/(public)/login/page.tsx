@@ -1,4 +1,3 @@
-// som-portal-v2/app/(public)/login/page.tsx
 "use client";
 
 import * as React from "react";
@@ -29,6 +28,9 @@ export default function LoginPage() {
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [phase, setPhase] = React.useState<"idle" | "loading" | "success">("idle");
   const [shakeKey, setShakeKey] = React.useState(0);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => setMounted(true), []);
 
   const {
     register,
@@ -69,7 +71,7 @@ export default function LoginPage() {
         const dest =
           nextParam && nextParam.startsWith("/v2/") ? nextParam : "/v2/dashboard";
         window.location.assign(dest);
-      }, 650);
+      }, 900);
     } catch (e) {
       setPhase("idle");
       setShakeKey((n) => n + 1);
@@ -80,122 +82,210 @@ export default function LoginPage() {
   const disabled = isSubmitting || phase !== "idle";
 
   return (
-    <main className="relative grid min-h-dvh grid-cols-1 bg-[var(--bg-page)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-      {/* LEFT: hero */}
+    <main className="login-page relative grid min-h-dvh grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      {/* LEFT: hero with mascot */}
       <HeroPanel />
 
-      {/* RIGHT: form */}
-      <section className="flex min-h-dvh flex-col px-6 py-10 sm:px-10 lg:min-h-full lg:justify-center lg:px-14">
-        <div className="flex items-center justify-between gap-4 lg:hidden">
+      {/* RIGHT: Liquid Glass form */}
+      <section className="login-right relative flex min-h-dvh flex-col px-6 py-10 sm:px-10 lg:min-h-full lg:justify-center lg:px-16">
+        {/* subtle background gradient for right panel */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: "linear-gradient(180deg, oklch(from var(--bg-page) l c h) 0%, oklch(from var(--bg-page) l c h / 0.95) 50%, oklch(from var(--bg-page) l c h) 100%)",
+          }}
+        />
+        {/* floating orb accent on form side */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -left-20 top-1/3 h-[300px] w-[300px] rounded-full opacity-20 lg:opacity-30"
+          style={{
+            background: "radial-gradient(circle, oklch(from var(--accent) l c h / 0.4) 0%, transparent 70%)",
+            filter: "blur(60px)",
+            animation: "login-orb-drift 12s ease-in-out infinite alternate",
+          }}
+        />
+
+        <div className="relative z-10 flex items-center justify-between gap-4 lg:hidden">
           <BrandMark compact />
         </div>
 
         <div
           key={shakeKey}
-          className="form-card mx-auto flex w-full max-w-md flex-col gap-6"
+          className={`glass-card relative z-10 mx-auto flex w-full max-w-md flex-col gap-6 ${mounted ? "glass-card-in" : ""}`}
+          data-phase={phase}
         >
-          <header className="flex flex-col gap-1.5">
-            <h2 className="text-2xl font-semibold tracking-tight text-[var(--text-strong)]">
-              Welcome back
-            </h2>
-            <p className="text-sm text-[var(--text-muted)]">
-              Sign in with your SM account to continue.
-            </p>
-          </header>
+          {/* glass background layer */}
+          <div aria-hidden className="glass-bg" />
 
-          {serverError ? (
-            <Alert variant="destructive" role="alert">
-              <Icon name="alert-triangle" size={16} />
-              <AlertDescription>{serverError}</AlertDescription>
-            </Alert>
-          ) : null}
+          {/* success overlay */}
+          {phase === "success" && <div className="success-overlay" />}
 
-          <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
-            <Field
-              label="Username"
-              icon="user"
-              error={errors.username?.message}
-            >
-              <input
-                autoComplete="username"
-                autoFocus
-                placeholder="your.name"
-                aria-invalid={!!errors.username}
-                className="field-input"
-                {...register("username")}
-                disabled={disabled}
-              />
-            </Field>
+          <div className="relative z-10 flex flex-col gap-6">
+            <header className="flex flex-col gap-2">
+              <h2 className="text-[1.65rem] font-semibold tracking-tight text-[var(--text-strong)]">
+                Welcome back
+              </h2>
+              <p className="text-[13px] leading-relaxed text-[var(--text-muted)]">
+                Sign in with your SM account to continue.
+              </p>
+            </header>
 
-            <Field
-              label="Password"
-              icon="shield"
-              error={errors.password?.message}
-              actionHref="/v2/forgot-password"
-              actionLabel="Forgot?"
-            >
-              <input
-                type="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                aria-invalid={!!errors.password}
-                className="field-input"
-                {...register("password")}
-                disabled={disabled}
-              />
-            </Field>
+            {serverError ? (
+              <div className="error-shake">
+                <Alert variant="destructive" role="alert">
+                  <Icon name="alert-triangle" size={16} />
+                  <AlertDescription>{serverError}</AlertDescription>
+                </Alert>
+              </div>
+            ) : null}
 
-            <label className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-[var(--accent)]"
-                {...register("remember")}
-                disabled={disabled}
-              />
-              Keep me signed in for 30 days
-            </label>
-
-            <SignInButton phase={phase} />
-          </form>
-
-          <footer className="flex flex-col gap-1.5 border-t border-[var(--border)] pt-5 text-xs text-[var(--text-muted)]">
-            <div className="flex items-center justify-between gap-3">
-              <span>Need an account? Ask your SM admin.</span>
-              <a
-                href="mailto:som-team@ascendcorp.com"
-                className="inline-flex items-center gap-1 text-[var(--accent)] hover:underline"
+            <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-5">
+              <GlassField
+                label="Username"
+                icon="user"
+                error={errors.username?.message}
               >
-                Contact support <Icon name="external-link" size={11} />
-              </a>
-            </div>
-            <span>SM team Portal · v2 · internal use only</span>
-          </footer>
+                <input
+                  autoComplete="username"
+                  autoFocus
+                  placeholder="your.name"
+                  aria-invalid={!!errors.username}
+                  className="glass-input"
+                  {...register("username")}
+                  disabled={disabled}
+                />
+              </GlassField>
+
+              <GlassField
+                label="Password"
+                icon="shield"
+                error={errors.password?.message}
+                actionHref="/v2/forgot-password"
+                actionLabel="Forgot?"
+              >
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  aria-invalid={!!errors.password}
+                  className="glass-input"
+                  {...register("password")}
+                  disabled={disabled}
+                />
+              </GlassField>
+
+              <label className="flex cursor-pointer items-center gap-2.5 text-[13px] text-[var(--text-muted)]">
+                <input
+                  type="checkbox"
+                  className="glass-checkbox"
+                  {...register("remember")}
+                  disabled={disabled}
+                />
+                Keep me signed in for 30 days
+              </label>
+
+              <SignInButton phase={phase} />
+            </form>
+
+            <footer className="flex flex-col gap-2 pt-4 text-xs text-[var(--text-muted)]" style={{ borderTop: "1px solid oklch(from var(--border) l c h / 0.5)" }}>
+              <div className="flex items-center justify-between gap-3">
+                <span>Need an account? Ask your SM admin.</span>
+                <a
+                  href="mailto:som-team@ascendcorp.com"
+                  className="inline-flex items-center gap-1 text-[var(--accent)] transition-colors hover:underline"
+                >
+                  Contact <Icon name="external-link" size={10} />
+                </a>
+              </div>
+              <span className="text-[11px] text-[var(--text-subtle)]">SOM Portal · v2 · internal use only</span>
+            </footer>
+          </div>
         </div>
       </section>
 
       <style jsx>{`
-        .form-card {
-          animation: card-in 520ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
+        .login-page {
+          background: var(--bg-page);
         }
-        @keyframes card-in {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: none; }
+
+        .glass-card {
+          position: relative;
+          padding: 2rem 2rem 1.75rem;
+          border-radius: 1.25rem;
+          overflow: hidden;
+          opacity: 0;
+          transform: translateY(16px) scale(0.98);
         }
-        .form-card[data-shake="1"],
-        .form-card {
-          /* key-based remount drives shake */
+        .glass-card-in {
+          animation: glass-entrance 700ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both;
         }
+        @keyframes glass-entrance {
+          0% { opacity: 0; transform: translateY(16px) scale(0.98); }
+          60% { opacity: 1; }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .glass-bg {
+          position: absolute;
+          inset: 0;
+          background: oklch(from var(--bg-card) l c h / 0.65);
+          backdrop-filter: blur(24px) saturate(1.5);
+          -webkit-backdrop-filter: blur(24px) saturate(1.5);
+          border: 1px solid oklch(from var(--border) l c h / 0.35);
+          border-radius: inherit;
+          box-shadow:
+            0 0 0 1px oklch(1 0 0 / 0.06) inset,
+            0 20px 60px -12px oklch(0 0 0 / 0.15),
+            0 0 40px oklch(from var(--accent) l c h / 0.05);
+        }
+
+        .success-overlay {
+          position: absolute;
+          inset: 0;
+          z-index: 5;
+          border-radius: inherit;
+          background: radial-gradient(
+            circle at 50% 60%,
+            oklch(0.72 0.18 150 / 0.15) 0%,
+            transparent 70%
+          );
+          animation: success-fade 600ms ease-out both;
+        }
+        @keyframes success-fade {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        .error-shake {
+          animation: shake 400ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+        @keyframes shake {
+          10%, 90% { transform: translateX(-1px); }
+          20%, 80% { transform: translateX(2px); }
+          30%, 50%, 70% { transform: translateX(-4px); }
+          40%, 60% { transform: translateX(4px); }
+        }
+
+        @keyframes login-orb-drift {
+          0% { transform: translate(0, 0); }
+          100% { transform: translate(20px, -30px); }
+        }
+
         @media (prefers-reduced-motion: reduce) {
-          .form-card { animation: none; }
+          .glass-card-in { animation: none; opacity: 1; transform: none; }
+          .error-shake { animation: none; }
+          .success-overlay { animation: none; }
         }
       `}</style>
     </main>
   );
 }
 
-/* ---------- Field ---------- */
+/* ---------- GlassField — iOS Liquid Glass style input ---------- */
 
-function Field({
+function GlassField({
   label,
   icon,
   error,
@@ -213,64 +303,92 @@ function Field({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
-        <label className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">
+        <label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
           {label}
         </label>
         {actionHref && actionLabel ? (
           <a
             href={actionHref}
-            className="text-xs text-[var(--text-muted)] hover:text-[var(--accent)]"
+            className="text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
           >
             {actionLabel}
           </a>
         ) : null}
       </div>
-      <div className="field-wrap">
-        <Icon name={icon} size={14} className="field-icon" />
+      <div className="glass-field-wrap">
+        <Icon name={icon} size={14} className="glass-field-icon" />
         {children}
       </div>
       {error ? (
-        <span className="text-xs text-[var(--state-danger)]">{error}</span>
+        <span className="error-msg text-[11px] font-medium text-[var(--state-danger)]">{error}</span>
       ) : null}
 
       <style jsx>{`
-        .field-wrap {
+        .glass-field-wrap {
           position: relative;
           display: flex;
           align-items: center;
         }
-        :global(.field-wrap > .field-input) {
+        :global(.glass-field-wrap > .glass-input) {
           width: 100%;
-          height: 44px;
-          padding: 0 14px 0 38px;
-          border-radius: var(--radius-md);
-          border: 1px solid var(--border);
-          background: var(--bg-raised, var(--bg-card));
+          height: 48px;
+          padding: 0 16px 0 42px;
+          border-radius: 0.875rem;
+          border: 1px solid oklch(from var(--border) l c h / 0.5);
+          background: oklch(from var(--bg-raised) l c h / 0.5);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           color: var(--text);
           font-size: 14px;
           outline: none;
-          transition: border-color 160ms ease-out, box-shadow 160ms ease-out,
-            background 160ms ease-out;
+          transition:
+            border-color 200ms ease-out,
+            box-shadow 200ms ease-out,
+            background 200ms ease-out,
+            transform 200ms ease-out;
         }
-        :global(.field-wrap > .field-input::placeholder) {
+        :global(.glass-field-wrap > .glass-input::placeholder) {
           color: var(--text-subtle);
         }
-        :global(.field-wrap > .field-input:hover) {
-          border-color: var(--border-strong);
+        :global(.glass-field-wrap > .glass-input:hover) {
+          border-color: oklch(from var(--border) l c h / 0.8);
+          background: oklch(from var(--bg-raised) l c h / 0.65);
         }
-        :global(.field-wrap > .field-input:focus) {
-          border-color: var(--accent);
-          box-shadow: 0 0 0 3px oklch(0.685 0.175 42 / 0.18);
+        :global(.glass-field-wrap > .glass-input:focus) {
+          border-color: oklch(from var(--accent) l c h / 0.6);
+          background: oklch(from var(--bg-raised) l c h / 0.7);
+          box-shadow:
+            0 0 0 3px oklch(from var(--accent) l c h / 0.12),
+            0 0 20px oklch(from var(--accent) l c h / 0.06);
+          transform: translateY(-1px);
         }
-        :global(.field-wrap > .field-input[aria-invalid="true"]) {
-          border-color: var(--state-danger);
-          box-shadow: 0 0 0 3px oklch(0.67 0.21 25 / 0.14);
+        :global(.glass-field-wrap > .glass-input[aria-invalid="true"]) {
+          border-color: oklch(from var(--state-danger) l c h / 0.6);
+          box-shadow: 0 0 0 3px oklch(from var(--state-danger) l c h / 0.12);
         }
-        :global(.field-wrap > .field-icon) {
+        :global(.glass-field-wrap > .glass-field-icon) {
           position: absolute;
           left: 14px;
-          color: var(--text-muted);
+          color: var(--text-subtle);
           pointer-events: none;
+          transition: color 200ms ease-out;
+        }
+        :global(.glass-field-wrap:focus-within > .glass-field-icon) {
+          color: var(--accent);
+        }
+        .error-msg {
+          animation: error-in 300ms ease-out both;
+        }
+        @keyframes error-in {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        :global(.glass-checkbox) {
+          width: 18px;
+          height: 18px;
+          accent-color: var(--accent);
+          border-radius: 6px;
+          cursor: pointer;
         }
       `}</style>
     </div>
