@@ -38,8 +38,12 @@ export function HeroPanel() {
 
       {/* center mascot */}
       <div className="relative z-10 mx-auto flex w-full max-w-sm flex-col items-center gap-4 lg:max-w-md">
-        <div className="mascot-entrance h-[220px] w-[220px] lg:h-[280px] lg:w-[280px]">
-          <SomSomMascot />
+        <div className="relative h-[280px] w-[280px] lg:h-[380px] lg:w-[380px]">
+          <div aria-hidden className="halo-ring absolute inset-6 rounded-full" />
+          <div aria-hidden className="halo-ring halo-ring-2 absolute inset-14 rounded-full" />
+          <div className="mascot-entrance absolute inset-0">
+            <SomSomMascot className="h-full w-full" />
+          </div>
         </div>
         <div className="mascot-label text-center">
           <p className="text-lg font-bold tracking-tight text-white/95 lg:text-xl">
@@ -93,17 +97,35 @@ export function HeroPanel() {
         .mascot-label {
           animation: fade-up 600ms ease-out 600ms both;
         }
+        .halo-ring {
+          border: 1px solid oklch(0.85 0.12 50 / 0.25);
+          box-shadow: 0 0 60px oklch(0.6 0.2 42 / 0.35), inset 0 0 40px oklch(0.6 0.2 42 / 0.15);
+          animation: halo-pulse 4s ease-in-out infinite;
+        }
+        .halo-ring-2 {
+          border-style: dashed;
+          border-color: oklch(0.9 0.1 60 / 0.18);
+          box-shadow: none;
+          animation: halo-spin 24s linear infinite;
+        }
+        @keyframes halo-pulse {
+          0%, 100% { transform: scale(1); opacity: 0.8; }
+          50% { transform: scale(1.04); opacity: 1; }
+        }
+        @keyframes halo-spin {
+          to { transform: rotate(360deg); }
+        }
         @keyframes mascot-bounce-in {
-          0% { opacity: 0; transform: scale(0.3) translateY(40px); }
-          60% { opacity: 1; transform: scale(1.08) translateY(-5px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
+          0% { opacity: 0; transform: translateY(40px); }
+          60% { opacity: 1; transform: translateY(-6px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
         @keyframes fade-up {
           from { opacity: 0; transform: translateY(12px); }
           to { opacity: 1; transform: translateY(0); }
         }
         @media (prefers-reduced-motion: reduce) {
-          .mascot-entrance, .mascot-label { animation: none; }
+          .mascot-entrance, .mascot-label, .halo-ring { animation: none; }
         }
       `}</style>
     </section>
