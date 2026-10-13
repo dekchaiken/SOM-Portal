@@ -45,7 +45,16 @@ test.describe('MA overview and usecases (TC-MA)', () => {
     await page.goto('/v2/ma-services/usecases?domain=ALL');
     await expect(page.getByText('Login TrueMoney Wallet').first()).toBeVisible({ timeout: 15000 });
     await page.getByLabel('Search usecases').first().fill('Voucher');
-    await expect(page.getByText('Voucher Service App', { exact: true })).toBeVisible();
+    await expect(page.getByText('Voucher Service App', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('Login TrueMoney Wallet')).toHaveCount(0);
+  });
+});
+
+test.describe('MA overview pipeline (TC-MA-PIPE)', () => {
+  test('the active pipeline lists its tickets', async ({ page }) => {
+    const r = await page.request.post('/v2/api/auth/login', { data: { username: 'qa.user', password: 'Test1234!' } });
+    expect(r.ok()).toBeTruthy();
+    await page.goto('/v2/ma-services');
+    await expect(page.getByRole('main').getByText('SMC-10574').first()).toBeVisible({ timeout: 15000 });
   });
 });

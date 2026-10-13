@@ -18,6 +18,8 @@ export function AppShell({ session, children }: AppShellProps) {
   const [collapsed, setCollapsed] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
+  // One copy of the page. The sidebar is a column on large screens and a drawer on
+  // small ones, so children are never rendered twice (that doubled every fetch).
   return (
     <div className="min-h-dvh">
       <AppAmbientBg />
@@ -25,68 +27,45 @@ export function AppShell({ session, children }: AppShellProps) {
         <NavigationProgress />
       </React.Suspense>
 
-      {/* Desktop two-column grid */}
-      <div
-        className="hidden lg:grid"
-        style={{
-          gridTemplateColumns: `${collapsed ? "4rem" : "16rem"} minmax(0, 1fr)`,
-          transition: "grid-template-columns 280ms cubic-bezier(0.23, 1, 0.32, 1)",
-          minHeight: "100dvh",
-        }}
-      >
+      <div className="lg:grid" style={{ gridTemplateColumns: `${collapsed ? "4rem" : "16rem"} minmax(0, 1fr)`, transition: "grid-template-columns 280ms cubic-bezier(0.23, 1, 0.32, 1)" }}>
+      <div className="hidden lg:block">
         <div className="sticky top-0 h-dvh">
-          <Sidebar
-            session={session}
-            collapsed={collapsed}
-            onCollapsedChange={setCollapsed}
-          />
-        </div>
-        <div className="flex min-w-0 flex-col">
-          <Topbar onMenu={() => setMobileOpen(true)} />
-          <main className="min-w-0 flex-1 p-6">
-            <PageTransition>{children}</PageTransition>
-          </main>
+          <Sidebar session={session} collapsed={collapsed} onCollapsedChange={setCollapsed} />
         </div>
       </div>
 
-      {/* Mobile overlay layout */}
-      <div className="flex min-h-dvh flex-col lg:hidden">
+      <div className="flex min-w-0 flex-col">
         <Topbar onMenu={() => setMobileOpen((v) => !v)} />
-        <main className="min-w-0 flex-1 p-4">
+        <main className="min-w-0 flex-1 p-4 lg:p-6">
           <PageTransition>{children}</PageTransition>
         </main>
-
-        {/* Mobile sidebar overlay */}
-        {mobileOpen ? (
-          <>
-            <button
-              type="button"
-              aria-label="Close menu"
-              onClick={() => setMobileOpen(false)}
-              className="fixed inset-0 z-30"
-              style={{
-                background: "var(--bg-overlay)",
-                backdropFilter: "blur(4px)",
-                WebkitBackdropFilter: "blur(4px)",
-                animation: "fade-in-up 200ms ease-out",
-              }}
-            />
-            <div
-              className="fixed inset-y-0 left-0 z-40 w-64"
-              style={{
-                animation: "slide-in-left 280ms cubic-bezier(0.23, 1, 0.32, 1) both",
-              }}
-            >
-              <Sidebar
-                session={session}
-                collapsed={false}
-                onCollapsedChange={() => setMobileOpen(false)}
-                onNavigate={() => setMobileOpen(false)}
-              />
-            </div>
-          </>
-        ) : null}
       </div>
+      </div>
+
+      {mobileOpen ? (
+        <>
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setMobileOpen(false)}
+            className="fixed inset-0 z-30 lg:hidden"
+            style={{
+              background: "var(--bg-overlay)",
+              backdropFilter: "blur(4px)",
+              WebkitBackdropFilter: "blur(4px)",
+              animation: "fade-in-up 200ms ease-out",
+            }}
+          />
+          <div className="fixed inset-y-0 left-0 z-40 w-64 lg:hidden" style={{ animation: "slide-in-left 280ms cubic-bezier(0.23, 1, 0.32, 1) both" }}>
+            <Sidebar
+              session={session}
+              collapsed={false}
+              onCollapsedChange={() => setMobileOpen(false)}
+              onNavigate={() => setMobileOpen(false)}
+            />
+          </div>
+        </>
+      ) : null}
 
       <style jsx>{`
         @keyframes slide-in-left {

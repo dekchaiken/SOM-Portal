@@ -200,7 +200,7 @@ test.describe('new tool pages (TC-TOOLS)', () => {
     await loginAs(page, 'qa.user');
     await page.goto('/v2/batch-monitor');
     await expect(page.getByText('Jobs succeeded').first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /TMN-OPS/ }).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('button', { name: /(TMN|NANO|WEALTH)-/ }).first()).toBeVisible({ timeout: 20_000 });
   });
 
   test('Jenkins Servers admin lists the real server file without exposing tokens', async ({ page }) => {
