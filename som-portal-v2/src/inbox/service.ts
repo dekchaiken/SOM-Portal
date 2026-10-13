@@ -75,9 +75,30 @@ export async function setFlag(session: Session, folder: string, uid: number, fla
   return withTeamMailbox(session, (c) => c.setFlag(folder || DEFAULT_FOLDER, uid, flag, on));
 }
 
+const ARCHIVE_NAMES = ['[Gmail]/All Mail', 'Archive', 'All Mail'];
+const TRASH_NAMES = ['[Gmail]/Trash', 'Trash', 'Deleted Items', 'Deleted'];
+
+/**
+ * Move a message. The target is a folder path, or the keyword "archive" or "trash".
+ * Keywords use the folder set in Mail Config, else the first common name that exists.
+ */
 export async function moveMessage(session: Session, folder: string, uid: number, target: string): Promise<void> {
   if (!target) throw new ValidationError('Choose a folder to move to');
-  return withTeamMailbox(session, (c) => c.move(folder || DEFAULT_FOLDER, uid, target));
+  const from = folder || DEFAULT_FOLDER;
+  if (target !== 'archive' && target !== 'trash') {
+    return withTeamMailbox(session, (c) => c.move(from, uid, target));
+  }
+  const { config } = await resolveMailConfig(session.team);
+  const configured = target === 'archive' ? config.folder_archive : config.folder_trash;
+  const names = configured ? [configured] : target === 'archive' ? ARCHIVE_NAMES : TRASH_NAMES;
+  return withTeamMailbox(session, async (c) => {
+    const existing = await c.folders();
+    const hit = names
+      .map((n) => existing.find((f) => f.path.toLowerCase() === n.toLowerCase() || f.name.toLowerCase() === n.toLowerCase()))
+      .find(Boolean);
+    if (!hit) throw new ValidationError(`No ${target} folder in this mailbox. Set one in Mail Config.`);
+    await c.move(from, uid, hit.path);
+  });
 }
 
 function escapeHtml(s: string): string {

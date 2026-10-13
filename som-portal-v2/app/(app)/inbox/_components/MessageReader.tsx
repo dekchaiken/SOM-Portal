@@ -41,16 +41,6 @@ function frameDoc(html: string): string {
 const BTN = "glass-btn glass-btn-secondary inline-flex h-9 items-center gap-1.5 rounded-[var(--radius)] px-3 text-xs font-medium disabled:opacity-40";
 const PRIMARY = "glass-btn glass-btn-primary inline-flex h-9 items-center gap-1.5 rounded-[var(--radius)] px-3 text-xs font-semibold text-white disabled:opacity-40";
 
-/** Folder that holds archived or deleted mail, by name (Gmail names, then common ones). */
-function findFolder(folders: Folder[], kind: "archive" | "trash"): string | null {
-  const names = kind === "archive" ? ["[Gmail]/All Mail", "Archive", "All Mail"] : ["[Gmail]/Trash", "Trash", "Deleted Items", "Deleted"];
-  for (const n of names) {
-    const hit = folders.find((f) => f.path.toLowerCase() === n.toLowerCase() || f.name.toLowerCase() === n.toLowerCase());
-    if (hit) return hit.path;
-  }
-  return null;
-}
-
 export function MessageReader({
   folder,
   uid,
@@ -110,10 +100,9 @@ export function MessageReader({
       onChanged?.();
     }, "Could not change the flag");
 
-  const moveTo = (target: string | null, label: string) =>
+  const moveTo = (target: "archive" | "trash", label: string) =>
     act(async () => {
       if (!msg) return;
-      if (!target) throw new Error(`No ${label} folder in this mailbox`);
       await inboxCall("move", { method: "POST", body: JSON.stringify({ folder, uid: msg.uid, target }) });
       setGone(`Moved to ${label}`);
       setMsg(null);
@@ -205,10 +194,10 @@ export function MessageReader({
         <button type="button" disabled={busy} onClick={() => toggleFlag("seen", false)} className={BTN}>
           Mark unread
         </button>
-        <button type="button" disabled={busy} onClick={() => moveTo(findFolder(folders, "archive"), "Archive")} className={BTN}>
+        <button type="button" disabled={busy} onClick={() => moveTo("archive", "Archive")} className={BTN}>
           Archive
         </button>
-        <button type="button" disabled={busy} onClick={() => moveTo(findFolder(folders, "trash"), "Trash")} className={BTN}>
+        <button type="button" disabled={busy} onClick={() => moveTo("trash", "Trash")} className={BTN}>
           <Icon name="trash" size={13} /> Delete
         </button>
       </div>

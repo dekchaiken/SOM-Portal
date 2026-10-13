@@ -19,6 +19,10 @@ interface MailConfig {
   brand_color: string;
   header_text: string;
   footer_text: string;
+  imap_host: string;
+  imap_port: number;
+  folder_archive: string;
+  folder_trash: string;
 }
 
 interface TestStep {
@@ -103,6 +107,10 @@ export function MailConfigClient() {
         brand_color: config.brand_color,
         header_text: config.header_text,
         footer_text: config.footer_text,
+        imap_host: config.imap_host,
+        imap_port: config.imap_port,
+        folder_archive: config.folder_archive,
+        folder_trash: config.folder_trash,
       };
       if (config.smtp_password) body.smtp_password = config.smtp_password;
       if (teamSlug) body.team = teamSlug;
@@ -297,6 +305,27 @@ export function MailConfigClient() {
               </span>
             ) : null}
           </label>
+          <div className="sm:col-span-2 mt-2 rounded-[var(--radius)] border border-[var(--border)] p-4">
+            <div className="mb-3 text-sm font-semibold">Team Inbox (IMAP)</div>
+            <div className="grid gap-3 sm:grid-cols-[1fr_110px]">
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-[var(--text-muted)]">IMAP host (empty = from SMTP host)</span>
+                <input value={config.imap_host} onChange={(e) => update("imap_host", e.target.value)} placeholder="imap.gmail.com" className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-canvas)] px-3 py-2 text-sm" />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-[var(--text-muted)]">Port</span>
+                <input type="number" value={config.imap_port} onChange={(e) => update("imap_port", Number(e.target.value))} className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-canvas)] px-3 py-2 text-sm" />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-[var(--text-muted)]">Archive folder (empty = guess)</span>
+                <input value={config.folder_archive} onChange={(e) => update("folder_archive", e.target.value)} placeholder="[Gmail]/All Mail" className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-canvas)] px-3 py-2 text-sm" />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-[var(--text-muted)]">Trash folder (empty = guess)</span>
+                <input value={config.folder_trash} onChange={(e) => update("folder_trash", e.target.value)} placeholder="[Gmail]/Trash" className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-canvas)] px-3 py-2 text-sm" />
+              </label>
+            </div>
+          </div>
           <div className="sm:col-span-2 mt-2 rounded-[var(--radius)] border border-[var(--border)] p-4">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm font-semibold">Branding</span>

@@ -42,6 +42,10 @@ export const UpdateMailConfigSchema = z.object({
   brand_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   header_text: z.string().max(120).optional(),
   footer_text: z.string().max(2000).optional(),
+  imap_host: z.string().max(253).optional(),
+  imap_port: z.coerce.number().int().min(1).max(65535).optional(),
+  folder_archive: z.string().max(200).optional(),
+  folder_trash: z.string().max(200).optional(),
 });
 
 export type UpdateMailConfig = z.infer<typeof UpdateMailConfigSchema>;
@@ -93,6 +97,10 @@ export async function updateMailConfig(
   if (updates.brand_color !== undefined) cfg.brand_color = updates.brand_color;
   if (updates.header_text !== undefined) cfg.header_text = updates.header_text;
   if (updates.footer_text !== undefined) cfg.footer_text = updates.footer_text;
+  if (updates.imap_host !== undefined) cfg.imap_host = updates.imap_host.trim();
+  if (updates.imap_port !== undefined) cfg.imap_port = updates.imap_port;
+  if (updates.folder_archive !== undefined) cfg.folder_archive = updates.folder_archive.trim();
+  if (updates.folder_trash !== undefined) cfg.folder_trash = updates.folder_trash.trim();
 
   await writeTeamFile(MAIL_CONFIG_FILE, cfg, MailConfigFileSchema, scope);
 

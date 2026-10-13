@@ -34,6 +34,12 @@ export const MailConfigSchema = z
     brand_color: z.string().default('#F26419'),
     header_text: z.string().default(''),
     footer_text: z.string().default(''),
+    /** Inbox (IMAP). Empty host means derive it from smtp_host. */
+    imap_host: z.string().default(''),
+    imap_port: z.coerce.number().default(993),
+    /** Folder names for the Archive and Delete actions. Empty means guess from common names. */
+    folder_archive: z.string().default(''),
+    folder_trash: z.string().default(''),
   })
   .passthrough();
 
