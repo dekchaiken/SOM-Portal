@@ -1,49 +1,72 @@
 "use client";
 
+// som-portal-v2/src/ui/NavigationProgress.tsx
+// Shows feedback as soon as an internal link is clicked, not after the new page
+// has rendered. The bar and a small glass pill stay until the route changes, or
+// until a safety timeout, so a slow or failed navigation never leaves them stuck.
 import * as React from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { Icon } from "@/icons";
+
+const SAFETY_MS = 12_000;
+
+function isInternalNavigation(e: MouseEvent): boolean {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return false;
+  const anchor = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+  if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) return false;
+  const url = new URL(anchor.href, window.location.href);
+  if (url.origin !== window.location.origin) return false;
+  if (url.pathname === window.location.pathname && url.search === window.location.search) return false;
+  return true;
+}
 
 export function NavigationProgress() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [state, setState] = React.useState<"idle" | "running" | "done">("idle");
-  const [width, setWidth] = React.useState(0);
-  const prevKey = React.useRef(`${pathname}?${searchParams}`);
+  const [pending, setPending] = React.useState(false);
+  const key = `${pathname}?${searchParams}`;
+  const startKey = React.useRef(key);
+
+  // Route changed: navigation finished.
+  React.useEffect(() => {
+    if (key !== startKey.current) {
+      startKey.current = key;
+      setPending(false);
+    }
+  }, [key]);
+
+  // Click on an internal link: show feedback at once.
+  React.useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!isInternalNavigation(e)) return;
+      startKey.current = `${window.location.pathname}?${window.location.search.replace(/^\?/, "")}`;
+      setPending(true);
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, []);
 
   React.useEffect(() => {
-    const key = `${pathname}?${searchParams}`;
-    if (key === prevKey.current) return;
-    prevKey.current = key;
+    if (!pending) return;
+    const t = setTimeout(() => setPending(false), SAFETY_MS);
+    return () => clearTimeout(t);
+  }, [pending]);
 
-    setState("running");
-    setWidth(15);
-
-    const t1 = setTimeout(() => setWidth(45), 80);
-    const t2 = setTimeout(() => setWidth(75), 250);
-    const t3 = setTimeout(() => setWidth(90), 500);
-    const t4 = setTimeout(() => {
-      setWidth(100);
-      setState("done");
-    }, 600);
-    const t5 = setTimeout(() => {
-      setState("idle");
-      setWidth(0);
-    }, 850);
-
-    return () => {
-      [t1, t2, t3, t4, t5].forEach(clearTimeout);
-    };
-  }, [pathname, searchParams]);
-
-  if (state === "idle") return null;
+  if (!pending) return null;
 
   return (
-    <div
-      aria-hidden
-      className="nav-progress-track"
-      style={{ opacity: state === "done" ? 0 : 1 }}
-    >
-      <div className="nav-progress-bar" style={{ width: `${width}%` }} />
-    </div>
+    <>
+      <div aria-hidden className="nav-progress-track">
+        <div className="nav-progress-bar nav-progress-indeterminate" />
+      </div>
+      <div
+        role="status"
+        aria-live="polite"
+        className="glass fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-[var(--radius-md)] px-4 py-2.5 text-sm font-medium text-[var(--text-strong)] shadow-lg"
+      >
+        <Icon name="loader" size={16} className="animate-spin text-[var(--accent)]" />
+        Loading…
+      </div>
+    </>
   );
 }
