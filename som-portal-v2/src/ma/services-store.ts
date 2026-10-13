@@ -1,7 +1,7 @@
 // som-portal-v2/src/ma/services-store.ts
-// CRUD for ma-services.json — SM-shared file (team-scoped via readTeamFile).
+// CRUD for ma-services.json — SM-shared (data/sm/), writes are SM-only.
 // Port of api/ma-services/{list,create,update,delete}.php.
-import { readTeamFile, writeTeamFile, type Scope } from '@/team/scope';
+import { readSharedFile, writeSharedFile } from '@/team/scope';
 import { logActivity } from '@/logging/activity';
 import { getSession, type Session } from '@/auth/session';
 import { ForbiddenError, NotFoundError, ValidationError } from '@/lib/errors';
@@ -26,21 +26,21 @@ function now(): string {
   return new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, '').slice(0, 19);
 }
 
-export async function readServicesFile(scope?: Scope): Promise<MAServicesFile> {
-  return readTeamFile(FILE, MAServicesFileSchema, scope);
+export async function readServicesFile(): Promise<MAServicesFile> {
+  return readSharedFile(FILE, MAServicesFileSchema);
 }
 
-export async function writeServicesFile(data: MAServicesFile, scope?: Scope): Promise<void> {
-  return writeTeamFile(FILE, data, MAServicesFileSchema, scope);
+export async function writeServicesFile(data: MAServicesFile): Promise<void> {
+  return writeSharedFile(FILE, data, MAServicesFileSchema);
 }
 
-export async function listServices(scope?: Scope): Promise<MAService[]> {
-  const data = await readServicesFile(scope);
+export async function listServices(): Promise<MAService[]> {
+  const data = await readServicesFile();
   return [...data.services].sort((a, b) => a.id - b.id);
 }
 
-export async function getService(id: number, scope?: Scope): Promise<MAService> {
-  const data = await readServicesFile(scope);
+export async function getService(id: number): Promise<MAService> {
+  const data = await readServicesFile();
   const svc = data.services.find((s) => s.id === id);
   if (!svc) throw new NotFoundError('Service not found');
   return svc;

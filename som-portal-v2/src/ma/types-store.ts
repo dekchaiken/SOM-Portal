@@ -1,7 +1,7 @@
 // som-portal-v2/src/ma/types-store.ts
 // Read/write ma-types.json (SM-shared).
 // Port of api/ma-services/types.php.
-import { readTeamFile, writeTeamFile, type Scope } from '@/team/scope';
+import { readSharedFile, writeSharedFile } from '@/team/scope';
 import { getSession } from '@/auth/session';
 import { ForbiddenError, ValidationError } from '@/lib/errors';
 import { SM_WRITE_SHARED_ROLES } from '@/auth/policy';
@@ -10,19 +10,19 @@ import { readServicesFile, writeServicesFile } from './services-store';
 
 const FILE = 'ma-types.json';
 
-export async function readTypesFile(scope?: Scope): Promise<MATypesFile> {
-  return readTeamFile(FILE, MATypesFileSchema, scope);
+export async function readTypesFile(): Promise<MATypesFile> {
+  return readSharedFile(FILE, MATypesFileSchema);
 }
 
-export async function writeTypesFile(data: MATypesFile, scope?: Scope): Promise<void> {
-  return writeTeamFile(FILE, data, MATypesFileSchema, scope);
+export async function writeTypesFile(data: MATypesFile): Promise<void> {
+  return writeSharedFile(FILE, data, MATypesFileSchema);
 }
 
 /** List service types with usage counts (v1 parity). */
-export async function listServiceTypes(scope?: Scope): Promise<(MAType & { count: number })[]> {
+export async function listServiceTypes(): Promise<(MAType & { count: number })[]> {
   const [typesData, servicesData] = await Promise.all([
-    readTypesFile(scope),
-    readServicesFile(scope),
+    readTypesFile(),
+    readServicesFile(),
   ]);
   return typesData.service_types.map((t) => ({
     ...t,

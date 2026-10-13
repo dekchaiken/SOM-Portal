@@ -56,7 +56,8 @@ export async function readTeamFile<T>(
     // so schemas with defaults produce an empty-but-valid value. If that fails,
     // re-throw.
     console.error(`[team.readTeamFile] schema drift: ${file}`, parsed.error.flatten());
-    const fallback = schema.safeParse(undefined);
+    const undef = schema.safeParse(undefined);
+    const fallback = undef.success ? undef : schema.safeParse({});
     if (fallback.success) return fallback.data;
     throw new Error(`Schema validation failed for ${file}`);
   }
@@ -89,7 +90,8 @@ export async function readSharedFile<T>(file: string, schema: ZodSchema<T>): Pro
   const parsed = schema.safeParse(raw);
   if (!parsed.success) {
     console.error(`[team.readSharedFile] schema drift: ${file}`, parsed.error.flatten());
-    const fallback = schema.safeParse(undefined);
+    const undef = schema.safeParse(undefined);
+    const fallback = undef.success ? undef : schema.safeParse({});
     if (fallback.success) return fallback.data;
     throw new Error(`Schema validation failed for ${file}`);
   }

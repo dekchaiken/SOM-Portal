@@ -103,6 +103,41 @@ test.describe('board detail (TC-BOARD-06)', () => {
   });
 });
 
+function readSmTemplates(): number {
+  const d = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'sm', 'templates.json'), 'utf8'));
+  return Array.isArray(d) ? d.length : (d.templates ?? []).length;
+}
+
+test.describe('team isolation and view-only share (TC-TEAM)', () => {
+  test('user takes the team from their record, not from the folder they were found in', async ({ request }) => {
+    const res = await login(request, 'qa.ss');
+    const body = await res.json();
+    expect(body.data.user.team).toBe('ss');
+  });
+
+  test('other team can read SM-shared MA services but cannot write them', async ({ request }) => {
+    await login(request, 'qa.ss');
+    const read = await request.get('/v2/api/v1/ma-services');
+    expect(read.status()).toBe(200);
+    const write = await request.post('/v2/api/v1/ma-services', {
+      data: { service_name: 'x', service_type: 'a', tool_type: 'b' },
+    });
+    expect(write.status()).toBe(403);
+  });
+
+  test('view-share shows SM templates to another team, read-only', async ({ request }) => {
+    await login(request, 'qa.ss');
+    const read = await request.get('/v2/api/v1/templates');
+    expect(read.status()).toBe(200);
+    const body = await read.json();
+    expect(body.data.templates.length).toBe(readSmTemplates());
+
+    const write = await request.post('/v2/api/v1/templates', { data: { name: 'x' } });
+    expect(write.status()).toBe(403);
+    expect((await write.json()).error).toMatch(/view-only/);
+  });
+});
+
 test.describe('security (TC-SESS)', () => {
   test('forgot-password does not log the reset URL', async () => {
     const src = fs.readFileSync(
