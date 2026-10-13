@@ -103,6 +103,7 @@ export const NAV: readonly NavItem[] = [
   { id: "dashboard", path: "/dashboard", label: "Dashboard", icon: "dashboard", group: "home", order: 10, menuId: "dashboard", section: "MAIN" },
   { id: "board", path: "/board", label: "Service Board", icon: "message", group: "home", order: 20, menuId: "board", section: "MAIN", feature: "board" },
   { id: "search", path: "/search", label: "Search", icon: "search", group: "home", order: 30 },
+  { id: "inbox", path: "/inbox", label: "Team Inbox", icon: "mail", group: "home", order: 35, menuId: "inbox", section: "MAIN" },
 
   // ── monitoring ───────────────────────────────────────────────────────────
   { id: "service-performance", path: "/service-performance", label: "Service Performance", icon: "line-chart", group: "monitor", order: 10, menuId: "service-performance", section: "MAIN" },

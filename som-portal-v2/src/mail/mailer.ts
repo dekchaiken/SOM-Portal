@@ -17,6 +17,8 @@ export interface SendMailArgs {
   subject: string;
   html: string;
   cc?: string | string[];
+  /** Extra headers, e.g. In-Reply-To and References for a reply. */
+  headers?: Record<string, string>;
   /** Team whose mail_config.json should be used. Server-derived only. */
   team?: string | null;
   /** v1 log metadata — kept for parity with sendMailInternal's $opts. */
@@ -41,6 +43,7 @@ export interface MailTransport {
     cc: string[];
     subject: string;
     html: string;
+    headers?: Record<string, string>;
   }): Promise<{ messageId?: string }>;
 }
 
@@ -119,7 +122,7 @@ async function deliver(args: SendMailArgs): Promise<SendMailResult> {
   const from = `${config.from_name || 'SOM-Portal'} <${config.from_email}>`;
 
   if (injected) {
-    const info = await injected.send({ from, to, cc, subject: args.subject, html: args.html });
+    const info = await injected.send({ from, to, cc, subject: args.subject, html: args.html, headers: args.headers });
     return { ok: true, error: null, messageId: info.messageId };
   }
 
@@ -133,7 +136,7 @@ async function deliver(args: SendMailArgs): Promise<SendMailResult> {
 
   try {
     const transport = await buildNodemailerTransport(config);
-    const info = await transport.send({ from, to, cc, subject: args.subject, html: args.html });
+    const info = await transport.send({ from, to, cc, subject: args.subject, html: args.html, headers: args.headers });
     return { ok: true, error: null, messageId: info.messageId };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'SMTP send failed' };
