@@ -18,7 +18,7 @@ import { handle, jsonErr, jsonOk } from '@/jenkins/route-helpers';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export const FILE_SEARCH_FEATURE = 'batch-file-search';
+const FILE_SEARCH_FEATURE = 'batch-file-search';
 
 async function run(sessPromise: ReturnType<typeof requireAuth>, filename: string) {
   const sess = await sessPromise;

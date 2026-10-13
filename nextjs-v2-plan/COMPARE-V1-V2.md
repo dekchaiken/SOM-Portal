@@ -67,6 +67,18 @@ Cross-cutting:
 - `forgot-password` and `reset-password` are no longer empty; both have pages.
 - Scheduled-notification handlers for `grafana_paused` and `shift_summary` returned success without doing anything. They now return an explicit failure until implemented.
 
+
+## Done in this change
+
+- SM-shared writes need the SM team, not only the role (MA services, MA status mapping and toggle, Restart Monitor fetch, recipients and monthly send).
+- Scheduler: `POST /v2/api/internal/scheduler/tick` (token `SCHEDULER_TOKEN`) runs every minute from server cron. It runs due scheduled notifications (weekly, monthly and exclude-date rules in Bangkok time) and the 09:00 Restart Monitor fetch with Chat notifications. Each slot fires once.
+- Scheduled jobs of type `grafana_paused` and `shift_summary` still fail explicitly (not implemented).
+- Nav follows the requested menu. Pages added for File to Job Lookup, Search, Batch Monitor, Jenkins and Jenkins Servers admin.
+- Liquid Glass is the only theme. Shared surfaces (cards, buttons, inputs, sidebar, topbar, login, forgot and reset) use one set of classes in `src/theme/liquid.css`.
+- Removed from nav, pages kept at their URLs: Learn (no backend yet), Restart Analyzer, MA Services, GenZ Hub, Jenkins Build.
+
+Still open: Learn needs a courses and exams backend. Batch Monitor is read-only (no submit). Per-page layout polish is not done for every page. Phase 2 feature gaps in `COMPARE-PHASE2.md` are unchanged.
+
 ## Next steps
 
 1. Fix the permission divergence: write gates on SM-shared data must match v1 `requireSmForShared()`. Affects MA Status, Restart Monitor, Log Explorer delete.

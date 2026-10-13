@@ -30,7 +30,7 @@ export function Topbar({ onMenu }: TopbarProps) {
 
   return (
     <header
-      className="topbar sticky top-0 z-20 flex h-13 items-center gap-3 border-b px-4"
+      className="topbar glass sticky top-0 z-20 flex h-13 items-center gap-3 rounded-none border-x-0 border-t-0 px-4"
       style={{
         background: "oklch(from var(--bg-canvas) l c h / 0.85)",
         backdropFilter: "blur(12px) saturate(1.5)",

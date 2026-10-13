@@ -104,7 +104,7 @@ export const NAV: readonly NavItem[] = [
   { id: "board", path: "/board", label: "Service Board", icon: "message", group: "home", order: 20, menuId: "board", section: "MAIN", feature: "board" },
   { id: "search", path: "/search", label: "Search", icon: "search", group: "home", order: 30 },
 
-  // ── monitor ──────────────────────────────────────────────────────────────
+  // ── monitoring ───────────────────────────────────────────────────────────
   { id: "service-performance", path: "/service-performance", label: "Service Performance", icon: "line-chart", group: "monitor", order: 10, menuId: "service-performance", section: "MAIN" },
   { id: "restart-monitor", path: "/restart-monitor", label: "Restart Monitor", icon: "refresh", group: "monitor", order: 20, menuId: "restart-monitor", section: "MAIN", feature: "restart-monitor" },
   { id: "log-explorer", path: "/log-explorer", label: "Log Explorer", icon: "database", group: "monitor", order: 30, menuId: "log-explorer", section: "MAIN", teams: ["sm"], denyRoles: ["super_viewer"] },
@@ -112,15 +112,11 @@ export const NAV: readonly NavItem[] = [
   // ── ma ───────────────────────────────────────────────────────────────────
   { id: "ma-status", path: "/ma-status", label: "MA Status", icon: "activity", group: "ma", order: 10 },
 
-  // ── ops ──────────────────────────────────────────────────────────────────
-  { id: "jenkins", path: "/jenkins", label: "Jenkins", icon: "hammer", group: "ops", order: 10, section: "MAIN", feature: "jenkins" },
-  // A3 — feature keys below are verbatim from teams.json / layout.js coreNavItems.
-  // `jenkins-build` is currently granted to Wealth only; `batch-monitor` and
-  // `batch-file-search` to SM/SS/TS/FAS/IM. Never widen these here — granting is
-  // super_admin's job in admin/super-team-permissions.
-  { id: "jenkins-build", path: "/jenkins-build", label: "Jenkins Build", icon: "play", group: "ops", order: 20, menuId: "jenkins-build", section: "MAIN", feature: "jenkins-build" },
-  { id: "batch-monitor", path: "/batch-monitor", label: "Batch Monitor", icon: "boxes", group: "ops", order: 30, menuId: "batch-monitor", section: "MAIN", feature: "batch-monitor", denyRoles: ["super_viewer"] },
-  { id: "batch-file-search", path: "/batch-file-search", label: "File → Job Lookup", icon: "search", group: "ops", order: 40, menuId: "batch-file-search", section: "MAIN", feature: "batch-file-search", denyRoles: ["super_viewer"] },
+  // ── operations ───────────────────────────────────────────────────────────
+  // Feature keys are verbatim from teams.json. Granting stays with super_admin.
+  { id: "jenkins", path: "/jenkins", label: "Jenkins", icon: "hammer", group: "ops", order: 10, menuId: "jenkins", section: "MAIN", feature: "jenkins" },
+  { id: "batch-monitor", path: "/batch-monitor", label: "Batch Monitor", icon: "boxes", group: "ops", order: 20, menuId: "batch-monitor", section: "MAIN", feature: "batch-monitor", denyRoles: ["super_viewer"] },
+  { id: "batch-file-search", path: "/batch-file-search", label: "File → Job Lookup", icon: "search", group: "ops", order: 30, menuId: "batch-file-search", section: "MAIN", feature: "batch-file-search", denyRoles: ["super_viewer"] },
 
   // ── automation ───────────────────────────────────────────────────────────
   { id: "jira-templates", path: "/jira-templates", label: "Jira Templates", icon: "file", group: "automation", order: 10, menuId: "jira-templates", section: "MAIN", feature: "jira-templates-shared" },
@@ -134,11 +130,7 @@ export const NAV: readonly NavItem[] = [
     roles: ["sm_user", "sm_lead", "sm_admin", "super_admin"],
   },
 
-  // ── learn ────────────────────────────────────────────────────────────────
-  { id: "learn", path: "/learn", label: "Learn", icon: "book", group: "learn", order: 10, menuId: "learn", section: "MAIN", feature: "learning" },
-
-  // ── genz ─────────────────────────────────────────────────────────────────
-  { id: "genz-hub", path: "/genz-hub", label: "GenZ Hub", icon: "sparkles", group: "genz", order: 10, genzOnly: true, menuId: "genz-hub", section: "GENZ", teams: ["sm"], denyRoles: ["super_viewer"] },
+  // Learning is not in the nav yet: v2 has no courses or exams backend.
 
   // ── admin ────────────────────────────────────────────────────────────────
   { id: "admin-overview", path: "/admin", label: "Admin Overview", icon: "shield", group: "admin", order: 10, roles: ["sm_admin", "super_admin"], menuId: "admin", section: "ADMIN", adminOnly: true },
@@ -147,9 +139,7 @@ export const NAV: readonly NavItem[] = [
   { id: "admin-nav-groups", path: "/admin/nav-groups", label: "Nav Groups", icon: "layers", group: "admin", order: 40, roles: ["sm_admin", "super_admin"], menuId: "nav-groups", section: "ADMIN" },
   { id: "admin-menu-permissions", path: "/admin/menu-permissions", label: "Menu Permissions", icon: "shield", group: "admin", order: 50, roles: ["sm_admin", "super_admin"], section: "ADMIN" },
   { id: "admin-super-team-permissions", path: "/admin/super-team-permissions", label: "Super Team Permissions", icon: "boxes", group: "admin", order: 60, roles: ["super_admin"], section: "ADMIN" },
-  // A3 — per-team Jenkins servers + credentials (data/<team>/jenkins_servers.json).
   { id: "admin-jenkins-servers", path: "/admin/jenkins-servers", label: "Jenkins Servers", icon: "server", group: "admin", order: 70, roles: ["super_admin", "sm_admin", "dev_sm"], menuId: "jenkins-servers", section: "ADMIN", adminOnly: true, feature: "jenkins" },
-  // P2-F — Mail config + scheduled notifications (admin only)
   { id: "admin-mail-config", path: "/admin/mail-config", label: "Mail Config", icon: "mail", group: "admin", order: 80, roles: ["sm_admin", "super_admin"], section: "ADMIN", adminOnly: true },
   { id: "admin-scheduled-noti", path: "/admin/scheduled-noti", label: "Scheduled Notifications", icon: "clock", group: "admin", order: 90, roles: ["sm_admin", "super_admin"], section: "ADMIN", adminOnly: true },
 ] as const;

@@ -35,14 +35,10 @@ interface ThemeContextValue extends ThemePrefs {
 
 const ThemeContext = React.createContext<ThemeContextValue | null>(null);
 
-export const DEFAULT_THEME: ThemeName = "enterprise";
+export const DEFAULT_THEME: ThemeName = "glass";
 export const DEFAULT_MODE: ModeName = "light";
-export const ALL_THEMES: readonly ThemeName[] = [
-  "glass",
-  "enterprise",
-  "console",
-  "warm",
-];
+/** One design language for the whole portal: Liquid Glass. */
+export const ALL_THEMES: readonly ThemeName[] = ["glass"];
 
 /** Console is always dark — enforced here. */
 function resolveMode(theme: ThemeName, mode: ModeName): ModeName {
@@ -82,10 +78,10 @@ export function ThemeProvider({
   children,
 }: ThemeProviderProps): React.ReactElement {
   const [theme, setThemeState] = React.useState<ThemeName>(
-    initial?.theme ?? DEFAULT_THEME,
+    DEFAULT_THEME,
   );
   const [mode, setModeState] = React.useState<ModeName>(
-    resolveMode(initial?.theme ?? DEFAULT_THEME, initial?.mode ?? DEFAULT_MODE),
+    resolveMode(DEFAULT_THEME, initial?.mode ?? DEFAULT_MODE),
   );
   const [isGenz, setGenz] = React.useState<boolean>(initial?.isGenz ?? false);
 

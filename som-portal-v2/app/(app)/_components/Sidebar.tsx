@@ -42,7 +42,7 @@ export function Sidebar({
   return (
     <aside
       aria-label="Primary"
-      className="sidebar-root flex h-dvh min-h-0 flex-col gap-2 border-r text-sm"
+      className="sidebar-root glass-rail flex h-dvh min-h-0 flex-col gap-2 border-r text-sm"
       style={{
         width: collapsed ? "4rem" : "16rem",
         transition: "width 280ms cubic-bezier(0.23, 1, 0.32, 1)",

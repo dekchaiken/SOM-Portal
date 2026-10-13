@@ -35,7 +35,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       updatedAt: new Date().toISOString(),
       updatedBy: session.username,
     });
-    await writeTeamFile(FILE, parsed);
+    await writeTeamFile(FILE, parsed, MonthlyRecipients);
 
     await logActivity({
       user: session.sub,

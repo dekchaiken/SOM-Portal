@@ -62,6 +62,7 @@ users.push(
   qa('usr_qa_reset', 'qa.reset', 'sm', { must_reset_password: true }),
   qa('usr_qa_ss', 'qa.ss', 'ss'),
   { ...qa('usr_qa_ssadmin', 'qa.ssadmin', 'ss'), role: 'sm_admin' },
+  { ...qa('usr_qa_smadmin', 'qa.smadmin', 'sm'), role: 'sm_admin' },
 );
 fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
 

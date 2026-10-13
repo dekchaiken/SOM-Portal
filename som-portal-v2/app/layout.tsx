@@ -18,6 +18,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  icons: { icon: "/v2/icon.svg" },
   title: "SOM Portal",
   description: "Centralised Service Operations Management portal.",
   applicationName: "SOM Portal",

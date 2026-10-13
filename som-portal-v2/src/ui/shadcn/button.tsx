@@ -23,16 +23,11 @@ export interface ButtonProps
 }
 
 const variantClass: Record<Variant, string> = {
-  default:
-    "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-fg)] hover:bg-[var(--btn-primary-bg-hover)]",
-  secondary:
-    "bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-fg)] border border-[var(--btn-secondary-border)] hover:bg-[var(--btn-secondary-bg-hover)]",
-  ghost:
-    "bg-[var(--btn-ghost-bg)] text-[var(--btn-ghost-fg)] hover:bg-[var(--btn-ghost-bg-hover)]",
-  outline:
-    "border border-[var(--border)] bg-transparent text-[var(--text)] hover:bg-[var(--bg-raised)]",
-  destructive:
-    "bg-[var(--btn-danger-bg)] text-[var(--btn-danger-fg)] hover:bg-[var(--btn-danger-bg-hover)]",
+  default: "glass-btn glass-btn-primary text-white",
+  secondary: "glass-btn glass-btn-secondary",
+  ghost: "glass-btn bg-transparent text-[var(--text)] hover:bg-[var(--bg-raised)] shadow-none",
+  outline: "glass-btn glass-btn-secondary",
+  destructive: "glass-btn glass-btn-danger text-white",
 };
 
 const sizeClass: Record<Size, string> = {

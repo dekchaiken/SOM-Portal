@@ -174,6 +174,51 @@ test.describe('SM-owned writes need the SM team, not only the role (TC-TEAM-WRIT
   });
 });
 
+test.describe('new tool pages (TC-TOOLS)', () => {
+  test('global search returns board posts from the real board file', async ({ request }) => {
+    await login(request, 'qa.user');
+    const res = await request.get('/v2/api/v1/search?q=Batch');
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    const needle = 'batch';
+    const expected = readBoard().filter(
+      (p) =>
+        !p.deleted_at &&
+        [p.title, (p as { content?: string }).content ?? '', (p as { author_name?: string }).author_name ?? '']
+          .some((f) => f.toLowerCase().includes(needle)),
+    ).length;
+    expect(body.data.board.length).toBe(Math.min(expected, 10));
+  });
+
+  test('file lookup is available to a team granted batch-file-search', async ({ request }) => {
+    await login(request, 'qa.user');
+    const res = await request.get('/v2/api/v1/batch-file-index/search?q=NANO.csv');
+    expect(res.status()).toBe(200);
+  });
+
+  test('batch monitor lists reports for the selected month', async ({ page }) => {
+    await loginAs(page, 'qa.user');
+    await page.goto('/v2/batch-monitor');
+    await expect(page.getByText('Jobs succeeded').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /TMN-OPS/ }).first()).toBeVisible({ timeout: 20_000 });
+  });
+
+  test('Jenkins Servers admin lists the real server file without exposing tokens', async ({ page }) => {
+    await loginAs(page, 'qa.smadmin');
+    await page.goto('/v2/admin/jenkins-servers');
+    await expect(page.getByRole('heading', { name: 'Jenkins Servers' })).toBeVisible();
+    await expect(page.getByText('TMN-EKS', { exact: true })).toBeVisible();
+    const html = await page.content();
+    expect(html).not.toMatch(/auth_token":"[^"]+/);
+  });
+
+  test('a regular user cannot open the Jenkins Servers admin page', async ({ page }) => {
+    await loginAs(page, 'qa.user');
+    const res = await page.goto('/v2/admin/jenkins-servers');
+    expect(res?.status()).toBeGreaterThanOrEqual(300);
+  });
+});
+
 test.describe('security (TC-SESS)', () => {
   test('forgot-password does not log the reset URL', async () => {
     const src = fs.readFileSync(

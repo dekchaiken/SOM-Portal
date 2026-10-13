@@ -494,7 +494,7 @@ export function ScheduledNotiClient() {
                           title="Edit"
                           className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-raised)] hover:text-[var(--text)]"
                         >
-                          <Icon name="edit" size={14} />
+                          <Icon name="pencil" size={14} />
                         </button>
                         <button
                           type="button"

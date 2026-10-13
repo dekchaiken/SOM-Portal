@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/ui/shadcn/alert";
 import { Icon } from "@/icons";
+import { AuthBackdrop, AuthCard } from "@/ui/auth/AuthCard";
 import { HeroPanel } from "../login/HeroPanel";
 import { BrandMark } from "../login/BrandMark";
 
@@ -72,12 +73,13 @@ export default function ForgotPasswordPage() {
     <main className="relative grid min-h-dvh grid-cols-1 bg-[var(--bg-page)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
       <HeroPanel />
 
-      <section className="flex min-h-dvh flex-col px-6 py-10 sm:px-10 lg:min-h-full lg:justify-center lg:px-14">
+      <section className="login-right flex min-h-dvh flex-col px-6 py-10 sm:px-10 lg:min-h-full lg:justify-center lg:px-16">
+        <AuthBackdrop />
         <div className="flex items-center justify-between gap-4 lg:hidden">
           <BrandMark compact />
         </div>
 
-        <div className="form-card mx-auto flex w-full max-w-md flex-col gap-6">
+        <AuthCard>
           {phase === "sent" ? (
             <>
               <header className="flex flex-col gap-1.5">
@@ -182,7 +184,7 @@ export default function ForgotPasswordPage() {
           <footer className="border-t border-[var(--border)] pt-5 text-xs text-[var(--text-muted)]">
             SM team Portal · v2 · internal use only
           </footer>
-        </div>
+        </AuthCard>
       </section>
 
       <style jsx>{`

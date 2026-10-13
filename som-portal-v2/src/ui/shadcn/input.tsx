@@ -14,10 +14,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
       ref={ref}
       type={type}
       className={cn(
-        "flex h-9 w-full min-w-0 rounded-[var(--radius)] px-3 text-sm",
-        "bg-[var(--input-bg)] text-[var(--input-fg)] border border-[var(--input-border)]",
-        "placeholder:text-[var(--input-placeholder)]",
-        "focus-visible:outline-none focus-visible:border-[var(--input-focus-ring)] focus-visible:ring-2 focus-visible:ring-[var(--input-focus-ring)]/40",
+        "glass-field flex h-11 w-full min-w-0 rounded-[0.875rem] px-3.5 text-sm text-[var(--text)]",
+        "placeholder:text-[var(--text-subtle)]",
         "disabled:cursor-not-allowed disabled:opacity-60",
         className,
       )}
