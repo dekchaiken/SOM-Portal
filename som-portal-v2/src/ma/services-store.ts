@@ -5,7 +5,7 @@ import { readSharedFile, writeSharedFile } from '@/team/scope';
 import { logActivity } from '@/logging/activity';
 import { getSession, type Session } from '@/auth/session';
 import { ForbiddenError, NotFoundError, ValidationError } from '@/lib/errors';
-import { SM_WRITE_SHARED_ROLES } from '@/auth/policy';
+import { canEditMASharedData } from './access';
 import {
   MAServicesFileSchema,
   CreateMAServiceInput,
@@ -17,8 +17,8 @@ import {
 const FILE = 'ma-services.json';
 
 function requireSmWrite(session: Session): void {
-  if (!SM_WRITE_SHARED_ROLES.includes(session.role as typeof SM_WRITE_SHARED_ROLES[number])) {
-    throw new ForbiddenError('SM team write access required');
+  if (!canEditMASharedData(session)) {
+    throw new ForbiddenError('Only the SM team can change MA usecases. Other teams have view-only access.');
   }
 }
 
