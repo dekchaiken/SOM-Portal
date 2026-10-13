@@ -46,7 +46,7 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
 const EMPTY = { service_name: "", service_type: "TMN", tool_type: "", can_change_text: "NO", remark: "", link_manual: "", direct_link: "", grafana_link: "", opensearch_url: "", custom_url: "" };
 
-export function UsecasesClient({ initialDomain }: { initialDomain: string }) {
+export function UsecasesClient({ initialDomain, canEdit }: { initialDomain: string; canEdit: boolean }) {
   const [rows, setRows] = React.useState<Usecase[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [domain, setDomain] = React.useState(initialDomain.toUpperCase());
@@ -146,12 +146,20 @@ export function UsecasesClient({ initialDomain }: { initialDomain: string }) {
         <div className="ml-auto flex items-center gap-3 text-xs">
           <span className="text-[var(--text-muted)]">Showing <b className="text-[var(--text-strong)]">{shown.length}</b></span>
           <span className="text-[var(--text-muted)]">Total <b className="text-[var(--text-strong)]">{counts.ALL ?? 0}</b></span>
-          <button type="button" onClick={() => open("new")} className="glass-btn glass-btn-primary inline-flex h-9 items-center gap-1.5 rounded-[var(--radius)] px-3.5 text-xs font-semibold text-white">
-            <Icon name="plus" size={13} /> Add usecase
-          </button>
+          {canEdit ? (
+            <button type="button" onClick={() => open("new")} className="glass-btn glass-btn-primary inline-flex h-9 items-center gap-1.5 rounded-[var(--radius)] px-3.5 text-xs font-semibold text-white">
+              <Icon name="plus" size={13} /> Add usecase
+            </button>
+          ) : null}
         </div>
       </div>
 
+      {!canEdit ? (
+        <div className="glass flex items-center gap-2 rounded-[var(--radius-card)] px-4 py-2.5 text-xs text-[var(--text-muted)]">
+          <Icon name="shield" size={14} className="text-[var(--accent)]" />
+          View only. MA usecases are managed by the SM team. Other teams can view them but cannot change them.
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center gap-2">
         {(["ALL", ...DOMAINS] as string[]).map((d) => {
           const active = domain === d;
@@ -231,12 +239,18 @@ export function UsecasesClient({ initialDomain }: { initialDomain: string }) {
                     </td>
                     <td className="px-4 py-3 tabular-nums text-[var(--text-muted)]">{r.images.length ? `${r.images.length} img` : "—"}</td>
                     <td className="px-4 py-3 text-right">
+                      {canEdit ? (
+                        <>
                       <button type="button" aria-label={`Edit ${r.service_name}`} onClick={() => open(r)} className="mr-1 inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-muted)] hover:bg-[var(--bg-raised)] hover:text-[var(--text)]">
                         <Icon name="pencil" size={14} />
                       </button>
                       <button type="button" aria-label={`Delete ${r.service_name}`} onClick={() => remove(r)} className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-muted)] hover:bg-[var(--bg-raised)] hover:text-[var(--state-danger)]">
                         <Icon name="trash" size={14} />
                       </button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-[var(--text-subtle)]">View only</span>
+                      )}
                     </td>
                   </tr>
                 );
