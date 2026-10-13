@@ -34,6 +34,19 @@ for (const dir of ['', 'sm']) {
   }
 }
 
+// Learning content lives in per-course folders under sm/courses.
+const coursesSrc = path.join(src, 'sm', 'courses');
+const copyTree = (from, to) => {
+  fs.mkdirSync(to, { recursive: true });
+  for (const f of fs.readdirSync(from)) {
+    const p = path.join(from, f);
+    const st = fs.statSync(p);
+    if (st.isDirectory()) copyTree(p, path.join(to, f));
+    else if (f.endsWith('.json') && st.size <= MAX) fs.copyFileSync(p, path.join(to, f));
+  }
+};
+if (fs.existsSync(coursesSrc)) copyTree(coursesSrc, path.join(dst, 'sm', 'courses'));
+
 const hash = bcrypt.hashSync('Test1234!', 10);
 const now = new Date().toISOString();
 const qa = (id, username, team, flags = {}) => ({
@@ -63,6 +76,7 @@ users.push(
   qa('usr_qa_ss', 'qa.ss', 'ss'),
   { ...qa('usr_qa_ssadmin', 'qa.ssadmin', 'ss'), role: 'sm_admin' },
   { ...qa('usr_qa_smadmin', 'qa.smadmin', 'sm'), role: 'sm_admin' },
+  qa('usr_qa_dev', 'qa.dev', 'dev'),
 );
 fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
 

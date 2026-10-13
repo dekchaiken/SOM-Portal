@@ -219,6 +219,84 @@ test.describe('new tool pages (TC-TOOLS)', () => {
   });
 });
 
+function readJsonIf(file: string, fallback: unknown): any {
+  const p = path.join(DATA_DIR, file);
+  return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : fallback;
+}
+
+test.describe('learn (TC-LEARN)', () => {
+  const courses = (): any[] => readJsonIf('sm/courses/courses.json', []);
+  const phasesOf = (courseId: string): any[] => readJsonIf(`sm/courses/${courseId}/phases.json`, []);
+  const lessonsOf = (courseId: string): any[] => readJsonIf(`sm/courses/${courseId}/lessons.json`, []);
+
+  // A published course with no prerequisites and at least two phases, so the lock is observable.
+  function lockableCourse() {
+    const c = courses().find(
+      (x) => x.published && (x.prerequisites ?? []).length === 0 && phasesOf(x.id).length >= 2,
+    );
+    expect(c, 'fixture has a published course with 2+ phases').toBeTruthy();
+    return c;
+  }
+
+  test('learner sees only published courses', async ({ request }) => {
+    await login(request, 'qa.user');
+    const res = await request.get('/v2/api/v1/learn/courses');
+    expect(res.status()).toBe(200);
+    const rows = (await res.json()).data as any[];
+    const published = courses().filter((c) => c.published).length;
+    expect(rows.length).toBe(published);
+    expect(rows.every((r) => r.published === true)).toBe(true);
+  });
+
+  test('an unpublished course is not readable by a learner', async ({ request }) => {
+    const draft = courses().find((c) => !c.published);
+    test.skip(!draft, 'fixture has no draft course');
+    await login(request, 'qa.user');
+    const res = await request.get(`/v2/api/v1/learn/courses/${draft!.id}`);
+    expect(res.status()).toBe(404);
+  });
+
+  test('the lessons endpoint refuses a locked phase for a learner', async ({ request }) => {
+    const c = lockableCourse();
+    const second = phasesOf(c.id).find((p) => p.order === 2);
+    await login(request, 'qa.user');
+    const res = await request.get(`/v2/api/v1/learn/phases/${second.id}/lessons`);
+    expect(res.status()).toBe(403);
+  });
+
+  test('the first phase opens and returns its lessons in order', async ({ request }) => {
+    const c = lockableCourse();
+    const first = phasesOf(c.id).find((p) => p.order === 1);
+    await login(request, 'qa.user');
+    const res = await request.get(`/v2/api/v1/learn/phases/${first.id}/lessons`);
+    expect(res.status()).toBe(200);
+    const body = (await res.json()).data;
+    const expected = lessonsOf(c.id).filter((l) => l.phase_id === first.id).length;
+    expect(body.lessons.length).toBe(expected);
+  });
+
+  test('a staff admin can read a locked phase', async ({ request }) => {
+    const c = lockableCourse();
+    const second = phasesOf(c.id).find((p) => p.order === 2);
+    await login(request, 'qa.smadmin');
+    const res = await request.get(`/v2/api/v1/learn/phases/${second.id}/lessons`);
+    expect(res.status()).toBe(200);
+  });
+
+  test('a team without the learning feature cannot use Learn', async ({ request }) => {
+    await login(request, 'qa.dev');
+    const res = await request.get('/v2/api/v1/learn/courses');
+    expect(res.status()).toBe(403);
+  });
+
+  test('the learn page lists courses for a learner', async ({ page }) => {
+    await loginAs(page, 'qa.user');
+    await page.goto('/v2/learn');
+    const first = courses().find((c) => c.published);
+    await expect(page.getByText(first.title, { exact: true }).first()).toBeVisible();
+  });
+});
+
 test.describe('security (TC-SESS)', () => {
   test('forgot-password does not log the reset URL', async () => {
     const src = fs.readFileSync(

@@ -130,7 +130,8 @@ export const NAV: readonly NavItem[] = [
     roles: ["sm_user", "sm_lead", "sm_admin", "super_admin"],
   },
 
-  // Learning is not in the nav yet: v2 has no courses or exams backend.
+  // ── learning ─────────────────────────────────────────────────────────────
+  { id: "learn", path: "/learn", label: "Learn", icon: "book", group: "learn", order: 10, menuId: "learn", section: "MAIN", feature: "learning" },
 
   // ── admin ────────────────────────────────────────────────────────────────
   { id: "admin-overview", path: "/admin", label: "Admin Overview", icon: "shield", group: "admin", order: 10, roles: ["sm_admin", "super_admin"], menuId: "admin", section: "ADMIN", adminOnly: true },
