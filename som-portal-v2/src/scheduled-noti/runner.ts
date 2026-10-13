@@ -4,7 +4,8 @@
 
 import { requireRole, ADMIN_ROLES } from '@/auth/policy';
 import { logActivity } from '@/logging/activity';
-import { getJob, updateJob } from './store';
+import { getJob } from './store';
+import { recordJobRun } from './jobs';
 import type { ScheduledJob } from './types';
 
 export interface RunResult {
@@ -72,27 +73,21 @@ async function sendChat(job: ScheduledJob): Promise<RunResult> {
   };
 }
 
-/**
- * Check Grafana for paused alerts (placeholder — real impl would call Grafana API).
- */
+/** Not implemented yet. Fails loudly so a run never reports success without doing work. */
 async function checkGrafanaPaused(_job: ScheduledJob): Promise<RunResult> {
-  // Placeholder: real implementation would use the Grafana MCP tools or API
   return {
-    ok: true,
-    message: 'Grafana paused alert check completed (placeholder)',
-    details: { checked_at: new Date().toISOString() },
+    ok: false,
+    message: 'grafana_paused is not implemented in v2 yet',
+    details: {},
   };
 }
 
-/**
- * Compile shift summary email (placeholder).
- */
+/** Not implemented yet. Fails loudly so a run never reports success without doing work. */
 async function sendShiftSummary(_job: ScheduledJob): Promise<RunResult> {
-  // Placeholder: real implementation would compile board/activity data and email
   return {
-    ok: true,
-    message: 'Shift summary compiled (placeholder)',
-    details: { compiled_at: new Date().toISOString() },
+    ok: false,
+    message: 'shift_summary is not implemented in v2 yet',
+    details: {},
   };
 }
 
@@ -102,26 +97,24 @@ const HANDLERS: Record<string, (job: ScheduledJob) => Promise<RunResult>> = {
   shift_summary: sendShiftSummary,
 };
 
+/** Runs one job's handler. No session: used by the scheduler and by runJob. */
+export async function executeJob(job: ScheduledJob): Promise<RunResult> {
+  const handler = HANDLERS[job.type];
+  if (!handler) {
+    return { ok: false, message: `Unknown job type: ${job.type}` };
+  }
+  return handler(job);
+}
+
 /**
  * Manually trigger a scheduled job.
  */
 export async function runJob(jobId: string): Promise<RunResult> {
   const session = await requireRole(...ADMIN_ROLES);
   const job = await getJob(jobId);
+  const result = await executeJob(job);
 
-  const handler = HANDLERS[job.type];
-  if (!handler) {
-    return { ok: false, message: `Unknown job type: ${job.type}` };
-  }
-
-  const result = await handler(job);
-
-  // Update last_run metadata
-  await updateJob(jobId, {
-    // We pass an empty update to trigger updated_at, plus manual metadata
-  } as Record<string, never>).catch(() => {
-    // Best effort — don't fail the run if metadata update fails
-  });
+  await recordJobRun(session.team, jobId, result.ok ? 'ok' : 'failed');
 
   await logActivity({
     user: session.sub,

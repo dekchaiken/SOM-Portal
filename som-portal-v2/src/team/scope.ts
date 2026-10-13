@@ -7,6 +7,7 @@ import { getSession, type Session } from '@/auth/session';
 import {
   SM_WRITE_SHARED_ROLES,
   SUPER_ADMIN,
+  assertSmForShared,
   isSuperAdmin,
 } from '@/auth/policy';
 import { AuthError, ForbiddenError } from '@/lib/errors';
@@ -55,7 +56,7 @@ export async function readTeamFile<T>(
     // Soft-fail per T-05: log drift, return a safe default by parsing `undefined`
     // so schemas with defaults produce an empty-but-valid value. If that fails,
     // re-throw.
-    console.error(`[team.readTeamFile] schema drift: ${file}`, parsed.error.flatten());
+    if (raw != null) console.error(`[team.readTeamFile] schema drift: ${file}`, parsed.error.flatten());
     const undef = schema.safeParse(undefined);
     const fallback = undef.success ? undef : schema.safeParse({});
     if (fallback.success) return fallback.data;
@@ -89,7 +90,7 @@ export async function readSharedFile<T>(file: string, schema: ZodSchema<T>): Pro
   const raw = await adapter.read<unknown>({ team: SHARED_TEAM }, file);
   const parsed = schema.safeParse(raw);
   if (!parsed.success) {
-    console.error(`[team.readSharedFile] schema drift: ${file}`, parsed.error.flatten());
+    if (raw != null) console.error(`[team.readSharedFile] schema drift: ${file}`, parsed.error.flatten());
     const undef = schema.safeParse(undefined);
     const fallback = undef.success ? undef : schema.safeParse({});
     if (fallback.success) return fallback.data;
@@ -108,6 +109,7 @@ export async function writeSharedFile<T>(
   if (!allowed.includes(sess.role)) {
     throw new ForbiddenError('writeSharedFile requires an sm_* role');
   }
+  assertSmForShared(sess);
   const parsed = schema.parse(data);
   const adapter = getDataAdapter();
   const scope: TeamScope = { team: SHARED_TEAM };

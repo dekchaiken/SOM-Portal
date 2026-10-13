@@ -56,6 +56,36 @@ export class JsonAdapter implements DataAdapter {
     }
   }
 
+  async update<T = unknown>(scope: TeamScope, file: string, fn: (current: T | null) => T | Promise<T>): Promise<T> {
+    const full = this.resolvePath(scope, file);
+    await fs.mkdir(path.dirname(full), { recursive: true });
+    try {
+      await fs.access(full);
+    } catch {
+      await fs.writeFile(full, 'null', 'utf8');
+    }
+    const release = await lockfile.lock(full, {
+      retries: { retries: 10, minTimeout: 20, maxTimeout: 200 },
+      stale: 5000,
+    });
+    try {
+      const raw = await fs.readFile(full, 'utf8').catch(() => 'null');
+      let current: T | null = null;
+      try {
+        current = JSON.parse(raw) as T | null;
+      } catch {
+        current = null;
+      }
+      const next = await fn(current);
+      const tmp = `${full}.tmp-${process.pid}-${Date.now()}`;
+      await fs.writeFile(tmp, JSON.stringify(next, null, 2), 'utf8');
+      await fs.rename(tmp, full);
+      return next;
+    } finally {
+      await release();
+    }
+  }
+
   async withLock<T>(scope: TeamScope, file: string, fn: () => Promise<T>): Promise<T> {
     const full = this.resolvePath(scope, file);
     await fs.mkdir(path.dirname(full), { recursive: true });

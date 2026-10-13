@@ -41,6 +41,22 @@ export async function requireRole(...roles: readonly string[]): Promise<Session>
   return s;
 }
 
+/** v1 requireSmForShared(): data the SM team owns is view-only for every other team. */
+export function assertSmForShared(session: Session): void {
+  if (session.role === SUPER_ADMIN) return;
+  if (session.team !== 'sm') {
+    throw new ForbiddenError(
+      `This resource is managed by the SM team and is view-only for team "${session.team}"`,
+    );
+  }
+}
+
+export async function requireSmWrite(...roles: readonly string[]): Promise<Session> {
+  const s = await requireRole(...roles);
+  assertSmForShared(s);
+  return s;
+}
+
 export function hasRole(session: Session, roles: readonly string[]): boolean {
   return roles.includes(session.role);
 }

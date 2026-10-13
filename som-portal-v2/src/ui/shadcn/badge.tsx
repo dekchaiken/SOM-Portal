@@ -2,13 +2,14 @@
 import * as React from "react";
 import { cn } from "@/ui/cn";
 
-type Variant = "neutral" | "success" | "warning" | "danger" | "info";
+type Variant = "neutral" | "default" | "success" | "warning" | "danger" | "info";
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: Variant;
 }
 
 const variantClass: Record<Variant, string> = {
+  default: "bg-[var(--chip-neutral-bg)] text-[var(--chip-neutral-fg)]",
   neutral: "bg-[var(--chip-neutral-bg)] text-[var(--chip-neutral-fg)]",
   success: "bg-[var(--chip-success-bg)] text-[var(--chip-success-fg)]",
   warning: "bg-[var(--chip-warning-bg)] text-[var(--chip-warning-fg)]",

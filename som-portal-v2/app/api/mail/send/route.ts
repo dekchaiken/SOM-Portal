@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       subject,
       html: html ? body : `<pre style="font-family:inherit;white-space:pre-wrap">${escapeHtml(body)}</pre>`,
       sent_by: session.sub,
-      sent_by_name: session.name ?? session.sub,
+      sent_by_name: session.username,
       log_type: 'admin_send',
     });
 

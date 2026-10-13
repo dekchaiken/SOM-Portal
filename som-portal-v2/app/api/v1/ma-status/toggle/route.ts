@@ -1,6 +1,6 @@
 // POST /api/v1/ma-status/toggle — toggle MA enable/disable via backoffice
 // Port of api/ma-services/backoffice-toggle.php
-import { requireAuth } from '@/auth/policy';
+import { requireAuth, assertSmForShared } from '@/auth/policy';
 import { handle, jsonOk, jsonErr } from '@/jenkins/route-helpers';
 import { ToggleMAInput } from '@/ma/types';
 import { getService, patchServiceRecord } from '@/ma/services-store';
@@ -20,6 +20,7 @@ const RL_WINDOW_SEC = 3;
 export async function POST(req: NextRequest): Promise<Response> {
   return handle(async () => {
     const session = await requireAuth();
+    assertSmForShared(session);
 
     const body = await req.json();
     const parsed = ToggleMAInput.safeParse(body);

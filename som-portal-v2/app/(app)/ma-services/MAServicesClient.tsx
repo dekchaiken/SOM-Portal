@@ -243,14 +243,14 @@ export function MAServicesClient() {
                       className="rounded p-1 hover:bg-[var(--surface-subtle)]"
                       title="Edit"
                     >
-                      <Icon name="edit" size={14} />
+                      <Icon name="pencil" size={14} />
                     </button>
                     <button
                       onClick={() => handleDelete(svc.id)}
                       className="rounded p-1 text-[var(--chip-danger-fg)] hover:bg-[var(--surface-subtle)]"
                       title="Delete"
                     >
-                      <Icon name="trash-2" size={14} />
+                      <Icon name="trash" size={14} />
                     </button>
                   </div>
                 </td>

@@ -193,7 +193,7 @@ export function RestartMonitorClient() {
         <h1 className="text-xl font-semibold">Restart Monitor</h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={fetchList} disabled={loading}>
-            <Icon name="refresh-cw" size={14} /> Refresh
+            <Icon name="refresh" size={14} /> Refresh
           </Button>
         </div>
       </div>

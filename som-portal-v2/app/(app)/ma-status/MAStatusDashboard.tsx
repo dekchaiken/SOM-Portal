@@ -108,7 +108,7 @@ export function MAStatusDashboard() {
             onClick={fetchStatus}
             disabled={loading}
           >
-            <Icon name="refresh-cw" size={14} />
+            <Icon name="refresh" size={14} />
             Refresh
           </Button>
         </div>

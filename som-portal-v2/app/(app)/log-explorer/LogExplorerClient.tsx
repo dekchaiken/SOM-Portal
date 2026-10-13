@@ -422,7 +422,7 @@ export function LogExplorerClient() {
             size="sm"
             onClick={() => setShowSavedPanel(!showSavedPanel)}
           >
-            <Icon name="bookmark" size={14} className="mr-1" />
+            <Icon name="star" size={14} className="mr-1" />
             Saved
           </Button>
           {credStatus[selectedEndpoint] ? (
@@ -432,7 +432,7 @@ export function LogExplorerClient() {
             </span>
           ) : selectedEndpoint ? (
             <Button variant="outline" size="sm" onClick={() => setShowCredModal(true)}>
-              <Icon name="lock" size={14} className="mr-1" />
+              <Icon name="shield" size={14} className="mr-1" />
               Set Credentials
             </Button>
           ) : null}
@@ -712,7 +712,7 @@ export function LogExplorerClient() {
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Icon name="lock" size={18} />
+                <Icon name="shield" size={18} />
                 OpenSearch Credentials
               </CardTitle>
             </CardHeader>
@@ -793,7 +793,7 @@ export function LogExplorerClient() {
             return (
               <div key={folder.id} className="mb-3">
                 <div className="mb-1 flex items-center gap-2 text-xs font-medium text-[var(--text-muted)]">
-                  <Icon name="folder" size={12} />
+                  <Icon name="layers" size={12} />
                   {folder.name}
                 </div>
                 {folderSearches.map((s) => (

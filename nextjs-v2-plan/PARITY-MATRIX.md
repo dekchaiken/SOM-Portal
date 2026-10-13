@@ -34,7 +34,7 @@ Test data: copy of `data/` with four QA users (`qa.user`, `qa.first`, `qa.expire
 
 ## Phase 2 and 3 pages
 
-Phase 2 (per `PAGE-COMPARISON.md`): MA Status, MA Services, Service Performance, Restart Monitor, Restart Analyzer, Log Explorer, Incident Launcher, Mail, 9 integration admin pages. **Not started.** Several need Grafana Thanos, OpenSearch or Jenkins endpoints that are not reachable from the dev container; these need a decision on test doubles before work starts.
+Phase 2 (per `PAGE-COMPARISON.md`): MA Status, MA Services, Service Performance, Restart Monitor, Restart Analyzer, Log Explorer, Incident Launcher, Mail, 9 integration admin pages. **Started, not finished.** Pages exist for all of the first seven tools and for mail-config and scheduled-noti. Per-feature status is in `COMPARE-PHASE2.md`. Several features need Grafana Thanos, OpenSearch or Jenkins, which are not reachable from the dev container.
 
 Phase 3 (~110 pages): not started.
 
