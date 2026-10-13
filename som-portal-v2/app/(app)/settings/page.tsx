@@ -94,6 +94,7 @@ export default async function SettingsPage() {
       role={session.role}
       // GenZ overlay is an SM-only perk and requires the admin-granted flag.
       canUseGenzOverlay={Boolean(session.is_genz) && session.team === "sm"}
+      pwChangeRequired={Boolean(session.pw_change_required)}
     />
   );
 }

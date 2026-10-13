@@ -26,6 +26,16 @@ function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
 }
 
+function isPasswordChangeAllowed(pathname: string): boolean {
+  return (
+    pathname === '/settings' ||
+    pathname.startsWith('/settings/') ||
+    pathname === '/api/v1/auth/change-password' ||
+    pathname === '/api/auth/logout' ||
+    pathname.startsWith('/_next/')
+  );
+}
+
 function isAdminPath(pathname: string): boolean {
   return pathname === '/admin' || pathname.startsWith('/admin/');
 }
@@ -46,6 +56,22 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     const url = req.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('next', pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // Forced password change (first login, admin reset, or expired): only the
+  // settings page, the change-password API and logout are reachable until the
+  // session is re-issued without the flag.
+  if (session.pw_change_required && !isPasswordChangeAllowed(pathname)) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { ok: false, error: 'Password change required', code: 'password_change_required' },
+        { status: 403 },
+      );
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = '/settings';
+    url.search = '';
     return NextResponse.redirect(url);
   }
 

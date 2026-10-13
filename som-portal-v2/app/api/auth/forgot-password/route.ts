@@ -116,9 +116,6 @@ export async function POST(req: NextRequest) {
     const entry = await createResetToken(user.id, 24);
     const url = resetUrl(entry.token);
 
-    // Dev / dry-run: the brief asks for the link on the console instead of SMTP.
-    console.info(`[forgot-password] reset link for ${user.username}: ${url}`);
-
     const { config } = await resolveMailConfig(user.team ?? null);
     const mail = buildResetPasswordEmail(
       user.name ?? user.username,

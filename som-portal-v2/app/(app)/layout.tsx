@@ -1,16 +1,8 @@
 // som-portal-v2/app/(app)/layout.tsx
 import * as React from "react";
 import { AppShell } from "./_components/AppShell";
+import { redirect } from "next/navigation";
 import type { SessionLike } from "@/config/nav";
-
-/**
- * App layout — assumes the user is authenticated.
- *
- * NOTE: real session loading comes from `@/auth/getSession()` (Agent A).
- * Until that lands, we fall back to a stub `sm_user` session so the preview
- * nav + layout render for development. Replace the fallback the moment
- * Agent A ships the server-side helper.
- */
 
 async function loadSession(): Promise<SessionLike | null> {
   try {
@@ -31,13 +23,9 @@ async function loadSession(): Promise<SessionLike | null> {
       };
     }
   } catch {
-    /* fall through to dev stub */
+    /* no usable session */
   }
-  return {
-    role: "sm_user",
-    team: "sm",
-    isGenz: false,
-  };
+  return null;
 }
 
 export default async function AppLayout({
@@ -46,5 +34,6 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const session = await loadSession();
+  if (!session) redirect("/login");
   return <AppShell session={session}>{children}</AppShell>;
 }

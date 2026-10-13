@@ -12,9 +12,53 @@ import {
 } from "@/ui/shadcn/card";
 import { Button } from "@/ui/shadcn/button";
 import { Icon } from "@/icons";
+import { ForbiddenError } from "@/lib/errors";
+import { requireBoardRead } from "@/board/access";
+import { listPosts } from "@/board/service";
+import Link from "next/link";
 
 export const metadata = { title: "Dashboard · SOM Portal" };
 export const dynamic = "force-dynamic";
+
+type DashboardStats = {
+  open: number;
+  inProgress: number;
+  resolvedToday: number;
+  recent: { id: string; title: string; status: "open" | "in_progress" | "resolved"; meta: string }[];
+} | null;
+
+async function loadBoardStats(): Promise<DashboardStats> {
+  let access;
+  try {
+    access = await requireBoardRead();
+  } catch (e) {
+    if (e instanceof ForbiddenError) return null;
+    throw e;
+  }
+  const { items } = await listPosts(access, {
+    search: "",
+    status: undefined,
+    board_type: "",
+    author_id: "",
+    starred: false,
+    limit: 500,
+    offset: 0,
+  });
+  const todayBkk = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+  const isToday = (iso?: string | null) =>
+    !!iso && new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" }) === todayBkk;
+  return {
+    open: items.filter((p) => p.status === "open").length,
+    inProgress: items.filter((p) => p.status === "in_progress").length,
+    resolvedToday: items.filter((p) => p.status === "resolved" && isToday(p.updated_at)).length,
+    recent: items.slice(0, 5).map((p) => ({
+      id: p.id,
+      title: p.title,
+      status: p.status,
+      meta: `${p.author_name ?? "—"} · ${p.board_type_name ?? "Board"}`,
+    })),
+  };
+}
 
 function greet(hour: number): string {
   if (hour < 5) return "Burning the midnight oil";
@@ -26,6 +70,7 @@ function greet(hour: number): string {
 
 export default async function DashboardPage() {
   const session = await getSession();
+  const stats = await loadBoardStats();
   // Bangkok time for greeting — the users are here.
   const bkkHour = new Date(
     new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }),
@@ -73,37 +118,37 @@ export default async function DashboardPage() {
           subtitle="Live service health across SM team surfaces"
           live
           actions={
-            <>
-              <Button variant="secondary" size="sm">
-                <Icon name="refresh" size={14} /> Refresh
-              </Button>
+            <Link href="/board" className="inline-flex">
               <Button size="sm">
                 <Icon name="plus" size={14} /> New Post
               </Button>
-            </>
+            </Link>
           }
         />
       </div>
 
       {/* KPI row */}
       <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(190px,1fr))]">
-        {[
-          { label: "Open Incidents", value: "4", icon: "alert-triangle", tone: "warning", deltaPct: -33.3, deltaLabel: "vs yesterday" },
-          { label: "Resolved Today", value: "18", icon: "check-circle", tone: "success", deltaPct: 12.5, deltaLabel: "vs yesterday" },
-          { label: "Active Builds", value: "7", icon: "hammer", deltaPct: 0, deltaLabel: "steady" },
-          { label: "SLA Breach Risk", value: "2", icon: "flag", tone: "danger", deltaPct: 100 },
-        ].map((k) => (
-          <div key={k.label}>
-            <KpiCard
-              label={k.label}
-              value={k.value}
-              icon={k.icon as never}
-              tone={k.tone as never}
-              deltaPct={k.deltaPct}
-              deltaLabel={k.deltaLabel}
-            />
-          </div>
-        ))}
+        {stats ? (
+          [
+            { label: "Open Posts", value: String(stats.open), icon: "alert-triangle", tone: "warning" },
+            { label: "In Progress", value: String(stats.inProgress), icon: "hammer" },
+            { label: "Resolved Today", value: String(stats.resolvedToday), icon: "check-circle", tone: "success" },
+          ].map((k) => (
+            <div key={k.label}>
+              <KpiCard
+                label={k.label}
+                value={k.value}
+                icon={k.icon as never}
+                tone={k.tone as never}
+              />
+            </div>
+          ))
+        ) : (
+          <p className="col-span-full text-xs text-[var(--text-muted)]">
+            Board metrics are not enabled for your team.
+          </p>
+        )}
       </div>
 
       {/* Content row */}
@@ -128,24 +173,24 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <ul className="divide-y divide-[var(--border)]">
-                {[
-                  { title: "Deploy failing on wallet-api v2.14.1", status: "open" as const, meta: "3m ago · Jenkins" },
-                  { title: "Payment gateway latency spike mitigated", status: "resolved" as const, meta: "22m ago · SP2" },
-                  { title: "User-service pod restart loop", status: "in_progress" as const, meta: "1h ago · Restart Monitor" },
-                  { title: "Weekly MA window — Thursday 02:00", status: "pending" as const, meta: "today · MA Calendar" },
-                  { title: "DRP drill: DNS cooldown rehearsal", status: "resolved" as const, meta: "yesterday · Ops" },
-                ].map((row, i) => (
-                  <li
-                    key={i}
-                    className="flex items-center gap-3 py-2.5 text-sm first:pt-0 last:pb-0"
-                  >
-                    <StatusChip status={row.status} />
-                    <span className="min-w-0 flex-1 truncate font-medium">{row.title}</span>
-                    <span className="shrink-0 text-xs text-[var(--text-subtle)]">
-                      {row.meta}
-                    </span>
+                {stats && stats.recent.length > 0 ? (
+                  stats.recent.map((row) => (
+                    <li key={row.id} className="py-2.5 first:pt-0 last:pb-0">
+                      <Link
+                        href={`/board/${row.id}`}
+                        className="flex items-center gap-3 text-sm hover:text-[var(--accent)]"
+                      >
+                        <StatusChip status={row.status} />
+                        <span className="min-w-0 flex-1 truncate font-medium">{row.title}</span>
+                        <span className="shrink-0 text-xs text-[var(--text-subtle)]">{row.meta}</span>
+                      </Link>
+                    </li>
+                  ))
+                ) : (
+                  <li className="py-6 text-center text-sm text-[var(--text-muted)]">
+                    No board posts yet.
                   </li>
-                ))}
+                )}
               </ul>
             </CardContent>
           </Card>
@@ -164,12 +209,10 @@ export default async function DashboardPage() {
             <CardContent>
               <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr))]">
                 {[
-                  { label: "Service Performance", href: "/v2/service-performance", icon: "activity" as const, tag: "monitor" },
+                  { label: "Board", href: "/v2/board", icon: "layers" as const, tag: "ops" },
                   { label: "Jira Templates", href: "/v2/jira-templates", icon: "file" as const, tag: "ops" },
                   { label: "Jenkins Build", href: "/v2/jenkins-build", icon: "hammer" as const, tag: "ops" },
-                  { label: "Log Explorer", href: "/v2/log-explorer", icon: "search" as const, tag: "monitor" },
-                  { label: "MA Status", href: "/v2/ma-status", icon: "shield" as const, tag: "ma" },
-                  { label: "Incident Launcher", href: "/v2/incident-launcher", icon: "flag" as const, tag: "automation" },
+                  { label: "Settings", href: "/v2/settings", icon: "shield" as const, tag: "account" },
                 ].map((t) => (
                   <a
                     key={t.label}

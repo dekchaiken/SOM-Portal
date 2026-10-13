@@ -20,6 +20,8 @@ export interface UserRecord {
   first_login?: boolean;
   is_genz?: boolean;
   dev_subteam?: string;
+  password_changed_at?: string;
+  created_at?: string;
 }
 
 export interface UserHit {

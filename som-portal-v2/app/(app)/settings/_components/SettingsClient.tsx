@@ -57,6 +57,7 @@ export interface SettingsClientProps {
   team: string;
   role: string;
   canUseGenzOverlay: boolean;
+  pwChangeRequired: boolean;
 }
 
 type TabId = "appearance" | "profile" | "password" | "notifications" | "sessions";
@@ -115,11 +116,27 @@ export function SettingsClient({
   team,
   role,
   canUseGenzOverlay,
+  pwChangeRequired,
 }: SettingsClientProps) {
-  const [tab, setTab] = React.useState<TabId>("appearance");
+  const [tab, setTab] = React.useState<TabId>(pwChangeRequired ? "password" : "appearance");
 
   return (
     <div className="flex flex-col gap-5">
+      {pwChangeRequired ? (
+        <div
+          role="alert"
+          className="rounded-[var(--radius-md)] border px-4 py-3 text-sm"
+          style={{
+            borderColor: "oklch(from var(--state-warning) l c h / 0.5)",
+            background: "oklch(from var(--state-warning) l c h / 0.1)",
+          }}
+        >
+          <p className="font-semibold">Please set a new password to continue.</p>
+          <p className="text-xs text-[var(--text-muted)]">
+            Your password was reset, has expired, or this is your first sign-in. The rest of the portal unlocks after you change it.
+          </p>
+        </div>
+      ) : null}
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold text-[var(--text-strong)]">Settings</h1>
