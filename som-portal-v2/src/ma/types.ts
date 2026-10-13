@@ -137,12 +137,44 @@ export const MAStatusSourceSchema = z.object({
   error: z.string().optional(),
 });
 
+export const MAStatusSummarySchema = z
+  .object({
+    total: z.number().default(0),
+    open: z.number().default(0),
+    closed: z.number().default(0),
+    unknown: z.number().default(0),
+    matched: z.number().default(0),
+    per_source: z.record(z.string(), z.object({ ok: z.boolean(), count: z.number().default(0), fetched_at: z.number().default(0), error: z.string().nullable().optional() }).passthrough()).default({}),
+  })
+  .passthrough();
+
+/** One MA usecase as the status cache matched it (v1 payload.services). */
+export const MAStatusServiceSchema = z
+  .object({
+    id: z.number(),
+    service_name: z.string(),
+    service_type: z.string().default(''),
+    tool_type: z.string().default(''),
+    status: z.string().default('unknown'),
+    source: z.string().nullable().optional(),
+    matched: z.boolean().default(false),
+    updated_at: z.string().nullable().optional(),
+    link: z.string().nullable().optional(),
+  })
+  .passthrough();
+
 export const MAStatusCacheSchema = z.object({
   ts: z.number().default(0),
   filter: z.string().default(''),
-  payload: z.object({
-    sources: z.record(z.string(), MAStatusSourceSchema).default({}),
-  }).default({ sources: {} }),
+  payload: z
+    .object({
+      sources: z.record(z.string(), MAStatusSourceSchema).default({}),
+      summary: MAStatusSummarySchema.optional(),
+      services: z.array(MAStatusServiceSchema).default([]),
+      unmapped_backoffice: z.array(MAStatusItemSchema).default([]),
+    })
+    .passthrough()
+    .default({ sources: {}, services: [], unmapped_backoffice: [] }),
 });
 export type MAStatusCache = z.infer<typeof MAStatusCacheSchema>;
 

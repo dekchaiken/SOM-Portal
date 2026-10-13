@@ -19,7 +19,10 @@ export async function GET(req: NextRequest): Promise<Response> {
     return jsonOk({
       ts: cache.ts,
       filter: cache.filter,
-      sources: Object.keys(cache.payload.sources),
+      sources: cache.payload.sources,
+      summary: cache.payload.summary ?? null,
+      services: cache.payload.services,
+      unmapped_backoffice: cache.payload.unmapped_backoffice,
       items,
       total: items.length,
     });
