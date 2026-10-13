@@ -4,19 +4,10 @@
 import * as React from "react";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import { NavigationProgress } from "@/ui/NavigationProgress";
+import { PageTransition } from "@/ui/PageTransition";
+import { AppAmbientBg } from "@/ui/flair/AppAmbientBg";
 import type { SessionLike } from "@/config/nav";
-import { cn } from "@/ui/cn";
-
-/**
- * AppShell — hard-left collapsible sidebar + topbar + main.
- *
- * Desktop:  grid [sidebar, main]
- * Mobile:   sidebar becomes an overlay opened via Topbar's menu button.
- *
- * Grid uses `minmax(0, 1fr)` for the main column so wide tables / charts can
- * overflow horizontally without blowing the layout (per
- * jakubkrehel/better-layout).
- */
 
 export interface AppShellProps {
   session: SessionLike | null;
@@ -29,11 +20,17 @@ export function AppShell({ session, children }: AppShellProps) {
 
   return (
     <div className="min-h-dvh">
+      <AppAmbientBg />
+      <React.Suspense>
+        <NavigationProgress />
+      </React.Suspense>
+
       {/* Desktop two-column grid */}
       <div
         className="hidden lg:grid"
         style={{
           gridTemplateColumns: `${collapsed ? "4rem" : "16rem"} minmax(0, 1fr)`,
+          transition: "grid-template-columns 280ms cubic-bezier(0.23, 1, 0.32, 1)",
           minHeight: "100dvh",
         }}
       >
@@ -46,23 +43,40 @@ export function AppShell({ session, children }: AppShellProps) {
         </div>
         <div className="flex min-w-0 flex-col">
           <Topbar onMenu={() => setMobileOpen(true)} />
-          <main className="min-w-0 flex-1 p-6">{children}</main>
+          <main className="min-w-0 flex-1 p-6">
+            <PageTransition>{children}</PageTransition>
+          </main>
         </div>
       </div>
 
       {/* Mobile overlay layout */}
       <div className="flex min-h-dvh flex-col lg:hidden">
         <Topbar onMenu={() => setMobileOpen((v) => !v)} />
-        <main className="min-w-0 flex-1 p-4">{children}</main>
+        <main className="min-w-0 flex-1 p-4">
+          <PageTransition>{children}</PageTransition>
+        </main>
+
+        {/* Mobile sidebar overlay */}
         {mobileOpen ? (
           <>
             <button
               type="button"
               aria-label="Close menu"
               onClick={() => setMobileOpen(false)}
-              className="fixed inset-0 z-30 bg-[var(--bg-overlay)]"
+              className="fixed inset-0 z-30"
+              style={{
+                background: "var(--bg-overlay)",
+                backdropFilter: "blur(4px)",
+                WebkitBackdropFilter: "blur(4px)",
+                animation: "fade-in-up 200ms ease-out",
+              }}
             />
-            <div className="fixed inset-y-0 left-0 z-40 w-64">
+            <div
+              className="fixed inset-y-0 left-0 z-40 w-64"
+              style={{
+                animation: "slide-in-left 280ms cubic-bezier(0.23, 1, 0.32, 1) both",
+              }}
+            >
               <Sidebar
                 session={session}
                 collapsed={false}
@@ -74,7 +88,12 @@ export function AppShell({ session, children }: AppShellProps) {
         ) : null}
       </div>
 
-      <span className={cn("sr-only")}>SOM Portal v2 app shell</span>
+      <style jsx>{`
+        @keyframes slide-in-left {
+          from { transform: translateX(-100%); opacity: 0.5; }
+          to   { transform: none; opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

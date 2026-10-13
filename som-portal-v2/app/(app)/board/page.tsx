@@ -127,7 +127,7 @@ async function BoardList({ sp }: { sp: SearchParams }) {
   const canWrite = access.canWrite;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 stagger-children">
       <PulseHeader
         title="Service Board"
         subtitle={`${total} ${total === 1 ? "post" : "posts"} · team ${access.team}`}
@@ -144,24 +144,30 @@ async function BoardList({ sp }: { sp: SearchParams }) {
       <BoardFilters starred={query.starred} />
 
       {items.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-2 py-12 text-center text-sm text-[var(--text-muted)]">
-            <Icon name="file" size={24} />
-            <p>No posts match the current filters.</p>
+        <Card className="card-hover">
+          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+            <Icon name="file" size={28} className="text-[var(--text-subtle)]" />
+            <p className="text-sm text-[var(--text-muted)]">No posts match the current filters.</p>
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="card-hover">
           <CardHeader>
             <CardTitle className="text-sm">Posts</CardTitle>
             <CardDescription>Pinned items first, then most-recent.</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="divide-y divide-[var(--border)]">
-              {items.map((row) => (
+              {items.map((row, i) => (
                 <li
                   key={row.id}
-                  className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
+                  className="group flex items-start gap-3 py-3 transition-colors first:pt-0 last:pb-0 hover:bg-[var(--bg-raised)]"
+                  style={{
+                    borderRadius: "var(--radius-sm)",
+                    padding: "0.75rem",
+                    margin: "0 -0.75rem",
+                    animation: `fade-in-up 300ms ease-out ${i * 40}ms both`,
+                  }}
                 >
                   <StatusChip status={statusToChip(row.status)} />
                   <div className="min-w-0 flex-1">
@@ -175,7 +181,7 @@ async function BoardList({ sp }: { sp: SearchParams }) {
                       ) : null}
                       <a
                         href={`/v2/board/${row.id}`}
-                        className="truncate text-sm font-medium hover:underline"
+                        className="truncate text-sm font-medium text-[var(--text-strong)] transition-colors hover:text-[var(--accent)]"
                       >
                         {row.title}
                       </a>
@@ -188,11 +194,19 @@ async function BoardList({ sp }: { sp: SearchParams }) {
                       {row.board_type_name ? <span>· {row.board_type_name}</span> : null}
                       {row.service_type_name ? <span>· {row.service_type_name}</span> : null}
                       {row.comment_count > 0 ? (
-                        <span>· {row.comment_count} comments</span>
+                        <span className="inline-flex items-center gap-1">
+                          <Icon name="message-square" size={10} />
+                          {row.comment_count}
+                        </span>
                       ) : null}
                     </div>
                   </div>
                   <StarToggle postId={row.id} starred={row.starred} />
+                  <Icon
+                    name="chevron-right"
+                    size={14}
+                    className="mt-1 shrink-0 text-[var(--text-subtle)] opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100"
+                  />
                 </li>
               ))}
             </ul>

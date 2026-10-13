@@ -121,17 +121,243 @@
   }
 }
 
-/* Glass surface helper — gated by prefers-reduced-transparency inside tokens. */
+/* ------------------------------------------------------------------ */
+/*  Premium animations                                                 */
+/* ------------------------------------------------------------------ */
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(14px) scale(0.998); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes shimmer-sweep {
+  0%   { background-position: -1200px 0; }
+  100% { background-position: 1200px 0; }
+}
+
+@keyframes nav-bar-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+
+@keyframes subtle-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+@keyframes gradient-rotate {
+  0%   { --gradient-angle: 0deg; }
+  100% { --gradient-angle: 360deg; }
+}
+
+@keyframes pulse-ring {
+  0%   { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Navigation progress bar                                            */
+/* ------------------------------------------------------------------ */
+
+.nav-progress-track {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 9999;
+  pointer-events: none;
+  transition: opacity 250ms;
+}
+
+.nav-progress-bar {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    var(--p-brand-400) 40%,
+    var(--accent) 80%,
+    var(--p-brand-300) 100%
+  );
+  background-size: 200% 100%;
+  animation: nav-bar-shimmer 1.8s ease-in-out infinite;
+  transition: width 400ms cubic-bezier(0.23, 1, 0.32, 1);
+  border-radius: 0 2px 2px 0;
+  box-shadow:
+    0 0 12px oklch(from var(--accent) l c h / 0.5),
+    0 0 4px oklch(from var(--accent) l c h / 0.3);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Page transitions                                                   */
+/* ------------------------------------------------------------------ */
+
+.page-transition {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 380ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 380ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.page-transition[data-visible] {
+  opacity: 1;
+  transform: none;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Utilities                                                          */
+/* ------------------------------------------------------------------ */
+
 @layer utilities {
+  /* Glass surface */
   .surface-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--card-radius, var(--radius-lg));
     box-shadow: var(--surface-elev, var(--elev-1));
+    transition:
+      transform var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out),
+      border-color var(--dur-base) var(--ease-out);
   }
 
   [data-theme="glass"] .surface-card {
     backdrop-filter: blur(var(--glass-blur, 14px)) saturate(var(--glass-saturate, 1.4));
     -webkit-backdrop-filter: blur(var(--glass-blur, 14px)) saturate(var(--glass-saturate, 1.4));
+  }
+
+  /* Card hover lift */
+  .card-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--elev-3);
+    border-color: var(--border-strong);
+  }
+
+  .card-hover:active {
+    transform: translateY(-1px);
+    box-shadow: var(--elev-2);
+  }
+
+  /* Fade-in-up entrance */
+  .animate-in {
+    animation: fade-in-up 500ms var(--ease-out) both;
+  }
+
+  /* Stagger children: each child delays by its index */
+  .stagger-children > * {
+    animation: fade-in-up 500ms var(--ease-out) both;
+  }
+  .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 120ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 240ms; }
+  .stagger-children > *:nth-child(6) { animation-delay: 300ms; }
+  .stagger-children > *:nth-child(7) { animation-delay: 360ms; }
+  .stagger-children > *:nth-child(8) { animation-delay: 420ms; }
+
+  /* Shimmer skeleton */
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--bg-raised) 25%,
+      oklch(from var(--bg-card) calc(l + 0.04) c h) 50%,
+      var(--bg-raised) 75%
+    );
+    background-size: 1200px 100%;
+    animation: shimmer-sweep 2s ease-in-out infinite;
+  }
+
+  /* Glow accent border */
+  .glow-border {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glow-border::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      oklch(from var(--accent) l c h / 0.3),
+      transparent 40%,
+      transparent 60%,
+      oklch(from var(--accent) l c h / 0.2)
+    );
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--ease-out);
+  }
+
+  .glow-border:hover::after {
+    opacity: 1;
+  }
+
+  /* Button press feedback */
+  .btn-press {
+    transition:
+      transform var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out);
+  }
+
+  .btn-press:active {
+    transform: scale(0.97);
+  }
+
+  /* Slide in right (for panels, dropdowns) */
+  .slide-in-right {
+    animation: slide-in-right 300ms var(--ease-out) both;
+  }
+
+  /* Scale in (for modals, popovers) */
+  .scale-in {
+    animation: scale-in 200ms var(--ease-out) both;
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    background: linear-gradient(135deg, var(--accent), var(--p-brand-400));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Ambient mesh gradient background */
+  .ambient-mesh {
+    position: relative;
+  }
+
+  .ambient-mesh::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 50% at 10% 20%, oklch(from var(--accent) l c h / 0.04), transparent),
+      radial-gradient(ellipse 50% 60% at 80% 80%, oklch(from var(--p-brand-300) l c h / 0.03), transparent),
+      radial-gradient(ellipse 70% 40% at 50% 50%, oklch(from var(--state-info) l c h / 0.02), transparent);
   }
 }

@@ -115,55 +115,94 @@ export function NotificationBell() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
-        className="relative rounded-[var(--radius-sm)] p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-raised)] hover:text-[var(--text)]"
+        className="topbar-btn relative rounded-[var(--radius-md)] p-2 text-[var(--text-muted)] transition-all hover:bg-[var(--bg-raised)] hover:text-[var(--text)]"
       >
         <Icon name="bell" size={16} />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+          <span
+            className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
+            style={{
+              background: "linear-gradient(135deg, oklch(0.65 0.25 25), oklch(0.60 0.22 15))",
+              boxShadow: "0 0 8px oklch(0.65 0.25 25 / 0.5)",
+              animation: "pulse-ring 2s ease-out infinite",
+            }}
+          >
             {unread > 99 ? "99+" : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-80 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--bg-card)] shadow-lg">
-          <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-2.5">
-            <span className="text-sm font-semibold">Notifications</span>
+        <div
+          className="absolute right-0 top-full z-50 mt-2 w-[340px] overflow-hidden rounded-[var(--radius-lg)] border shadow-xl scale-in"
+          style={{
+            background: "oklch(from var(--bg-card) l c h / 0.92)",
+            backdropFilter: "blur(16px) saturate(1.4)",
+            WebkitBackdropFilter: "blur(16px) saturate(1.4)",
+            borderColor: "oklch(from var(--border) l c h / 0.5)",
+            boxShadow: "0 20px 60px -12px oklch(0 0 0 / 0.25), 0 0 30px oklch(from var(--accent) l c h / 0.06)",
+          }}
+        >
+          <div
+            className="flex items-center justify-between px-4 py-3"
+            style={{ borderBottom: "1px solid oklch(from var(--border) l c h / 0.4)" }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-[var(--text-strong)]">Notifications</span>
+              {unread > 0 && (
+                <span
+                  className="flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white"
+                  style={{ background: "var(--accent)" }}
+                >
+                  {unread}
+                </span>
+              )}
+            </div>
             {unread > 0 && (
               <button
                 type="button"
                 onClick={markAllRead}
                 disabled={loading}
-                className="text-xs text-[var(--accent)] hover:underline disabled:opacity-50"
+                className="btn-press text-xs font-medium text-[var(--accent)] transition-opacity hover:underline disabled:opacity-50"
               >
-                Mark all as read
+                Mark all read
               </button>
             )}
           </div>
 
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-80 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
             {items.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-[var(--text-muted)]">
-                No notifications
+              <div className="flex flex-col items-center gap-2 px-4 py-10">
+                <Icon name="bell" size={28} className="text-[var(--text-subtle)]" />
+                <span className="text-sm text-[var(--text-muted)]">All caught up</span>
               </div>
             ) : (
-              items.map((item) => (
+              items.map((item, i) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => handleClick(item)}
-                  className={`flex w-full gap-3 border-b border-[var(--border)] px-4 py-3 text-left transition-colors hover:bg-[var(--bg-raised)] ${
-                    !item.read ? "bg-[var(--bg-raised)]/50" : ""
-                  }`}
+                  className="group flex w-full gap-3 px-4 py-3 text-left transition-all hover:bg-[var(--bg-raised)]"
+                  style={{
+                    borderBottom: i < items.length - 1 ? "1px solid oklch(from var(--border) l c h / 0.3)" : undefined,
+                    animation: `fade-in-up 300ms ease-out ${i * 40}ms both`,
+                  }}
                 >
-                  <div className="mt-0.5 shrink-0">
-                    {!item.read && (
-                      <span className="block h-2 w-2 rounded-full bg-[var(--accent)]" />
+                  <div className="mt-1 shrink-0">
+                    {!item.read ? (
+                      <span
+                        className="block h-2 w-2 rounded-full"
+                        style={{
+                          background: "var(--accent)",
+                          boxShadow: "0 0 6px oklch(from var(--accent) l c h / 0.5)",
+                        }}
+                      />
+                    ) : (
+                      <span className="block h-2 w-2" />
                     )}
-                    {item.read && <span className="block h-2 w-2" />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">
+                    <div className={`truncate text-sm ${!item.read ? "font-semibold text-[var(--text-strong)]" : "font-medium text-[var(--text)]"}`}>
                       {item.title}
                     </div>
                     {item.body && (
@@ -175,6 +214,11 @@ export function NotificationBell() {
                       {timeAgo(item.created_at)}
                     </div>
                   </div>
+                  <Icon
+                    name="chevron-right"
+                    size={14}
+                    className="mt-1 shrink-0 text-[var(--text-subtle)] opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100"
+                  />
                 </button>
               ))
             )}

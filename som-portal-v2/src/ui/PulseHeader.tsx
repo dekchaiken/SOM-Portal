@@ -28,7 +28,7 @@ export function PulseHeader({
   return (
     <header
       className={cn(
-        "flex min-w-0 flex-wrap items-center justify-between gap-4 rounded-[var(--radius-card,10px)] border px-5 py-4",
+        "relative flex min-w-0 flex-wrap items-center justify-between gap-4 overflow-hidden rounded-[var(--radius-card,10px)] border px-5 py-4",
         className,
       )}
       style={{
@@ -37,13 +37,23 @@ export function PulseHeader({
       }}
       {...rest}
     >
-      <div className="flex min-w-0 flex-col gap-1">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "linear-gradient(135deg, oklch(from var(--accent) l c h / 0.04) 0%, transparent 60%)",
+        }}
+      />
+      <div className="relative flex min-w-0 flex-col gap-1">
         <div className="flex items-center gap-2">
           {live ? (
             <span
               aria-hidden
-              className="relative inline-block h-2 w-2 rounded-full"
-              style={{ background: "var(--pulse-dot)" }}
+              className="relative inline-block h-2.5 w-2.5 rounded-full"
+              style={{
+                background: "var(--pulse-dot)",
+                boxShadow: "0 0 8px oklch(from var(--pulse-dot) l c h / 0.5)",
+              }}
             >
               <span
                 className="absolute inset-0 inline-block rounded-full"
@@ -54,14 +64,14 @@ export function PulseHeader({
               />
             </span>
           ) : null}
-          <h1 className="truncate text-xl font-semibold">{title}</h1>
+          <h1 className="truncate text-xl font-semibold text-[var(--text-strong)]">{title}</h1>
         </div>
         {subtitle ? (
           <p className="truncate text-sm text-[var(--text-muted)]">{subtitle}</p>
         ) : null}
       </div>
       {actions ? (
-        <div className="flex min-w-0 shrink-0 items-center gap-2">{actions}</div>
+        <div className="relative flex min-w-0 shrink-0 items-center gap-2">{actions}</div>
       ) : null}
       <style>{`
         @keyframes pulse-ping {
