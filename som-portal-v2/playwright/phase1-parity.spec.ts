@@ -138,6 +138,23 @@ test.describe('team isolation and view-only share (TC-TEAM)', () => {
   });
 });
 
+test.describe('tool visibility per team (TC-TEAM-UI)', () => {
+  test('team ss sees only its own tools in the sidebar and dashboard', async ({ page }) => {
+    await loginAs(page, 'qa.ss');
+    await page.goto('/v2/dashboard');
+    await expect(page.getByRole('link', { name: 'Service Board' }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Restart Monitor' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Jenkins Build' })).toHaveCount(0);
+  });
+
+  test('team sm sees Jira Templates on the dashboard, but not Jenkins Build (no jenkins-build feature)', async ({ page }) => {
+    await loginAs(page, 'qa.user');
+    await page.goto('/v2/dashboard');
+    await expect(page.getByRole('link', { name: 'Jira Templates' }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Jenkins Build' })).toHaveCount(0);
+  });
+});
+
 test.describe('security (TC-SESS)', () => {
   test('forgot-password does not log the reset URL', async () => {
     const src = fs.readFileSync(

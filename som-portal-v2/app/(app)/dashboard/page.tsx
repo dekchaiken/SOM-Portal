@@ -16,6 +16,7 @@ import { ForbiddenError } from "@/lib/errors";
 import { requireBoardRead } from "@/board/access";
 import { listPosts } from "@/board/service";
 import Link from "next/link";
+import { teamFeatures } from "@/team/features";
 
 export const metadata = { title: "Dashboard · SOM Portal" };
 export const dynamic = "force-dynamic";
@@ -71,6 +72,7 @@ function greet(hour: number): string {
 export default async function DashboardPage() {
   const session = await getSession();
   const stats = await loadBoardStats();
+  const granted = new Set(session ? await teamFeatures(session.team).catch(() => [] as string[]) : []);
   // Bangkok time for greeting — the users are here.
   const bkkHour = new Date(
     new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }),
@@ -209,11 +211,11 @@ export default async function DashboardPage() {
             <CardContent>
               <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr))]">
                 {[
-                  { label: "Board", href: "/v2/board", icon: "layers" as const, tag: "ops" },
-                  { label: "Jira Templates", href: "/v2/jira-templates", icon: "file" as const, tag: "ops" },
-                  { label: "Jenkins Build", href: "/v2/jenkins-build", icon: "hammer" as const, tag: "ops" },
-                  { label: "Settings", href: "/v2/settings", icon: "shield" as const, tag: "account" },
-                ].map((t) => (
+                  { label: "Board", href: "/v2/board", icon: "layers" as const, tag: "ops", feature: "board" },
+                  { label: "Jira Templates", href: "/v2/jira-templates", icon: "file" as const, tag: "ops", feature: "jira-templates-shared" },
+                  { label: "Jenkins Build", href: "/v2/jenkins-build", icon: "hammer" as const, tag: "ops", feature: "jenkins-build" },
+                  { label: "Settings", href: "/v2/settings", icon: "shield" as const, tag: "account", feature: null },
+                ].filter((t) => t.feature === null || granted.has(t.feature)).map((t) => (
                   <a
                     key={t.label}
                     href={t.href}
