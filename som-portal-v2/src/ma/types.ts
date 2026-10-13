@@ -127,6 +127,8 @@ export const MAStatusItemSchema = z.object({
   updated_at: z.string().default(''),
   updated_by: z.string().default(''),
   category: z.string().default(''),
+  link: z.string().optional(),
+  critical: z.boolean().optional(),
 });
 export type MAStatusItem = z.infer<typeof MAStatusItemSchema>;
 
@@ -162,6 +164,8 @@ export const MAStatusServiceSchema = z
     link: z.string().nullable().optional(),
   })
   .passthrough();
+
+export type MAStatusSource = z.infer<typeof MAStatusSourceSchema>;
 
 export const MAStatusCacheSchema = z.object({
   ts: z.number().default(0),
