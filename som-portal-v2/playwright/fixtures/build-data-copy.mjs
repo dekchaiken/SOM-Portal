@@ -21,7 +21,8 @@ if (path.resolve(src) === path.resolve(dst)) {
   process.exit(1);
 }
 
-const MAX = 2 * 1024 * 1024;
+// Real data includes files over 15 MB (ma-services.json). The copy takes every JSON file up to 64 MB.
+const MAX = 64 * 1024 * 1024;
 fs.rmSync(dst, { recursive: true, force: true });
 fs.mkdirSync(path.join(dst, 'sm'), { recursive: true });
 
