@@ -9,6 +9,7 @@
 // a console log instead of SMTP (v1's forgot-password had no such escape, so
 // this is additive).
 
+import { appendMailLog } from './logs';
 import { resolveMailConfig, type MailConfig } from './mail-config';
 
 export interface SendMailArgs {
@@ -82,13 +83,36 @@ async function buildNodemailerTransport(cfg: MailConfig): Promise<MailTransport>
   };
 }
 
+/** Send, then record the attempt in the team's mail log (v1 parity). Logging never fails the send. */
 export async function sendMail(args: SendMailArgs): Promise<SendMailResult> {
+  const result = await deliver(args);
+  try {
+    await appendMailLog(args.team ?? null, {
+      to: normaliseList(args.to),
+      cc: normaliseList(args.cc),
+      subject: args.subject ?? '',
+      type: args.log_type ?? 'transactional',
+      status: result.ok ? 'sent' : 'failed',
+      error: result.error ?? '',
+      sent_by: args.sent_by ?? '',
+      sent_by_name: args.sent_by_name ?? '',
+    });
+  } catch (e) {
+    console.error('[mail] could not write mail log', e);
+  }
+  return result;
+}
+
+async function deliver(args: SendMailArgs): Promise<SendMailResult> {
   const { config, configured } = await resolveMailConfig(args.team ?? null);
 
   const to = normaliseList(args.to);
   if (to.length === 0) return { ok: false, error: 'No valid recipient' };
   if (!args.subject || !args.html) {
     return { ok: false, error: 'Subject and body are required' };
+  }
+  if (!configured) {
+    return { ok: false, error: 'This team has no mailbox set up. Ask a team admin to fill in Mail Config.' };
   }
 
   const cc = normaliseList(args.cc ?? config.global_cc);
@@ -105,10 +129,6 @@ export async function sendMail(args: SendMailArgs): Promise<SendMailResult> {
         `type=${args.log_type ?? 'transactional'}`,
     );
     return { ok: true, error: null, dryRun: true };
-  }
-
-  if (!configured) {
-    return { ok: false, error: 'SMTP host or from_email not configured' };
   }
 
   try {

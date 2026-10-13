@@ -78,6 +78,8 @@ users.push(
   { ...qa('usr_qa_smadmin', 'qa.smadmin', 'sm'), role: 'sm_admin' },
   qa('usr_qa_dev', 'qa.dev', 'dev'),
   qa('usr_qa_quiz', 'qa.quiz', 'sm'),
+  { ...qa('usr_qa_super', 'qa.super', 'sm'), role: 'super_admin' },
+  { ...qa('usr_qa_devadmin', 'qa.devadmin', 'dev'), role: 'sm_admin' },
   qa('usr_qa_exam', 'qa.exam', 'sm'),
 );
 fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));

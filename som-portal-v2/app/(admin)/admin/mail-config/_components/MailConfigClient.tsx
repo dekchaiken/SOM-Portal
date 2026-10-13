@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Icon } from "@/icons";
+import { parseRecipients } from "@/mail/recipients";
 
 interface MailConfig {
   smtp_host: string;
@@ -34,6 +35,7 @@ interface MailLog {
 
 export function MailConfigClient() {
   const [config, setConfig] = React.useState<MailConfig | null>(null);
+  const [ccText, setCcText] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [message, setMessage] = React.useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [testSteps, setTestSteps] = React.useState<TestStep[]>([]);
@@ -43,14 +45,25 @@ export function MailConfigClient() {
   const [logs, setLogs] = React.useState<MailLog[]>([]);
   const [logsTotal, setLogsTotal] = React.useState(0);
 
+  const [teams, setTeams] = React.useState<{ slug: string; name: string }[]>([]);
+  // "" means the admin's own team. Only super_admin gets the team list.
+  const [teamSlug, setTeamSlug] = React.useState("");
+
   React.useEffect(() => {
-    fetchConfig();
+    fetch("/v2/api/mail/teams")
+      .then((r) => r.json())
+      .then((j) => { if (j.ok) setTeams(j.data); })
+      .catch(() => {});
     fetchLogs();
   }, []);
 
-  async function fetchConfig() {
+  React.useEffect(() => {
+    void fetchConfig(teamSlug);
+  }, [teamSlug]);
+
+  async function fetchConfig(slug: string) {
     try {
-      const res = await fetch("/v2/api/mail/config");
+      const res = await fetch(`/v2/api/mail/config${slug ? `?team=${encodeURIComponent(slug)}` : ""}`);
       const json = await res.json();
       if (json.ok) setConfig(json.data);
     } catch { /* ignore */ }
@@ -84,6 +97,7 @@ export function MailConfigClient() {
         email_signature: config.email_signature,
       };
       if (config.smtp_password) body.smtp_password = config.smtp_password;
+      if (teamSlug) body.team = teamSlug;
       const res = await fetch("/v2/api/mail/config", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -156,6 +170,21 @@ export function MailConfigClient() {
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Mail Configuration</h1>
+      {teams.length > 0 ? (
+        <label className="mt-3 flex max-w-sm flex-col gap-1 text-sm">
+          <span className="font-medium">Team</span>
+          <select
+            value={teamSlug}
+            onChange={(e) => setTeamSlug(e.target.value)}
+            className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-canvas)] px-3 py-2 text-sm"
+          >
+            <option value="">My team</option>
+            {teams.map((t) => (
+              <option key={t.slug} value={t.slug}>{t.name}</option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       {message && (
         <div
@@ -240,6 +269,32 @@ export function MailConfigClient() {
               type="email"
               value={config.from_email}
               onChange={(e) => update("from_email", e.target.value)}
+              className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-canvas)] px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="mb-1 block text-sm font-medium">Global CC</span>
+            <input
+              value={ccText ?? config.global_cc.join(", ")}
+              onChange={(e) => {
+                setCcText(e.target.value);
+                setConfig({ ...config, global_cc: parseRecipients(e.target.value).valid });
+              }}
+              placeholder="Added to every mail, comma separated"
+              className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-canvas)] px-3 py-2 text-sm"
+            />
+            {parseRecipients(ccText ?? "").invalid.length > 0 ? (
+              <span className="mt-1 block text-xs text-[var(--state-danger)]">
+                Not a valid address: {parseRecipients(ccText ?? "").invalid.join(", ")}
+              </span>
+            ) : null}
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="mb-1 block text-sm font-medium">Email signature</span>
+            <textarea
+              rows={4}
+              value={config.email_signature}
+              onChange={(e) => update("email_signature", e.target.value)}
               className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-canvas)] px-3 py-2 text-sm"
             />
           </label>

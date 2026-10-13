@@ -48,12 +48,12 @@ export async function resolveMailConfig(team?: string | null): Promise<ResolvedM
   let source: string | null = null;
 
   if (team) {
+    // Each team sends only from its own mailbox. A team without a mailbox is not
+    // configured. It never falls back to another team's file.
     raw = await readAt(team);
-    if (raw) source = team;
-  }
-  if (!raw) {
-    // v1 unauthenticated behaviour: root data/mail_config.json. '.' collapses
-    // to the data dir in JsonAdapter.resolvePath().
+    source = team;
+  } else {
+    // No team is known (legacy unauthenticated path): v1 root data/mail_config.json.
     raw = await readAt('.');
     source = null;
   }
