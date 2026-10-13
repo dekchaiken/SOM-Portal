@@ -6,6 +6,7 @@ import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { NavigationProgress } from "@/ui/NavigationProgress";
 import { PageTransition } from "@/ui/PageTransition";
+import { AppAmbientBg } from "@/ui/flair/AppAmbientBg";
 import type { SessionLike } from "@/config/nav";
 
 export interface AppShellProps {
@@ -18,7 +19,8 @@ export function AppShell({ session, children }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   return (
-    <div className="min-h-dvh ambient-mesh">
+    <div className="min-h-dvh">
+      <AppAmbientBg />
       <React.Suspense>
         <NavigationProgress />
       </React.Suspense>

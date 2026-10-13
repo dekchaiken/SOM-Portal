@@ -1,0 +1,11 @@
+import { SkeletonToolbar, SkeletonTable } from "@/ui/Skeleton";
+
+export default function Loading() {
+  return (
+    <div className="flex flex-col gap-5 stagger-children">
+      <div className="skeleton-shimmer h-20 rounded-[var(--radius-card)]" />
+      <SkeletonToolbar />
+      <SkeletonTable rows={10} />
+    </div>
+  );
+}
