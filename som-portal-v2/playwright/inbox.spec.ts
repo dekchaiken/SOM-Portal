@@ -38,4 +38,16 @@ test.describe('team inbox (TC-INBOX)', () => {
     await expect(page.getByRole('main').getByText('Mail for your team, from the team mailbox')).toBeVisible();
     await expect(page.getByRole('main').getByText(/no mailbox set up/)).toBeVisible();
   });
+
+  test('branding settings save and read back (header and footer)', async ({ request }) => {
+    await login(request, 'qa.smadmin');
+    const put = await request.put('/v2/api/mail/config', {
+      data: { header_text: 'QA header', footer_text: 'SMC: 091-696-9885 (24hrs)', brand_color: '#123456', brand_enabled: true },
+    });
+    expect((await put.json()).ok).toBe(true);
+    const cfg = (await (await request.get('/v2/api/mail/config')).json()).data;
+    expect(cfg.footer_text).toBe('SMC: 091-696-9885 (24hrs)');
+    expect(cfg.brand_color).toBe('#123456');
+    expect(cfg.header_text).toBe('QA header');
+  });
 });

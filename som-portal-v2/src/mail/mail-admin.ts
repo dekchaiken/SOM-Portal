@@ -38,6 +38,10 @@ export const UpdateMailConfigSchema = z.object({
   from_email: z.string().optional(),
   global_cc: z.array(z.string().email()).optional(),
   email_signature: z.string().optional(),
+  brand_enabled: z.boolean().optional(),
+  brand_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  header_text: z.string().max(120).optional(),
+  footer_text: z.string().max(2000).optional(),
 });
 
 export type UpdateMailConfig = z.infer<typeof UpdateMailConfigSchema>;
@@ -85,6 +89,10 @@ export async function updateMailConfig(
   if (updates.from_email !== undefined) cfg.from_email = updates.from_email;
   if (updates.global_cc !== undefined) cfg.global_cc = updates.global_cc;
   if (updates.email_signature !== undefined) cfg.email_signature = updates.email_signature;
+  if (updates.brand_enabled !== undefined) cfg.brand_enabled = updates.brand_enabled;
+  if (updates.brand_color !== undefined) cfg.brand_color = updates.brand_color;
+  if (updates.header_text !== undefined) cfg.header_text = updates.header_text;
+  if (updates.footer_text !== undefined) cfg.footer_text = updates.footer_text;
 
   await writeTeamFile(MAIL_CONFIG_FILE, cfg, MailConfigFileSchema, scope);
 

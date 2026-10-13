@@ -12,6 +12,7 @@ const Body = z.object({
   folder: z.string().default('INBOX'),
   uid: z.number().int().positive(),
   body: z.string().min(1).max(20000),
+  all: z.boolean().optional().default(false),
 });
 
 export async function POST(req: NextRequest) {

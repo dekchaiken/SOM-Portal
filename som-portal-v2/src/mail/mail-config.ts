@@ -30,6 +30,10 @@ export const MailConfigSchema = z
     from_email: z.string().default(''),
     global_cc: z.array(z.string()).default([]),
     email_signature: z.string().default(''),
+    brand_enabled: z.boolean().default(true),
+    brand_color: z.string().default('#F26419'),
+    header_text: z.string().default(''),
+    footer_text: z.string().default(''),
   })
   .passthrough();
 
