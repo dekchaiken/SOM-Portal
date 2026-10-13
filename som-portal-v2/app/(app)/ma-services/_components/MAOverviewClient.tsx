@@ -50,7 +50,7 @@ export function MAOverviewClient() {
   const [year, setYear] = React.useState(new Date().getFullYear());
   const [data, setData] = React.useState<Overview | null>(null);
   const [error, setError] = React.useState<string | null>(null);
-  const [pipeOpen, setPipeOpen] = React.useState(false);
+  const [pipeOpen, setPipeOpen] = React.useState(true);
 
   const refresh = React.useCallback(async () => {
     setData(null);
@@ -137,10 +137,11 @@ export function MAOverviewClient() {
                 <ul className="mt-4 flex max-h-72 flex-col divide-y divide-[var(--border-subtle)] overflow-y-auto">
                   {(j?.pipeline.items ?? []).map((t) => (
                     <li key={t.key} className="flex items-start gap-3 py-2.5 text-sm">
-                      <span className="shrink-0 font-mono text-xs text-[var(--accent)]">{t.key}</span>
+                      <span className="shrink-0 rounded-md bg-[var(--bg-raised)] px-2 py-0.5 font-mono text-xs font-semibold text-[var(--accent)]">{t.key}</span>
                       <span className="text-[var(--text)]">{t.summary}</span>
                     </li>
                   ))}
+                  {(j?.pipeline.items ?? []).length === 0 ? <li className="py-4 text-sm text-[var(--text-muted)]">No active items</li> : null}
                 </ul>
               ) : null}
             </Card>
