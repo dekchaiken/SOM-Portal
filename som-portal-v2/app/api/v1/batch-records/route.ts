@@ -28,7 +28,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /** v1: layout.js `{ id: 'batch-monitor', feature: 'batch-monitor' }`. */
-export const BATCH_FEATURE = 'batch-monitor';
+const BATCH_FEATURE = 'batch-monitor';
 
 export async function GET(req: NextRequest): Promise<Response> {
   return handle(async () => {
