@@ -44,7 +44,7 @@ export function KpiCard({
   const deltaDown = deltaKnown && deltaPct! < 0;
 
   return (
-    <div className={cn("surface-card p-4 min-w-0", className)}>
+    <div className={cn("surface-card card-hover glow-border p-4 min-w-0", className)}>
       <div className="flex items-center justify-between gap-2">
         <span className="text-[11px] font-medium uppercase tracking-wider text-[var(--stat-card-label-fg)]">
           {label}

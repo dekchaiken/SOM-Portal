@@ -34,9 +34,9 @@ export default async function DashboardPage() {
   const niceName = first.charAt(0).toUpperCase() + first.slice(1);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 stagger-children">
       {/* Greeting header */}
-      <header className="stagger-in flex flex-wrap items-end justify-between gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-muted)]">
             {greet(bkkHour)}, {new Date().toLocaleDateString("en-GB", {
@@ -45,25 +45,29 @@ export default async function DashboardPage() {
               month: "long",
             })}
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--text-strong)]">
-            Hi, {niceName}{" "}
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+            <span className="text-gradient">Hi, {niceName}</span>{" "}
             <span className="text-[var(--text-muted)]">
               — here's what's happening
             </span>
           </h1>
         </div>
-        <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+        <div className="flex items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--state-success)] px-3 py-1.5 text-xs text-[var(--state-success)]"
+          style={{ background: "oklch(from var(--state-success) l c h / 0.08)" }}
+        >
           <span
             aria-hidden
-            className="inline-block h-2 w-2 rounded-full"
+            className="relative inline-block h-2 w-2 rounded-full"
             style={{ background: "var(--state-success)" }}
-          />
-          <span>All systems operational</span>
+          >
+            <span className="absolute inset-0 rounded-full" style={{ background: "var(--state-success)", animation: "pulse-ring 2s ease-out infinite" }} />
+          </span>
+          <span className="font-medium">All systems operational</span>
         </div>
       </header>
 
       {/* Pulse header (page banner) */}
-      <div className="stagger-in" style={{ animationDelay: "40ms" }}>
+      <div>
         <PulseHeader
           title="Service Operations"
           subtitle="Live service health across SM team surfaces"
@@ -88,12 +92,8 @@ export default async function DashboardPage() {
           { label: "Resolved Today", value: "18", icon: "check-circle", tone: "success", deltaPct: 12.5, deltaLabel: "vs yesterday" },
           { label: "Active Builds", value: "7", icon: "hammer", deltaPct: 0, deltaLabel: "steady" },
           { label: "SLA Breach Risk", value: "2", icon: "flag", tone: "danger", deltaPct: 100 },
-        ].map((k, i) => (
-          <div
-            key={k.label}
-            className="stagger-in"
-            style={{ animationDelay: `${80 + i * 60}ms` }}
-          >
+        ].map((k) => (
+          <div key={k.label}>
             <KpiCard
               label={k.label}
               value={k.value}
@@ -108,8 +108,8 @@ export default async function DashboardPage() {
 
       {/* Content row */}
       <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))]">
-        <div className="stagger-in" style={{ animationDelay: "320ms" }}>
-          <Card>
+        <div>
+          <Card className="card-hover">
             <CardHeader>
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -151,8 +151,8 @@ export default async function DashboardPage() {
           </Card>
         </div>
 
-        <div className="stagger-in" style={{ animationDelay: "380ms" }}>
-          <Card>
+        <div>
+          <Card className="card-hover">
             <CardHeader>
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -174,7 +174,7 @@ export default async function DashboardPage() {
                   <a
                     key={t.label}
                     href={t.href}
-                    className="group flex items-center gap-3 rounded-[var(--radius-md)] border bg-[var(--bg-raised)] p-3 transition-colors hover:border-[var(--accent)]"
+                    className="group glow-border flex items-center gap-3 rounded-[var(--radius-md)] border bg-[var(--bg-raised)] p-3 transition-all hover:border-[var(--accent)] hover:-translate-y-0.5 hover:shadow-md"
                     style={{ borderColor: "var(--border)" }}
                   >
                     <span
@@ -208,8 +208,8 @@ export default async function DashboardPage() {
       </div>
 
       {/* Service health placeholder */}
-      <div className="stagger-in" style={{ animationDelay: "460ms" }}>
-        <Card>
+      <div>
+        <Card className="card-hover">
           <CardHeader>
             <CardTitle className="text-sm">Service Health</CardTitle>
             <CardDescription>Thanos aggregates · last 15 minutes</CardDescription>
@@ -225,18 +225,6 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <style>{`
-        .stagger-in {
-          animation: s-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
-        }
-        @keyframes s-in {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: none; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .stagger-in { animation: none; }
-        }
-      `}</style>
     </div>
   );
 }
