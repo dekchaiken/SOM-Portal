@@ -1,10 +1,10 @@
 // src/restart-monitor/runways.ts
-// Read grafana-runways.json (team-scoped) and resolve runway configs.
-import { readTeamFile } from '@/team/scope';
+// Read grafana-runways.json (SM-shared) and resolve runway configs.
+import { readSharedFile } from '@/team/scope';
 import { RunwaysFile, type RunwayConfig } from './types';
 
 export async function listRunways(): Promise<RunwayConfig[]> {
-  const file = await readTeamFile('grafana-runways.json', RunwaysFile);
+  const file = await readSharedFile('grafana-runways.json', RunwaysFile);
   return file.runways;
 }
 

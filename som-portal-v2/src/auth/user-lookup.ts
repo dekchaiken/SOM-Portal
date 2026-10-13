@@ -22,6 +22,7 @@ export interface UserRecord {
   dev_subteam?: string;
   password_changed_at?: string;
   created_at?: string;
+  team?: string;
 }
 
 export interface UserHit {
@@ -71,14 +72,14 @@ export async function findUserByUsername(username: string): Promise<UserHit | nu
     const file = path.join(dataDir, team, "users.json");
     const users = await readUsersFile(file);
     const hit = users.find((u) => u.username?.toLowerCase() === needle);
-    if (hit) return { user: hit, team };
+    if (hit) return { user: hit, team: hit.team?.trim() || team };
   }
 
   // Fallback: data/users.json (global, legacy / super_admin area).
   const globalFile = path.join(dataDir, "users.json");
   const globalUsers = await readUsersFile(globalFile);
   const hit = globalUsers.find((u) => u.username?.toLowerCase() === needle);
-  if (hit) return { user: hit, team: hit.role === "super_admin" ? "sm" : "sm" };
+  if (hit) return { user: hit, team: hit.team?.trim() || "sm" };
 
   return null;
 }
