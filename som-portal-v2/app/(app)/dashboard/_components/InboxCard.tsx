@@ -69,8 +69,8 @@ export function InboxCard({ inbox }: { inbox: InboxSummary }) {
 
       {openUid !== null ? (
         <div role="dialog" aria-modal="true" aria-label="Message" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <button type="button" aria-label="Close" onClick={() => setOpenUid(null)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="glass relative flex max-h-[90vh] w-full max-w-3xl flex-col gap-4 overflow-y-auto rounded-[var(--radius-card)] p-6">
+          <button type="button" aria-label="Close" onClick={() => setOpenUid(null)} className="absolute inset-0 bg-[oklch(0.15_0.01_262/0.55)] backdrop-blur-md" />
+          <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col gap-4 overflow-y-auto rounded-[var(--radius-card)] border border-[var(--border)] bg-[var(--bg-card)] p-6 shadow-2xl">
             <div className="flex justify-end">
               <button type="button" onClick={() => setOpenUid(null)} aria-label="Close message" className="text-[var(--text-muted)] hover:text-[var(--text)]">
                 <Icon name="x" size={16} />
