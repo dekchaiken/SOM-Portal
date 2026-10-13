@@ -19,6 +19,9 @@ export interface DataAdapter {
   /** Run `fn` with an exclusive lock on the file. */
   withLock<T>(scope: TeamScope, file: string, fn: () => Promise<T>): Promise<T>;
 
+  /** Read-modify-write under one file lock. `fn` receives the current value (null if missing). */
+  update<T = unknown>(scope: TeamScope, file: string, fn: (current: T | null) => T | Promise<T>): Promise<T>;
+
   /** Absolute path for a given scope+file. */
   resolvePath(scope: TeamScope, file: string): string;
 }

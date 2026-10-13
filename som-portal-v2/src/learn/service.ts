@@ -5,7 +5,7 @@ import type { Session } from '@/auth/session';
 import { ADMIN_ROLES } from '@/auth/policy';
 import { requireTeamFeature } from '@/team/features';
 import { ForbiddenError, NotFoundError, ValidationError } from '@/lib/errors';
-import { readCourses, readLessons, readPhases, readProgress, readQuizzes, writeProgress } from './store';
+import { readCourses, readLessons, readPhases, readProgress, readQuizzes, mutateProgress } from './store';
 import { markOpened, recordCompletion, recordQuizAttempt } from './progress';
 import { learnerQuestion, scoreQuiz, type Answers } from './quiz';
 import { courseStatus, percentPassed, phaseStatuses, type CourseStatus, type PhaseStatus } from './rules';
@@ -152,8 +152,7 @@ export async function getPhaseLessons(
     if (phase.my_status === 'locked') throw new ForbiddenError('Phase is locked');
     myStatus = phase.my_status;
     if (phase.my_status === 'unlocked') {
-      const rows = await readProgress(team);
-      await writeProgress(team, markOpened(rows, session.sub, phaseId, new Date().toISOString()));
+      await mutateProgress(team, (rows) => markOpened(rows, session.sub, phaseId, new Date().toISOString()));
     }
   }
 
@@ -216,8 +215,9 @@ export async function submitPhaseQuiz(session: Session, phaseId: string, answers
 
   const result = scoreQuiz(quiz, answers);
   const now = new Date().toISOString();
-  const rows = recordQuizAttempt(await readProgress(session.team), session.sub, phaseId, result.percent, phase.pass_score, now);
-  await writeProgress(session.team, rows);
+  const rows = await mutateProgress(session.team, (current) =>
+    recordQuizAttempt(current, session.sub, phaseId, result.percent, phase.pass_score, now),
+  );
   const mine = rows.find((r) => r.user_id === session.sub && r.phase_id === phaseId)!;
 
   return {
@@ -238,8 +238,9 @@ export async function completePhase(session: Session, phaseId: string) {
   if (await quizForPhase(session.team, courseId, phaseId)) {
     throw new ValidationError('This phase has a quiz. Submit your answers first.');
   }
-  const rows = recordCompletion(await readProgress(session.team), session.sub, phaseId, new Date().toISOString());
-  await writeProgress(session.team, rows);
+  const rows = await mutateProgress(session.team, (current) =>
+    recordCompletion(current, session.sub, phaseId, new Date().toISOString()),
+  );
   const mine = rows.find((r) => r.user_id === session.sub && r.phase_id === phaseId)!;
   return { phase_id: phaseId, status: mine.status, attempts: mine.attempts };
 }

@@ -78,6 +78,7 @@ users.push(
   { ...qa('usr_qa_smadmin', 'qa.smadmin', 'sm'), role: 'sm_admin' },
   qa('usr_qa_dev', 'qa.dev', 'dev'),
   qa('usr_qa_quiz', 'qa.quiz', 'sm'),
+  qa('usr_qa_exam', 'qa.exam', 'sm'),
 );
 fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
 
@@ -89,5 +90,60 @@ for (const t of teams) {
   }
 }
 fs.writeFileSync(teamsPath, JSON.stringify(teams, null, 2));
+
+// A deterministic exam for the exam tests: published, one attempt, every question type.
+// The v1 exam list and attempts are copied so write-path tests see the real rows.
+const examsSrc = path.join(src, 'sm', 'exams');
+const examsCopy = path.join(dst, 'sm', 'exams', 'exams.json');
+fs.mkdirSync(path.join(dst, 'sm', 'exams'), { recursive: true });
+for (const f of ['exams.json', 'attempts.json']) {
+  if (fs.existsSync(path.join(examsSrc, f))) fs.copyFileSync(path.join(examsSrc, f), path.join(dst, 'sm', 'exams', f));
+}
+if (fs.existsSync(examsCopy)) {
+  const exams = JSON.parse(fs.readFileSync(examsCopy, 'utf8'));
+  const base = {
+    subtitle: 'QA smoke exam',
+    description: 'Fixture exam for the exam tests',
+    icon: 'flag',
+    cover_color: '#4f46e5',
+    preset: 'basic',
+    course_prerequisites: [],
+    is_popular: false,
+    shared: false,
+    owner_team: 'sm',
+    created_at: now,
+    updated_at: now,
+    config: {
+      pool: { enabled: false, total_show: 0, stratified: false, categories: [] },
+      shuffle_questions: { enabled: false },
+      shuffle_choices: { enabled: true },
+      attempts: { enabled: true, max: 1, cooldown_minutes: 0 },
+      time_limit: { enabled: true, mode: 'total', total_minutes: 30, per_question_seconds: 0 },
+      tab_detection: { enabled: true, max_violations: 3, action: 'log', penalty_pct: 10 },
+      exam_window: { enabled: false, start: null, end: null },
+      disable_copy_paste: { enabled: false },
+      show_results: { mode: 'after_submit', show_answers: true, show_explains: true },
+    },
+  };
+  exams.push({ ...base, id: 'exam_qa_smoke', title: 'QA smoke exam', status: 'published', pass_score: 70 });
+  exams.push({ ...base, id: 'exam_qa_draft', title: 'QA draft exam', status: 'draft', pass_score: 70 });
+  fs.writeFileSync(examsCopy, JSON.stringify(exams, null, 2));
+  const qDir = path.join(dst, 'sm', 'exams', 'exam_qa_smoke');
+  fs.mkdirSync(qDir, { recursive: true });
+  const qbase = { category: '', image: '', match_mode: 'exact', case_sensitive: false, explain: 'Fixture explanation' };
+  fs.writeFileSync(
+    path.join(qDir, 'questions.json'),
+    JSON.stringify(
+      [
+        { ...qbase, id: 'qs1', type: 'single', prompt: 'Pick B', choices: ['A', 'B', 'C'], answer: 1 },
+        { ...qbase, id: 'qs2', type: 'truefalse', prompt: 'Sky is blue', choices: [], answer: true },
+        { ...qbase, id: 'qs3', type: 'multi', prompt: 'Pick 1 and 3', choices: ['1', '2', '3', '4'], answer: [0, 2] },
+        { ...qbase, id: 'qs4', type: 'short', prompt: 'Say hello', choices: [], answer: 'hello', match_mode: 'contains' },
+      ],
+      null,
+      2,
+    ),
+  );
+}
 
 console.log(`copy ready at ${dst}`);

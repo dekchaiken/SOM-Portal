@@ -1,11 +1,13 @@
 // som-portal-v2/src/learn/store.ts
 // Reads a team's learning files: data/<team>/courses/... (spec section 1.1).
 import { getDataAdapter } from '@/data/json-adapter';
+import { splitRows } from './rows';
 import {
   CoursesFileSchema,
   PhasesFileSchema,
   LessonsFileSchema,
   ProgressFileSchema,
+  ProgressRowSchema,
   QuizzesFileSchema,
   type Quiz,
   type Course,
@@ -41,4 +43,19 @@ export function readQuizzes(team: string, courseId: string): Promise<Quiz[]> {
 
 export async function writeProgress(team: string, rows: ProgressRow[]): Promise<void> {
   await getDataAdapter().write({ team }, 'courses/progress.json', rows);
+}
+
+/** Locked read-modify-write of a team's progress rows. */
+export async function mutateProgress(
+  team: string,
+  change: (rows: ProgressRow[]) => ProgressRow[],
+): Promise<ProgressRow[]> {
+  const next = await getDataAdapter().update<unknown[]>({ team }, 'courses/progress.json', (current) => {
+    const { valid, invalid } = splitRows(current, ProgressRowSchema);
+    return [...invalid, ...change(valid)];
+  });
+  return next.flatMap((r) => {
+    const parsed = ProgressRowSchema.safeParse(r);
+    return parsed.success ? [parsed.data] : [];
+  });
 }

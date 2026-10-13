@@ -7,10 +7,18 @@ import { listCourses } from "@/learn/service";
 import { PulseHeader } from "@/ui/PulseHeader";
 import { Card, CardContent } from "@/ui/shadcn/card";
 import { Icon } from "@/icons";
-import { AccessDenied, ProgressBar, STATUS_LABEL } from "./_shared";
+import { AccessDenied, STATUS_LABEL } from "./_shared";
+import { CardShell, Chip, CoverBand, ProgressRing, type Tone } from "./_cards";
 
 export const metadata = { title: "Learn · SOM Portal" };
 export const dynamic = "force-dynamic";
+
+const STATUS_TONE: Record<string, Tone> = {
+  completed: "success",
+  in_progress: "info",
+  not_started: "neutral",
+  locked: "warning",
+};
 
 export default async function LearnPage() {
   const session = await getSession();
@@ -33,48 +41,55 @@ export default async function LearnPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PulseHeader title="Learn" subtitle="Courses for your team" />
+      <PulseHeader
+        title="Learn"
+        subtitle="Courses for your team"
+        actions={
+          <Link href="/learn/exams" className="glass-btn glass-btn-secondary inline-flex h-9 items-center gap-2 rounded-[var(--radius)] px-3.5 text-sm font-medium">
+            <Icon name="flag" size={15} />
+            Exams
+          </Link>
+        }
+      />
       {courses.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-sm text-[var(--text-muted)]">No courses yet.</CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))]">
+        <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr))]">
           {courses.map((c) => {
             const body = (
-              <div className="glass flex h-full flex-col gap-4 rounded-[var(--radius-card)] p-5 transition-transform duration-200 hover:-translate-y-0.5">
-                <div className="flex items-start gap-3">
-                  <span
-                    className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-md)] text-white"
-                    style={{ background: c.cover_color || "#f26419" }}
-                  >
-                    <Icon name="book" size={18} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-sm font-semibold text-[var(--text-strong)]">{c.title}</h3>
-                    {c.subtitle ? <p className="line-clamp-2 text-xs text-[var(--text-muted)]">{c.subtitle}</p> : null}
+              <CardShell className={c.my_locked ? "opacity-70" : undefined}>
+                <CoverBand color={c.cover_color} fallbackIcon="book" icon={c.icon} />
+                <div className="flex flex-1 flex-col gap-4 px-5 pb-5 pt-9">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-semibold text-[var(--text-strong)]">{c.title}</h3>
+                    {c.subtitle ? <p className="mt-0.5 line-clamp-2 text-xs text-[var(--text-muted)]">{c.subtitle}</p> : null}
                   </div>
-                </div>
-                <div className="mt-auto flex flex-col gap-2">
-                  <ProgressBar percent={c.my_percent} />
-                  <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-                    <span>{c.phases_count} phases · {c.my_percent}%</span>
-                    <span className="font-medium text-[var(--text)]">{STATUS_LABEL[c.my_status]}</span>
+                  <div className="mt-auto flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 flex-col items-start gap-2">
+                      <Chip icon="layers">{c.phases_count} phases</Chip>
+                      <Chip tone={STATUS_TONE[c.my_status] ?? "neutral"} icon={c.my_status === "completed" ? "check" : undefined}>
+                        {STATUS_LABEL[c.my_status] ?? c.my_status}
+                      </Chip>
+                    </div>
+                    <ProgressRing percent={c.my_percent} />
                   </div>
                   {c.unmet_prereqs.length > 0 ? (
-                    <p className="text-[11px] text-[var(--state-warning)]">
-                      Finish first: {c.unmet_prereqs.map((u) => u.title).join(", ")}
+                    <p className="flex items-start gap-1.5 text-[11px] text-[var(--state-warning)]">
+                      <Icon name="info" size={12} className="mt-0.5 shrink-0" />
+                      <span>Finish first: {c.unmet_prereqs.map((u) => u.title).join(", ")}</span>
                     </p>
                   ) : null}
                 </div>
-              </div>
+              </CardShell>
             );
             return c.my_locked ? (
-              <div key={c.id} aria-disabled className="opacity-60">
+              <div key={c.id} aria-disabled className="block cursor-not-allowed">
                 {body}
               </div>
             ) : (
-              <Link key={c.id} href={`/learn/${c.id}`} className="block">
+              <Link key={c.id} href={`/learn/${c.id}`} className="block rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">
                 {body}
               </Link>
             );
