@@ -167,5 +167,5 @@ Phase 2 will add: service-performance, restart-monitor, restart-analyzer, opense
 |---|---|---|
 | **Phase 1** | Auth, Dashboard, Board, Jira templates, Jenkins Build, Admin users/settings, Admin perms (6 pages + perms editors) | ✅ Done 2026-10-12 |
 | **Cutover gate** | SM team dog-foods v2 for 2 weeks; nginx per-page `302 /v2/<page>` for migrated routes | 🔜 Next decision |
-| **Phase 2** | MA Status, Service Performance, Restart Analyzer, Restart Monitor, Log Explorer, Incident Launcher, Mail/notifications, 9 integrations admin pages | Not started |
+| **Phase 2** | MA Status, Service Performance, Restart Analyzer, Restart Monitor, Log Explorer, Incident Launcher, Mail/notifications, 9 integrations admin pages | Started: pages exist, many features partial (see COMPARE-PHASE2.md) |
 | **Phase 3** | Everything else: ~110 pages (admin team/content/operations/system/platform/devtools + Learn/KB + GenZ + Dev team views + legacy ops pages + maintenance screen + PHP deprecation) | Not started |

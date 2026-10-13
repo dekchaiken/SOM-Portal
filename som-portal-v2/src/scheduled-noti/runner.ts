@@ -72,27 +72,21 @@ async function sendChat(job: ScheduledJob): Promise<RunResult> {
   };
 }
 
-/**
- * Check Grafana for paused alerts (placeholder — real impl would call Grafana API).
- */
+/** Not implemented yet. Fails loudly so a run never reports success without doing work. */
 async function checkGrafanaPaused(_job: ScheduledJob): Promise<RunResult> {
-  // Placeholder: real implementation would use the Grafana MCP tools or API
   return {
-    ok: true,
-    message: 'Grafana paused alert check completed (placeholder)',
-    details: { checked_at: new Date().toISOString() },
+    ok: false,
+    message: 'grafana_paused is not implemented in v2 yet',
+    details: {},
   };
 }
 
-/**
- * Compile shift summary email (placeholder).
- */
+/** Not implemented yet. Fails loudly so a run never reports success without doing work. */
 async function sendShiftSummary(_job: ScheduledJob): Promise<RunResult> {
-  // Placeholder: real implementation would compile board/activity data and email
   return {
-    ok: true,
-    message: 'Shift summary compiled (placeholder)',
-    details: { compiled_at: new Date().toISOString() },
+    ok: false,
+    message: 'shift_summary is not implemented in v2 yet',
+    details: {},
   };
 }
 
