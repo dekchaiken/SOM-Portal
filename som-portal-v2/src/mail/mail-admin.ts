@@ -2,6 +2,9 @@
 // SMTP config CRUD + test connection — admin only.
 // v1 parity: api/mail-config/index.php, api/mail/test-connection.php
 
+import { ValidationError } from '@/lib/errors';
+import { hasMailKey, encryptSecret } from './secret';
+import { resolveSmtpPassword } from './mail-config';
 import { z } from 'zod';
 import { readTeamFile, writeTeamFile } from '@/team/scope';
 import { requireRole } from '@/auth/policy';
@@ -49,7 +52,8 @@ export async function getMailConfig(team?: string): Promise<MailConfig & { smtp_
   return {
     ...cfg,
     smtp_password: '',
-    smtp_password_set: Boolean(cfg.smtp_password),
+    smtp_password_enc: '',
+    smtp_password_set: Boolean(cfg.smtp_password_enc || cfg.smtp_password),
     team: scope?.team ?? session.team,
   };
 }
@@ -70,7 +74,12 @@ export async function updateMailConfig(
   if (updates.smtp_user !== undefined) cfg.smtp_user = updates.smtp_user;
   // Only update password if non-empty value provided (v1 parity)
   if (updates.smtp_password !== undefined && updates.smtp_password.trim() !== '') {
-    cfg.smtp_password = updates.smtp_password.trim();
+    // Encrypted at rest. Without the server key nothing is saved, so the value is never stored in plain text.
+    if (!hasMailKey()) {
+      throw new ValidationError('MAIL_CREDS_KEY is not set on the server. Ask the server admin to set it, then save the password again.');
+    }
+    cfg.smtp_password_enc = encryptSecret(updates.smtp_password.trim());
+    cfg.smtp_password = '';
   }
   if (updates.from_name !== undefined) cfg.from_name = updates.from_name;
   if (updates.from_email !== undefined) cfg.from_email = updates.from_email;
@@ -96,7 +105,8 @@ export async function updateMailConfig(
   return {
     ...cfg,
     smtp_password: '',
-    smtp_password_set: Boolean(cfg.smtp_password),
+    smtp_password_enc: '',
+    smtp_password_set: Boolean(cfg.smtp_password_enc || cfg.smtp_password),
   };
 }
 
@@ -130,7 +140,7 @@ export async function testConnection(): Promise<{ ok: boolean; steps: TestStep[]
       port: Number(cfg.smtp_port) || 587,
       secure,
       requireTLS: String(cfg.smtp_encryption).toLowerCase() === 'tls',
-      auth: cfg.smtp_user ? { user: cfg.smtp_user, pass: cfg.smtp_password } : undefined,
+      auth: cfg.smtp_user ? { user: cfg.smtp_user, pass: resolveSmtpPassword(cfg) } : undefined,
       connectionTimeout: 10000,
     });
 
