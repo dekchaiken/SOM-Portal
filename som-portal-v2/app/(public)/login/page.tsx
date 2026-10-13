@@ -19,7 +19,11 @@ type FormInput = z.infer<typeof Schema>;
 
 interface LoginResponse {
   ok: boolean;
-  data?: { user: { id: string; username: string }; first_login: boolean };
+  data?: {
+    user: { id: string; username: string };
+    first_login: boolean;
+    pw_change_required: boolean;
+  };
   error?: string;
   code?: string;
 }
@@ -68,8 +72,11 @@ export default function LoginPage() {
 
       setPhase("success");
       setTimeout(() => {
-        const dest =
-          nextParam && nextParam.startsWith("/v2/") ? nextParam : "/v2/dashboard";
+        const dest = json.data?.pw_change_required
+          ? "/v2/settings"
+          : nextParam && nextParam.startsWith("/v2/")
+            ? nextParam
+            : "/v2/dashboard";
         window.location.assign(dest);
       }, 900);
     } catch (e) {

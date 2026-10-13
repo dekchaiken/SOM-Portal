@@ -109,7 +109,7 @@ async function TrashList() {
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <ActionButton
-                      action={() => restorePost(p.id)}
+                      action={restorePost.bind(null, p.id)}
                       icon="refresh"
                       label="Restore"
                       pendingLabel="Restoring…"
@@ -117,7 +117,7 @@ async function TrashList() {
                       variant="secondary"
                     />
                     <ActionButton
-                      action={() => hardDelete("post", p.id)}
+                      action={hardDelete.bind(null, "post", p.id)}
                       icon="trash"
                       label="Delete permanently"
                       pendingLabel="Deleting…"
@@ -152,7 +152,7 @@ async function TrashList() {
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <ActionButton
-                      action={() => restoreComment(c.id)}
+                      action={restoreComment.bind(null, c.id)}
                       icon="refresh"
                       label="Restore"
                       pendingLabel="Restoring…"
@@ -160,7 +160,7 @@ async function TrashList() {
                       variant="secondary"
                     />
                     <ActionButton
-                      action={() => hardDelete("comment", c.id)}
+                      action={hardDelete.bind(null, "comment", c.id)}
                       icon="trash"
                       label="Delete permanently"
                       pendingLabel="Deleting…"

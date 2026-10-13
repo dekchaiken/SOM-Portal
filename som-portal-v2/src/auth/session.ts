@@ -15,6 +15,7 @@ export interface Session {
   team: string;
   is_genz?: boolean;
   dev_subteam?: string;
+  pw_change_required?: boolean;
   exp?: number;
   iat?: number;
 }
