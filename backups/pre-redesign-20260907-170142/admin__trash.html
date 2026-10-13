@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trash — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ── Tabs ── */
+    .trash-tabs { display:flex; gap:2px; border-bottom:2px solid var(--border); margin-bottom:18px; }
+    .trash-tab  {
+      padding:8px 20px; font-size:11px; font-weight:700; cursor:pointer;
+      border:none; background:none; font-family:var(--font);
+      color:var(--text-muted); border-bottom:2px solid transparent; margin-bottom:-2px;
+      transition:color .12s, border-color .12s;
+    }
+    .trash-tab:hover  { color:var(--text); }
+    .trash-tab.active { color:var(--orange); border-bottom-color:var(--orange); }
+
+    /* ── Table ── */
+    .trash-table { width:100%; border-collapse:collapse; font-size:11px; }
+    .trash-table th {
+      text-align:left; font-size:9.5px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.06em; color:var(--text-muted); padding:8px 12px;
+      border-bottom:1px solid var(--border); white-space:nowrap; background:var(--bg);
+    }
+    .trash-table td { padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+    .trash-table tr:last-child td { border-bottom:none; }
+    .trash-table tr:hover td { background:var(--bg); }
+
+    .trash-title   { font-size:11.5px; font-weight:700; color:var(--text); }
+    .trash-meta    { font-size:10px; color:var(--text-muted); margin-top:2px; }
+    .trash-excerpt { font-size:10.5px; color:var(--text-muted); margin-top:4px; max-width:360px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+    .days-left-badge {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:2px 8px; border-radius:20px;
+      font-size:9.5px; font-weight:700;
+    }
+    .days-left-badge.urgent { background:rgba(239,68,68,.1); color:#ef4444; border:1px solid rgba(239,68,68,.2); }
+    .days-left-badge.warn   { background:rgba(245,158,11,.1); color:#f59e0b; border:1px solid rgba(245,158,11,.2); }
+    .days-left-badge.ok     { background:rgba(107,114,128,.1); color:var(--text-muted); border:1px solid var(--border); }
+
+    .trash-actions { display:flex; gap:6px; }
+
+    /* ── Summary bar ── */
+    .trash-summary {
+      display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;
+    }
+    .trash-stat {
+      background:var(--bg-card); border:1.5px solid var(--border);
+      border-radius:10px; padding:10px 16px; min-width:100px;
+    }
+    .trash-stat-val { font-size:20px; font-weight:700; color:var(--text); line-height:1; }
+    .trash-stat-lbl { font-size:9.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-top:4px; }
+
+    /* ── Empty ── */
+    .trash-empty {
+      text-align:center; padding:48px 20px;
+      font-size:12px; color:var(--text-muted);
+    }
+    .trash-empty-icon { font-size:36px; margin-bottom:10px; }
+
+    /* ── Danger zone ── */
+    .danger-bar {
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+      padding:12px 16px; background:rgba(239,68,68,.05);
+      border:1px solid rgba(239,68,68,.15); border-radius:10px; margin-bottom:16px;
+    }
+    .danger-bar-info { font-size:11px; color:var(--text-muted); }
+    .danger-bar-info strong { color:var(--text); }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="trash"></i> Trash</div>
+        <div class="page-sub">โพสต์และ comment ที่ถูกลบ — กู้คืนหรือลบถาวร</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadTrash()" style="font-size:11px">↺ Refresh</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmPurge()" id="purge-btn" style="font-size:11px;display:none">
+          <i data-icon="trash"></i> Purge Expired
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="trash"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Trash</h1>
+          <p>โพสต์และ comment ที่ถูกลบ — เก็บไว้ 30 วัน · กู้คืนหรือลบถาวรได้</p>
+        </div>
+      </section>
+
+      <div id="trash-loading"><div data-skel="table" data-rows="6"></div></div>
+
+      <div id="trash-content" style="display:none">
+
+        <!-- Summary -->
+        <div class="trash-summary">
+          <div class="trash-stat">
+            <div class="trash-stat-val" id="stat-posts">—</div>
+            <div class="trash-stat-lbl">Deleted Posts</div>
+          </div>
+          <div class="trash-stat">
+            <div class="trash-stat-val" id="stat-comments">—</div>
+            <div class="trash-stat-lbl">Deleted Comments</div>
+          </div>
+          <div class="trash-stat">
+            <div class="trash-stat-val" id="stat-expired" style="color:#ef4444">—</div>
+            <div class="trash-stat-lbl">Expired (purge-ready)</div>
+          </div>
+        </div>
+
+        <!-- Danger zone / purge info -->
+        <div class="danger-bar">
+          <div class="danger-bar-info">
+            <strong>Auto-purge:</strong> รายการที่หมดอายุจะถูกลบถาวรโดยอัตโนมัติเมื่อ admin กด "Purge Expired"
+            หรือเมื่อ system ทำ scheduled purge — Retention = <span id="retention-days">—</span> วัน
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="confirmPurge()" id="purge-btn2" style="font-size:10.5px;color:#ef4444;border-color:rgba(239,68,68,.3);display:none">
+            <i data-icon="trash"></i> Purge Expired Now
+          </button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="trash-tabs">
+          <button class="trash-tab active" id="tab-posts"    onclick="switchTab('posts')">Posts (<span id="tab-count-posts">0</span>)</button>
+          <button class="trash-tab"        id="tab-comments" onclick="switchTab('comments')">Comments (<span id="tab-count-comments">0</span>)</button>
+        </div>
+
+        <!-- Posts table -->
+        <div id="pane-posts">
+          <div id="posts-loading" class="loading-state" style="display:none"><div class="spinner"></div></div>
+          <div id="posts-empty"  class="trash-empty" style="display:none">
+            <div class="trash-empty-icon"><i data-icon="sparkles"></i></div>
+            <div>ไม่มีโพสต์ใน Trash</div>
+          </div>
+          <div style="overflow-x:auto" id="posts-table-wrap">
+            <table class="trash-table" id="posts-table">
+              <thead>
+                <tr>
+                  <th>Title / Content</th>
+                  <th>Deleted by</th>
+                  <th>Deleted at</th>
+                  <th>Days left</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="posts-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Comments table -->
+        <div id="pane-comments" style="display:none">
+          <div id="comments-empty" class="trash-empty" style="display:none">
+            <div class="trash-empty-icon"><i data-icon="message-circle"></i></div>
+            <div>ไม่มี comment ใน Trash</div>
+          </div>
+          <div style="overflow-x:auto" id="comments-table-wrap">
+            <table class="trash-table" id="comments-table">
+              <thead>
+                <tr>
+                  <th>Comment</th>
+                  <th>Author</th>
+                  <th>Deleted by</th>
+                  <th>Deleted at</th>
+                  <th>Days left</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="comments-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /trash-content -->
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+  if (!Auth.requireAdmin()) {}
+  Layout.render('admin');
+
+  let _trashData = { posts: [], comments: [], retention_days: 30 };
+  let _activeTab = 'posts';
+
+  // ── Load ───────────────────────────────────────────────
+  async function loadTrash() {
+    document.getElementById('trash-loading').style.display = 'block';
+    document.getElementById('trash-content').style.display = 'none';
+
+    const res = await API.board.trash();
+    if (!res?.ok) { Toast.error(res?.data?.message || 'โหลดไม่ได้'); return; }
+
+    _trashData = res.data.data || { posts: [], comments: [], retention_days: 30 };
+    renderTrash();
+
+    document.getElementById('trash-loading').style.display = 'none';
+    document.getElementById('trash-content').style.display = 'block';
+  }
+
+  function renderTrash() {
+    const posts    = _trashData.posts    || [];
+    const comments = _trashData.comments || [];
+    const retention = _trashData.retention_days || 30;
+
+    // Summary
+    const expired = [...posts, ...comments].filter(i => (i.days_left ?? 999) <= 0).length;
+    document.getElementById('stat-posts').textContent    = posts.length;
+    document.getElementById('stat-comments').textContent = comments.length;
+    document.getElementById('stat-expired').textContent  = expired;
+    document.getElementById('retention-days').textContent = retention;
+
+    // Tab counts
+    document.getElementById('tab-count-posts').textContent    = posts.length;
+    document.getElementById('tab-count-comments').textContent = comments.length;
+
+    // Purge button visibility
+    const showPurge = expired > 0;
+    document.getElementById('purge-btn').style.display  = showPurge ? '' : 'none';
+    document.getElementById('purge-btn2').style.display = showPurge ? '' : 'none';
+
+    renderPostsTable(posts);
+    renderCommentsTable(comments);
+  }
+
+  function daysLeftBadge(days) {
+    if (days == null) return '—';
+    const cls = days <= 3 ? 'urgent' : days <= 7 ? 'warn' : 'ok';
+    const label = days <= 0 ? 'Expired' : `${days}d`;
+    return `<span class="days-left-badge ${cls}">${label}</span>`;
+  }
+
+  function fmtDate(ts) {
+    if (!ts) return '—';
+    return new Date(ts).toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function renderPostsTable(posts) {
+    const tbody = document.getElementById('posts-tbody');
+    const empty = document.getElementById('posts-empty');
+    const wrap  = document.getElementById('posts-table-wrap');
+
+    if (posts.length === 0) {
+      empty.style.display = '';
+      wrap.style.display  = 'none';
+      return;
+    }
+    empty.style.display = 'none';
+    wrap.style.display  = '';
+
+    tbody.innerHTML = posts.map(p => `
+      <tr>
+        <td>
+          <div class="trash-title">${escHtml(p.title || '(No title)')}</div>
+          <div class="trash-excerpt">${escHtml((p.content || '').slice(0, 120))}</div>
+          <div class="trash-meta">by ${escHtml(p.author_name || p.author || '—')} · ${p.id}</div>
+        </td>
+        <td><div style="font-size:11px">${escHtml(p.deleted_by_name || p.deleted_by || '—')}</div></td>
+        <td><div style="font-size:10.5px;white-space:nowrap">${fmtDate(p.deleted_at)}</div></td>
+        <td>${daysLeftBadge(p.days_left)}</td>
+        <td>
+          <div class="trash-actions">
+            <button class="btn btn-ghost btn-sm" onclick="restoreItem('${escHtml(p.id)}','post')" style="font-size:10.5px;color:#22c55e;border-color:rgba(34,197,94,.3)">
+              <i data-icon="recycle"></i> Restore
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="hardDeleteItem('${escHtml(p.id)}','post','${escHtml((p.title||'this post').replace(/'/g,'&#39;'))}')" style="font-size:10.5px;color:#ef4444;border-color:rgba(239,68,68,.3)">
+              ✕ Delete
+            </button>
+          </div>
+        </td>
+      </tr>`).join('');
+  }
+
+  function renderCommentsTable(comments) {
+    const tbody = document.getElementById('comments-tbody');
+    const empty = document.getElementById('comments-empty');
+    const wrap  = document.getElementById('comments-table-wrap');
+
+    if (comments.length === 0) {
+      empty.style.display = '';
+      wrap.style.display  = 'none';
+      return;
+    }
+    empty.style.display = 'none';
+    wrap.style.display  = '';
+
+    tbody.innerHTML = comments.map(c => `
+      <tr>
+        <td>
+          <div class="trash-excerpt" style="max-width:280px;white-space:normal">${escHtml((c.content || '').slice(0, 160))}</div>
+          <div class="trash-meta">${c.id}</div>
+        </td>
+        <td><div style="font-size:11px">${escHtml(c.author_name || c.author || '—')}</div></td>
+        <td><div style="font-size:11px">${escHtml(c.deleted_by_name || c.deleted_by || '—')}</div></td>
+        <td><div style="font-size:10.5px;white-space:nowrap">${fmtDate(c.deleted_at)}</div></td>
+        <td>${daysLeftBadge(c.days_left)}</td>
+        <td>
+          <div class="trash-actions">
+            <button class="btn btn-ghost btn-sm" onclick="restoreItem('${escHtml(c.id)}','comment')" style="font-size:10.5px;color:#22c55e;border-color:rgba(34,197,94,.3)">
+              ♻ Restore
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="hardDeleteItem('${escHtml(c.id)}','comment','this comment')" style="font-size:10.5px;color:#ef4444;border-color:rgba(239,68,68,.3)">
+              ✕ Delete
+            </button>
+          </div>
+        </td>
+      </tr>`).join('');
+  }
+
+  // ── Tab switch ─────────────────────────────────────────
+  function switchTab(tab) {
+    _activeTab = tab;
+    ['posts','comments'].forEach(t => {
+      document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+      document.getElementById(`pane-${t}`).style.display = t === tab ? '' : 'none';
+    });
+  }
+
+  // ── Restore ────────────────────────────────────────────
+  async function restoreItem(id, type) {
+    const res = await API.board.restore(id, type);
+    if (!res?.ok) { Toast.error(res?.data?.message || 'กู้คืนไม่ได้'); return; }
+    Toast.success('กู้คืนแล้ว ✓');
+    loadTrash();
+  }
+
+  // ── Hard delete ────────────────────────────────────────
+  async function hardDeleteItem(id, type, label) {
+    const ok = await confirmDialog(`ลบถาวร "${label}" ใช่มั้ย?\nการลบนี้ไม่สามารถย้อนกลับได้`);
+    if (!ok) return;
+    const res = await API.board.hardDelete(id, type);
+    if (!res?.ok) { Toast.error(res?.data?.message || 'ลบไม่ได้'); return; }
+    Toast.success('ลบถาวรแล้ว');
+    loadTrash();
+  }
+
+  // ── Purge expired ──────────────────────────────────────
+  async function confirmPurge() {
+    const expired = [...(_trashData.posts||[]), ...(_trashData.comments||[])].filter(i => (i.days_left ?? 999) <= 0).length;
+    if (expired === 0) { Toast.info('ไม่มีรายการที่หมดอายุ'); return; }
+    const ok = await confirmDialog(`ลบถาวร ${expired} รายการที่หมดอายุใช่มั้ย?\nการลบนี้ไม่สามารถย้อนกลับได้`);
+    if (!ok) return;
+    const res = await API.board.purgeTrash();
+    if (!res?.ok) { Toast.error(res?.data?.message || 'Purge ไม่ได้'); return; }
+    Toast.success(`Purge แล้ว ${res.data.data?.purged || 0} รายการ`);
+    loadTrash();
+  }
+
+  // ── Simple confirm dialog using native confirm (can be replaced with custom) ──
+  function confirmDialog(msg) {
+    return Promise.resolve(window.confirm(msg));
+  }
+
+  loadTrash();
+</script>
+
+</body>
+</html>

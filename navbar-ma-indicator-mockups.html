@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Navbar MA Indicator — Mockups</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;min-height:100vh;padding:28px 24px 80px;transition:background .2s}
+body.light{background:#f0ece6}
+body.dark{background:#0c0c0c}
+body.warm{background:#f0e4d7}
+
+h1{font-size:18px;font-weight:800;margin-bottom:4px}
+body.light h1{color:#1c1c1e}
+body.dark h1{color:#f5f5f5}
+body.warm h1{color:#3b2010}
+.sub{font-size:12px;color:#888;margin-bottom:22px}
+
+/* Controls */
+.controls{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.ctrl-group{display:flex;flex-direction:column;gap:5px}
+.ctrl-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#aaa}
+.btn-row{display:flex;gap:5px;flex-wrap:wrap}
+.tb{padding:5px 14px;border-radius:99px;border:1.5px solid #d1d5db;background:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all .14s;color:#374151}
+.tb:hover{border-color:#f26419;color:#f26419}
+.tb.on{background:#f26419;color:#fff;border-color:#f26419}
+body.dark .tb{background:#1c1c1e;border-color:#333;color:#d1d5db}
+body.dark .tb.on{background:#f26419;border-color:#f26419;color:#fff}
+
+/* Section */
+.section{border-radius:18px;margin-bottom:20px;overflow:visible}
+body.light .section{background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.07)}
+body.dark .section{background:#161616;box-shadow:0 2px 14px rgba(0,0,0,.4)}
+body.warm .section{background:#fff8f2;box-shadow:0 2px 14px rgba(200,100,30,.08)}
+
+.sec-hd{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid rgba(0,0,0,.06)}
+body.dark .sec-hd{border-color:rgba(255,255,255,.06)}
+.snum{width:26px;height:26px;border-radius:50%;background:#f26419;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sname{font-size:14px;font-weight:800}
+body.light .sname{color:#1c1c1e}
+body.dark .sname{color:#f0f0f0}
+body.warm .sname{color:#3b1a06}
+.sdesc{font-size:11px;color:#bbb;margin-left:auto}
+
+/* Variant grid */
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0}
+.vcell{padding:16px 18px;border-right:1px solid rgba(0,0,0,.05);border-bottom:1px solid rgba(0,0,0,.05);position:relative}
+body.dark .vcell{border-color:rgba(255,255,255,.05)}
+.vcell:last-child{border-right:none}
+.vname{font-size:10px;font-weight:700;letter-spacing:.04em;color:#bbb;margin-bottom:10px;text-transform:uppercase}
+
+/* ══ SHARED NAV TOKENS ══ */
+--or:#f26419; --or-dim:rgba(242,100,25,.1); --or-dim2:rgba(242,100,25,.18);
+--amb:#f59e0b; --amb-dim:rgba(245,158,11,.1); --amb-dim2:rgba(245,158,11,.18);
+
+/* Logo */
+.logo{font-size:10.5px;font-weight:800;color:#f26419;letter-spacing:.05em;text-decoration:none;white-space:nowrap}
+
+/* Nav link (shared) */
+.nl{padding:3px 9px;border-radius:99px;border:none;background:transparent;font-size:11.5px;font-weight:500;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:3px;font-family:inherit;position:relative}
+body.light .nl{color:#374151}
+body.dark .nl{color:#b0b0b0}
+body.warm .nl{color:#6b3a1f}
+.nl.act{background:rgba(242,100,25,.12);color:#f26419;font-weight:700}
+body.dark .nl.act{background:rgba(242,100,25,.22);color:#fb923c}
+
+/* Dropdown wrapper — always shown in mockup */
+.dd-box{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:5px;box-shadow:0 6px 24px rgba(0,0,0,.11);min-width:190px}
+body.dark .dd-box{background:#1a1a1a;border-color:#2d2d2d}
+body.warm .dd-box{background:#fff8f2;border-color:#f0d0b0}
+
+.di{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:8px;font-size:11.5px;cursor:pointer;white-space:nowrap;width:100%;border:none;background:transparent;font-family:inherit;position:relative;overflow:hidden}
+body.light .di{color:#374151}
+body.dark .di{color:#d1d5db}
+body.warm .di{color:#5a2c0a}
+.di:hover{background:rgba(0,0,0,.04)}
+body.dark .di:hover{background:rgba(255,255,255,.05)}
+
+/* fake icon */
+.fi{width:13px;height:13px;border-radius:3px;opacity:.3;background:currentColor;flex-shrink:0;display:inline-block}
+
+/* ══ MA INDICATORS ══ */
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.7)}55%{box-shadow:0 0 0 5px rgba(245,158,11,0)}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* 1. dot */
+.ma-dot{width:7px;height:7px;border-radius:50%;background:#f59e0b;display:inline-block;flex-shrink:0;animation:pulse 2s ease-in-out infinite}
+body.light .ma-dot{border:1.5px solid #fff}
+body.dark .ma-dot{border:1.5px solid #1a1a1a}
+body.warm .ma-dot{border:1.5px solid #fff8f2}
+/* group dot (small, on button) */
+.ma-gdot{width:5px;height:5px;border-radius:50%;background:#f59e0b;display:inline-block;flex-shrink:0;animation:pulse 2s ease-in-out infinite}
+
+/* 2. badge */
+.ma-badge{font-size:8.5px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:.04em;white-space:nowrap;flex-shrink:0}
+body.light .ma-badge{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+body.dark .ma-badge{background:#292524;color:#fbbf24;border:1px solid #44403c}
+body.warm .ma-badge{background:#fff0d6;color:#92400e;border:1px solid #fde68a}
+
+/* 3. stripe */
+.ma-stripe{border-left:3px solid #f59e0b!important;padding-left:6px!important}
+body.light .ma-stripe{background:rgba(245,158,11,.05)!important}
+body.dark .ma-stripe{background:rgba(245,158,11,.09)!important}
+body.warm .ma-stripe{background:rgba(245,158,11,.07)!important}
+
+/* 4. shimmer bar */
+.ma-prog{position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#f59e0b 40%,#f26419 60%,transparent);background-size:200% 100%;animation:shimmer 1.8s linear infinite}
+
+/* 5. wrench */
+.ma-wrench{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;font-size:10px;flex-shrink:0;transition:transform .2s;margin-left:auto}
+body.light .ma-wrench{background:rgba(245,158,11,.12);color:#f59e0b}
+body.dark .ma-wrench{background:rgba(245,158,11,.2);color:#fbbf24}
+body.warm .ma-wrench{background:rgba(245,158,11,.12);color:#b45309}
+
+/* 6. banner */
+.ma-banner{border-radius:8px;padding:6px 9px;margin-bottom:4px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px}
+body.light .ma-banner{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+body.dark .ma-banner{background:#1c1710;border:1px solid #44403c;color:#fbbf24}
+body.warm .ma-banner{background:#fff7e6;border:1px solid #fde68a;color:#92400e}
+
+/* 7. count chip on group btn */
+.ma-count{font-size:8px;font-weight:800;padding:0 5px;height:15px;border-radius:99px;background:#f59e0b;color:#fff;display:inline-flex;align-items:center}
+
+/* 8. dim + strikethrough */
+.ma-dim{opacity:.4;cursor:not-allowed}
+.ma-dim .dl{text-decoration:line-through}
+
+/* disabled item (no pointer-events) */
+.ma-off{opacity:.45;cursor:not-allowed}
+
+/* MA tint on group button */
+.ma-grp-tint{background:rgba(245,158,11,.1)!important;color:#b45309!important}
+body.dark .ma-grp-tint{color:#fbbf24!important}
+
+/* label for arrow pointing at something */
+.arrow-note{font-size:10px;color:#f59e0b;font-weight:700;display:flex;align-items:center;gap:4px;margin-top:6px}
+
+/* separator in dropdown */
+.dsep{height:1px;margin:4px 5px}
+body.light .dsep{background:#f0f0f0}
+body.dark .dsep{background:#2a2a2a}
+body.warm .dsep{background:#f0d8c0}
+
+/* HORIZON shell */
+.h-shell{display:flex;align-items:center;gap:2px;padding:0 12px;height:44px;border-radius:10px}
+body.light .h-shell{background:#fff;border:1px solid #e5e7eb;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+body.dark .h-shell{background:#1a1a1a;border:1px solid #2d2d2d}
+body.warm .h-shell{background:#fff8f2;border:1px solid #f0cfa0}
+.h-right{display:flex;align-items:center;gap:4px;margin-left:auto}
+.h-icon{width:26px;height:26px;border-radius:7px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:#9ca3af}
+.h-av{width:24px;height:24px;border-radius:50%;background:#f26419;color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
+
+/* CAPSULE shell */
+.cap-pill{display:inline-flex;flex-direction:column;border-radius:18px;width:100%}
+body.light .cap-pill{background:#fff;border:1px solid #e5e7eb;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+body.dark .cap-pill{background:#1a1a1a;border:1px solid #2d2d2d}
+body.warm .cap-pill{background:#fff8f2;border:1px solid #f0cfa0}
+.cap-r1{display:flex;align-items:center;gap:2px;padding:5px 10px 5px 13px}
+.cap-sep{width:1px;height:14px;flex-shrink:0;margin:0 3px}
+body.light .cap-sep{background:#e5e7eb}
+body.dark .cap-sep{background:#2d2d2d}
+body.warm .cap-sep{background:#e8c8a0}
+.cap-cta{display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;flex-shrink:0}
+body.light .cap-cta{background:rgba(242,100,25,.1);color:#f26419}
+body.dark .cap-cta{background:rgba(242,100,25,.2);color:#fb923c}
+body.warm .cap-cta{background:rgba(242,100,25,.1);color:#f26419}
+.cap-av{width:15px;height:15px;border-radius:50%;background:#f26419;color:#fff;font-size:7px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.cap-div{height:1px;margin:0 10px}
+body.light .cap-div{background:#f0f0f0}
+body.dark .cap-div{background:#222}
+body.warm .cap-div{background:#f0d8c0}
+.cap-r2{display:flex;align-items:center;justify-content:space-between;padding:4px 13px 6px;font-size:10px}
+body.light .cap-r2{color:#9ca3af}
+body.dark .cap-r2{color:#6b7280}
+body.warm .cap-r2{color:#c08060}
+.cap-r2 b{font-weight:600}
+body.light .cap-r2 b{color:#374151}
+body.dark .cap-r2 b{color:#d1d5db}
+body.warm .cap-r2 b{color:#6b3010}
+.cap-badge{font-size:8.5px;font-weight:700;padding:2px 7px;border-radius:99px}
+body.light .cap-badge{background:rgba(242,100,25,.1);color:#f26419;border:1px solid rgba(242,100,25,.2)}
+body.dark .cap-badge{background:rgba(242,100,25,.2);color:#fb923c;border:1px solid rgba(242,100,25,.3)}
+body.warm .cap-badge{background:rgba(242,100,25,.1);color:#f26419;border:1px solid rgba(242,100,25,.2)}
+
+/* COMMAND shell */
+.cmd-shell{display:flex;align-items:center;justify-content:space-between;padding:0 12px;height:40px;border-radius:9px}
+body.light .cmd-shell{background:#fff;border:1px solid #e5e7eb;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+body.dark .cmd-shell{background:#111;border:1px solid #222}
+body.warm .cmd-shell{background:#fff8f2;border:1px solid #f0cfa0}
+.cmd-l{display:flex;align-items:center;gap:7px;min-width:0;flex-shrink:0}
+.cmd-mark{width:20px;height:20px;border-radius:5px;background:#f26419;color:#fff;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0}
+.cmd-vs{width:1px;height:12px;flex-shrink:0}
+body.light .cmd-vs{background:#e5e7eb}
+body.dark .cmd-vs{background:#333}
+body.warm .cmd-vs{background:#e0c0a0}
+.cmd-bc{display:flex;align-items:center;gap:3px;font-size:11px}
+body.light .cmd-bc{color:#9ca3af}
+body.dark .cmd-bc{color:#6b7280}
+body.warm .cmd-bc{color:#c08060}
+.cmd-bc .slash{font-size:12px;opacity:.5}
+.cmd-bc .cur{font-weight:600}
+body.light .cmd-bc .cur{color:#1c1c1e}
+body.dark .cmd-bc .cur{color:#e5e7eb}
+body.warm .cmd-bc .cur{color:#6b2e08}
+.cmd-c{display:flex;align-items:center;gap:2px;flex:1;justify-content:center;padding:0 8px}
+.cmd-tab{padding:3px 9px;border-radius:7px;font-size:11.5px;font-weight:500;cursor:pointer;border:none;background:transparent;font-family:inherit;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+body.light .cmd-tab{color:#9ca3af}
+body.dark .cmd-tab{color:#6b7280}
+body.warm .cmd-tab{color:#a06030}
+.cmd-tab.act{font-weight:600}
+body.light .cmd-tab.act{color:#f26419;background:rgba(242,100,25,.1)}
+body.dark .cmd-tab.act{color:#fb923c;background:rgba(242,100,25,.15)}
+body.warm .cmd-tab.act{color:#f26419;background:rgba(242,100,25,.1)}
+.cmd-r{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.cmd-srch{display:flex;align-items:center;gap:4px;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer}
+body.light .cmd-srch{background:#f9fafb;border:1px solid #e5e7eb;color:#9ca3af}
+body.dark .cmd-srch{background:#1a1a1a;border:1px solid #333;color:#6b7280}
+body.warm .cmd-srch{background:#fff0e0;border:1px solid #e8c8a0;color:#a06030}
+.cmd-live{width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0}
+.cmd-av{width:22px;height:22px;border-radius:50%;background:#f26419;color:#fff;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center}
+
+/* VISION shell */
+.vis-wrap{display:flex;align-items:center;gap:7px}
+.vis-main{flex:1;display:flex;align-items:center;gap:2px;border-radius:13px;padding:4px 8px;min-width:0}
+body.light .vis-main{background:rgba(0,0,0,.04);border:1px solid #e5e7eb}
+body.dark .vis-main{background:rgba(255,255,255,.04);border:1px solid #2d2d2d}
+body.warm .vis-main{background:#fff;border:1px solid #f0cfa0}
+.vis-logo{font-size:10.5px;font-weight:800;color:#f26419;margin-right:5px;text-decoration:none;white-space:nowrap}
+.vis-act{display:flex;align-items:center;gap:5px;border-radius:11px;padding:5px 8px;flex-shrink:0}
+body.light .vis-act{background:rgba(0,0,0,.04);border:1px solid #e5e7eb}
+body.dark .vis-act{background:rgba(255,255,255,.04);border:1px solid #2d2d2d}
+body.warm .vis-act{background:#fff;border:1px solid #f0cfa0}
+.vis-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#9ca3af}
+.vis-av{width:22px;height:22px;border-radius:50%;background:#f26419;color:#fff;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center}
+
+/* Layout helper */
+.flex{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:8px}
+</style>
+</head>
+<body class="light">
+
+<h1>Navbar MA Indicator Mockups</h1>
+<p class="sub">4 Nav Styles × MA Indicator Variants — dropdown เปิดแสดงอยู่เสมอ</p>
+
+<div class="controls">
+  <div class="ctrl-group">
+    <div class="ctrl-label">Theme</div>
+    <div class="btn-row">
+      <button class="tb on" onclick="setTheme(this,'light')">Light</button>
+      <button class="tb" onclick="setTheme(this,'dark')">Dark</button>
+      <button class="tb" onclick="setTheme(this,'warm')">Warm</button>
+    </div>
+  </div>
+  <div class="ctrl-group">
+    <div class="ctrl-label">Nav Style</div>
+    <div class="btn-row">
+      <button class="tb on" onclick="showSec(this,'all')">ทั้งหมด</button>
+      <button class="tb" onclick="showSec(this,'horizon')">Horizon</button>
+      <button class="tb" onclick="showSec(this,'capsule')">Capsule</button>
+      <button class="tb" onclick="showSec(this,'command')">Command</button>
+      <button class="tb" onclick="showSec(this,'vision')">Vision</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ HORIZON ══════════════ -->
+<div class="section" data-sec="horizon">
+  <div class="sec-hd">
+    <div class="snum">1</div><div class="sname">Horizon</div>
+    <div class="sdesc">Full-width bar · dropdown menus · actions ขวา</div>
+  </div>
+  <div class="vgrid">
+
+    <!-- H-A: Dot + dim -->
+    <div class="vcell">
+      <div class="vname">A · Pulsing dot + dim item</div>
+      <div class="col">
+        <div class="h-shell">
+          <a class="logo">SM-HUB</a>
+          <button class="nl act">Home</button>
+          <button class="nl">Monitor</button>
+          <button class="nl" style="gap:5px">Ops <span class="ma-gdot"></span> ▾</button>
+          <button class="nl">Learn</button>
+          <div class="h-right"><div class="h-icon">🔍</div><div class="h-icon">🔔</div><div class="h-av">W</div></div>
+        </div>
+        <div class="dd-box">
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off" style="display:flex;align-items:center;gap:7px"><span class="ma-dot"></span><span class="fi"></span> Schedule</div>
+          <div class="di ma-off" style="display:flex;align-items:center;gap:7px"><span class="ma-dot"></span><span class="fi"></span> Inbox</div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+        <div class="arrow-note">↑ dot สีเหลืองกะพริบ + dim ที่ items ใน MA</div>
+      </div>
+    </div>
+
+    <!-- H-B: Badge -->
+    <div class="vcell">
+      <div class="vname">B · MA badge chip</div>
+      <div class="col">
+        <div class="h-shell">
+          <a class="logo">SM-HUB</a>
+          <button class="nl act">Home</button>
+          <button class="nl">Monitor</button>
+          <button class="nl" style="gap:5px">Ops <span class="ma-badge">MA</span> ▾</button>
+          <button class="nl">Learn</button>
+          <div class="h-right"><div class="h-icon">🔍</div><div class="h-icon">🔔</div><div class="h-av">W</div></div>
+        </div>
+        <div class="dd-box">
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off"><span class="fi"></span> Schedule <span class="ma-badge" style="margin-left:auto">MA</span></div>
+          <div class="di ma-off"><span class="fi"></span> Inbox <span class="ma-badge" style="margin-left:auto">MA</span></div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+        <div class="arrow-note">↑ badge "MA" สีเหลือง ทั้งใน group btn + ใน item</div>
+      </div>
+    </div>
+
+    <!-- H-C: Stripe -->
+    <div class="vcell">
+      <div class="vname">C · Amber left border stripe</div>
+      <div class="col">
+        <div class="h-shell">
+          <a class="logo">SM-HUB</a>
+          <button class="nl act">Home</button>
+          <button class="nl">Monitor</button>
+          <button class="nl" style="border-bottom:2px solid #f59e0b;border-radius:6px 6px 0 0">Ops ▾</button>
+          <button class="nl">Learn</button>
+          <div class="h-right"><div class="h-icon">🔍</div><div class="h-icon">🔔</div><div class="h-av">W</div></div>
+        </div>
+        <div class="dd-box">
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off ma-stripe"><span class="fi"></span> Schedule</div>
+          <div class="di ma-off ma-stripe"><span class="fi"></span> Inbox</div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+        <div class="arrow-note">↑ เส้นสีส้มซ้าย + tint พื้นหลังบน MA items</div>
+      </div>
+    </div>
+
+    <!-- H-D: Banner + count -->
+    <div class="vcell">
+      <div class="vname">D · Banner + count badge</div>
+      <div class="col">
+        <div class="h-shell">
+          <a class="logo">SM-HUB</a>
+          <button class="nl act">Home</button>
+          <button class="nl">Monitor</button>
+          <button class="nl ma-grp-tint" style="gap:5px">Ops ▾ <span class="ma-count">2</span></button>
+          <button class="nl">Learn</button>
+          <div class="h-right"><div class="h-icon">🔍</div><div class="h-icon">🔔</div><div class="h-av">W</div></div>
+        </div>
+        <div class="dd-box">
+          <div class="ma-banner"><span class="ma-dot" style="border:none;flex-shrink:0"></span> 2 หน้ากำลังปิดปรับปรุง</div>
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di" style="opacity:.45;cursor:not-allowed"><span class="fi"></span> Schedule</div>
+          <div class="di" style="opacity:.45;cursor:not-allowed"><span class="fi"></span> Inbox</div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+        <div class="arrow-note">↑ amber tint บน group btn + banner ด้านบน dropdown</div>
+      </div>
+    </div>
+
+    <!-- H-E: Wrench -->
+    <div class="vcell">
+      <div class="vname">E · Wrench icon tag</div>
+      <div class="col">
+        <div class="h-shell">
+          <a class="logo">SM-HUB</a>
+          <button class="nl act">Home</button>
+          <button class="nl">Monitor</button>
+          <button class="nl" style="gap:5px">Ops 🔧 ▾</button>
+          <button class="nl">Learn</button>
+          <div class="h-right"><div class="h-icon">🔍</div><div class="h-icon">🔔</div><div class="h-av">W</div></div>
+        </div>
+        <div class="dd-box">
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off"><span class="fi"></span> Schedule <span class="ma-wrench">🔧</span></div>
+          <div class="di ma-off"><span class="fi"></span> Inbox <span class="ma-wrench">🔧</span></div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+        <div class="arrow-note">↑ 🔧 icon amber box ชิดขวา — หมุน 45° เมื่อ hover</div>
+      </div>
+    </div>
+
+    <!-- H-F: Shimmer -->
+    <div class="vcell">
+      <div class="vname">F · Shimmer progress bar</div>
+      <div class="col">
+        <div class="h-shell">
+          <a class="logo">SM-HUB</a>
+          <button class="nl act">Home</button>
+          <button class="nl">Monitor</button>
+          <button class="nl" style="position:relative;overflow:hidden;opacity:.8">Ops ▾<span class="ma-prog"></span></button>
+          <button class="nl">Learn</button>
+          <div class="h-right"><div class="h-icon">🔍</div><div class="h-icon">🔔</div><div class="h-av">W</div></div>
+        </div>
+        <div class="dd-box">
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off" style="overflow:hidden"><span class="fi"></span> Schedule <span class="ma-badge" style="margin-left:auto">MA</span><span class="ma-prog"></span></div>
+          <div class="di ma-off" style="overflow:hidden"><span class="fi"></span> Inbox <span class="ma-badge" style="margin-left:auto">MA</span><span class="ma-prog"></span></div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+        <div class="arrow-note">↑ shimmer bar เคลื่อนที่ใต้ nav btn + item MA</div>
+      </div>
+    </div>
+
+  </div><!-- /vgrid -->
+</div>
+
+<!-- ══════════════ CAPSULE ══════════════ -->
+<div class="section" data-sec="capsule">
+  <div class="sec-hd">
+    <div class="snum">2</div><div class="sname">Capsule</div>
+    <div class="sdesc">2-row floating pill · breadcrumb row · น้องส้ม</div>
+  </div>
+  <div class="vgrid">
+
+    <!-- C-A: Dot -->
+    <div class="vcell">
+      <div class="vname">A · Dot + dim</div>
+      <div class="col">
+        <div class="cap-pill">
+          <div class="cap-r1">
+            <a class="logo" style="margin-right:8px">SM-HUB</a>
+            <button class="nl act">Home</button>
+            <button class="nl">Monitor</button>
+            <button class="nl" style="gap:4px">Ops <span class="ma-gdot"></span></button>
+            <button class="nl">Learn</button>
+            <div class="cap-sep"></div>
+            <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#9ca3af">🔔</div>
+            <div class="cap-sep"></div>
+            <button class="cap-cta"><div class="cap-av">W</div> Warapon ▾</button>
+          </div>
+          <div class="cap-div"></div>
+          <div class="cap-r2"><span>~/sm · <b>MA Services</b> · 14:15</span><div class="cap-badge">SM TEAM</div></div>
+        </div>
+        <div class="dd-box">
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off" style="gap:7px;display:flex;align-items:center"><span class="ma-dot"></span><span class="fi"></span> Schedule</div>
+          <div class="di ma-off" style="gap:7px;display:flex;align-items:center"><span class="ma-dot"></span><span class="fi"></span> Inbox</div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C-B: Badge -->
+    <div class="vcell">
+      <div class="vname">B · Badge on group button</div>
+      <div class="col">
+        <div class="cap-pill">
+          <div class="cap-r1">
+            <a class="logo" style="margin-right:8px">SM-HUB</a>
+            <button class="nl act">Home</button>
+            <button class="nl">Monitor</button>
+            <button class="nl" style="gap:4px">Ops <span class="ma-badge">2 MA</span></button>
+            <button class="nl">Learn</button>
+            <div class="cap-sep"></div>
+            <div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#9ca3af">🔔</div>
+            <div class="cap-sep"></div>
+            <button class="cap-cta"><div class="cap-av">W</div> Warapon ▾</button>
+          </div>
+          <div class="cap-div"></div>
+          <div class="cap-r2"><span>~/sm · <b>MA Services</b> · 14:15</span><div class="cap-badge">SM TEAM</div></div>
+        </div>
+        <div class="dd-box">
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off"><span class="fi"></span> Schedule <span class="ma-badge" style="margin-left:auto">MA</span></div>
+          <div class="di ma-off"><span class="fi"></span> Inbox <span class="ma-badge" style="margin-left:auto">MA</span></div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C-C: Banner + tint -->
+    <div class="vcell">
+      <div class="vname">C · Banner + amber tint group</div>
+      <div class="col">
+        <div class="cap-pill">
+          <div class="cap-r1">
+            <a class="logo" style="margin-right:8px">SM-HUB</a>
+            <button class="nl act">Home</button>
+            <button class="nl">Monitor</button>
+            <button class="nl ma-grp-tint" style="gap:4px">Ops ▾ <span class="ma-count">2</span></button>
+            <button class="nl">Learn</button>
+            <div class="cap-sep"></div>
+            <div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#9ca3af">🔔</div>
+            <div class="cap-sep"></div>
+            <button class="cap-cta"><div class="cap-av">W</div> Warapon ▾</button>
+          </div>
+          <div class="cap-div"></div>
+          <div class="cap-r2"><span>~/sm · <b>MA Services</b> · 14:15</span><div class="cap-badge">SM TEAM</div></div>
+        </div>
+        <div class="dd-box">
+          <div class="ma-banner"><span class="ma-dot" style="border:none;flex-shrink:0"></span> 2 หน้ากำลังปิดปรับปรุง</div>
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di" style="opacity:.45;cursor:not-allowed"><span class="fi"></span> Schedule</div>
+          <div class="di" style="opacity:.45;cursor:not-allowed"><span class="fi"></span> Inbox</div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C-D: Stripe + Wrench -->
+    <div class="vcell">
+      <div class="vname">D · Stripe + wrench icon</div>
+      <div class="col">
+        <div class="cap-pill">
+          <div class="cap-r1">
+            <a class="logo" style="margin-right:8px">SM-HUB</a>
+            <button class="nl act">Home</button>
+            <button class="nl">Monitor</button>
+            <button class="nl" style="gap:4px">Ops 🔧</button>
+            <button class="nl">Learn</button>
+            <div class="cap-sep"></div>
+            <div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#9ca3af">🔔</div>
+            <div class="cap-sep"></div>
+            <button class="cap-cta"><div class="cap-av">W</div> Warapon ▾</button>
+          </div>
+          <div class="cap-div"></div>
+          <div class="cap-r2"><span>~/sm · <b>MA Services</b> · 14:15</span><div class="cap-badge">SM TEAM</div></div>
+        </div>
+        <div class="dd-box">
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off ma-stripe"><span class="fi"></span> Schedule <span class="ma-wrench">🔧</span></div>
+          <div class="di ma-off ma-stripe"><span class="fi"></span> Inbox <span class="ma-wrench">🔧</span></div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════ COMMAND ══════════════ -->
+<div class="section" data-sec="command">
+  <div class="sec-hd">
+    <div class="snum">3</div><div class="sname">Command</div>
+    <div class="sdesc">Breadcrumb left · group tabs center · search right</div>
+  </div>
+  <div class="vgrid">
+
+    <!-- Cmd-A -->
+    <div class="vcell">
+      <div class="vname">A · Dot on center tab + items</div>
+      <div class="col">
+        <div class="cmd-shell">
+          <div class="cmd-l">
+            <a class="cmd-mark">S</a><div class="cmd-vs"></div>
+            <div class="cmd-bc"><a>SOM</a><span class="slash">/</span><a>Ops</a><span class="slash">/</span><span class="cur">MA Services</span></div>
+          </div>
+          <div class="cmd-c">
+            <a class="cmd-tab">Home</a>
+            <a class="cmd-tab act" style="gap:4px">Ops <span class="ma-gdot"></span></a>
+            <a class="cmd-tab">Learn</a>
+          </div>
+          <div class="cmd-r">
+            <div class="cmd-srch">🔍 ⌘K</div>
+            <div class="cmd-live"></div>
+            <div class="cmd-av">W</div>
+          </div>
+        </div>
+        <div class="dd-box" style="margin-top:4px">
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off" style="gap:7px;display:flex;align-items:center"><span class="ma-dot"></span><span class="fi"></span> Schedule</div>
+          <div class="di ma-off" style="gap:7px;display:flex;align-items:center"><span class="ma-dot"></span><span class="fi"></span> Inbox</div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cmd-B -->
+    <div class="vcell">
+      <div class="vname">B · Badge count on tab</div>
+      <div class="col">
+        <div class="cmd-shell">
+          <div class="cmd-l">
+            <a class="cmd-mark">S</a><div class="cmd-vs"></div>
+            <div class="cmd-bc"><a>SOM</a><span class="slash">/</span><a>Ops</a><span class="slash">/</span><span class="cur">MA Services</span></div>
+          </div>
+          <div class="cmd-c">
+            <a class="cmd-tab">Home</a>
+            <a class="cmd-tab act" style="gap:4px">Ops <span class="ma-badge">2</span></a>
+            <a class="cmd-tab">Learn</a>
+          </div>
+          <div class="cmd-r">
+            <div class="cmd-srch">🔍 ⌘K</div>
+            <div class="cmd-live"></div>
+            <div class="cmd-av">W</div>
+          </div>
+        </div>
+        <div class="dd-box" style="margin-top:4px">
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off"><span class="fi"></span> Schedule <span class="ma-badge" style="margin-left:auto">MA</span></div>
+          <div class="di ma-off"><span class="fi"></span> Inbox <span class="ma-badge" style="margin-left:auto">MA</span></div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cmd-C -->
+    <div class="vcell">
+      <div class="vname">C · Amber underline + banner</div>
+      <div class="col">
+        <div class="cmd-shell">
+          <div class="cmd-l">
+            <a class="cmd-mark">S</a><div class="cmd-vs"></div>
+            <div class="cmd-bc"><a>SOM</a><span class="slash">/</span><a>Ops</a><span class="slash">/</span><span class="cur">MA Services</span></div>
+          </div>
+          <div class="cmd-c">
+            <a class="cmd-tab">Home</a>
+            <a class="cmd-tab act" style="border-bottom:2px solid #f59e0b;border-radius:7px 7px 0 0">Ops ▾</a>
+            <a class="cmd-tab">Learn</a>
+          </div>
+          <div class="cmd-r">
+            <div class="cmd-srch">🔍 ⌘K</div>
+            <div class="cmd-live"></div>
+            <div class="cmd-av">W</div>
+          </div>
+        </div>
+        <div class="dd-box" style="margin-top:4px">
+          <div class="ma-banner"><span class="ma-dot" style="border:none;flex-shrink:0"></span> 2 หน้าปิดปรับปรุง</div>
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off ma-stripe"><span class="fi"></span> Schedule</div>
+          <div class="di ma-off ma-stripe"><span class="fi"></span> Inbox</div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════ VISION ══════════════ -->
+<div class="section" data-sec="vision">
+  <div class="sec-hd">
+    <div class="snum">4</div><div class="sname">Vision</div>
+    <div class="sdesc">Split pill — nav bar left · actions pill right</div>
+  </div>
+  <div class="vgrid">
+
+    <!-- V-A -->
+    <div class="vcell">
+      <div class="vname">A · Dot on group button</div>
+      <div class="col">
+        <div class="vis-wrap">
+          <div class="vis-main">
+            <a class="vis-logo">SM-HUB</a>
+            <button class="nl act">Home</button>
+            <button class="nl">Monitor</button>
+            <button class="nl" style="gap:4px">Ops <span class="ma-gdot"></span></button>
+            <button class="nl">Learn</button>
+          </div>
+          <div class="vis-act">
+            <div class="vis-icon">🔍</div><div class="vis-icon">🔔</div><div class="vis-icon">🌙</div>
+            <div class="vis-av">W</div>
+          </div>
+        </div>
+        <div class="dd-box" style="margin-top:4px">
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off" style="gap:7px"><span class="ma-dot"></span><span class="fi"></span> Schedule</div>
+          <div class="di ma-off" style="gap:7px"><span class="ma-dot"></span><span class="fi"></span> Inbox</div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- V-B -->
+    <div class="vcell">
+      <div class="vname">B · Badge + amber tint group</div>
+      <div class="col">
+        <div class="vis-wrap">
+          <div class="vis-main">
+            <a class="vis-logo">SM-HUB</a>
+            <button class="nl act">Home</button>
+            <button class="nl">Monitor</button>
+            <button class="nl ma-grp-tint" style="gap:4px">Ops <span class="ma-badge">2</span></button>
+            <button class="nl">Learn</button>
+          </div>
+          <div class="vis-act">
+            <div class="vis-icon">🔍</div><div class="vis-icon">🔔</div><div class="vis-icon">🌙</div>
+            <div class="vis-av">W</div>
+          </div>
+        </div>
+        <div class="dd-box" style="margin-top:4px">
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off"><span class="fi"></span> Schedule <span class="ma-badge" style="margin-left:auto">MA</span></div>
+          <div class="di ma-off"><span class="fi"></span> Inbox <span class="ma-badge" style="margin-left:auto">MA</span></div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- V-C -->
+    <div class="vcell">
+      <div class="vname">C · Banner + stripe + wrench</div>
+      <div class="col">
+        <div class="vis-wrap">
+          <div class="vis-main">
+            <a class="vis-logo">SM-HUB</a>
+            <button class="nl act">Home</button>
+            <button class="nl">Monitor</button>
+            <button class="nl" style="gap:4px">Ops 🔧</button>
+            <button class="nl">Learn</button>
+          </div>
+          <div class="vis-act">
+            <div class="vis-icon">🔍</div><div class="vis-icon">🔔</div><div class="vis-icon">🌙</div>
+            <div class="vis-av">W</div>
+          </div>
+        </div>
+        <div class="dd-box" style="margin-top:4px">
+          <div class="ma-banner"><span class="ma-dot" style="border:none;flex-shrink:0"></span> 2 หน้าปิดอยู่</div>
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off ma-stripe"><span class="fi"></span> Schedule <span class="ma-wrench">🔧</span></div>
+          <div class="di ma-off ma-stripe"><span class="fi"></span> Inbox <span class="ma-wrench">🔧</span></div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- V-D -->
+    <div class="vcell">
+      <div class="vname">D · Shimmer + animated chip</div>
+      <div class="col">
+        <div class="vis-wrap">
+          <div class="vis-main">
+            <a class="vis-logo">SM-HUB</a>
+            <button class="nl act">Home</button>
+            <button class="nl">Monitor</button>
+            <button class="nl" style="gap:4px;position:relative;overflow:hidden;opacity:.8">Ops <span style="font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;background:#f59e0b;color:#fff;animation:blink 1.5s ease-in-out infinite">MA</span><span class="ma-prog"></span></button>
+            <button class="nl">Learn</button>
+          </div>
+          <div class="vis-act">
+            <div class="vis-icon">🔍</div><div class="vis-icon">🔔</div><div class="vis-icon">🌙</div>
+            <div class="vis-av">W</div>
+          </div>
+        </div>
+        <div class="dd-box" style="margin-top:4px">
+          <div class="di"><span class="fi"></span> Board</div>
+          <div class="di ma-off" style="overflow:hidden"><span class="fi"></span> Schedule <span class="ma-badge" style="margin-left:auto">MA</span><span class="ma-prog"></span></div>
+          <div class="di ma-off" style="overflow:hidden"><span class="fi"></span> Inbox <span class="ma-badge" style="margin-left:auto">MA</span><span class="ma-prog"></span></div>
+          <div class="di"><span class="fi"></span> MA Services</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function setTheme(btn, t) {
+  document.querySelectorAll('.btn-row:first-child .tb').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.body.className = t;
+}
+function showSec(btn, s) {
+  document.querySelectorAll('.btn-row:last-child .tb').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.section').forEach(el => {
+    el.style.display = (s === 'all' || el.dataset.sec === s) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

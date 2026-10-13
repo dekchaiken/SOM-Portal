@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ops Runbook — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <style>
+    /* ── Tabs ─────────────────────────────────────────────── */
+    .rb-tabs { display:flex; gap:4px; flex-wrap:wrap; padding:0 0 14px; }
+    .rb-tab {
+      display:flex; align-items:center; gap:6px;
+      padding:7px 14px; border-radius:10px; cursor:pointer;
+      font-size:12px; font-weight:600; border:1.5px solid var(--border);
+      background:var(--bg-card); color:var(--text-muted);
+      transition:all .15s; user-select:none; white-space:nowrap;
+    }
+    .rb-tab:hover { border-color:var(--orange); color:var(--text); }
+    .rb-tab.active { border-color:var(--orange); background:rgba(242,100,25,.08); color:var(--orange); }
+    .rb-tab-count {
+      font-size:10px; font-weight:700; background:var(--bg);
+      border:1px solid var(--border); border-radius:20px; padding:1px 6px; color:var(--text-muted);
+    }
+
+    /* ── Section panels ───────────────────────────────────── */
+    .rb-panel { display:none; }
+    .rb-panel.active { display:block; }
+
+    /* ── Table ────────────────────────────────────────────── */
+    .rb-wrap { overflow-x:auto; }
+    .rb-table { width:100%; border-collapse:collapse; font-size:12px; min-width:600px; }
+    .rb-table th {
+      text-align:left; padding:9px 12px;
+      background:var(--sidebar-bg); color:var(--text-muted);
+      font-weight:600; border-bottom:1px solid var(--border); white-space:nowrap;
+    }
+    .rb-table td { padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    .rb-table tr:last-child td { border-bottom:none; }
+    .rb-table tr:hover td { background:var(--bg); }
+
+    /* ── Cell types ───────────────────────────────────────── */
+    .rb-url-link {
+      display:inline-flex; align-items:center; gap:4px;
+      color:var(--orange); text-decoration:none; font-size:11px; font-weight:600;
+      padding:2px 8px; border-radius:6px;
+      background:rgba(242,100,25,.08); border:1px solid rgba(242,100,25,.2);
+      white-space:nowrap; transition:all .12s;
+    }
+    .rb-url-link:hover { background:rgba(242,100,25,.15); }
+    .rb-url-empty { color:var(--text-muted); font-size:11px; }
+    .rb-badge {
+      display:inline-block; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700;
+      background:rgba(59,130,246,.1); color:#2563eb; border:1px solid rgba(59,130,246,.2);
+    }
+    .rb-text-cell { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px; }
+    .rb-row-num { width:36px; min-width:36px; font-size:10px; color:var(--text-muted); text-align:center; }
+    .rb-empty-section { text-align:center; padding:48px 20px; color:var(--text-muted); font-size:13px; }
+    .rb-empty-icon { font-size:36px; margin-bottom:10px; }
+
+    /* ── Modal ────────────────────────────────────────────── */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1100; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex !important; }
+    .modal-box { background:var(--bg-card); border-radius:var(--radius-lg); width:560px; max-width:95vw; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.18); }
+    .modal-header { padding:18px 20px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .modal-title { font-size:14px; font-weight:700; }
+    .modal-close { background:none; border:none; font-size:18px; cursor:pointer; color:var(--text-muted); line-height:1; }
+    .modal-body { padding:20px; overflow-y:auto; flex:1; }
+    .modal-footer { padding:14px 20px; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; flex-shrink:0; }
+
+    .form-row { margin-bottom:14px; }
+    .form-label { display:block; font-size:11px; font-weight:600; color:var(--text-muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.5px; }
+    .form-input,.form-select { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-family:var(--font); font-size:12px; background:var(--bg); color:var(--text); box-sizing:border-box; transition:border-color .15s; }
+    .form-input:focus,.form-select:focus { outline:none; border-color:var(--orange); }
+    .form-hint { font-size:10px; color:var(--text-muted); margin-top:4px; }
+
+    .view-only-badge { font-size:10px; font-weight:700; padding:5px 12px; border-radius:20px; background:var(--bg); border:1px solid var(--border); color:var(--text-muted); }
+
+    /* ── Skeleton ─────────────────────────────────────────── */
+    .skel-tab { height:36px; border-radius:10px; background:var(--bg); animation:skel-pulse 1.4s ease infinite; }
+    @keyframes skel-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="book-open"></i> Ops Runbook</div>
+        <div class="page-sub">ข้อมูล Runbook สำหรับปฏิบัติงาน — Block Biz Rule, Gateway, Restart, Network</div>
+      </div>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- Tab bar -->
+      <div id="rb-tabs-wrap" class="rb-tabs">
+        <div class="skel-tab" style="width:140px"></div>
+        <div class="skel-tab" style="width:110px"></div>
+        <div class="skel-tab" style="width:160px"></div>
+        <div class="skel-tab" style="width:120px"></div>
+        <div class="skel-tab" style="width:140px"></div>
+      </div>
+
+      <!-- Panels -->
+      <div id="rb-panels">
+        <div class="card">
+          <div class="card-body" style="padding:48px;text-align:center;color:var(--text-muted)">
+            กำลังโหลด...
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══ Row Modal ═══ -->
+<div class="modal-overlay" id="modal-row">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="row-modal-title">เพิ่มข้อมูล</span>
+      <button class="modal-close" id="btn-close-row-modal"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" id="row-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-row">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-row">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Delete Confirm ═══ -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-header">
+      <span class="modal-title" style="color:#dc2626">ลบแถวนี้?</span>
+      <button class="modal-close" id="btn-close-del-modal"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;margin:0">ต้องการลบแถวนี้ใช่ไหม? ข้อมูลจะหายถาวร</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-del">Cancel</button>
+      <button class="btn" id="btn-confirm-del" style="background:#dc2626;color:#fff">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/skeletons.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/analytics.js"></script>
+<script src="./assets/js/analytics-features.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  Auth.requireAuth();
+  Layout.render('ops-runbook');
+  trackOpsRunbookView('main');
+
+  // ── State ────────────────────────────────────────────────
+  var sections   = [];
+  var activeIdx  = 0;
+  var editingRow = null;   // { sectionId, rowId } | null
+  var deletingRow = null;
+
+  var _user   = Auth.getUser();
+  var canEdit = !!_user && ['super_admin', 'sm_lead', 'sm_admin', 'dev_sm'].includes(_user.role);
+
+  // ── Bootstrap ────────────────────────────────────────────
+  function init() {
+    var actions = document.getElementById('topbar-actions');
+    if (!canEdit) {
+      actions.innerHTML = '<span class="view-only-badge"><i data-icon="eye"></i> View Only</span>';
+    }
+
+    API.opsRunbook.list().then(function (res) {
+      if (!res || !res.ok) {
+        document.getElementById('rb-tabs-wrap').innerHTML = '';
+        document.getElementById('rb-panels').innerHTML =
+          '<div class="card"><div class="card-body" style="padding:48px;text-align:center;color:var(--text-muted)">โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่</div></div>';
+        return;
+      }
+
+      sections = res.data.data || [];
+
+      if (canEdit) {
+        var addBtn = document.createElement('button');
+        addBtn.className = 'btn btn-primary';
+        addBtn.id = 'topbar-add-btn';
+        addBtn.textContent = '+ เพิ่มข้อมูล';
+        actions.innerHTML = '';
+        actions.appendChild(addBtn);
+      }
+
+      renderAll();
+    });
+  }
+
+  // ── Render ───────────────────────────────────────────────
+  function renderAll() {
+    renderTabs();
+    renderPanels();
+    showPanel(activeIdx);
+  }
+
+  function renderTabs() {
+    var wrap = document.getElementById('rb-tabs-wrap');
+    if (!sections.length) {
+      wrap.innerHTML = '<span style="color:var(--text-muted);font-size:12px">ยังไม่มี Section</span>';
+      return;
+    }
+    var html = sections.map(function (s, i) {
+      return '<div class="rb-tab' + (i === activeIdx ? ' active' : '') + '" data-tab-idx="' + i + '">' +
+        '<span>' + renderIcon(s.icon, '<i data-icon="clipboard"></i>') + '</span>' +
+        '<span>' + escHtml(s.name) + '</span>' +
+        '<span class="rb-tab-count">' + (s.rows || []).length + '</span>' +
+        '</div>';
+    }).join('');
+    wrap.innerHTML = html;
+  }
+
+  function renderPanels() {
+    var wrap = document.getElementById('rb-panels');
+    var html = sections.map(function (s, i) {
+      return '<div class="rb-panel' + (i === activeIdx ? ' active' : '') + '" id="panel-' + i + '">' +
+        renderSectionTable(s) + '</div>';
+    }).join('');
+    wrap.innerHTML = html;
+  }
+
+  function showPanel(idx) {
+    if (idx < 0 || idx >= sections.length) return;
+    activeIdx = idx;
+    document.querySelectorAll('.rb-tab').forEach(function (t, i) {
+      t.classList.toggle('active', i === idx);
+    });
+    document.querySelectorAll('.rb-panel').forEach(function (p, i) {
+      p.classList.toggle('active', i === idx);
+    });
+  }
+
+  function renderSectionTable(sec) {
+    var cols = sec.columns || [];
+    var rows = sec.rows    || [];
+
+    if (!rows.length) {
+      var addBtnHtml = canEdit
+        ? '<div style="margin-top:12px"><button class="btn btn-primary" data-add-row="1">+ เพิ่มข้อมูลแรก</button></div>'
+        : '';
+      return '<div class="card" style="margin-bottom:0"><div class="rb-empty-section">' +
+        '<div class="rb-empty-icon">' + renderIcon(sec.icon, '<i data-icon="clipboard"></i>') + '</div>' +
+        '<div>ยังไม่มีข้อมูลใน <strong>' + escHtml(sec.name) + '</strong></div>' +
+        addBtnHtml + '</div></div>';
+    }
+
+    var thead = '<tr><th class="rb-row-num">#</th>' +
+      cols.map(function (c) { return '<th>' + escHtml(c.label) + '</th>'; }).join('') +
+      (canEdit ? '<th style="width:100px">Actions</th>' : '') + '</tr>';
+
+    var tbody = rows.map(function (row, ri) {
+      var cells = cols.map(function (col) {
+        var val = (row.data || {})[col.key] !== undefined ? String((row.data || {})[col.key]) : '';
+        if (col.type === 'url') {
+          return val
+            ? '<td><a href="' + escHtml(val) + '" target="_blank" rel="noopener" class="rb-url-link">↗ เปิด</a></td>'
+            : '<td><span class="rb-url-empty">—</span></td>';
+        }
+        if (col.type === 'dropdown') {
+          return val
+            ? '<td><span class="rb-badge">' + escHtml(val) + '</span></td>'
+            : '<td><span class="rb-url-empty">—</span></td>';
+        }
+        return val
+          ? '<td><div class="rb-text-cell" title="' + escHtml(val) + '">' + escHtml(val) + '</div></td>'
+          : '<td><span class="rb-url-empty">—</span></td>';
+      }).join('');
+
+      var actionCell = canEdit
+        ? '<td><div style="display:flex;gap:5px">' +
+            '<button class="btn btn-ghost" style="padding:4px 9px;font-size:11px"' +
+              ' data-action="edit" data-sec="' + escHtml(sec.id) + '" data-row="' + escHtml(row.id) + '">Edit</button>' +
+            '<button class="btn" style="padding:4px 9px;font-size:11px;background:#fee2e2;color:#dc2626;border:none"' +
+              ' data-action="delete" data-sec="' + escHtml(sec.id) + '" data-row="' + escHtml(row.id) + '">Del</button>' +
+          '</div></td>'
+        : '';
+
+      return '<tr><td class="rb-row-num">' + (ri + 1) + '</td>' + cells + actionCell + '</tr>';
+    }).join('');
+
+    return '<div class="card" style="margin-bottom:0">' +
+      '<div class="card-body" style="padding:0">' +
+      '<div class="rb-wrap"><table class="rb-table">' +
+      '<thead>' + thead + '</thead><tbody>' + tbody + '</tbody>' +
+      '</table></div></div></div>';
+  }
+
+  // ── Form builder ─────────────────────────────────────────
+  function buildRowForm(sec, rowData) {
+    rowData = rowData || {};
+    return (sec.columns || []).map(function (col) {
+      var val = (rowData[col.key] !== undefined && rowData[col.key] !== null)
+                 ? String(rowData[col.key]) : '';
+      var input = '';
+
+      if (col.type === 'dropdown') {
+        var opts = (col.options || []).map(function (o) {
+          return '<option value="' + escHtml(o) + '"' + (val === o ? ' selected' : '') + '>' + escHtml(o) + '</option>';
+        }).join('');
+        input = '<select class="form-select" id="rbf-' + escHtml(col.key) + '">' +
+          '<option value="">— เลือก —</option>' + opts + '</select>';
+      } else if (col.type === 'url') {
+        input = '<input class="form-input" id="rbf-' + escHtml(col.key) + '" type="url"' +
+          ' value="' + escHtml(val) + '" placeholder="https://...">' +
+          '<div class="form-hint">URL — ใส่หรือเว้นว่างก็ได้</div>';
+      } else {
+        input = '<input class="form-input" id="rbf-' + escHtml(col.key) + '" type="text"' +
+          ' value="' + escHtml(val) + '" placeholder="' + escHtml(col.label) + '">';
+      }
+
+      return '<div class="form-row"><label class="form-label">' + escHtml(col.label) + '</label>' + input + '</div>';
+    }).join('');
+  }
+
+  function collectRowData(sec) {
+    var rowData = {};
+    (sec.columns || []).forEach(function (col) {
+      var el = document.getElementById('rbf-' + col.key);
+      rowData[col.key] = el ? el.value.trim() : '';
+    });
+    return rowData;
+  }
+
+  // ── Open modal: add ───────────────────────────────────────
+  function openAddRow() {
+    if (!canEdit) { Toast.error('คุณไม่มีสิทธิ์เพิ่มข้อมูล'); return; }
+    var sec = sections[activeIdx];
+    if (!sec) { Toast.error('กรุณารอข้อมูลโหลดเสร็จก่อน'); return; }
+    editingRow = null;
+    document.getElementById('row-modal-title').textContent = 'เพิ่มข้อมูล — ' + sec.name;
+    document.getElementById('row-modal-body').innerHTML = buildRowForm(sec);
+    document.getElementById('btn-save-row').textContent  = 'เพิ่มข้อมูล';
+    document.getElementById('btn-save-row').disabled     = false;
+    openModal('modal-row');
+    var first = document.querySelector('#row-modal-body input, #row-modal-body select');
+    if (first) setTimeout(function () { first.focus(); }, 60);
+  }
+
+  // ── Open modal: edit ──────────────────────────────────────
+  function openEditRow(sectionId, rowId) {
+    if (!canEdit) { Toast.error('คุณไม่มีสิทธิ์แก้ไข'); return; }
+    var sec = null, row = null;
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].id === sectionId) { sec = sections[i]; break; }
+    }
+    if (!sec) return;
+    var rows = sec.rows || [];
+    for (var j = 0; j < rows.length; j++) {
+      if (rows[j].id === rowId) { row = rows[j]; break; }
+    }
+    if (!row) return;
+
+    editingRow = { sectionId: sectionId, rowId: rowId };
+    document.getElementById('row-modal-title').textContent = 'แก้ไข — ' + sec.name;
+    document.getElementById('row-modal-body').innerHTML = buildRowForm(sec, row.data || {});
+    document.getElementById('btn-save-row').textContent  = 'บันทึก';
+    document.getElementById('btn-save-row').disabled     = false;
+    openModal('modal-row');
+  }
+
+  // ── Save row ──────────────────────────────────────────────
+  function saveRow() {
+    if (!canEdit) { Toast.error('คุณไม่มีสิทธิ์'); return; }
+    var sec = editingRow
+      ? (function () {
+          for (var i = 0; i < sections.length; i++) {
+            if (sections[i].id === editingRow.sectionId) return sections[i];
+          }
+          return null;
+        })()
+      : sections[activeIdx];
+
+    if (!sec) { Toast.error('ไม่พบ Section'); return; }
+
+    var rowData = collectRowData(sec);
+    var btn = document.getElementById('btn-save-row');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    var promise = editingRow
+      ? API.opsRunbook.updateRow(editingRow.sectionId, editingRow.rowId, rowData)
+      : API.opsRunbook.createRow(sec.id, rowData);
+
+    promise.then(function (res) {
+      btn.disabled = false;
+      btn.textContent = editingRow ? 'บันทึก' : 'เพิ่มข้อมูล';
+
+      if (!res || !res.ok) {
+        Toast.error((res && res.data && res.data.message) || 'เกิดข้อผิดพลาด');
+        return;
+      }
+      Toast.success(editingRow ? 'แก้ไขเรียบร้อย' : 'เพิ่มข้อมูลเรียบร้อย');
+      closeModal('modal-row');
+      editingRow = null;
+      reload();
+    });
+  }
+
+  // ── Delete row ────────────────────────────────────────────
+  function openDeleteRow(sectionId, rowId) {
+    if (!canEdit) { Toast.error('คุณไม่มีสิทธิ์ลบ'); return; }
+    deletingRow = { sectionId: sectionId, rowId: rowId };
+    openModal('modal-delete');
+  }
+
+  function confirmDeleteRow() {
+    if (!deletingRow) return;
+    var dr = deletingRow;
+    API.opsRunbook.deleteRow(dr.sectionId, dr.rowId).then(function (res) {
+      if (!res || !res.ok) { Toast.error((res && res.data && res.data.message) || 'ลบไม่สำเร็จ'); return; }
+      Toast.success('ลบเรียบร้อย');
+      closeModal('modal-delete');
+      deletingRow = null;
+      reload();
+    });
+  }
+
+  // ── Reload ────────────────────────────────────────────────
+  function reload() {
+    API.opsRunbook.list().then(function (res) {
+      if (!res || !res.ok) { Toast.error('โหลดข้อมูลใหม่ไม่สำเร็จ'); return; }
+      sections = res.data.data || [];
+      renderAll();
+    });
+  }
+
+  // ── Modal helpers ─────────────────────────────────────────
+  function openModal(id)  { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  // ── Event delegation: tabs + table buttons ────────────────
+  document.addEventListener('click', function (e) {
+    // Tab clicks
+    var tab = e.target.closest('[data-tab-idx]');
+    if (tab) {
+      showPanel(parseInt(tab.dataset.tabIdx, 10));
+      return;
+    }
+
+    // Table action buttons
+    var btn = e.target.closest('[data-action]');
+    if (btn) {
+      e.preventDefault();
+      if (btn.dataset.action === 'edit')   openEditRow(btn.dataset.sec, btn.dataset.row);
+      if (btn.dataset.action === 'delete') openDeleteRow(btn.dataset.sec, btn.dataset.row);
+      return;
+    }
+
+    // Empty state "เพิ่มข้อมูลแรก"
+    var addBtn = e.target.closest('[data-add-row]');
+    if (addBtn) {
+      e.preventDefault();
+      openAddRow();
+      return;
+    }
+
+    // Topbar "+ เพิ่มข้อมูล" button
+    var topbarAddBtn = e.target.closest('#topbar-add-btn');
+    if (topbarAddBtn) {
+      e.preventDefault();
+      openAddRow();
+    }
+  });
+
+  // ── Modal button wiring ───────────────────────────────────
+  document.getElementById('btn-save-row')       .addEventListener('click', saveRow);
+  document.getElementById('btn-cancel-row')     .addEventListener('click', function () { closeModal('modal-row'); });
+  document.getElementById('btn-close-row-modal').addEventListener('click', function () { closeModal('modal-row'); });
+  document.getElementById('btn-confirm-del')    .addEventListener('click', confirmDeleteRow);
+  document.getElementById('btn-cancel-del')     .addEventListener('click', function () { closeModal('modal-delete'); });
+  document.getElementById('btn-close-del-modal').addEventListener('click', function () { closeModal('modal-delete'); });
+
+  // ── Click outside modal to close ─────────────────────────
+  document.querySelectorAll('.modal-overlay').forEach(function (el) {
+    el.addEventListener('click', function (e) {
+      if (e.target === el) closeModal(el.id);
+    });
+  });
+
+  // ── Keyboard ──────────────────────────────────────────────
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeModal('modal-row'); closeModal('modal-delete'); }
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>

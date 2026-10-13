@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch Monitor Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .cfg-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden; margin-bottom: 16px;
+    }
+    .cfg-card-hd {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; border-bottom: 1px solid var(--border); gap: 10px;
+    }
+    .cfg-card-hd-left { display: flex; align-items: center; gap: 10px; }
+    .cfg-card-icon {
+      width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      background: rgba(242,100,25,.1); color: var(--orange);
+    }
+    .cfg-card-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .cfg-card-sub   { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+    .cfg-card-body  { padding: 0; }
+
+    /* Records table */
+    .rec-hint {
+      font-size: 10px; color: var(--text-muted); padding: 7px 20px;
+      border-bottom: 1px solid var(--border); background: var(--bg);
+    }
+    .rec-tbl { border-collapse: collapse; font-size: 11px; width: 100%; }
+    .rec-tbl thead th {
+      background: var(--bg); color: var(--text-muted); padding: 8px 14px;
+      text-align: left; font-weight: 600; border-bottom: 1px solid var(--border);
+      font-size: 10px; white-space: nowrap; letter-spacing: .02em;
+    }
+    .rec-tbl tbody td { padding: 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .rec-tbl tbody tr:last-child td { border-bottom: none; }
+    .rec-tbl tbody tr.sub-row td { background: var(--bg); }
+    .td-ci { padding: 7px 14px; display: flex; align-items: center; min-height: 34px; gap: 6px; }
+
+    .btn-exp {
+      width: 20px; height: 20px; border-radius: 4px; border: none;
+      background: transparent; cursor: pointer; font-size: 10px;
+      color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center;
+      transition: color .1s, background .1s;
+    }
+    .btn-exp:hover { background: var(--border); color: var(--text); }
+    .btn-exp.open { color: var(--orange); }
+
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 700;
+    }
+    .pill-s { background: #dcfce7; color: #15803d; }
+    .pill-f { background: #fee2e2; color: #dc2626; }
+    .pill-n { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+
+    .sum-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+    .sum-chip  { padding: 1px 7px; border-radius: 99px; font-size: 10px; font-weight: 600; }
+
+    .btn-del {
+      padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;
+      border: 1px solid rgba(220,38,38,.3); background: transparent; color: #dc2626;
+      cursor: pointer; transition: background .12s;
+    }
+    .btn-del:hover { background: rgba(220,38,38,.08); }
+
+    .empty-state-row td {
+      padding: 40px; text-align: center; color: var(--text-muted); font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">⊞ Batch Monitor — Admin</div>
+        <div class="page-sub">จัดการ Batch Daily Records</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="../batch-monitor.html" class="btn btn-ghost" style="font-size:11px">← กลับไป Batch Monitor</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark">⊞</div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Batch Monitor</h1>
+          <p>จัดการ Batch Daily Records — บันทึกผลรัน, rerun history, escalation log</p>
+        </div>
+      </section>
+
+      <!-- Batch Daily Records Card -->
+      <div class="cfg-card">
+        <div class="cfg-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon"><i data-icon="clipboard"></i></div>
+            <div>
+              <div class="cfg-card-title">Batch Daily Records</div>
+              <div class="cfg-card-sub">บันทึก Batch Report ทั้งหมด — ลบได้เฉพาะ sm_admin</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="rec-count" style="font-size:11px;color:var(--text-muted)"></span>
+            <button class="btn btn-ghost" onclick="exportCSV()" style="font-size:11px"><i data-icon="arrow-down"></i> Export CSV</button>
+            <button class="btn btn-ghost" onclick="confirmClear()" style="font-size:11px;color:#dc2626;border-color:rgba(220,38,38,.3)"><i data-icon="trash"></i> ล้างทั้งหมด</button>
+          </div>
+        </div>
+        <div class="cfg-card-body">
+          <div class="rec-hint">คลิก ▼ เพื่อดูรายละเอียด Job · ลบได้เฉพาะ Admin</div>
+          <div style="overflow:auto">
+            <table class="rec-tbl">
+              <thead>
+                <tr>
+                  <th style="width:28px"></th>
+                  <th>วันที่/เวลา</th>
+                  <th>Server</th>
+                  <th>ผู้รายงาน</th>
+                  <th>Jobs</th>
+                  <th>สรุป</th>
+                  <th style="width:60px"></th>
+                </tr>
+              </thead>
+              <tbody id="rec-tbody">
+                <tr><td colspan="7" style="padding:32px;text-align:center;color:var(--text-muted)">
+                  <div class="spinner" style="display:inline-block;margin-right:8px"></div>กำลังโหลด…
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('admin');
+
+const currentUser = Auth.getUser();
+const isAdmin = currentUser && ['super_admin', 'sm_admin', 'dev_sm'].includes(currentUser.role);
+
+let recRows     = [];
+let recExpanded = {};
+
+// ── Load ──────────────────────────────────────────────────────────
+async function load() {
+  const token = Auth.getToken ? Auth.getToken()
+    : (localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || '');
+  try {
+    const resp = await fetch('../api/batch-records-admin.php?action=list', {
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+    });
+    const json = await resp.json();
+    recRows = Array.isArray(json.data) ? json.data : [];
+  } catch { recRows = []; }
+
+  recExpanded = {};
+  render();
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function render() {
+  document.getElementById('rec-count').textContent = `${recRows.length} รายการ`;
+  const tbody = document.getElementById('rec-tbody');
+
+  if (!recRows.length) {
+    tbody.innerHTML = `<tr class="empty-state-row"><td colspan="7">ยังไม่มีบันทึก</td></tr>`;
+    return;
+  }
+
+  let html = '';
+  recRows.forEach(rec => {
+    const jobs     = rec.jobs || {};
+    const names    = Object.keys(jobs);
+    const total    = names.length;
+    const ok       = names.filter(n => jobs[n].status === 'Success').length;
+    const fail     = names.filter(n => jobs[n].status === 'Fail').length;
+    const na       = total - ok - fail;
+    const isOpen   = !!recExpanded[rec.id];
+
+    const dt = rec.timestamp ? new Date(rec.timestamp).toLocaleString('th-TH', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    }) : '—';
+
+    html += `<tr>
+      <td><div class="td-ci">
+        <button class="btn-exp${isOpen?' open':''}" onclick="toggleExpand('${rec.id}')">▼</button>
+      </div></td>
+      <td><div class="td-ci" style="font-size:10px">${dt}</div></td>
+      <td><div class="td-ci"><strong>${escHtml(rec.server || '—')}</strong></div></td>
+      <td><div class="td-ci" style="color:var(--text-muted)">${escHtml(rec.reporter || '—')}</div></td>
+      <td><div class="td-ci">${total} jobs</div></td>
+      <td><div class="td-ci">
+        <div class="sum-chips">
+          ${ok   ? `<span class="sum-chip pill-s">✅ ${ok}</span>`   : ''}
+          ${fail ? `<span class="sum-chip pill-f">❌ ${fail}</span>` : ''}
+          ${na   ? `<span class="sum-chip pill-n">— ${na}</span>`    : ''}
+        </div>
+      </div></td>
+      <td><div class="td-ci">
+        ${isAdmin ? `<button class="btn-del" onclick="deleteRecord('${rec.id}')">ลบ</button>` : ''}
+      </div></td>
+    </tr>`;
+
+    if (isOpen) {
+      names.forEach(name => {
+        const j = jobs[name];
+        const pillCls = j.status === 'Success' ? 'pill-s' : j.status === 'Fail' ? 'pill-f' : 'pill-n';
+        const pillTxt = j.status === 'Success' ? '<i data-icon="check-circle"></i> Success' : j.status === 'Fail' ? '<i data-icon="x-circle"></i> Fail' : '— N/A';
+        const folder  = j.folder ? `<span style="font-size:9px;color:var(--text-muted);margin-left:4px"><i data-icon="folder"></i> ${escHtml(j.folder)}</span>` : '';
+        html += `<tr class="sub-row">
+          <td></td>
+          <td colspan="2"><div class="td-ci" style="padding-left:24px">
+            ${escHtml(name)}${folder}
+          </div></td>
+          <td colspan="2"><div class="td-ci">
+            <span class="status-pill ${pillCls}">${pillTxt}</span>
+          </div></td>
+          <td><div class="td-ci" style="color:var(--text-muted);font-size:10px">${escHtml(j.remark || '')}</div></td>
+          <td></td>
+        </tr>`;
+      });
+    }
+  });
+
+  tbody.innerHTML = html;
+}
+
+function toggleExpand(id) {
+  recExpanded[id] = !recExpanded[id];
+  render();
+}
+
+// ── Delete ────────────────────────────────────────────────────────
+async function deleteRecord(id) {
+  if (!confirm('ลบบันทึกนี้?')) return;
+  const token = Auth.getToken ? Auth.getToken()
+    : (localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || '');
+  const resp = await fetch('../api/batch-records-admin.php?action=delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) },
+    body: JSON.stringify({ id })
+  });
+  const json = await resp.json();
+  if (json.ok) {
+    Toast.success('ลบสำเร็จ');
+    recRows = recRows.filter(r => r.id !== id);
+    render();
+  } else {
+    Toast.error(json.message || 'ลบไม่ได้');
+  }
+}
+
+// ── Clear all ─────────────────────────────────────────────────────
+async function confirmClear() {
+  if (!confirm(`ล้าง Batch Records ทั้งหมด ${recRows.length} รายการ? ไม่สามารถกู้คืนได้`)) return;
+  const token = Auth.getToken ? Auth.getToken()
+    : (localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || '');
+  const resp = await fetch('../api/batch-records-admin.php?action=clear', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) },
+  });
+  const json = await resp.json();
+  if (json.ok) {
+    Toast.success(`ล้างแล้ว ${json.data?.deleted_count ?? 0} รายการ`);
+    recRows = [];
+    render();
+  } else {
+    Toast.error(json.message || 'ล้างไม่ได้');
+  }
+}
+
+// ── Export CSV ────────────────────────────────────────────────────
+function exportCSV() {
+  if (!recRows.length) { Toast.warning('ไม่มีข้อมูล'); return; }
+  const rows = [['วันที่', 'Server', 'ผู้รายงาน', 'Job', 'Folder', 'Status', 'Remark']];
+  recRows.forEach(rec => {
+    Object.entries(rec.jobs || {}).forEach(([name, j]) => {
+      rows.push([
+        rec.timestamp ? new Date(rec.timestamp).toLocaleString('th-TH') : '',
+        rec.server   || '',
+        rec.reporter || '',
+        name,
+        j.folder  || '',
+        j.status  || '',
+        j.remark  || '',
+      ]);
+    });
+  });
+  const csv  = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `batch-records-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+load();
+</script>
+</body>
+</html>

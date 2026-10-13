@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pipeline Flow — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <style>
+    /* ══ Pipeline Flow ══ */
+    .pf {
+      --pf-bg-subtle: color-mix(in srgb, var(--bg-card) 94%, var(--text));
+      --pf-hover:     color-mix(in srgb, var(--text) 5%, transparent);
+      --ok:   #16a34a; --warn: #d97706; --hot:  #dc2626;
+      --cool: #2563eb; --info: #7c3aed;
+      --r: var(--radius-lg, 12px);
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    html[data-theme="dark"] .pf {
+      --ok:#4ade80; --warn:#fbbf24; --hot:#f87171; --cool:#60a5fa; --info:#a78bfa;
+    }
+
+    /* Hero */
+    .pf-hero {
+      background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r);
+      box-shadow:var(--shadow); padding:16px 20px; margin-bottom:12px;
+      display:grid; grid-template-columns:auto 1fr auto; gap:16px; align-items:center;
+    }
+    .pf-hero-icon {
+      width:42px; height:42px; border-radius:10px;
+      display:grid; place-items:center;
+      background:color-mix(in srgb, var(--info) 14%, transparent); color:var(--info);
+    }
+    .pf-hero-icon svg { width:20px; height:20px; }
+    .pf-hero-body { min-width:0; }
+    .pf-hero-title { font-size:17px; font-weight:700; letter-spacing:-.015em; }
+    .pf-hero-sub {
+      display:flex; gap:14px; flex-wrap:wrap; margin-top:6px;
+      font-size:12px; color:var(--text-muted);
+    }
+    .pf-hero-sub b { color:var(--text); font-weight:600; }
+
+    /* Nav rows */
+    .pf-nav {
+      background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r);
+      box-shadow:var(--shadow); padding:10px 12px; margin-bottom:10px;
+      display:flex; flex-direction:column; gap:8px;
+    }
+    .pf-nav-row {
+      display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+    }
+    .pf-nav-lbl {
+      font-size:10px; text-transform:uppercase; letter-spacing:.08em;
+      font-weight:700; color:var(--text-muted); margin-right:6px; flex-shrink:0;
+    }
+    .pf-chip {
+      appearance:none; border:1px solid transparent; background:transparent;
+      color:var(--text-muted); font:inherit; font-size:12px; font-weight:600;
+      padding:6px 12px; border-radius:8px; cursor:pointer;
+      display:inline-flex; align-items:center; gap:7px;
+      transition:background .12s, color .12s, border-color .12s;
+    }
+    .pf-chip:hover { background:var(--pf-hover); color:var(--text); }
+    .pf-chip.on {
+      background:color-mix(in srgb, var(--cool) 12%, transparent);
+      color:var(--cool); border-color:color-mix(in srgb, var(--cool) 30%, transparent);
+    }
+    .pf-chip.org.on {
+      background:color-mix(in srgb, var(--info) 12%, transparent);
+      color:var(--info); border-color:color-mix(in srgb, var(--info) 30%, transparent);
+    }
+    .pf-chip .n {
+      font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:99px;
+      background:color-mix(in srgb, var(--text) 8%, transparent); color:var(--text-muted);
+    }
+    .pf-chip.on .n { background:var(--cool); color:#fff; }
+    .pf-chip.org.on .n { background:var(--info); color:#fff; }
+    .pf-chip.add {
+      color:var(--info); border-color:color-mix(in srgb, var(--info) 40%, transparent);
+      border-style:dashed;
+    }
+    .pf-chip.add:hover { background:color-mix(in srgb, var(--info) 12%, transparent); color:var(--info); }
+
+    /* 2-col */
+    .pf-grid { display:grid; grid-template-columns:1fr 440px; gap:12px; align-items:stretch; }
+    @media (max-width:1400px) { .pf-grid { grid-template-columns:1fr 400px; } }
+    @media (max-width:1100px) { .pf-grid { grid-template-columns:1fr; } }
+    .pf-card {
+      background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r);
+      box-shadow:var(--shadow); overflow:hidden;
+    }
+    .pf-card-head {
+      display:flex; align-items:center; gap:10px; padding:12px 16px;
+      border-bottom:1px solid var(--border);
+    }
+    .pf-card-title { font-size:12.5px; font-weight:600; color:var(--text); }
+    .pf-card-hint  { margin-left:auto; font-size:10.5px; color:var(--text-muted); display:flex; gap:12px; align-items:center; }
+    .pf-legend { display:inline-flex; align-items:center; gap:5px; }
+    .pf-legend .swatch { width:16px; height:2px; }
+    .pf-legend .swatch.auto { background:var(--text-muted); opacity:.55; }
+    .pf-legend .swatch.user { background:var(--info); background-image:repeating-linear-gradient(90deg, var(--info) 0 5px, transparent 5px 8px); }
+    .pf-icon-btn {
+      background:transparent; border:1px solid var(--border); color:var(--text-muted);
+      padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;
+      display:inline-flex; align-items:center; gap:4px;
+    }
+    .pf-icon-btn:hover { border-color:var(--hot); color:var(--hot); }
+
+    /* Flow + nodes */
+    .pf-flow { padding:14px; min-height:520px; overflow:auto; }
+    .pf-canvas { position:relative; }
+    .pf-canvas svg.arrows { position:absolute; inset:0; pointer-events:none; }
+    .pf-lane-lbl { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; fill:var(--text-muted); }
+    .pf-lane-bg  { fill:var(--pf-bg-subtle); }
+    .pf-edge     { stroke:var(--text-muted); stroke-width:1.25; fill:none; marker-end:url(#pf-arrow); opacity:.5; }
+    .pf-edge.user{ stroke:var(--info); stroke-dasharray:5 3; opacity:.85; }
+    .pf-edge.hi  { stroke:var(--cool); stroke-width:2; opacity:1; }
+
+    .pf-node {
+      position:absolute; box-sizing:border-box;
+      background:var(--bg-card); border:1px solid var(--border); border-radius:10px;
+      padding:10px 12px 10px 15px; cursor:pointer;
+      display:flex; flex-direction:column; gap:4px;
+      transition:transform .14s, box-shadow .14s, border-color .14s, opacity .14s;
+      overflow:hidden;
+    }
+    .pf-node::before {
+      content:''; position:absolute; left:0; top:0; bottom:0; width:4px;
+      background:var(--text-muted); opacity:.55;
+    }
+    .pf-node.st-success::before  { background:var(--ok);   opacity:1; }
+    .pf-node.st-failure::before  { background:var(--hot);  opacity:1; }
+    .pf-node.st-running::before  { background:var(--cool); opacity:1; animation:pfRun 1.2s ease-in-out infinite; }
+    .pf-node.st-unstable::before { background:var(--warn); opacity:1; }
+    .pf-node.st-aborted::before  { background:var(--text-muted); opacity:.8; }
+    .pf-node.st-disabled::before,
+    .pf-node.st-notbuilt::before { background:var(--text-muted); opacity:.35; }
+    @keyframes pfRun { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+
+    .pf-node:hover { border-color:var(--cool); box-shadow:0 4px 14px color-mix(in srgb, var(--cool) 14%, transparent); transform:translateY(-1px); }
+    .pf-node.sel {
+      border-color:var(--cool); border-width:2px; padding:9px 11px 9px 14px;
+      box-shadow:0 6px 18px color-mix(in srgb, var(--cool) 22%, transparent);
+    }
+    .pf-node.dim { opacity:.32; }
+    .pf-node.dim:hover { opacity:.55; }
+
+    .pf-node-row1 { display:flex; align-items:center; gap:6px; min-width:0; }
+    .pf-node-name {
+      font-size:12px; font-weight:600; color:var(--text);
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0;
+    }
+    .pf-node-crit {
+      font-size:9px; font-weight:800; padding:1px 6px; border-radius:99px;
+      background:var(--hot); color:#fff; letter-spacing:.05em; flex-shrink:0;
+    }
+    .pf-node-row2 { display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text-muted); }
+    .pf-status {
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:9.5px; font-weight:700; padding:2px 7px; border-radius:99px;
+      background:color-mix(in srgb, var(--text) 8%, transparent);
+      color:var(--text-muted); letter-spacing:.04em;
+    }
+    .pf-status .d { width:6px; height:6px; border-radius:50%; background:currentColor; }
+    .pf-status.success  { background:color-mix(in srgb, var(--ok)   14%, transparent); color:var(--ok); }
+    .pf-status.failure  { background:color-mix(in srgb, var(--hot)  15%, transparent); color:var(--hot); }
+    .pf-status.running  { background:color-mix(in srgb, var(--cool) 15%, transparent); color:var(--cool); }
+    .pf-status.running .d { animation:pfRun 1.2s ease-in-out infinite; }
+    .pf-status.unstable { background:color-mix(in srgb, var(--warn) 15%, transparent); color:var(--warn); }
+    .pf-status.aborted  { background:color-mix(in srgb, var(--text-muted) 20%, transparent); color:var(--text-muted); }
+    .pf-status.nodata   { background:transparent; color:var(--text-muted); border:1px dashed var(--border); }
+    .pf-node-meta { font-size:10px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .pf-node-meta b { color:var(--text); font-weight:600; }
+
+    /* Empty states */
+    .pf-empty {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:60px 24px; text-align:center; color:var(--text-muted); gap:10px;
+    }
+    .pf-empty svg { width:44px; height:44px; opacity:.4; }
+    .pf-empty-title { font-size:14px; font-weight:600; color:var(--text); }
+    .pf-empty-sub   { font-size:12px; max-width:400px; line-height:1.6; }
+
+    /* Detail panel — reuse from previous design */
+    .pf-detail { display:flex; flex-direction:column; min-height:520px; }
+    .pf-detail-body { padding:16px; overflow-y:auto; flex:1; }
+    .pf-detail-empty {
+      display:flex; align-items:center; justify-content:center; flex:1;
+      color:var(--text-muted); font-size:12.5px; text-align:center; padding:40px 20px; line-height:1.6;
+    }
+    .pf-d-name { font-size:15px; font-weight:700; word-break:break-all; line-height:1.3; }
+    .pf-d-cat  { font-size:11.5px; color:var(--text-muted); margin-top:2px; }
+    .pf-d-chips { display:flex; flex-wrap:wrap; gap:5px; margin:10px 0 4px; }
+    .pf-chip-tag {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:3px 8px; border-radius:99px; font-size:10.5px; font-weight:600;
+      background:color-mix(in srgb, var(--text) 6%, transparent); color:var(--text);
+    }
+    .pf-chip-tag.crit { background:color-mix(in srgb, var(--hot)  14%, transparent); color:var(--hot); }
+    .pf-chip-tag.warn { background:color-mix(in srgb, var(--warn) 14%, transparent); color:var(--warn); }
+    .pf-chip-tag.ok   { background:color-mix(in srgb, var(--ok)   14%, transparent); color:var(--ok); }
+    .pf-chip-tag.info { background:color-mix(in srgb, var(--info) 14%, transparent); color:var(--info); }
+    .pf-d-row { display:grid; grid-template-columns:88px 1fr; gap:10px; padding:8px 0; font-size:12px; }
+    .pf-d-row + .pf-d-row { border-top:1px dashed var(--border); }
+    .pf-d-lbl { font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); font-weight:600; }
+    .pf-d-val { color:var(--text); word-break:break-word; white-space:pre-wrap; }
+    .pf-d-val a { color:var(--cool); text-decoration:none; }
+    .pf-d-val a:hover { text-decoration:underline; }
+    .pf-mono {
+      display:inline-block; padding:1px 6px; border-radius:4px;
+      background:var(--pf-bg-subtle); border:1px solid var(--border);
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:11px;
+      max-width:100%; overflow-wrap:anywhere;
+    }
+    .pf-section { margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
+    .pf-section h4 {
+      font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
+      color:var(--text-muted); font-weight:700; margin:0 0 8px 0;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .pf-file {
+      display:flex; align-items:flex-start; gap:8px;
+      padding:8px 10px; margin-bottom:5px; border-radius:8px;
+      background:var(--pf-bg-subtle); border:1px solid var(--border);
+    }
+    .pf-file-ico { flex:none; width:22px; height:22px; border-radius:6px; display:grid; place-items:center;
+      background:color-mix(in srgb, var(--text-muted) 12%, transparent); color:var(--text-muted); }
+    .pf-file.in  .pf-file-ico { background:color-mix(in srgb, var(--info) 15%, transparent); color:var(--info); }
+    .pf-file.out .pf-file-ico { background:color-mix(in srgb, var(--ok)   15%, transparent); color:var(--ok); }
+    .pf-file.db  .pf-file-ico { background:color-mix(in srgb, var(--warn) 15%, transparent); color:var(--warn); }
+    .pf-file-ico svg { width:12px; height:12px; }
+    .pf-file-body { min-width:0; flex:1; display:flex; flex-direction:column; gap:2px; }
+    .pf-file-name { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:11px; color:var(--text); word-break:break-all; line-height:1.35; }
+    .pf-file-path { font-size:10px; color:var(--text-muted); word-break:break-all; }
+    .pf-file-tag {
+      align-self:flex-start; font-size:9px; font-weight:700; padding:1px 6px; border-radius:99px;
+      background:color-mix(in srgb, var(--text) 8%, transparent); color:var(--text-muted); letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    .pf-empty-hint { font-size:11px; color:var(--text-muted); font-style:italic; padding:4px 2px; }
+    .pf-chain-item {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:6px 10px; margin:3px 0; border-radius:6px;
+      background:var(--pf-bg-subtle); font-size:11.5px; cursor:pointer;
+      border:1px solid transparent; transition:border-color .12s, color .12s;
+    }
+    .pf-chain-item:hover { border-color:var(--cool); color:var(--cool); }
+    .pf-chain-item .k {
+      font-size:9px; font-weight:700; padding:1px 6px; border-radius:4px;
+      background:color-mix(in srgb, var(--text-muted) 30%, transparent); color:var(--bg-card);
+      letter-spacing:.04em;
+    }
+    .pf-chain-item .k.user { background:var(--info); color:#fff; }
+    .pf-chain-item .del {
+      color:var(--hot); cursor:pointer; font-size:14px; margin-left:6px; line-height:1;
+      padding:2px 4px; border-radius:4px;
+    }
+    .pf-chain-item .del:hover { background:color-mix(in srgb, var(--hot) 15%, transparent); }
+
+    /* Modal */
+    .pf-mo {
+      position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9998;
+      display:none; align-items:center; justify-content:center; padding:20px;
+    }
+    .pf-mo.on { display:flex; }
+    .pf-mo-card {
+      background:var(--bg-card); border:1px solid var(--border); border-radius:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,.35); padding:22px; width:100%; max-width:560px;
+      max-height:calc(100vh - 40px); overflow-y:auto;
+    }
+    .pf-mo-title { font-size:15px; font-weight:700; margin-bottom:4px; }
+    .pf-mo-sub   { font-size:11.5px; color:var(--text-muted); margin-bottom:14px; }
+    .pf-mo label { display:block; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); margin:12px 0 5px; }
+    .pf-mo select, .pf-mo input, .pf-mo textarea {
+      width:100%; padding:9px 11px; border:1px solid var(--border); border-radius:8px;
+      background:var(--pf-bg-subtle); color:var(--text); font:inherit; font-size:12.5px;
+    }
+    .pf-mo select:focus, .pf-mo input:focus, .pf-mo textarea:focus {
+      outline:none; border-color:var(--cool);
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--cool) 15%, transparent);
+    }
+    .pf-mo textarea { min-height:66px; resize:vertical; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:11.5px; }
+    .pf-mo-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:18px; }
+    .pf-mo-row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    @media (max-width: 500px) { .pf-mo-row2 { grid-template-columns:1fr; } }
+
+    /* Modal tabs */
+    .pf-jtabs {
+      display:flex; gap:2px; margin:6px 0 12px;
+      background:var(--pf-bg-subtle); border-radius:8px; padding:3px;
+    }
+    .pf-jtab {
+      flex:1; appearance:none; border:none; background:transparent;
+      color:var(--text-muted); font:inherit; font-size:11.5px; font-weight:600;
+      padding:7px 8px; border-radius:6px; cursor:pointer;
+      transition:background .12s, color .12s;
+    }
+    .pf-jtab:hover { color:var(--text); }
+    .pf-jtab.on { background:var(--bg-card); color:var(--cool); box-shadow:0 1px 2px rgba(0,0,0,.06); }
+    .pf-jpane { display:none; }
+    .pf-jpane.on { display:block; }
+    .pf-mo label code {
+      font-family:ui-monospace,Menlo,monospace; font-size:10.5px;
+      padding:1px 5px; border-radius:4px;
+      background:color-mix(in srgb, var(--text) 8%, transparent);
+      color:var(--text); text-transform:none; letter-spacing:0;
+    }
+
+    .pf-skel {
+      background:linear-gradient(90deg, var(--pf-bg-subtle) 25%, var(--border) 50%, var(--pf-bg-subtle) 75%);
+      background-size:200% 100%; animation:pfSkel 1.5s ease-in-out infinite; border-radius:8px;
+    }
+    @keyframes pfSkel { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Pipeline Flow</div>
+        <div class="page-sub">
+          รวมทุก pipeline ของทุก Org — เห็น flow / jobs / build status ในที่เดียว
+          <a href="batch-monitor-v2.html" style="margin-left:10px; font-size:10px; color:var(--text-muted); text-decoration:none; border-bottom:1px dashed var(--text-muted); padding-bottom:1px">← กลับไป Batch Monitor</a>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" id="pf-btn-reset" type="button" title="ล้าง selection" style="font-size:11px">↺ Reset</button>
+        <button class="btn btn-primary" id="pf-btn-add-edge" type="button" style="display:none; font-size:11px">+ Chain</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="pf">
+
+        <div class="pf-hero">
+          <div class="pf-hero-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          </div>
+          <div class="pf-hero-body">
+            <div class="pf-hero-title" id="pf-h-title">Pipeline Registry</div>
+            <div class="pf-hero-sub" id="pf-h-sub">
+              <span><b id="pf-h-orgs">–</b> orgs</span>
+              <span><b id="pf-h-flows">–</b> flows</span>
+              <span><b id="pf-h-jobs">–</b> total jobs</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2-level nav -->
+        <div class="pf-nav">
+          <div class="pf-nav-row">
+            <span class="pf-nav-lbl">Org</span>
+            <div id="pf-orgs" style="display:flex; gap:6px; flex-wrap:wrap; flex:1"></div>
+          </div>
+          <div class="pf-nav-row" id="pf-flows-row">
+            <span class="pf-nav-lbl">Flow</span>
+            <div id="pf-flows" style="display:flex; gap:6px; flex-wrap:wrap; flex:1"></div>
+          </div>
+        </div>
+
+        <!-- Main content — either flow view or landing -->
+        <div id="pf-main">
+          <div class="pf-card">
+            <div class="pf-flow"><div class="pf-skel" style="height:520px"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create-flow modal -->
+      <div class="pf-mo" id="pf-mo-create">
+        <div class="pf-mo-card">
+          <div class="pf-mo-title">สร้าง Pipeline Flow ใหม่</div>
+          <div class="pf-mo-sub">ตั้งชื่อ flow แล้วเลือก Org — หลังสร้างเสร็จเพิ่ม job ได้ทีละตัว หรือ import CSV</div>
+          <div class="pf-mo-row2">
+            <div>
+              <label for="pf-c-org">Org</label>
+              <select id="pf-c-org"></select>
+            </div>
+            <div>
+              <label for="pf-c-neworg">หรือสร้าง Org ใหม่</label>
+              <input id="pf-c-neworg" type="text" placeholder="เช่น NANO, TMN, WEALTH">
+            </div>
+          </div>
+          <label for="pf-c-name">Flow name</label>
+          <input id="pf-c-name" type="text" placeholder="เช่น Collection Lead, TCRB Debt Sale">
+          <div class="pf-mo-actions">
+            <button type="button" class="btn btn-ghost" onclick="PF.closeCreate()">ยกเลิก</button>
+            <button type="button" class="btn btn-primary" onclick="PF.saveCreate()">สร้าง</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add-job modal (rich fields matching seeded data) -->
+      <div class="pf-mo" id="pf-mo-job">
+        <div class="pf-mo-card" style="max-width:720px">
+          <div class="pf-mo-title" id="pf-j-title">เพิ่ม Job</div>
+          <div class="pf-mo-sub">กรอกได้ทุก field เหมือน CSV ต้นฉบับ — บังคับแค่ Jenkins Job Name</div>
+
+          <!-- Tabs -->
+          <div class="pf-jtabs">
+            <button type="button" class="pf-jtab on" data-jtab="basic">Basic</button>
+            <button type="button" class="pf-jtab"    data-jtab="sched">Schedule</button>
+            <button type="button" class="pf-jtab"    data-jtab="owner">Ownership</button>
+            <button type="button" class="pf-jtab"    data-jtab="files">Files / DB</button>
+            <button type="button" class="pf-jtab"    data-jtab="extra">Extras</button>
+          </div>
+
+          <div class="pf-jpane on" data-pane="basic">
+            <label for="pf-j-pattern">Jenkins Job Name (required)</label>
+            <input id="pf-j-pattern" type="text" placeholder="เช่น acm-nano-prod-collection-lead-get-risk-data">
+            <div class="pf-mo-row2">
+              <div>
+                <label for="pf-j-category">Sub-category (folder label)</label>
+                <input id="pf-j-category" type="text" placeholder="Collection Lead">
+              </div>
+              <div>
+                <label for="pf-j-label">Display label (optional)</label>
+                <input id="pf-j-label" type="text" placeholder="get-risk-data">
+              </div>
+            </div>
+            <label for="pf-j-purpose">Purpose</label>
+            <textarea id="pf-j-purpose" placeholder="อธิบายว่า job นี้ทำอะไร" style="font-family:inherit; font-size:12.5px"></textarea>
+          </div>
+
+          <div class="pf-jpane" data-pane="sched">
+            <div class="pf-mo-row2">
+              <div>
+                <label for="pf-j-time">Schedule Time</label>
+                <input id="pf-j-time" type="text" placeholder="8:15:00 PM">
+              </div>
+              <div>
+                <label for="pf-j-freq">Frequency</label>
+                <input id="pf-j-freq" type="text" placeholder="Daily / Monthly / Specific">
+              </div>
+            </div>
+            <div class="pf-mo-row2">
+              <div>
+                <label for="pf-j-date">Schedule Date</label>
+                <input id="pf-j-date" type="text" placeholder="- / วันที่ 1 / Every 2 hours">
+              </div>
+              <div>
+                <label for="pf-j-sort">Sort key (order in lane)</label>
+                <input id="pf-j-sort" type="number" placeholder="0 = first, 9999 = last" value="9999">
+              </div>
+            </div>
+            <div class="pf-mo-row2">
+              <div>
+                <label for="pf-j-critical">Critical?</label>
+                <select id="pf-j-critical"><option value="">—</option><option value="Yes">Yes</option><option value="No">No</option></select>
+              </div>
+              <div>
+                <label for="pf-j-monitor">Monitor?</label>
+                <select id="pf-j-monitor"><option value="">—</option><option value="Yes">Yes</option><option value="No">No</option></select>
+              </div>
+            </div>
+            <label for="pf-j-rerun">Rerun Policy</label>
+            <input id="pf-j-rerun" type="text" placeholder="Yes / No / Yes : ทันที / No : ทันที">
+          </div>
+
+          <div class="pf-jpane" data-pane="owner">
+            <label for="pf-j-owner">Dev Owner</label>
+            <input id="pf-j-owner" type="text" placeholder="เช่น IC & DP">
+            <label for="pf-j-owner-detail">Dev Owner Detail (multi-line)</label>
+            <textarea id="pf-j-owner-detail" placeholder="IC : Oncall&#10;DP : Apilada H.&#10;    Karin T." style="font-family:inherit; font-size:12.5px"></textarea>
+            <div class="pf-mo-row2">
+              <div>
+                <label for="pf-j-userowner">User Owner</label>
+                <input id="pf-j-userowner" type="text" placeholder="Surasavadee K. Wasan P.">
+              </div>
+              <div>
+                <label for="pf-j-usergroup">User Group</label>
+                <input id="pf-j-usergroup" type="text" placeholder="Collection">
+              </div>
+            </div>
+          </div>
+
+          <div class="pf-jpane" data-pane="files">
+            <label>Source Files (IN) — 1 ต่อบรรทัด รูปแบบ <code>filename | s3_path</code></label>
+            <textarea id="pf-j-files-in" placeholder="cms_mobile_priority_YYYYMMDD.csv | s3://prod-ascendnano-collection-service/cms_mobile_priority/&#10;cms_welcome_call_YYYYMMDD.csv | s3://prod-ascendnano-collection-service/cms_welcome_call/" style="font-family:ui-monospace,Menlo,monospace; font-size:11px; min-height:80px"></textarea>
+            <label>Output Files (OUT) — 1 ต่อบรรทัด รูปแบบ <code>filename | s3_or_sftp_path</code></label>
+            <textarea id="pf-j-files-out" placeholder="yyyymmdd_customer_information-01.csv.enc | sftp://..." style="font-family:ui-monospace,Menlo,monospace; font-size:11px; min-height:70px"></textarea>
+            <label>Databases (comma-separated หรือ 1 ต่อบรรทัด)</label>
+            <textarea id="pf-j-dbs" placeholder="colld.collection_telephone_priority&#10;colld.collection_welcome_call" style="font-family:ui-monospace,Menlo,monospace; font-size:11px; min-height:60px"></textarea>
+          </div>
+
+          <div class="pf-jpane" data-pane="extra">
+            <label for="pf-j-params">Params</label>
+            <textarea id="pf-j-params" placeholder="Jenkins Job Parameter&#10;API - Get telephone priority&#10;Lead telephone priority file" style="font-family:inherit; font-size:12.5px"></textarea>
+            <label for="pf-j-confluence">Confluence URL</label>
+            <input id="pf-j-confluence" type="text" placeholder="https://truemoney.atlassian.net/wiki/...">
+          </div>
+
+          <div class="pf-mo-actions">
+            <button type="button" class="btn btn-ghost" onclick="PF.closeJob()">ยกเลิก</button>
+            <button type="button" class="btn btn-primary" onclick="PF.saveJob()">บันทึก</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add-edge modal -->
+      <div class="pf-mo" id="pf-mo-edge">
+        <div class="pf-mo-card">
+          <div class="pf-mo-title">Add Chain Dependency</div>
+          <div class="pf-mo-sub">ประกาศว่า job A ต้องรันเสร็จก่อน job B</div>
+          <label for="pf-e-from">Upstream (from)</label>
+          <select id="pf-e-from"></select>
+          <label for="pf-e-to">Downstream (to)</label>
+          <select id="pf-e-to"></select>
+          <label for="pf-e-note">Note (optional)</label>
+          <textarea id="pf-e-note" placeholder="เช่น: rerun A ก่อน B ทุกครั้งถ้าไฟล์ .enc พัง" style="font-family:inherit; font-size:12.5px"></textarea>
+          <div class="pf-mo-actions">
+            <button type="button" class="btn btn-ghost" onclick="PF.closeEdge()">ยกเลิก</button>
+            <button type="button" class="btn btn-primary" onclick="PF.saveEdge()">บันทึก</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/layout.js"></script>
+<script>
+  Auth.requireAuth();
+  Layout.render('batch-monitor');
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const urlify = (s) => esc(s).replace(/(https?:\/\/[^\s<>"']+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+
+  // Safe wrappers — use SOMDialog / Toast from utils.js if loaded, else fall back.
+  // Prevents "SOMDialog is not defined" when utils.js is stale-cached in browser.
+  const dlg = {
+    alert:   (m, o) => (typeof SOMDialog !== 'undefined')
+      ? SOMDialog.alert(m, o)
+      : Promise.resolve(window.alert(String(m).replace(/<[^>]+>/g, ''))),
+    confirm: (m, o) => (typeof SOMDialog !== 'undefined')
+      ? SOMDialog.confirm(m, o)
+      : Promise.resolve(window.confirm(String(m).replace(/<[^>]+>/g, ''))),
+  };
+  const toast = (msg, kind) => {
+    if (typeof Toast !== 'undefined') Toast[kind || 'success']?.(msg);
+  };
+
+  const COLOR_MAP = {
+    blue:'success', blue_anime:'running', red:'failure', red_anime:'running',
+    yellow:'unstable', yellow_anime:'running', grey:'disabled', grey_anime:'running',
+    notbuilt:'notbuilt', notbuilt_anime:'running', aborted:'aborted', aborted_anime:'running',
+    disabled:'disabled',
+  };
+  const fmtAgo = (ms) => {
+    if (!ms) return '';
+    const s = Math.floor((Date.now() - ms) / 1000);
+    if (s < 60)    return s + 's ago';
+    if (s < 3600)  return Math.floor(s/60)  + 'm ago';
+    if (s < 86400) return Math.floor(s/3600)+ 'h ago';
+    return Math.floor(s/86400) + 'd ago';
+  };
+  const ICO_FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/></svg>';
+  const ICO_DB   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>';
+
+  const PF = {
+    index: null,             // { orgs, flows:[summary] }
+    flow: null,              // full loaded flow
+    jobsMap: {},
+    selOrg: null,
+    selFlowId: null,
+    selJob: null,
+    _refreshTimer: null,
+
+    async init() {
+      await this.loadIndex();
+      // Restore last selection from sessionStorage
+      try {
+        const s = JSON.parse(sessionStorage.getItem('_pf_state') || '{}');
+        if (s.org)    this.selOrg    = s.org;
+        if (s.flowId) this.selFlowId = s.flowId;
+      } catch {}
+      // Default to first org / flow if nothing selected
+      if (!this.selOrg && this.index.orgs.length) this.selOrg = this.index.orgs[0];
+      this._renderNav();
+      if (this.selFlowId && this.index.flows.some(f => f.id === this.selFlowId)) {
+        await this.loadFlow(this.selFlowId);
+      } else {
+        this._renderLanding();
+      }
+      // Kick off Jenkins fetch — populates status pills across all cards
+      this._fetchJenkins().catch(err => console.warn('Jenkins fetch:', err));
+      clearInterval(this._refreshTimer);
+      this._refreshTimer = setInterval(() => this._fetchJenkins().catch(()=>{}), 60_000);
+    },
+
+    async loadIndex() {
+      try {
+        const res = await API.get('/pipeline-flows/index.php');
+        if (!res?.ok || !res?.data?.data) throw new Error(res?.data?.message || 'load failed');
+        this.index = res.data.data;
+        const jobsTotal = this.index.flows.reduce((s,f) => s + (f.job_count || 0), 0);
+        $('pf-h-orgs').textContent  = this.index.orgs.length;
+        $('pf-h-flows').textContent = this.index.flows.length;
+        $('pf-h-jobs').textContent  = jobsTotal;
+      } catch (e) {
+        $('pf-main').innerHTML = `<div class="pf-card"><div class="pf-empty" style="color:var(--hot)">โหลดไม่สำเร็จ · ${esc(e.message||e)}</div></div>`;
+      }
+    },
+
+    async loadFlow(id) {
+      this.selFlowId = id; this.selJob = null;
+      this._saveState();
+      try {
+        const res = await API.get('/pipeline-flows/index.php?flow=' + encodeURIComponent(id));
+        if (!res?.ok || !res?.data?.data?.flow) throw new Error(res?.data?.message || 'load failed');
+        this.flow = res.data.data.flow;
+        this._renderNav();
+        this._renderFlow();
+      } catch (e) {
+        $('pf-main').innerHTML = `<div class="pf-card"><div class="pf-empty" style="color:var(--hot)">โหลดไม่สำเร็จ · ${esc(e.message||e)}</div></div>`;
+      }
+    },
+
+    async _fetchJenkins() {
+      const sres = await API.jenkins.servers();
+      const servers = sres?.data?.data || [];
+      const TREE = 'jobs[name,color,url,lastBuild[number,timestamp,result,duration],jobs[name,color,url,lastBuild[number,timestamp,result,duration]]]';
+      const results = await Promise.all(servers.map(async s => {
+        try {
+          const r = await API.jenkins.jobs(s.id, TREE);
+          return { server: s, jobs: r?.data?.data?.jobs || [] };
+        } catch { return { server: s, jobs: [] }; }
+      }));
+      const map = {};
+      const walk = (arr, serverId, folder) => {
+        for (const j of arr) {
+          if (Array.isArray(j.jobs)) walk(j.jobs, serverId, (folder ? folder + '/' : '') + j.name);
+          else if (j.name && j.color !== undefined) {
+            map[j.name.toLowerCase()] = {
+              status:   COLOR_MAP[j.color] || 'notbuilt',
+              color:    j.color,
+              buildNo:  j.lastBuild?.number || null,
+              ts:       j.lastBuild?.timestamp || null,
+              result:   j.lastBuild?.result || null,
+              duration: j.lastBuild?.duration || null,
+              url:      j.url || null,
+              server:   serverId, folder,
+            };
+          }
+        }
+      };
+      results.forEach(r => walk(r.jobs, r.server.id, ''));
+      this.jobsMap = map;
+      if (this.flow && this.selFlowId) { this._renderFlow(); if (this.selJob) this._renderDetail(this.selJob); }
+    },
+
+    _lookup(pattern) {
+      const p = (pattern || '').toLowerCase();
+      if (this.jobsMap[p]) return this.jobsMap[p];
+      for (const [k, v] of Object.entries(this.jobsMap)) {
+        if (k === p || k.endsWith('-' + p) || k.endsWith('/' + p) || k.includes(p)) return v;
+      }
+      return null;
+    },
+
+    _saveState() {
+      try { sessionStorage.setItem('_pf_state', JSON.stringify({ org: this.selOrg, flowId: this.selFlowId })); } catch {}
+    },
+
+    _renderNav() {
+      const isSm = Auth.getUser?.()?.team === 'sm';
+
+      // Org chips
+      const orgs = this.index.orgs;
+      const orgChips = orgs.map(o => {
+        const n = this.index.flows.filter(f => f.org === o).length;
+        return `<button type="button" class="pf-chip org ${this.selOrg===o?'on':''}" data-org="${esc(o)}">
+                  <span>${esc(o)}</span><span class="n">${n}</span>
+                </button>`;
+      }).join('');
+      $('pf-orgs').innerHTML = orgChips
+        + (isSm ? `<button type="button" class="pf-chip add" onclick="PF.openCreate()" title="สร้าง flow ใหม่ (เลือก org ในหน้าต่างถัดไป)">+ New Flow</button>` : '');
+      $('pf-orgs').querySelectorAll('[data-org]').forEach(el => {
+        el.addEventListener('click', () => { this.selOrg = el.dataset.org; this.selFlowId = null; this.flow = null; this._saveState(); this._renderNav(); this._renderLanding(); });
+      });
+
+      // Flow chips for selected org
+      const orgFlows = this.index.flows.filter(f => f.org === this.selOrg);
+      $('pf-flows').innerHTML = orgFlows.length
+        ? orgFlows.map(f => `<button type="button" class="pf-chip ${this.selFlowId===f.id?'on':''}" data-flow="${esc(f.id)}">
+              <span>${esc(f.name)}</span><span class="n">${f.job_count}</span>
+            </button>`).join('')
+        : `<span style="font-size:11.5px; color:var(--text-muted); font-style:italic">${isSm ? 'ยังไม่มี flow ใน org นี้ — กด + New Flow ด้านบนเพื่อสร้าง' : 'ยังไม่มี flow ใน org นี้'}</span>`;
+      $('pf-flows').querySelectorAll('[data-flow]').forEach(el => {
+        el.addEventListener('click', () => this.loadFlow(el.dataset.flow));
+      });
+
+      if (isSm && this.selFlowId) $('pf-btn-add-edge').style.display = '';
+      else $('pf-btn-add-edge').style.display = 'none';
+    },
+
+    _renderLanding() {
+      const orgFlows = this.index.flows.filter(f => f.org === this.selOrg);
+      $('pf-main').innerHTML = `
+        <div class="pf-card">
+          <div class="pf-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+            <div class="pf-empty-title">${esc(this.selOrg || 'Select an org')}</div>
+            <div class="pf-empty-sub">
+              ${orgFlows.length ? `เลือก flow จากด้านบน (${orgFlows.length} รายการ) เพื่อดูรายละเอียด jobs + chain + build status` : 'ยังไม่มี flow — กด + New Flow ที่แถบ Org ด้านบนเพื่อสร้าง'}
+            </div>
+          </div>
+        </div>`;
+    },
+
+    _renderFlow() {
+      const f = this.flow;
+      if (!f) return;
+      const isSm = Auth.getUser?.()?.team === 'sm';
+      const emptyBlock = f.jobs.length === 0 ? `
+        <div class="pf-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+          <div class="pf-empty-title">ยังไม่มี job ใน flow นี้</div>
+          <div class="pf-empty-sub">${isSm ? 'กด <b>+ Add Job</b> ด้านขวาเพื่อเพิ่ม' : 'รอ SM Team เพิ่ม jobs'}</div>
+        </div>` : null;
+
+      // Phase 1 — insert outer shell with EMPTY flow slot so we can measure its width
+      $('pf-main').innerHTML = `
+        <div class="pf-grid">
+          <div class="pf-card">
+            <div class="pf-card-head">
+              <div class="pf-card-title">${esc(f.name)} <span style="color:var(--text-muted); font-weight:400">· ${f.jobs.length} jobs</span></div>
+              <div class="pf-card-hint">
+                <span class="pf-legend"><span class="swatch auto"></span>auto</span>
+                <span class="pf-legend"><span class="swatch user"></span>declared</span>
+                ${isSm ? `<button class="pf-icon-btn" onclick="PF.openJob()" title="เพิ่ม job">+ Add Job</button>` : ''}
+                ${isSm ? `<button class="pf-icon-btn" onclick="PF.deleteFlow()" title="ลบ flow นี้">🗑 Delete</button>` : ''}
+              </div>
+            </div>
+            ${emptyBlock || `<div id="pf-flow-slot" class="pf-flow"></div>`}
+          </div>
+          <div class="pf-card pf-detail" id="pf-detail-card">
+            <div class="pf-card-head"><div class="pf-card-title">Job Detail</div></div>
+            <div id="pf-detail-body" class="pf-detail-empty">
+              คลิก job ในแผนภาพเพื่อดูรายละเอียด<br>
+              <span style="font-size:11px; opacity:.7">Purpose · Schedule · Source/Output · DB · Chain</span>
+            </div>
+          </div>
+        </div>`;
+
+      if (emptyBlock) { if (this.selJob) this._renderDetail(this.selJob); return; }
+
+      // Phase 2 — measure actual flow slot width and paint canvas
+      this._paintFlow();
+      if (this.selJob) this._renderDetail(this.selJob);
+    },
+
+    _paintFlow() {
+      const f = this.flow;
+      if (!f) return;
+      const slot = $('pf-flow-slot');
+      if (!slot) return;
+
+      const laneW = 260, laneGap = 16, nodeH = 96, nodeGap = 14, padTop = 34, padSide = 12;
+      const cats = [...new Set(f.jobs.map(j => j.category).filter(Boolean))];
+      const realLanes = cats.length ? cats : [f.name];
+      const realByLane = {};
+      realLanes.forEach(c => {
+        realByLane[c] = f.jobs
+          .filter(j => (cats.length ? j.category === c : true))
+          .sort((a,b) => (a.schedule?.sort_key ?? 9999) - (b.schedule?.sort_key ?? 9999));
+      });
+
+      // Measure ACTUAL flow slot inner width (already laid out by browser)
+      const slotStyle = getComputedStyle(slot);
+      const padH = parseFloat(slotStyle.paddingLeft) + parseFloat(slotStyle.paddingRight);
+      const availW = Math.max(laneW + 60, slot.clientWidth - padH);
+      const maxCols = Math.max(1, Math.floor((availW + laneGap) / (laneW + laneGap)));
+
+      let lanes = realLanes;
+      let byLane = realByLane;
+      let umbrellaLabel = null;
+      if (realLanes.length === 1 && realByLane[realLanes[0]].length > maxCols) {
+        const jobs = realByLane[realLanes[0]];
+        const cols = Math.min(maxCols, jobs.length);
+        const rows = Math.ceil(jobs.length / cols);
+        lanes = [];
+        byLane = {};
+        for (let c = 0; c < cols; c++) {
+          const key = '__vcol_' + c;
+          lanes.push(key);
+          byLane[key] = jobs.slice(c*rows, (c+1)*rows);
+        }
+        umbrellaLabel = realLanes[0];
+      }
+
+      const maxRows = Math.max(1, ...Object.values(byLane).map(a => a.length));
+      const height  = padTop + maxRows * (nodeH + nodeGap) + 20;
+      const width   = padSide*2 + lanes.length * laneW + Math.max(0, lanes.length-1) * laneGap;
+
+      const pos = {};
+      lanes.forEach((c, ci) => {
+        const laneX = padSide + ci*(laneW + laneGap);
+        byLane[c].forEach((j, ji) => {
+          pos[j.pattern] = { x: laneX + 12, y: padTop + ji*(nodeH + nodeGap), w: laneW - 24, h: nodeH };
+        });
+      });
+
+      const edgeKey = (e) => e.from + '→' + e.to;
+      const userSet = new Set(f.user_edges.map(edgeKey));
+      const edges = [
+        ...f.auto_edges.filter(e => !userSet.has(edgeKey(e))).map(e => ({...e, kind:'auto'})),
+        ...f.user_edges.map(e => ({...e, kind:'user'})),
+      ];
+      const hi = new Set();
+      if (this.selJob) edges.forEach(e => {
+        if (e.from === this.selJob || e.to === this.selJob) hi.add(edgeKey(e));
+      });
+      const edgePath = (a, b) => {
+        const x1 = a.x + a.w/2, y1 = a.y + a.h;
+        const x2 = b.x + b.w/2, y2 = b.y;
+        if (Math.abs(x1 - x2) < 2) return `M${x1},${y1} L${x2},${y2}`;
+        if (y2 > y1) {
+          const midY = (y1 + y2) / 2;
+          return `M${x1},${y1} C${x1},${midY} ${x2},${midY} ${x2},${y2}`;
+        }
+        const dip = y1 + 18;
+        return `M${x1},${y1} C${x1},${dip} ${x2},${dip} ${x2},${y2 - 18} L${x2},${y2}`;
+      };
+
+      let laneBg = '';
+      if (umbrellaLabel) {
+        laneBg = `<rect class="pf-lane-bg" x="${padSide}" y="${padTop-22}" width="${width - padSide*2}" height="${height - padTop + 4}" rx="10"/>
+                  <text class="pf-lane-lbl" x="${padSide + (width - padSide*2)/2}" y="${padTop - 8}" text-anchor="middle">${esc(umbrellaLabel)}</text>`;
+      } else {
+        lanes.forEach((c, ci) => {
+          const x = padSide + ci*(laneW + laneGap);
+          laneBg += `<rect class="pf-lane-bg" x="${x}" y="${padTop-22}" width="${laneW}" height="${height - padTop + 4}" rx="10"/>`;
+          laneBg += `<text class="pf-lane-lbl" x="${x + laneW/2}" y="${padTop - 8}" text-anchor="middle">${esc(c)}</text>`;
+        });
+      }
+      let edgesSvg = '';
+      edges.forEach(e => {
+        const a = pos[e.from], b = pos[e.to];
+        if (!a || !b) return;
+        const cls = ['pf-edge']; if (e.kind === 'user') cls.push('user'); if (hi.has(edgeKey(e))) cls.push('hi');
+        edgesSvg += `<path class="${cls.join(' ')}" d="${edgePath(a,b)}"></path>`;
+      });
+
+      const dimmed = (pat) => this.selJob && this.selJob !== pat
+        && !edges.some(e => (e.from === this.selJob && e.to === pat) || (e.to === this.selJob && e.from === pat));
+
+      const statusPill = (jj) => {
+        if (!jj) return `<span class="pf-status nodata"><span class="d"></span>no data</span>`;
+        const label = jj.status === 'success' ? `#${jj.buildNo}` :
+                      jj.status === 'failure' ? `FAIL #${jj.buildNo}` :
+                      jj.status === 'running' ? `RUN…` :
+                      jj.status === 'unstable'? `UNSTBL` :
+                      jj.status === 'aborted' ? `ABORT` :
+                      jj.status === 'notbuilt'? `no build` :
+                      jj.status === 'disabled'? `disabled` : jj.status;
+        return `<span class="pf-status ${jj.status}"><span class="d"></span>${esc(label)}</span>`;
+      };
+
+      let nodesHtml = '';
+      Object.entries(pos).forEach(([pat, p]) => {
+        const j = f.jobs.find(x => x.pattern === pat);
+        if (!j) return;
+        const jj = this._lookup(pat);
+        const cls = ['pf-node']; if (jj?.status) cls.push('st-' + jj.status);
+        if (this.selJob === pat) cls.push('sel');
+        if (dimmed(pat)) cls.push('dim');
+        const isCrit = /yes/i.test(j.critical || '');
+        const time = j.schedule?.time || '—';
+        const ago = jj?.ts ? fmtAgo(jj.ts) : '';
+        const openUrl = jj?.url ? `<a href="${esc(jj.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="เปิดใน Jenkins" style="color:var(--text-muted); flex-shrink:0; display:inline-flex" onmouseover="this.style.color='var(--cool)'" onmouseout="this.style.color='var(--text-muted)'"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></a>` : '';
+        nodesHtml += `
+          <div class="${cls.join(' ')}" data-pat="${esc(pat)}" style="left:${p.x}px; top:${p.y}px; width:${p.w}px; height:${p.h}px">
+            <div class="pf-node-row1">
+              <span class="pf-node-name" title="${esc(pat)}">${esc(pat)}</span>
+              ${isCrit ? '<span class="pf-node-crit">CRIT</span>' : ''}
+              ${openUrl}
+            </div>
+            <div class="pf-node-row2">
+              ${statusPill(jj)}
+              ${ago ? `<span style="opacity:.85">· ${esc(ago)}</span>` : ''}
+            </div>
+            <div class="pf-node-meta"><b>${esc(time)}</b>${j.schedule?.frequency ? ' · ' + esc(j.schedule.frequency) : ''}${j.dev_owner ? ' · ' + esc(j.dev_owner.slice(0,22)) : ''}</div>
+          </div>`;
+      });
+
+      slot.innerHTML = `
+        <div class="pf-canvas" style="width:${width}px; height:${height}px">
+          <svg class="arrows" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
+            <defs>
+              <marker id="pf-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
+              </marker>
+            </defs>
+            ${laneBg}${edgesSvg}
+          </svg>
+          ${nodesHtml}
+        </div>`;
+
+      slot.querySelectorAll('.pf-node').forEach(el => {
+        el.addEventListener('click', () => {
+          const pat = el.dataset.pat;
+          this.selJob = (this.selJob === pat) ? null : pat;
+          this._paintFlow();   // repaint without rebuilding shell
+          if (this.selJob) this._renderDetail(this.selJob);
+        });
+      });
+    },
+
+    _renderDetail(pat) {
+      const f = this.flow;
+      const j = f.jobs.find(x => x.pattern === pat);
+      const body = $('pf-detail-body');
+      if (!j) { body.className = 'pf-detail-empty'; body.innerHTML = 'ไม่พบ job นี้'; return; }
+      body.className = 'pf-detail-body';
+
+      const chips = [];
+      if (/yes/i.test(j.critical || '')) chips.push('<span class="pf-chip-tag crit">CRITICAL</span>');
+      if (/yes/i.test(j.monitor  || '')) chips.push('<span class="pf-chip-tag ok">MONITORED</span>');
+      if (j.rerun) {
+        const cls = /no.*ทันที|no\s*:/i.test(j.rerun) ? 'crit'
+                  : /yes.*ทันที|yes\s*:/i.test(j.rerun) ? 'warn'
+                  : /yes/i.test(j.rerun) ? 'ok' : 'info';
+        chips.push(`<span class="pf-chip-tag ${cls}">Rerun: ${esc(j.rerun.split('\n')[0])}</span>`);
+      }
+      if (j.schedule?.frequency) chips.push(`<span class="pf-chip-tag info">${esc(j.schedule.frequency)}</span>`);
+
+      const filesIn  = (j.files || []).filter(x => x.io === 'in');
+      const filesOut = (j.files || []).filter(x => x.io === 'out');
+      const fileList = (arr, cls, tag) => arr.length
+        ? arr.map(x => `<div class="pf-file ${cls}"><div class="pf-file-ico">${ICO_FILE}</div><div class="pf-file-body"><div class="pf-file-name">${esc(x.file)}</div>${x.s3?`<div class="pf-file-path">${esc(x.s3)}</div>`:''}</div><span class="pf-file-tag">${tag}</span></div>`).join('')
+        : '<div class="pf-empty-hint">—</div>';
+      const dbList = (arr) => arr.map(x => `<div class="pf-file db"><div class="pf-file-ico">${ICO_DB}</div><div class="pf-file-body"><div class="pf-file-name">${esc(x)}</div></div><span class="pf-file-tag">DB</span></div>`).join('');
+
+      const key = (e) => e.from + '→' + e.to;
+      const userSet = new Set(f.user_edges.map(key));
+      const allEdges = [
+        ...f.auto_edges.filter(e => !userSet.has(key(e))).map(e => ({...e, kind:'auto'})),
+        ...f.user_edges.map(e => ({...e, kind:'user'})),
+      ];
+      const upstream   = allEdges.filter(e => e.to   === pat);
+      const downstream = allEdges.filter(e => e.from === pat);
+      const isSm = Auth.getUser?.()?.team === 'sm';
+      const chainItem = (e, dir) => {
+        const other = dir === 'up' ? e.from : e.to;
+        const k = e.kind === 'user' ? '<span class="k user">USER</span>' : '<span class="k">AUTO</span>';
+        const del = (isSm && e.kind === 'user')
+          ? `<span class="del" onclick="event.stopPropagation();PF.deleteEdge('${esc(e.from)}','${esc(e.to)}')" title="ลบ">×</span>` : '';
+        return `<div class="pf-chain-item" onclick="PF.select('${esc(other)}')"><span>${esc(other)}</span><span style="display:flex;align-items:center;gap:4px">${k}${del}</span></div>`;
+      };
+
+      const jj = this._lookup(pat);
+      const statusRow = jj ? `
+        <div class="pf-d-row"><div class="pf-d-lbl">Last Build</div><div class="pf-d-val">
+          <span class="pf-status ${jj.status}"><span class="d"></span>${esc(jj.status.toUpperCase())}</span>
+          ${jj.buildNo ? `<span style="color:var(--text-muted); margin-left:6px">#${jj.buildNo}</span>` : ''}
+          ${jj.ts ? `<span style="color:var(--text-muted); margin-left:6px">· ${esc(new Date(jj.ts).toLocaleString('th-TH'))} <span style="opacity:.7">(${esc(fmtAgo(jj.ts))})</span></span>` : ''}
+          ${jj.duration ? `<div style="color:var(--text-muted); font-size:11px; margin-top:2px">Duration: ${Math.round(jj.duration/1000)}s</div>` : ''}
+          ${jj.url ? `<div style="margin-top:4px"><a href="${esc(jj.url)}" target="_blank" rel="noopener">เปิดใน Jenkins ↗</a></div>` : ''}
+        </div></div>`
+        : `<div class="pf-d-row"><div class="pf-d-lbl">Last Build</div><div class="pf-d-val"><span class="pf-status nodata"><span class="d"></span>NO DATA</span> <span style="color:var(--text-muted); font-size:11px">— ไม่พบใน Jenkins</span></div></div>`;
+
+      body.innerHTML = `
+        <div class="pf-d-name">${esc(pat)}</div>
+        <div class="pf-d-cat">${esc(j.category || f.name)}${j.label && j.label !== pat ? ' · ' + esc(j.label) : ''}</div>
+        <div class="pf-d-chips">${chips.join('')}</div>
+        ${statusRow}
+        <div class="pf-d-row"><div class="pf-d-lbl">Schedule</div><div class="pf-d-val">${esc(j.schedule?.time || '—')}${j.schedule?.frequency ? ' · ' + esc(j.schedule.frequency) : ''}${j.schedule?.date && j.schedule.date !== '-' ? ' · ' + esc(j.schedule.date) : ''}</div></div>
+        ${j.purpose ? `<div class="pf-d-row"><div class="pf-d-lbl">Purpose</div><div class="pf-d-val">${esc(j.purpose)}</div></div>` : ''}
+        <div class="pf-d-row"><div class="pf-d-lbl">Jenkins</div><div class="pf-d-val"><span class="pf-mono">${esc(j.jenkins_raw || pat)}</span></div></div>
+        ${j.dev_owner   ? `<div class="pf-d-row"><div class="pf-d-lbl">Dev Owner</div><div class="pf-d-val">${esc(j.dev_owner)}${j.dev_owner_detail ? '<br><span style="font-size:11px;color:var(--text-muted);white-space:pre-line">' + esc(j.dev_owner_detail) + '</span>' : ''}</div></div>` : ''}
+        ${j.user_owners ? `<div class="pf-d-row"><div class="pf-d-lbl">User Owner</div><div class="pf-d-val">${esc(j.user_owners)}${j.user_group ? ' <span style="color:var(--text-muted);font-size:11px">(' + esc(j.user_group) + ')</span>' : ''}</div></div>` : ''}
+        ${j.params      ? `<div class="pf-d-row"><div class="pf-d-lbl">Params</div><div class="pf-d-val">${esc(j.params)}</div></div>` : ''}
+        ${j.confluence  ? `<div class="pf-d-row"><div class="pf-d-lbl">Confluence</div><div class="pf-d-val">${urlify(j.confluence)}</div></div>` : ''}
+
+        <div class="pf-section"><h4><span>Source Files (IN)</span></h4>${fileList(filesIn, 'in', 'IN')}</div>
+        <div class="pf-section"><h4><span>Output Files (OUT)</span></h4>${fileList(filesOut, 'out', 'OUT')}</div>
+        ${(j.dbs && j.dbs.length) ? `<div class="pf-section"><h4><span>Databases (${j.dbs.length})</span></h4>${dbList(j.dbs)}</div>` : ''}
+        <div class="pf-section"><h4><span>Chain — Upstream (${upstream.length})</span></h4>${upstream.length ? upstream.map(e=>chainItem(e,'up')).join('') : '<div class="pf-empty-hint">—</div>'}</div>
+        <div class="pf-section"><h4><span>Chain — Downstream (${downstream.length})</span></h4>${downstream.length ? downstream.map(e=>chainItem(e,'down')).join('') : '<div class="pf-empty-hint">—</div>'}</div>
+        ${isSm ? `<div class="pf-section"><button class="btn btn-ghost" style="font-size:11px; color:var(--hot)" onclick="PF.deleteJob('${esc(pat)}')">🗑 Remove job from flow</button></div>` : ''}
+      `;
+    },
+
+    select(pat) { this.selJob = pat; this._renderFlow(); this._renderDetail(pat); },
+
+    // ── Create flow ──────────
+    openCreate() {
+      $('pf-c-org').innerHTML = this.index.orgs.map(o => `<option value="${esc(o)}"${o===this.selOrg?' selected':''}>${esc(o)}</option>`).join('');
+      $('pf-c-neworg').value = ''; $('pf-c-name').value = '';
+      $('pf-mo-create').classList.add('on');
+    },
+    closeCreate() { $('pf-mo-create').classList.remove('on'); },
+    async saveCreate() {
+      const org  = ($('pf-c-neworg').value || $('pf-c-org').value || '').trim().toUpperCase();
+      const name = $('pf-c-name').value.trim();
+      if (!org)  return dlg.alert('กรุณากรอก Org', { icon:'warning', title:'ข้อมูลไม่ครบ' });
+      if (!name) return dlg.alert('กรุณากรอกชื่อ flow', { icon:'warning', title:'ข้อมูลไม่ครบ' });
+      try {
+        const res = await API.post('/pipeline-flows/index.php?action=create', { org, name });
+        if (!res?.ok || !res?.data?.data?.flow) throw new Error(res?.data?.message || 'create failed');
+        this.closeCreate();
+        this.selOrg = org;
+        await this.loadIndex();
+        this._renderNav();
+        await this.loadFlow(res.data.data.flow.id);
+        toast('สร้าง flow เรียบร้อย');
+      } catch (e) { dlg.alert('สร้างไม่สำเร็จ: ' + (e.message||e), { icon:'danger', title:'ผิดพลาด' }); }
+    },
+
+    async deleteFlow() {
+      if (!this.flow) return;
+      const ok = await dlg.confirm(
+        `ลบ flow <b>${esc(this.flow.name)}</b> พร้อม ${this.flow.jobs.length} jobs ทั้งหมด?<br><br>การลบไม่สามารถ undo ได้`,
+        { title:'ยืนยันการลบ', icon:'danger', okLabel:'ลบ', okColor:'danger' }
+      );
+      if (!ok) return;
+      try {
+        const res = await API.delete('/pipeline-flows/index.php?flow=' + encodeURIComponent(this.selFlowId));
+        if (!res?.ok || !res?.data?.ok) throw new Error(res?.data?.message || 'delete failed');
+        this.selFlowId = null; this.flow = null; this.selJob = null;
+        this._saveState();
+        await this.loadIndex();
+        this._renderNav();
+        this._renderLanding();
+        toast('ลบ flow เรียบร้อย');
+      } catch (e) { dlg.alert('ลบไม่สำเร็จ: ' + (e.message||e), { icon:'danger' }); }
+    },
+
+    // ── Add job (rich fields) ──────────
+    openJob() {
+      const ids = ['pf-j-pattern','pf-j-category','pf-j-label','pf-j-purpose',
+                   'pf-j-time','pf-j-freq','pf-j-date','pf-j-rerun',
+                   'pf-j-owner','pf-j-owner-detail','pf-j-userowner','pf-j-usergroup',
+                   'pf-j-files-in','pf-j-files-out','pf-j-dbs',
+                   'pf-j-params','pf-j-confluence'];
+      ids.forEach(id => { const el = $(id); if (el) el.value = ''; });
+      $('pf-j-sort').value = '9999';
+      $('pf-j-critical').value = ''; $('pf-j-monitor').value = '';
+      // Prefill sub-category with current flow name (common case: category = flow name)
+      if (this.flow) $('pf-j-category').value = this.flow.name;
+      // Reset to first tab
+      document.querySelectorAll('#pf-mo-job .pf-jtab').forEach(t => t.classList.toggle('on', t.dataset.jtab === 'basic'));
+      document.querySelectorAll('#pf-mo-job .pf-jpane').forEach(p => p.classList.toggle('on', p.dataset.pane === 'basic'));
+      $('pf-mo-job').classList.add('on');
+    },
+    closeJob() { $('pf-mo-job').classList.remove('on'); },
+
+    _parseFiles(text) {
+      // Each line = "filename | s3path"  (s3path optional)
+      return text.split('\n').map(l => l.trim()).filter(Boolean).map(line => {
+        const [file, s3] = line.split('|').map(s => (s || '').trim());
+        return { file, s3: s3 || '' };
+      });
+    },
+    _parseDbs(text) {
+      // Support both newlines and commas
+      return text.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+    },
+
+    async saveJob() {
+      const pattern = $('pf-j-pattern').value.trim();
+      if (!pattern) return dlg.alert('กรุณากรอก Jenkins Job Name', { icon:'warning', title:'ข้อมูลไม่ครบ' });
+
+      const filesIn  = this._parseFiles($('pf-j-files-in').value).map(f => ({ ...f, io:'in'  }));
+      const filesOut = this._parseFiles($('pf-j-files-out').value).map(f => ({ ...f, io:'out' }));
+
+      const body = {
+        pattern,
+        jenkins_raw: pattern,
+        category:    $('pf-j-category').value.trim() || (this.flow?.name || ''),
+        label:       $('pf-j-label').value.trim() || pattern,
+        purpose:     $('pf-j-purpose').value.trim(),
+        sched_time:  $('pf-j-time').value.trim(),
+        frequency:   $('pf-j-freq').value.trim(),
+        sched_date:  $('pf-j-date').value.trim(),
+        sort_key:    parseInt($('pf-j-sort').value, 10) || 9999,
+        critical:    $('pf-j-critical').value,
+        monitor:     $('pf-j-monitor').value,
+        rerun:       $('pf-j-rerun').value.trim(),
+        dev_owner:   $('pf-j-owner').value.trim(),
+        dev_owner_detail: $('pf-j-owner-detail').value.trim(),
+        user_owners: $('pf-j-userowner').value.trim(),
+        user_group:  $('pf-j-usergroup').value.trim(),
+        params:      $('pf-j-params').value.trim(),
+        confluence:  $('pf-j-confluence').value.trim(),
+        files:       [...filesIn, ...filesOut],
+        dbs:         this._parseDbs($('pf-j-dbs').value),
+      };
+      try {
+        const res = await API.post('/pipeline-flows/index.php?flow=' + encodeURIComponent(this.selFlowId) + '&action=add-job', body);
+        if (!res?.ok || !res?.data?.ok) throw new Error(res?.data?.message || 'save failed');
+        this.closeJob();
+        await this.loadFlow(this.selFlowId);
+        await this.loadIndex(); this._renderNav();
+        toast('บันทึก job เรียบร้อย');
+      } catch (e) { dlg.alert('บันทึกไม่สำเร็จ: ' + (e.message||e), { icon:'danger' }); }
+    },
+
+    async deleteJob(pattern) {
+      const ok = await dlg.confirm(
+        `ลบ job <b>${esc(pattern)}</b> จาก flow นี้?`,
+        { title:'ยืนยันการลบ', icon:'danger', okLabel:'ลบ', okColor:'danger' }
+      );
+      if (!ok) return;
+      try {
+        const res = await API.post('/pipeline-flows/index.php?flow=' + encodeURIComponent(this.selFlowId) + '&action=delete-job', { pattern });
+        if (!res?.ok || !res?.data?.ok) throw new Error(res?.data?.message || 'delete failed');
+        this.selJob = null;
+        await this.loadFlow(this.selFlowId);
+        await this.loadIndex(); this._renderNav();
+        toast('ลบ job เรียบร้อย');
+      } catch (e) { dlg.alert('ลบไม่สำเร็จ: ' + (e.message||e), { icon:'danger' }); }
+    },
+
+    // ── Chain edit ──────────
+    openEdge() {
+      if (!this.flow || !this.flow.jobs.length) return dlg.alert('ยังไม่มี job ใน flow นี้ — เพิ่ม job ก่อน', { icon:'info', title:'Flow ว่าง' });
+      const opts = this.flow.jobs.map(j => `<option value="${esc(j.pattern)}">${esc(j.pattern)}</option>`).join('');
+      $('pf-e-from').innerHTML = opts; $('pf-e-to').innerHTML = opts;
+      if (this.selJob) $('pf-e-from').value = this.selJob;
+      $('pf-e-note').value = '';
+      $('pf-mo-edge').classList.add('on');
+    },
+    closeEdge() { $('pf-mo-edge').classList.remove('on'); },
+    async saveEdge() {
+      const from = $('pf-e-from').value, to = $('pf-e-to').value, note = $('pf-e-note').value;
+      if (!from || !to || from === to) return dlg.alert('เลือก from และ to ที่ต่างกัน', { icon:'warning' });
+      try {
+        const res = await API.post('/pipeline-flows/index.php?flow=' + encodeURIComponent(this.selFlowId) + '&action=add-edge', { from, to, note });
+        if (!res?.ok || !res?.data?.ok) throw new Error(res?.data?.message || 'save failed');
+        this.closeEdge();
+        await this.loadFlow(this.selFlowId);
+        toast('เพิ่ม chain เรียบร้อย');
+      } catch (e) { dlg.alert('บันทึกไม่สำเร็จ: ' + (e.message||e), { icon:'danger' }); }
+    },
+    async deleteEdge(from, to) {
+      const ok = await dlg.confirm(
+        `ลบ chain: <b>${esc(from)}</b> → <b>${esc(to)}</b>?`,
+        { title:'ยืนยันการลบ', icon:'danger', okLabel:'ลบ', okColor:'danger' }
+      );
+      if (!ok) return;
+      try {
+        const res = await API.post('/pipeline-flows/index.php?flow=' + encodeURIComponent(this.selFlowId) + '&action=delete-edge', { from, to });
+        if (!res?.ok || !res?.data?.ok) throw new Error(res?.data?.message || 'delete failed');
+        await this.loadFlow(this.selFlowId);
+      } catch (e) { dlg.alert('ลบไม่สำเร็จ: ' + (e.message||e), { icon:'danger' }); }
+    },
+  };
+
+  // Wire modal tab switching
+  document.addEventListener('click', ev => {
+    const t = ev.target.closest('.pf-jtab');
+    if (!t) return;
+    const modal = t.closest('#pf-mo-job');
+    if (!modal) return;
+    const which = t.dataset.jtab;
+    modal.querySelectorAll('.pf-jtab').forEach(x => x.classList.toggle('on', x.dataset.jtab === which));
+    modal.querySelectorAll('.pf-jpane').forEach(p => p.classList.toggle('on', p.dataset.pane === which));
+  });
+
+  $('pf-btn-add-edge').addEventListener('click', () => PF.openEdge());
+  $('pf-btn-reset').addEventListener('click', () => { PF.selJob = null; if (PF.flow) PF._renderFlow(); });
+  document.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape') { PF.closeCreate(); PF.closeJob(); PF.closeEdge(); }
+  });
+
+  // Repaint flow when window resizes (re-computes column count for the flow slot)
+  let _rzT = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(_rzT);
+    _rzT = setTimeout(() => { if (PF.flow && $('pf-flow-slot')) PF._paintFlow(); }, 150);
+  });
+
+  PF.init();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Logs — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/logs/logs.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">◈ System Logs</div>
+        <div class="page-sub">ตรวจสอบการใช้งานและความปลอดภัย</div>
+      </div>
+      <div class="topbar-actions" style="gap:14px">
+        <label class="tail-mode-toggle" title="Poll every 5s and prepend new rows">
+          <input type="checkbox" id="tail-mode-toggle">
+          <span class="tail-live-dot" id="tail-dot" style="display:none"></span>
+          Live Tail
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);cursor:pointer">
+          <input type="checkbox" id="auto-refresh-toggle" style="cursor:pointer">
+          <span class="refresh-dot" id="rf-dot" style="display:none"></span>
+          Auto-refresh
+        </label>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="exportLogs('csv')" title="Download matching rows as CSV">
+          <i data-icon="arrow-down"></i> CSV
+        </button>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="exportLogs('json')" title="Download matching rows as JSON">
+          <i data-icon="arrow-down"></i> JSON
+        </button>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="loadLogs()">↺ Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark">◈</div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Super Admin</div>
+          <h1>Audit Log</h1>
+          <p>Activity · Security · Client errors — aggregate ทุกทีม หรือเลือกดูเฉพาะทีมได้</p>
+        </div>
+      </section>
+
+      <!-- Tabs -->
+      <div class="log-tabs">
+        <button class="log-tab active" id="tab-activity" onclick="switchTab('activity')">
+          <i data-icon="clipboard"></i> Activity Logs
+        </button>
+        <button class="log-tab" id="tab-security" onclick="switchTab('security')">
+          <i data-icon="shield"></i> Security Logs
+        </button>
+        <button class="log-tab" id="tab-errors" onclick="switchTab('errors')">
+          <i data-icon="flame"></i> Errors
+        </button>
+        <button class="log-tab" id="tab-client_error" onclick="switchTab('client_error')">
+          <i data-icon="bug"></i> Client Errors
+        </button>
+      </div>
+
+      <!-- Filters — team scope first, then search/action/date -->
+      <div class="log-filters">
+        <span class="log-filters-hint">Scope</span>
+        <select id="f-team" onchange="onTeamChange()">
+          <option value="">All Teams</option>
+        </select>
+        <input type="text" id="f-search" placeholder="🔍 ค้นหา..." style="width:160px" oninput="debouncedLoad()">
+        <input type="text" id="f-user"   placeholder="Filter by user" style="width:130px" oninput="debouncedLoad()">
+        <select id="f-action-select" style="width:160px" onchange="loadLogs()">
+          <option value="">All Actions</option>
+        </select>
+        <input type="text" id="f-action" placeholder="Filter by event" style="width:140px;display:none" oninput="debouncedLoad()">
+        <input type="date" id="f-date"    onchange="loadLogs()" title="From date">
+        <input type="date" id="f-date-to" onchange="loadLogs()" title="To date">
+        <button class="btn btn-ghost btn-sm" onclick="savePreset()" title="Save current filters as a preset">
+          <i data-icon="star"></i> Save
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="clearFilters()"><i data-icon="x"></i> Clear</button>
+      </div>
+      <div class="log-search-hint">
+        Tip: ค้นหาแบบละเอียดในช่อง Search ได้ เช่น
+        <code>user:kong action:board_* team:sm</code>
+        &nbsp;·&nbsp; ใช้ <code>ip:</code>, <code>event:</code>, <code>message:</code> ก็ได้ &nbsp;·&nbsp; ที่เหลือถือเป็น full-text
+      </div>
+
+      <!-- Saved filter presets -->
+      <div class="log-presets" id="log-presets" style="margin-bottom:12px"></div>
+
+      <!-- 24h sparkline (stacked by team) -->
+      <div class="log-sparkline" id="log-sparkline" style="display:none">
+        <div class="log-sparkline-head">
+          <span class="log-sparkline-title">Last 24h · per team</span>
+          <span class="log-sparkline-max" id="log-sparkline-max"></span>
+        </div>
+        <svg class="log-sparkline-svg" id="log-sparkline-svg" preserveAspectRatio="none"></svg>
+        <div class="spark-legend" id="log-sparkline-legend"></div>
+      </div>
+
+      <!-- Stats -->
+      <div class="log-stats" id="log-stats"></div>
+
+      <!-- Per-team breakdown (populated when viewing "All Teams") -->
+      <div class="log-teams-bar" id="log-teams-bar"></div>
+
+      <!-- Table -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="log-table-wrap">
+          <div data-skel="table" data-rows="8"></div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="log-pagination" id="log-pagination" style="display:none">
+        <button id="pg-prev" onclick="prevPage()" disabled>← Prev</button>
+        <span id="pg-info"></span>
+        <button id="pg-next" onclick="nextPage()">Next →</button>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/pages/admin/logs/log-formatter.js"></script>
+<script src="../assets/pages/admin/logs/log-explain-th.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/logs/logs.js"></script>
+</body>
+</html>

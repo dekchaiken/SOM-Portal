@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Inbox — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+<style>
+/* ═══════════════════════════════════════════════════════
+   INBOX SHELL — override page-content padding
+═══════════════════════════════════════════════════════ */
+.page-content { padding: 0 !important; overflow: hidden !important; display: flex; flex-direction: column; }
+
+.inbox-shell {
+  display: flex; flex: 1; min-height: 0; overflow: hidden;
+}
+
+/* ── Folder pane ── */
+.folder-pane {
+  width: 188px; flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto; overflow-x: hidden;
+  background: var(--bg);
+  padding: 10px 0 16px;
+}
+.folder-pane::-webkit-scrollbar { width: 0; }
+
+/* Compose button — minimal pill */
+.compose-wrap { padding: 0 12px 12px; }
+.compose-btn-main {
+  width: 100%; padding: 7px 0; border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11.5px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: color .15s, border-color .15s, background .15s;
+  letter-spacing: .01em;
+}
+.compose-btn-main:hover {
+  color: var(--orange); border-color: var(--orange);
+  background: rgba(242,100,25,.05);
+}
+
+/* Section label */
+.folder-section-label {
+  padding: 12px 14px 3px; font-size: 9px; font-weight: 700;
+  letter-spacing: .1em; color: rgba(255,255,255,.2); text-transform: uppercase;
+}
+
+/* Folder row */
+.folder-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 5px 12px 5px 14px; cursor: pointer;
+  font-size: 12px; color: var(--text-muted);
+  transition: color .12s; user-select: none;
+  border-radius: 0;
+}
+.folder-item:hover { color: var(--text); }
+.folder-item.active { color: var(--text); }
+
+/* Icon: small, monochrome */
+.folder-item .fi-icon {
+  font-size: 13px; flex-shrink: 0; width: 16px; text-align: center;
+  opacity: .55; filter: grayscale(1);
+  transition: opacity .12s, filter .12s;
+}
+.folder-item.active .fi-icon,
+.folder-item:hover .fi-icon { opacity: 1; filter: none; }
+
+.folder-item .fi-name {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.folder-item.active .fi-name { font-weight: 600; }
+
+/* Active indicator — thin orange left bar */
+.folder-item.active {
+  position: relative;
+}
+.folder-item.active::before {
+  content: '';
+  position: absolute; left: 0; top: 20%; bottom: 20%;
+  width: 2px; border-radius: 0 2px 2px 0;
+  background: var(--orange);
+}
+
+/* Unread count — just a plain number, no pill */
+.folder-item .fi-count {
+  font-size: 10px; font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.folder-item.active .fi-count,
+.folder-item:hover .fi-count { color: var(--orange); }
+
+/* Divider */
+.folder-pane hr {
+  border: none; border-top: 1px solid rgba(255,255,255,.06);
+  margin: 8px 14px;
+}
+
+/* ── List pane ── */
+.list-pane {
+  width: 360px; flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--bg);
+}
+.list-toolbar {
+  padding: 10px 12px 8px; display: flex; flex-direction: column; gap: 7px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.list-filters { display: flex; gap: 4px; align-items: center; }
+.lf-btn {
+  padding: 4px 11px; border-radius: 6px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-muted);
+  font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.lf-btn.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+.lf-btn:hover:not(.active) { color: var(--text); border-color: var(--text-muted); }
+.lf-refresh { margin-left: auto; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; padding: 2px 6px; border-radius: 5px; transition: color .15s; }
+.lf-refresh:hover { color: var(--orange); }
+.list-search-wrap { position: relative; }
+.list-search-wrap input {
+  width: 100%; box-sizing: border-box;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 10px 6px 30px; font-size: 12px; color: var(--text); font-family: var(--font);
+}
+.list-search-wrap input::placeholder { color: var(--text-muted); }
+.list-search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--text-muted); pointer-events: none; }
+.list-body { flex: 1; overflow-y: auto; overflow-x: hidden; }
+.email-row {
+  display: grid; grid-template-columns: 28px 22px 1fr auto;
+  align-items: center; gap: 0;
+  padding: 9px 12px 9px 8px; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  transition: background .12s;
+}
+.email-row:hover { background: rgba(255,255,255,.04); }
+.email-row.active { background: rgba(242,100,25,.08); }
+.email-row.unread .er-from,
+.email-row.unread .er-subject { font-weight: 700; color: var(--text); }
+.er-check { display: flex; align-items: center; justify-content: center; }
+.er-check input[type=checkbox] { accent-color: var(--orange); cursor: pointer; }
+.er-star { font-size: 14px; cursor: pointer; opacity: .4; transition: opacity .15s, color .15s; padding: 2px; }
+.er-star:hover, .er-star.on { opacity: 1; color: #f59e0b; }
+.er-meta { min-width: 0; padding: 0 6px; }
+.er-top { display: flex; align-items: baseline; gap: 6px; }
+.er-from { font-size: 12.5px; color: var(--text-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.er-date { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
+.er-subject { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.er-actions { display: flex; gap: 2px; opacity: 0; transition: opacity .15s; }
+.email-row:hover .er-actions { opacity: 1; }
+.er-act-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 13px; padding: 3px 5px; border-radius: 4px; transition: color .15s, background .15s; }
+.er-act-btn:hover { color: var(--orange); background: rgba(242,100,25,.1); }
+.smc-tag { color: var(--orange); font-weight: 700; }
+.list-empty { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 13px; }
+.list-load-more { text-align: center; padding: 12px; }
+.list-load-more button { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 6px 18px; font-size: 12px; color: var(--text-muted); cursor: pointer; font-family: var(--font); transition: color .15s, border-color .15s; }
+.list-load-more button:hover { color: var(--orange); border-color: var(--orange); }
+
+/* ── Reader pane ── */
+.reader-pane {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--bg-card);
+}
+.reader-empty {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 10px; color: var(--text-muted); font-size: 13px;
+}
+.reader-empty .re-icon { font-size: 42px; opacity: .3; }
+.reader-header {
+  padding: 14px 18px 10px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0; display: flex; flex-direction: column; gap: 8px;
+}
+.rh-subject { font-size: 17px; font-weight: 700; color: var(--text); line-height: 1.35; word-break: break-word; }
+.rh-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.rh-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 7px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text-muted); font-size: 11.5px; font-weight: 600;
+  cursor: pointer; font-family: var(--font); transition: background .15s, color .15s, border-color .15s;
+}
+.rh-btn:hover { color: var(--text); border-color: var(--text-muted); background: rgba(255,255,255,.05); }
+.rh-btn.primary { background: var(--orange); border-color: var(--orange); color: #fff; }
+.rh-btn.primary:hover { filter: brightness(1.08); }
+.rh-btn.danger:hover { color: #ef4444; border-color: #ef4444; background: rgba(239,68,68,.08); }
+.rh-btn.star-on { color: #f59e0b; border-color: #f59e0b; }
+.reader-meta {
+  padding: 10px 18px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0; font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;
+}
+.rm-row { display: flex; gap: 6px; }
+.rm-label { color: var(--text-muted); min-width: 30px; flex-shrink: 0; }
+.rm-val { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.rm-val a { color: var(--orange); text-decoration: none; }
+.reader-body { flex: 1; overflow-y: auto; padding: 18px; }
+.reader-body iframe { width: 100%; border: none; min-height: 300px; }
+.reader-body-plain { white-space: pre-wrap; font-size: 13px; color: var(--text); line-height: 1.7; }
+.reader-atts { padding: 12px 18px; border-top: 1px solid var(--border); flex-shrink: 0; }
+.att-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.att-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 7px; border: 1px solid var(--border);
+  background: var(--bg); font-size: 11px; color: var(--text-muted);
+}
+.att-icon { font-size: 14px; }
+
+/* ── Compose slide panel ── */
+/* ── Compose Modal (Mode B — centered) ── */
+.compose-overlay {
+  position: fixed; inset: 0; z-index: 600;
+  display: none; pointer-events: none;
+}
+.compose-overlay.show { display: block; pointer-events: all; }
+.compose-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.compose-box {
+  position: absolute; top: 4%; left: 50%; transform: translateX(-50%) translateY(12px);
+  width: min(960px, 92vw); height: 90vh;
+  display: flex; flex-direction: column;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0,0,0,.55);
+  opacity: 0;
+  transition: transform .28s cubic-bezier(.4,0,.2,1), opacity .22s ease;
+}
+.compose-overlay.show .compose-box {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+.compose-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(90deg, rgba(242,100,25,.10), transparent 55%);
+  flex-shrink: 0;
+}
+.compose-head-title {
+  font-size: 14px; font-weight: 700; color: var(--text); flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.compose-head button {
+  width: 28px; height: 28px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text-muted); cursor: pointer; font-family: inherit; font-size: 13px;
+  transition: color .12s, border-color .12s;
+}
+.compose-head button:hover { color: var(--orange); border-color: var(--orange); }
+
+/* To / Cc / Subject rows */
+.compose-field {
+  display: flex; align-items: flex-start; gap: 10px;
+  border-bottom: 1px solid var(--border); padding: 8px 18px;
+  flex-shrink: 0;
+}
+.compose-field label {
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+  min-width: 42px; padding-top: 6px; flex-shrink: 0; text-align: right;
+}
+.compose-field input[type="text"] {
+  flex: 1; background: transparent; border: none; outline: none;
+  font-size: 13px; color: var(--text); font-family: var(--font); padding: 3px 0;
+}
+
+/* Email chip input (kept from original — theme-aware) */
+.chip-field {
+  flex: 1; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+  min-height: 28px; cursor: text; padding: 2px 0;
+}
+.email-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: rgba(242,100,25,.14); border: 1px solid rgba(242,100,25,.35);
+  border-radius: 20px; padding: 2px 6px 2px 9px;
+  font-size: 11.5px; color: var(--text); max-width: 260px;
+}
+.email-chip > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.email-chip-del {
+  background: none; border: none; cursor: pointer; padding: 0 2px;
+  color: var(--text-muted); font-size: 10px; line-height: 1; flex-shrink: 0;
+}
+.email-chip-del:hover { color: #ef4444; }
+.chip-text {
+  flex: 1; min-width: 150px; background: transparent; border: none; outline: none;
+  font-size: 13px; color: var(--text); font-family: var(--font); padding: 2px 0;
+}
+
+/* Rich-text toolbar */
+.cx-toolbar {
+  display: flex; align-items: center; gap: 2px; flex-wrap: wrap;
+  padding: 7px 14px; border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,.08); flex-shrink: 0;
+}
+.cx-tbn {
+  min-width: 30px; height: 30px; padding: 0 8px;
+  background: transparent; border: 1px solid transparent;
+  border-radius: 5px; cursor: pointer; color: var(--text);
+  font-family: inherit; font-size: 13px;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.cx-tbn:hover {
+  background: rgba(242,100,25,.10); border-color: rgba(242,100,25,.30);
+  color: var(--orange);
+}
+.cx-tbn b { font-weight: 900; }
+.cx-tbn i { font-style: italic; }
+.cx-tbn u { text-decoration: underline; }
+.cx-tbn s { text-decoration: line-through; }
+.cx-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+.cx-select {
+  height: 30px; padding: 0 8px;
+  background: var(--bg-input); border: 1px solid var(--border);
+  color: var(--text); border-radius: 5px; font-family: inherit; font-size: 11px;
+  cursor: pointer;
+}
+.cx-select:focus { outline: none; border-color: var(--orange); }
+.cx-color-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  min-width: 36px; height: 30px; padding: 0 7px;
+  background: transparent; border: 1px solid transparent; border-radius: 5px;
+  cursor: pointer; color: var(--text); font-family: inherit; font-size: 12px;
+  transition: background .12s, border-color .12s;
+}
+.cx-color-btn:hover {
+  background: rgba(242,100,25,.10); border-color: rgba(242,100,25,.30);
+}
+.cx-color-swatch {
+  width: 12px; height: 12px; border-radius: 2px;
+  border: 1px solid var(--border);
+}
+
+/* Body / editor */
+.compose-body-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+#compose-body {
+  flex: 1; min-height: 0; outline: none;
+  padding: 18px 22px;
+  font-size: 13.5px; color: var(--text); line-height: 1.65;
+  overflow-y: auto; background: var(--bg-card);
+  position: relative;
+}
+#compose-body img { max-width: 100%; height: auto; border-radius: 4px; cursor: pointer; }
+#compose-body blockquote {
+  border-left: 3px solid var(--text-muted); padding-left: 12px;
+  color: var(--text-muted); margin: 8px 0;
+}
+#compose-body a { color: var(--orange); }
+#compose-body ul, #compose-body ol { padding-left: 22px; }
+#compose-body hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+#compose-body pre {
+  background: rgba(0,0,0,.15); padding: 8px 10px; border-radius: 6px;
+  font-family: 'SF Mono', Menlo, monospace; font-size: 12px; overflow-x: auto;
+}
+#compose-body[data-empty="true"]::before {
+  content: attr(data-placeholder);
+  color: var(--text-muted); pointer-events: none;
+  position: absolute;
+}
+
+/* Footer */
+.compose-footer {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 12px 18px; border-top: 1px solid var(--border);
+  background: rgba(0,0,0,.10); flex-shrink: 0;
+}
+#compose-send-btn {
+  padding: 9px 22px; border-radius: 8px; border: none;
+  background: var(--orange); color: #fff; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: var(--font); transition: filter .15s;
+}
+#compose-send-btn:hover { filter: brightness(1.1); }
+#compose-send-btn:disabled { opacity: .5; cursor: wait; }
+#compose-discard-btn {
+  padding: 8px 14px; border-radius: 8px;
+  background: transparent; color: var(--text-muted);
+  border: 1px solid var(--border); cursor: pointer;
+  font-size: 12px; font-family: var(--font);
+  transition: color .12s, border-color .12s;
+}
+#compose-discard-btn:hover { color: #ef4444; border-color: #ef4444; }
+#compose-save-ind {
+  font-size: 11px; color: #22c55e;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 5px;
+  background: rgba(34,197,94,.08); border: 1px solid rgba(34,197,94,.25);
+}
+#compose-save-ind[data-state="saving"] {
+  color: #f59e0b;
+  background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.25);
+}
+#compose-save-ind[data-state="idle"] { opacity: 0; pointer-events: none; }
+.compose-hint {
+  font-size: 10.5px; color: var(--text-muted);
+  margin-left: auto; text-align: right;
+}
+@media (max-width: 720px) { .compose-hint { display: none; } }
+@media (max-width: 620px) {
+  .compose-box { width: 100vw; height: 100vh; top: 0; border-radius: 0; }
+}
+
+/* Service type / sub-type select inside compose-field */
+.compose-field select {
+  flex: 1; background: transparent; border: none; outline: none;
+  font-size: 13px; color: var(--text); font-family: var(--font);
+  padding: 3px 0; cursor: pointer; appearance: none; -webkit-appearance: none;
+}
+.compose-field select option { background: var(--bg-card); color: var(--text); }
+.compose-field select:focus { outline: none; }
+
+/* ── Loading spinner ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; display: inline-block; }
+
+/* ── Scrollbar styling in panes ── */
+.folder-pane::-webkit-scrollbar,
+.list-body::-webkit-scrollbar,
+.reader-body::-webkit-scrollbar { width: 4px; }
+.folder-pane::-webkit-scrollbar-thumb,
+.list-body::-webkit-scrollbar-thumb,
+.reader-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="inbox"></i> Team Inbox</div>
+        <div class="page-sub" id="inbox-sub">กำลังโหลด…</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="inbox-shell">
+
+        <!-- ── Folder pane ───────────────────────────── -->
+        <div class="folder-pane">
+          <div class="compose-wrap">
+            <button class="compose-btn-main" onclick="openCompose('new')">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="opacity:.7"><path d="M1 11L4.5 10 10.5 4 8 1.5 2 7.5 1 11z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M8 1.5L10.5 4" stroke="currentColor" stroke-width="1.2"/></svg>
+              Compose
+            </button>
+          </div>
+          <div id="folder-list">
+            <div class="list-empty" style="padding:20px 0"><span class="spin">⏳</span></div>
+          </div>
+        </div>
+
+        <!-- ── List pane ─────────────────────────────── -->
+        <div class="list-pane">
+          <div class="list-toolbar">
+            <div class="list-filters">
+              <button class="lf-btn active" onclick="setFilter('all',this)">ทั้งหมด</button>
+              <button class="lf-btn" onclick="setFilter('unread',this)">ยังไม่อ่าน</button>
+              <button class="lf-btn" onclick="setFilter('starred',this)"><i data-icon="star"></i></button>
+              <button class="lf-refresh" onclick="refreshList()" title="รีเฟรช">↻</button>
+            </div>
+            <div class="list-search-wrap">
+              <span class="list-search-icon"><i data-icon="search"></i></span>
+              <input type="text" id="list-search" placeholder="ค้นหา email…">
+            </div>
+          </div>
+          <div class="list-body" id="email-list"></div>
+        </div>
+
+        <!-- ── Reader pane ───────────────────────────── -->
+        <div class="reader-pane" id="reader-pane">
+          <div class="reader-empty" id="reader-empty">
+            <div class="re-icon"><i data-icon="inbox"></i></div>
+            <div>เลือก email เพื่ออ่าน</div>
+          </div>
+          <div id="reader-content" style="display:none;flex:1;min-height:0;display:none;flex-direction:column;overflow:hidden;">
+            <div class="reader-header">
+              <div class="rh-subject" id="r-subject"></div>
+              <div class="rh-actions">
+                <button class="rh-btn primary" onclick="openCompose('reply')" title="Reply">↩ Reply</button>
+                <button class="rh-btn" onclick="openCompose('replyAll')" title="Reply All">↩↩ Reply All</button>
+                <button class="rh-btn" onclick="openCompose('forward')" title="Forward">↪ Forward</button>
+                <button class="rh-btn" id="r-star-btn" onclick="toggleStar()" title="Star"><i data-icon="star"></i> Star</button>
+                <button class="rh-btn" id="r-read-btn" onclick="toggleRead()" title="Mark"><i data-icon="check"></i> Mark</button>
+                <button class="rh-btn danger" onclick="archiveEmail()" title="Archive"><i data-icon="folder"></i> Archive</button>
+                <button class="rh-btn danger" onclick="deleteEmail()" title="Trash"><i data-icon="trash"></i> Delete</button>
+              </div>
+            </div>
+            <div class="reader-meta">
+              <div class="rm-row"><span class="rm-label">จาก</span><span class="rm-val" id="r-from"></span></div>
+              <div class="rm-row"><span class="rm-label">ถึง</span><span class="rm-val" id="r-to"></span></div>
+              <div class="rm-row" id="r-cc-row" style="display:none"><span class="rm-label">สำเนา</span><span class="rm-val" id="r-cc"></span></div>
+              <div class="rm-row"><span class="rm-label">เมื่อ</span><span class="rm-val" id="r-date"></span></div>
+            </div>
+            <div class="reader-body" id="r-body"></div>
+            <div class="reader-atts" id="r-atts" style="display:none">
+              <div style="font-size:11px;color:var(--text-muted);font-weight:700;"><i data-icon="paperclip"></i> ไฟล์แนบ</div>
+              <div class="att-list" id="r-att-list"></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /inbox-shell -->
+    </main>
+  </div>
+</div>
+
+<!-- ── Compose Modal (Mode B — centered) ────────────────────────────── -->
+<div class="compose-overlay" id="compose-overlay">
+  <div class="compose-backdrop" onclick="closeCompose()"></div>
+  <div class="compose-box">
+    <div class="compose-head">
+      <span class="compose-head-title" id="compose-title">เขียน Email ใหม่</span>
+      <button onclick="closeCompose()" title="ปิด (draft จะถูกเก็บอัตโนมัติ)"><i data-icon="x"></i></button>
+    </div>
+    <div class="compose-field">
+      <label>To</label>
+      <div class="chip-field" id="chip-to-wrap">
+        <input class="chip-text" id="chip-to-input" type="text" placeholder="ถึง… (วางหลาย email ได้เลย)" autocomplete="off">
+      </div>
+    </div>
+    <div class="compose-field">
+      <label>Cc</label>
+      <div class="chip-field" id="chip-cc-wrap">
+        <input class="chip-text" id="chip-cc-input" type="text" placeholder="สำเนา…" autocomplete="off">
+      </div>
+    </div>
+    <div class="compose-field" id="cx-subtype-row">
+      <label style="min-width:42px">ประเภท</label>
+      <select id="cx-subtype">
+        <option value="">— เลือก Sub Type เพื่อโหลด Service —</option>
+      </select>
+    </div>
+    <div class="compose-field" id="cx-service-row" style="display:none">
+      <label style="min-width:42px">Service</label>
+      <select id="cx-service">
+        <option value="">— เลือก Service เพื่อเพิ่ม To / CC —</option>
+      </select>
+    </div>
+    <div class="compose-field">
+      <label>Subject</label>
+      <input type="text" id="compose-subject" placeholder="หัวข้อ…">
+    </div>
+
+    <!-- Rich-text toolbar -->
+    <div class="cx-toolbar">
+      <select class="cx-select" onchange="cxExec('fontName', this.value); this.selectedIndex=0" title="Font">
+        <option value="">Font</option>
+        <option value="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">Sans</option>
+        <option value="Georgia,serif">Serif</option>
+        <option value="'SF Mono',Menlo,monospace">Mono</option>
+      </select>
+      <select class="cx-select" onchange="cxExec('fontSize', this.value); this.selectedIndex=0" title="ขนาดตัวอักษร">
+        <option value="">Size</option>
+        <option value="1">Small</option>
+        <option value="3">Normal</option>
+        <option value="5">Large</option>
+        <option value="6">XL</option>
+        <option value="7">XXL</option>
+      </select>
+      <select class="cx-select" onchange="cxExec('formatBlock', this.value); this.selectedIndex=0" title="Paragraph style">
+        <option value="">Style</option>
+        <option value="p">Paragraph</option>
+        <option value="h2">Heading</option>
+        <option value="blockquote">Quote</option>
+        <option value="pre">Code</option>
+      </select>
+      <span class="cx-sep"></span>
+      <button type="button" class="cx-tbn" onclick="cxExec('bold')"       title="Bold (⌘B)"><b>B</b></button>
+      <button type="button" class="cx-tbn" onclick="cxExec('italic')"     title="Italic (⌘I)"><i>I</i></button>
+      <button type="button" class="cx-tbn" onclick="cxExec('underline')"  title="Underline (⌘U)"><u>U</u></button>
+      <button type="button" class="cx-tbn" onclick="cxExec('strikeThrough')" title="Strike"><s>S</s></button>
+      <span class="cx-sep"></span>
+      <label class="cx-color-btn" title="สีตัวอักษร">
+        A<span class="cx-color-swatch" id="cx-fc-swatch" style="background:#f26419"></span>
+        <input type="color" value="#f26419" id="cx-fc-input" style="display:none"
+               onchange="document.getElementById('cx-fc-swatch').style.background=this.value; cxExec('foreColor', this.value)">
+      </label>
+      <button type="button" class="cx-tbn" onclick="document.getElementById('cx-fc-input').click()" title="เลือกสี"><i data-icon="palette"></i></button>
+      <label class="cx-color-btn" title="ไฮไลต์">
+        <i data-icon="pencil"></i><span class="cx-color-swatch" id="cx-bg-swatch" style="background:#fde047"></span>
+        <input type="color" value="#fde047" id="cx-bg-input" style="display:none"
+               onchange="document.getElementById('cx-bg-swatch').style.background=this.value; cxExec('hiliteColor', this.value)">
+      </label>
+      <span class="cx-sep"></span>
+      <button type="button" class="cx-tbn" onclick="cxExec('insertUnorderedList')" title="Bullet list"><i data-icon="circle"></i></button>
+      <button type="button" class="cx-tbn" onclick="cxExec('insertOrderedList')"   title="Numbered list">1.</button>
+      <button type="button" class="cx-tbn" onclick="cxExec('justifyLeft')"   title="Left"><i data-icon="arrow-left"></i></button>
+      <button type="button" class="cx-tbn" onclick="cxExec('justifyCenter')" title="Center">⬌</button>
+      <span class="cx-sep"></span>
+      <button type="button" class="cx-tbn" onclick="cxInsertLink()"        title="แทรก link"><i data-icon="link"></i></button>
+      <button type="button" class="cx-tbn" onclick="document.getElementById('cx-img-input').click()" title="แนบรูป"><i data-icon="image"></i></button>
+      <button type="button" class="cx-tbn" onclick="cxExec('insertHorizontalRule')" title="เส้นคั่น">―</button>
+      <button type="button" class="cx-tbn" onclick="cxExec('removeFormat')" title="ล้าง format"><i data-icon="x"></i></button>
+      <span class="cx-sep"></span>
+      <button type="button" class="cx-tbn" onclick="cxExec('undo')" title="Undo (⌘Z)">↶</button>
+      <button type="button" class="cx-tbn" onclick="cxExec('redo')" title="Redo">↷</button>
+      <input type="file" id="cx-img-input" accept="image/*" style="display:none"
+             onchange="cxInsertImageFile(this.files[0]); this.value=''">
+    </div>
+
+    <div class="compose-body-wrap">
+      <div id="compose-body" contenteditable="true"
+           data-placeholder="พิมพ์ข้อความ… วางรูป (Cmd/Ctrl+V) หรือดร็อปไฟล์ก็ได้"
+           data-empty="true"></div>
+    </div>
+    <div class="compose-footer">
+      <button id="compose-send-btn" onclick="sendCompose()"><i data-icon="upload"></i> ส่ง</button>
+      <button id="compose-discard-btn" onclick="discardDraft()"><i data-icon="trash"></i> ทิ้ง Draft</button>
+      <span id="compose-save-ind" data-state="idle"><i data-icon="save"></i> <span id="compose-save-time">—</span></span>
+      <span id="compose-status" style="font-size:12px;color:var(--text-muted)"></span>
+      <span class="compose-hint"><i data-icon="lightbulb"></i> ปิด (<i data-icon="x"></i>) เก็บ draft ให้อัตโนมัติ · Cmd/Ctrl+V วางรูป · คลิกรูปปรับขนาด</span>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js?v=20260724"></script>
+<script src="./assets/js/auth.js?v=20260724"></script>
+<script src="./assets/js/api.js?v=20260724"></script>
+<script src="./assets/js/analytics.js?v=20260724"></script>
+<script src="./assets/js/analytics-features.js?v=20260724"></script>
+<script src="./assets/js/layout.js?v=20260724"></script>
+<script src="./assets/js/maintenance.js?v=20260724"></script>
+<script>
+if (!Auth.requireAuth()) {}
+// super_viewer has no access to team inbox — bounce to dashboard silently.
+// (Sidebar already hides the item; this catches direct-URL access.)
+if (Auth.getUser?.()?.role === 'super_viewer') {
+  window.location.replace('./dashboard.html');
+  throw new Error('super_viewer blocked from inbox');
+}
+Layout.render('inbox');
+
+/* ══════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════ */
+let _folder  = 'INBOX';
+let _filter  = 'all';
+let _search  = '';
+let _offset  = 0;
+const PAGE   = 30;
+let _emails  = [];         // current list
+let _total   = 0;
+let _uid     = null;       // currently open email
+let _openMsg = null;       // full message data
+let _folders = [];         // folder list from API
+let _searchTimer = null;
+
+/* ══════════════════════════════════════════════════════════
+   FOLDERS
+══════════════════════════════════════════════════════════ */
+const FOLDER_ICONS = {
+  inbox: '<i data-icon="inbox"></i>', starred: '<i data-icon="star"></i>', sent: '<i data-icon="upload"></i>', drafts: '<i data-icon="edit"></i>',
+  spam: '<i data-icon="ban"></i>', trash: '<i data-icon="trash"></i>', all: '<i data-icon="folder-open"></i>', important: '🔖',
+};
+
+// Gmail เสมอมี special folders เหล่านี้ — render ทันทีโดยไม่รอ API
+const STATIC_FOLDERS = [
+  { name: 'INBOX',              display: 'Inbox',    special: 'inbox'     },
+  { name: '[Gmail]/Starred',    display: 'Starred',  special: 'starred'   },
+  { name: '[Gmail]/Sent Mail',  display: 'Sent',     special: 'sent'      },
+  { name: '[Gmail]/Drafts',     display: 'Drafts',   special: 'drafts'    },
+  { name: '[Gmail]/Spam',       display: 'Spam',     special: 'spam'      },
+  { name: '[Gmail]/Trash',      display: 'Trash',    special: 'trash'     },
+  { name: '[Gmail]/All Mail',   display: 'All Mail', special: 'all'       },
+  { name: '[Gmail]/Important',  display: 'Important',special: 'important' },
+];
+
+async function loadFolders() {
+  // 1. แสดง folder structure ทันที (ไม่มี counts ก่อน)
+  if (!_folders.length) {
+    _folders = STATIC_FOLDERS.map(f => ({ ...f, unread: 0, total: 0 }));
+    renderFolders();
+  }
+  // 2. โหลด counts จาก API (async — อาจช้า แต่ UI ไม่ block)
+  const res = await API.inbox.folders();
+  if (!res?.ok) return;
+  _folders = res.data.data || [];
+  renderFolders(); // อัพเดต counts เมื่อมาถึง
+}
+
+function renderFolders() {
+  const el = document.getElementById('folder-list');
+  const specials = _folders.filter(f => f.special);
+  const custom   = _folders.filter(f => !f.special && f.name !== '[Gmail]');
+
+  let html = '';
+  specials.forEach(f => {
+    const icon    = FOLDER_ICONS[f.special] || '<i data-icon="folder"></i>';
+    const active  = f.name === _folder ? 'active' : '';
+    const unread  = f.unread > 0 ? `<span class="fi-count">${f.unread}</span>` : '';
+    html += `<div class="folder-item ${active}" onclick="selectFolder('${escHtml(f.name)}')">
+      <span class="fi-icon">${icon}</span>
+      <span class="fi-name">${escHtml(f.display)}</span>
+      ${unread}
+    </div>`;
+  });
+  if (custom.length) {
+    html += '<hr><div class="folder-section-label">Labels</div>';
+    custom.forEach(f => {
+      const active = f.name === _folder ? 'active' : '';
+      const unread = f.unread > 0 ? `<span class="fi-count">${f.unread}</span>` : '';
+      html += `<div class="folder-item ${active}" onclick="selectFolder('${escHtml(f.name)}')">
+        <span class="fi-icon"><i data-icon="tag"></i></span>
+        <span class="fi-name">${escHtml(f.display)}</span>
+        ${unread}
+      </div>`;
+    });
+  }
+  el.innerHTML = html;
+}
+
+function selectFolder(name) {
+  _folder = name; _offset = 0; _uid = null;
+  renderFolders();
+  showEmpty();
+  loadList(true);
+}
+
+/* ══════════════════════════════════════════════════════════
+   EMAIL LIST
+══════════════════════════════════════════════════════════ */
+async function loadList(reset = true) {
+  if (reset) { _offset = 0; _emails = []; }
+  const listEl = document.getElementById('email-list');
+  if (reset) listEl.innerHTML = `<div class="list-empty"><span class="spin">⏳</span> โหลด email…</div>`;
+
+  const res = await API.inbox.list({ folder: _folder, filter: _filter, limit: PAGE, offset: _offset });
+  if (!res?.ok) {
+    listEl.innerHTML = `<div class="list-empty" style="color:#ef4444"><i data-icon="alert-triangle"></i> ${escHtml(res?.data?.message || 'โหลดไม่สำเร็จ')}</div>`;
+    return;
+  }
+  const d = res.data.data;
+  _total  = d.total || 0;
+  _emails = reset ? (d.items || []) : [..._emails, ...(d.items || [])];
+
+  // Update sub-title
+  const folderDisp = _folders.find(f => f.name === _folder)?.display || _folder;
+  document.getElementById('inbox-sub').textContent = `${folderDisp} — ${d.unread || 0} ยังไม่อ่าน · ${_total} ทั้งหมด`;
+
+  renderList();
+}
+
+function renderList() {
+  const q     = _search.toLowerCase().trim();
+  const items = q ? _emails.filter(m =>
+    (m.subject || '').toLowerCase().includes(q) ||
+    (m.from?.name || '').toLowerCase().includes(q) ||
+    (m.from?.email || '').toLowerCase().includes(q)
+  ) : _emails;
+
+  const listEl = document.getElementById('email-list');
+  if (!items.length) {
+    listEl.innerHTML = `<div class="list-empty">${q ? '🔍 ไม่พบ email ที่ตรงกัน' : '📭 ไม่มี email'}</div>`;
+    return;
+  }
+
+  let html = items.map(m => {
+    const sender  = escHtml(m.from?.name || m.from?.email || '(unknown)');
+    const time    = fmtTime(m.date);
+    const subject = escHtml(m.subject || '(no subject)')
+      .replace(/\[(SMC-\d+)\]/g, '<span class="smc-tag">[$1]</span>');
+    const starred = m.flags?.flagged;
+    const read    = m.flags?.seen;
+    return `<div class="email-row ${read ? '' : 'unread'} ${_uid === m.uid ? 'active' : ''}"
+               onclick="openEmail(${m.uid})">
+      <div class="er-check"><input type="checkbox" onclick="event.stopPropagation()" title="เลือก"></div>
+      <div class="er-star ${starred ? 'on' : ''}" onclick="event.stopPropagation();quickStar(${m.uid},${starred})" title="${starred ? 'ยกเลิก star' : 'Star'}">
+        ${starred ? '⭐' : '☆'}
+      </div>
+      <div class="er-meta">
+        <div class="er-top">
+          <span class="er-from">${sender}</span>
+          <span class="er-date">${escHtml(time)}</span>
+        </div>
+        <div class="er-subject">${subject}</div>
+      </div>
+      <div class="er-actions">
+        <button class="er-act-btn" onclick="event.stopPropagation();quickArchive(${m.uid})" title="Archive"><i data-icon="folder"></i></button>
+        <button class="er-act-btn" onclick="event.stopPropagation();quickDelete(${m.uid})" title="ลบ"><i data-icon="trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (_emails.length < _total) {
+    html += `<div class="list-load-more"><button onclick="loadMore()">โหลดเพิ่ม (${_total - _emails.length} รายการ)</button></div>`;
+  }
+  listEl.innerHTML = html;
+}
+
+async function loadMore() {
+  _offset += PAGE;
+  await loadList(false);
+}
+
+function setFilter(f, btn) {
+  _filter = f;
+  document.querySelectorAll('.lf-btn').forEach(b => b.classList.toggle('active', b === btn));
+  loadList(true);
+}
+
+function refreshList() { loadList(true); loadFolders(); }
+
+/* ══════════════════════════════════════════════════════════
+   EMAIL READER
+══════════════════════════════════════════════════════════ */
+function showEmpty() {
+  document.getElementById('reader-empty').style.display = '';
+  document.getElementById('reader-content').style.display = 'none';
+}
+
+function showReader() {
+  document.getElementById('reader-empty').style.display = 'none';
+  const rc = document.getElementById('reader-content');
+  rc.style.display = 'flex';
+  rc.style.flexDirection = 'column';
+  rc.style.overflow = 'hidden';
+  rc.style.flex = '1';
+  rc.style.minHeight = '0';
+}
+
+async function openEmail(uid) {
+  _uid = uid;
+  renderList(); // highlight active row
+
+  showReader();
+  document.getElementById('r-subject').textContent = '⏳ กำลังโหลด…';
+  document.getElementById('r-body').innerHTML = '<div style="color:var(--text-muted);padding:30px;text-align:center">⏳ กำลังโหลดเนื้อหา…</div>';
+  document.getElementById('r-from').textContent = '';
+  document.getElementById('r-to').textContent = '';
+  document.getElementById('r-date').textContent = '';
+  document.getElementById('r-atts').style.display = 'none';
+
+  trackInboxRead();
+  const res = await API.inbox.message(_folder, uid);
+  if (!res?.ok) {
+    document.getElementById('r-body').innerHTML = `<div style="color:#ef4444;padding:20px"><i data-icon="alert-triangle"></i> ${escHtml(res?.data?.message || 'โหลดไม่สำเร็จ')}</div>`;
+    return;
+  }
+  _openMsg = res.data.data;
+  const m = _openMsg;
+
+  // Header
+  document.getElementById('r-subject').textContent = m.subject || '(no subject)';
+  const fromStr = m.from?.name ? `${m.from.name} <${m.from.email}>` : (m.from?.email || '—');
+  document.getElementById('r-from').textContent = fromStr;
+  document.getElementById('r-to').textContent   = (m.to || []).map(a => a.name ? `${a.name} <${a.email}>` : a.email).join(', ') || '—';
+  if (m.cc?.length) {
+    document.getElementById('r-cc-row').style.display = '';
+    document.getElementById('r-cc').textContent = m.cc.map(a => a.email).join(', ');
+  } else {
+    document.getElementById('r-cc-row').style.display = 'none';
+  }
+  document.getElementById('r-date').textContent = m.date ? new Date(m.date).toLocaleString('th-TH', { hour12: false }) : '—';
+
+  // Star/read buttons
+  updateReaderButtons(m);
+
+  // Body
+  const bodyEl = document.getElementById('r-body');
+  if (m.is_html && m.body) {
+    renderEmailBody(bodyEl, m.body, m.uid, m.folder || currentFolder, m.cid_map || {});
+  } else {
+    bodyEl.innerHTML = `<div class="reader-body-plain">${escHtml(m.plain || m.body || '(ไม่มีเนื้อหา)')}</div>`;
+  }
+
+  // Attachments
+  if (m.attachments?.length) {
+    document.getElementById('r-atts').style.display = '';
+    document.getElementById('r-att-list').innerHTML = m.attachments.map(a => {
+      const icon = a.mime?.startsWith('image/') ? '<i data-icon="image"></i>' : a.mime?.includes('pdf') ? '<i data-icon="file"></i>' : '<i data-icon="paperclip"></i>';
+      const size = a.size > 1024*1024 ? (a.size/1024/1024).toFixed(1)+'MB' : a.size > 1024 ? (a.size/1024).toFixed(0)+'KB' : a.size+'B';
+      return `<div class="att-item"><span class="att-icon">${icon}</span>${escHtml(a.filename)} <span style="opacity:.5">${size}</span></div>`;
+    }).join('');
+  }
+
+  // Mark as read in local list
+  const local = _emails.find(x => x.uid === uid);
+  if (local && !local.flags.seen) { local.flags.seen = true; renderList(); }
+}
+
+function updateReaderButtons(m) {
+  const starBtn = document.getElementById('r-star-btn');
+  const readBtn = document.getElementById('r-read-btn');
+  if (m.flags?.flagged) { starBtn.innerHTML = '<i data-icon="star"></i> Starred'; starBtn.className = 'rh-btn star-on'; }
+  else { starBtn.innerHTML = '<i data-icon="star"></i> Star'; starBtn.className = 'rh-btn'; }
+  if (m.flags?.seen) { readBtn.textContent = '● Mark Unread'; }
+  else { readBtn.innerHTML = '<i data-icon="check"></i> Mark Read'; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTIONS — Star / Read / Archive / Delete
+══════════════════════════════════════════════════════════ */
+async function toggleStar() {
+  if (!_openMsg) return;
+  const set = !_openMsg.flags.flagged;
+  const res = await API.inbox.flag({ uid: _uid, folder: _folder, flag: '\\Flagged', set });
+  if (!res?.ok) { showToast('ไม่สำเร็จ', 'error'); return; }
+  _openMsg.flags.flagged = set;
+  updateReaderButtons(_openMsg);
+  const local = _emails.find(x => x.uid === _uid);
+  if (local) { local.flags.flagged = set; renderList(); }
+  showToast(set ? '<i data-icon="star"></i> เพิ่ม Star แล้ว' : 'ยกเลิก Star แล้ว', 'success');
+}
+
+async function toggleRead() {
+  if (!_openMsg) return;
+  const set = !_openMsg.flags.seen;
+  const res = await API.inbox.flag({ uid: _uid, folder: _folder, flag: '\\Seen', set });
+  if (!res?.ok) { showToast('ไม่สำเร็จ', 'error'); return; }
+  _openMsg.flags.seen = set;
+  updateReaderButtons(_openMsg);
+  const local = _emails.find(x => x.uid === _uid);
+  if (local) { local.flags.seen = set; renderList(); }
+}
+
+async function archiveEmail() {
+  if (!_uid) return;
+  const res = await API.inbox.move({ uid: _uid, from: _folder, to: '[Gmail]/All Mail' });
+  if (!res?.ok) { showToast('Archive ไม่สำเร็จ: ' + (res?.data?.message || ''), 'error'); return; }
+  showToast('<i data-icon="folder"></i> Archive แล้ว', 'success');
+  _emails = _emails.filter(x => x.uid !== _uid); _uid = null; _openMsg = null;
+  renderList(); showEmpty(); loadFolders();
+}
+
+async function deleteEmail() {
+  if (!_uid) return;
+  const res = await API.inbox.move({ uid: _uid, from: _folder, to: '[Gmail]/Trash' });
+  if (!res?.ok) { showToast('ลบไม่สำเร็จ: ' + (res?.data?.message || ''), 'error'); return; }
+  showToast('<i data-icon="trash"></i> ย้ายไป Trash แล้ว', 'success');
+  _emails = _emails.filter(x => x.uid !== _uid); _uid = null; _openMsg = null;
+  renderList(); showEmpty(); loadFolders();
+}
+
+// Quick actions from list row
+async function quickStar(uid, currentState) {
+  const set = !currentState;
+  await API.inbox.flag({ uid, folder: _folder, flag: '\\Flagged', set });
+  const local = _emails.find(x => x.uid === uid);
+  if (local) { local.flags.flagged = set; renderList(); }
+  if (_uid === uid && _openMsg) { _openMsg.flags.flagged = set; updateReaderButtons(_openMsg); }
+}
+async function quickArchive(uid) {
+  await API.inbox.move({ uid, from: _folder, to: '[Gmail]/All Mail' });
+  _emails = _emails.filter(x => x.uid !== uid);
+  if (_uid === uid) { _uid = null; _openMsg = null; showEmpty(); }
+  renderList(); loadFolders(); showToast('<i data-icon="folder"></i> Archive แล้ว', 'success');
+}
+async function quickDelete(uid) {
+  await API.inbox.move({ uid, from: _folder, to: '[Gmail]/Trash' });
+  _emails = _emails.filter(x => x.uid !== uid);
+  if (_uid === uid) { _uid = null; _openMsg = null; showEmpty(); }
+  renderList(); loadFolders(); showToast('<i data-icon="trash"></i> ลบแล้ว', 'success');
+}
+
+/* ══════════════════════════════════════════════════════════
+   COMPOSE / REPLY / FORWARD
+══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   EMAIL CHIP INPUT
+══════════════════════════════════════════════════════════ */
+function createChipInput(wrapId, textInputId) {
+  const wrap  = document.getElementById(wrapId);
+  const input = document.getElementById(textInputId);
+  const _list = []; // email strings
+
+  function isEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+  // Parse "Name <email>, Name2 <email2>" or plain "a@x.com, b@x.com"
+  function parseEmails(str) {
+    const results = [], seen = new Set();
+    const rx = /(?:"[^"]*"|[^<,;]*?)\s*<([^>]+)>/g;
+    let m;
+    while ((m = rx.exec(str)) !== null) {
+      const e = m[1].trim().toLowerCase();
+      if (isEmail(e) && !seen.has(e)) { seen.add(e); results.push(e); }
+    }
+    // Remaining plain addresses after stripping Name <email> pairs
+    str.replace(/(?:"[^"]*"|[^<,;]*?)\s*<[^>]+>/g, '').split(/[,;\s]+/).forEach(p => {
+      p = p.trim().replace(/^["']+|["']+$/g, '');
+      if (isEmail(p) && !seen.has(p)) { seen.add(p); results.push(p); }
+    });
+    return results;
+  }
+
+  function addChip(email) {
+    email = email.trim().toLowerCase();
+    if (!isEmail(email) || _list.includes(email)) return;
+    _list.push(email);
+    const chip = document.createElement('span');
+    chip.className = 'email-chip';
+    chip.title = email;
+    chip.innerHTML = `<span>${escHtml(email)}</span><button class="email-chip-del" type="button"><i data-icon="x"></i></button>`;
+    chip.querySelector('.email-chip-del').onclick = () => {
+      _list.splice(_list.indexOf(email), 1);
+      chip.remove();
+    };
+    wrap.insertBefore(chip, input);
+  }
+
+  function commit() {
+    const v = input.value.trim();
+    if (!v) return;
+    parseEmails(v).forEach(addChip);
+    input.value = '';
+  }
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ',' || e.key === ';' || e.key === 'Tab') {
+      e.preventDefault(); commit();
+    } else if (e.key === 'Backspace' && !input.value && _list.length) {
+      const last = wrap.querySelector('.email-chip:last-of-type');
+      if (last) { _list.pop(); last.remove(); }
+    }
+  });
+  input.addEventListener('blur', commit);
+  input.addEventListener('paste', e => {
+    e.preventDefault();
+    parseEmails(e.clipboardData.getData('text')).forEach(addChip);
+  });
+  wrap.addEventListener('click', e => { if (!e.target.closest('.email-chip')) input.focus(); });
+
+  return {
+    getEmails() { return _list.join(','); },
+    setEmails(str) {
+      _list.length = 0;
+      wrap.querySelectorAll('.email-chip').forEach(c => c.remove());
+      parseEmails(str || '').forEach(addChip);
+    },
+    addEmails(arr) {
+      (arr || []).forEach(e => addChip(e.trim().toLowerCase()));
+    },
+    removeEmails(arr) {
+      (arr || []).forEach(email => {
+        email = email.trim().toLowerCase();
+        const idx = _list.indexOf(email);
+        if (idx === -1) return;
+        _list.splice(idx, 1);
+        wrap.querySelectorAll('.email-chip').forEach(chip => {
+          if (chip.title === email) chip.remove();
+        });
+      });
+    },
+    focus() { input.focus(); },
+  };
+}
+
+let _chipTo, _chipCc;
+
+/* ══════════════════════════════════════════════════════════
+   SERVICE TYPE AUTO-FILL FOR COMPOSE
+══════════════════════════════════════════════════════════ */
+let _cmpServiceTypes = [];
+let _cmpAutoToEmails = [];
+let _cmpAutoCcEmails = [];
+
+async function loadServiceTypesForCompose() {
+  if (_cmpServiceTypes.length) return;
+  const r = await API.serviceTypes.list();
+  _cmpServiceTypes = r?.ok ? (r.data.data || []) : [];
+  const sel = document.getElementById('cx-subtype');
+  // Clear any optgroups added previously (guard for double-call)
+  sel.querySelectorAll('optgroup').forEach(g => g.remove());
+  _cmpServiceTypes.forEach(t => {
+    const subtypes = (t.subtypes || []).filter(s =>
+      (s.services || []).length > 0 || (s.emails || []).length > 0
+    );
+    if (!subtypes.length) return;
+    const grp = document.createElement('optgroup');
+    grp.label = t.name;
+    subtypes.forEach(st => {
+      const o = document.createElement('option');
+      o.value = st.id;
+      const svcCount = (st.services || []).length;
+      o.textContent = st.name + (svcCount ? ` (${svcCount} services)` : '');
+      grp.appendChild(o);
+    });
+    sel.appendChild(grp);
+  });
+}
+
+function _clearCmpAutoEmails() {
+  _chipTo.removeEmails(_cmpAutoToEmails);
+  _chipCc.removeEmails(_cmpAutoCcEmails);
+  _cmpAutoToEmails = [];
+  _cmpAutoCcEmails = [];
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('cx-subtype').addEventListener('change', e => {
+    const id  = e.target.value;
+    const sel = document.getElementById('cx-service');
+    _clearCmpAutoEmails();
+    sel.innerHTML = '<option value="">— เลือก Service เพื่อเพิ่ม To / CC —</option>';
+    document.getElementById('cx-service-row').style.display = 'none';
+    if (!id) return;
+
+    for (const t of _cmpServiceTypes) {
+      const st = (t.subtypes || []).find(s => s.id === id);
+      if (!st) continue;
+      if ((st.services || []).length > 0) {
+        st.services.forEach(svc => {
+          const o = document.createElement('option');
+          o.value       = svc.id;
+          o.textContent = svc.name
+            + (svc.email_to?.length ? ` (To:${svc.email_to.length})` : '')
+            + (svc.email_cc?.length ? ` (CC:${svc.email_cc.length})` : '');
+          o.dataset.to  = JSON.stringify(svc.email_to || []);
+          o.dataset.cc  = JSON.stringify(svc.email_cc || []);
+          sel.appendChild(o);
+        });
+        document.getElementById('cx-service-row').style.display = '';
+      } else if ((st.emails || []).length > 0) {
+        st.emails.forEach(em => {
+          _chipCc.addEmails([em]);
+          _cmpAutoCcEmails.push(em.trim().toLowerCase());
+        });
+        Toast.success(`เพิ่ม ${st.emails.length} CC จาก ${st.name}`);
+      }
+      return;
+    }
+  });
+
+  document.getElementById('cx-service').addEventListener('change', e => {
+    const opt = e.target.selectedOptions[0];
+    _clearCmpAutoEmails();
+    if (!opt?.value) return;
+
+    let emailTo = [], emailCc = [];
+    try { emailTo = JSON.parse(opt.dataset.to || '[]'); } catch {}
+    try { emailCc = JSON.parse(opt.dataset.cc || '[]'); } catch {}
+
+    emailTo.forEach(em => {
+      _chipTo.addEmails([em]);
+      _cmpAutoToEmails.push(em.trim().toLowerCase());
+    });
+    emailCc.forEach(em => {
+      _chipCc.addEmails([em]);
+      _cmpAutoCcEmails.push(em.trim().toLowerCase());
+    });
+
+    if (emailTo.length || emailCc.length) {
+      const name = opt.textContent.split(' (')[0].trim();
+      Toast.success(`เพิ่ม ${emailTo.length} To + ${emailCc.length} CC จาก ${name}`);
+    }
+  });
+});
+
+/* ══════════════════════════════════════════════════════════
+   COMPOSE
+══════════════════════════════════════════════════════════ */
+let _composeMode = 'new';
+
+function openCompose(mode) {
+  // If a previous compose is still active (e.g. user hit Reply on a new email
+  // while another compose was open), flush its pending draft under the OLD
+  // slot before we overwrite the DOM with fresh content.
+  if (_currentDraftSlot) {
+    clearTimeout(_draftSaveTimer);
+    _draftSaveTimer = null;
+    _saveDraftNow();
+  }
+
+  _composeMode = mode;
+  const m = _openMsg;
+  const titles = { new: 'เขียน Email ใหม่', reply: `Reply: ${m?.subject||''}`, replyAll: `Reply All: ${m?.subject||''}`, forward: `Fwd: ${m?.subject||''}` };
+  document.getElementById('compose-title').textContent = titles[mode] || 'เขียน Email';
+
+  const subjEl = document.getElementById('compose-subject');
+  const bodyEl = document.getElementById('compose-body');
+
+  // 1. Fresh state — quote for reply, forwarded block for forward, empty for new
+  _chipTo.setEmails('');
+  _chipCc.setEmails('');
+  subjEl.value = '';
+  bodyEl.innerHTML = '';
+
+  // Reset service-type dropdowns + clear any auto-filled emails from last compose
+  _cmpAutoToEmails = [];
+  _cmpAutoCcEmails = [];
+  document.getElementById('cx-subtype').value = '';
+  document.getElementById('cx-service').innerHTML = '<option value="">— เลือก Service เพื่อเพิ่ม To / CC —</option>';
+  document.getElementById('cx-service-row').style.display = 'none';
+  loadServiceTypesForCompose();
+
+  if (mode === 'reply' && m) {
+    _chipTo.setEmails(m.from?.email || '');
+    subjEl.value = m.subject?.startsWith('Re:') ? m.subject : `Re: ${m.subject}`;
+    bodyEl.innerHTML = buildQuote(m);
+  } else if (mode === 'replyAll' && m) {
+    const replyTo = m.reply_to?.[0]?.email || m.from?.email || '';
+    const others  = (m.to||[]).map(a=>a.email).filter(e => e !== Auth.getUser?.()?.email);
+    _chipTo.setEmails([replyTo, ...others].join(','));
+    _chipCc.setEmails((m.cc||[]).map(a=>a.email).join(','));
+    subjEl.value = m.subject?.startsWith('Re:') ? m.subject : `Re: ${m.subject}`;
+    bodyEl.innerHTML = buildQuote(m);
+  } else if (mode === 'forward' && m) {
+    subjEl.value = m.subject?.startsWith('Fwd:') ? m.subject : `Fwd: ${m.subject}`;
+    bodyEl.innerHTML = buildForwardBody(m);
+  }
+
+  // 2. Draft restore — check for a saved draft in this slot and overlay
+  _currentDraftSlot = _draftSlot(mode, m?.uid);
+  const draft = _loadDraft(_currentDraftSlot);
+  const ind   = document.getElementById('compose-save-ind');
+  if (draft && (draft.body?.trim() || draft.to || draft.subject)) {
+    _chipTo.setEmails(draft.to || '');
+    _chipCc.setEmails(draft.cc || '');
+    subjEl.value    = draft.subject || '';
+    bodyEl.innerHTML = draft.body    || '';
+    ind.dataset.state = 'saved';
+    document.getElementById('compose-save-time').textContent =
+      'กู้คืน draft · ' + new Date(draft.savedAt).toLocaleTimeString('th-TH', { hour12: false });
+    Toast.info(`<i data-icon="edit"></i> กู้คืน draft ที่บันทึกไว้เมื่อ ${new Date(draft.savedAt).toLocaleString('th-TH', { hour12: false })}`, 4000);
+  } else {
+    ind.dataset.state = 'idle';
+    document.getElementById('compose-save-time').textContent = '—';
+  }
+
+  // 3. Show + focus + wire the image-resize helper
+  document.getElementById('compose-overlay').classList.add('show');
+  document.getElementById('compose-status').textContent = '';
+  _cxUpdatePlaceholder();
+  setupImageResize(bodyEl);
+  if (mode === 'new' && !draft?.to) _chipTo.focus(); else bodyEl.focus();
+}
+
+function resolveCids(html, cidMap, uid, folder) {
+  const token = Auth.getToken() || '';
+  const base  = API_BASE;
+  return html.replace(/\bcid:([^\s"'>\)]+)/gi, (match, cid) => {
+    cid = cid.replace(/[;.,]+$/, '');
+    if (cidMap[cid]) return cidMap[cid];
+    const bare = cid.replace(/@.*$/, '');
+    if (cidMap[bare]) return cidMap[bare];
+    return `${base}/inbox/cid.php?uid=${encodeURIComponent(uid)}&folder=${encodeURIComponent(folder || 'INBOX')}&cid=${encodeURIComponent(cid)}&token=${encodeURIComponent(token)}`;
+  });
+}
+
+function buildQuote(m) {
+  const dt     = m.date ? new Date(m.date).toLocaleString('th-TH', { hour12: false }) : '';
+  const from   = m.from?.name ? `${m.from.name} &lt;${m.from.email}&gt;` : (m.from?.email || '');
+  const rawBody = m.is_html ? m.body : `<pre style="white-space:pre-wrap">${escHtml(m.plain || m.body || '')}</pre>`;
+  const body   = m.is_html ? resolveCids(rawBody, m.cid_map || {}, m.uid, m.folder || currentFolder) : rawBody;
+  return `<br><br><div style="border-left:3px solid #ccc;padding-left:12px;color:#666;margin-top:8px">
+    <p style="margin:0 0 4px;font-size:12px">On ${dt}, ${from} wrote:</p>
+    ${body}
+  </div>`;
+}
+
+function buildForwardBody(m) {
+  const dt     = m.date ? new Date(m.date).toLocaleString('th-TH', { hour12: false }) : '';
+  const from   = m.from?.name ? `${m.from.name} &lt;${m.from.email}&gt;` : (m.from?.email || '');
+  const rawBody = m.is_html ? m.body : `<pre style="white-space:pre-wrap">${escHtml(m.plain || m.body || '')}</pre>`;
+  const body   = m.is_html ? resolveCids(rawBody, m.cid_map || {}, m.uid, m.folder || currentFolder) : rawBody;
+  return `<br><br><hr style="border:none;border-top:1px solid #ccc;margin:12px 0">
+    <p style="font-size:12px;color:#666;margin:0 0 6px">
+      <strong>---------- Forwarded message ---------</strong><br>
+      From: ${from}<br>
+      Date: ${dt}<br>
+      Subject: ${escHtml(m.subject || '')}<br>
+      To: ${(m.to||[]).map(a=>escHtml(a.email)).join(', ')}
+    </p>
+    ${body}`;
+}
+
+// Close = keep draft (auto-save). To wipe the draft, user must click "ทิ้ง Draft".
+function closeCompose() {
+  if (_currentDraftSlot) _saveDraftNow(); // flush pending debounced save
+  clearTimeout(_draftSaveTimer);
+  _draftSaveTimer = null;
+  document.getElementById('compose-overlay').classList.remove('show');
+}
+
+// Close without saving (used after send-success or after discard).
+function _closeComposeSilent() {
+  clearTimeout(_draftSaveTimer);
+  _draftSaveTimer = null;
+  _currentDraftSlot = null;
+  document.getElementById('compose-overlay').classList.remove('show');
+}
+
+// Convert all <img> srcs to data URIs so PHP can embed them as CID attachments.
+// Handles both proxy URLs (cid.php) and any blob: URLs the browser may have created.
+async function normalizeImagesForSend(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const imgs = tmp.querySelectorAll('img[src]');
+  if (!imgs.length) return html;
+
+  await Promise.all([...imgs].map(async img => {
+    const src = img.getAttribute('src');
+    if (!src || src.startsWith('data:')) return; // already a data URI — leave as-is
+    try {
+      const resp = await fetch(src);
+      if (!resp.ok) return;
+      const blob = await resp.blob();
+      const dataUri = await new Promise(resolve => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.readAsDataURL(blob);
+      });
+      img.setAttribute('src', dataUri);
+    } catch (_) { /* leave src unchanged on failure */ }
+  }));
+
+  return tmp.innerHTML;
+}
+
+async function sendCompose() {
+  const to      = _chipTo.getEmails();
+  const cc      = _chipCc.getEmails();
+  const subject = document.getElementById('compose-subject').value.trim();
+  let   body    = document.getElementById('compose-body').innerHTML.trim();
+
+  if (!to || !subject || !body) { Toast.warn('กรอก To, Subject, Body ให้ครบก่อน'); return; }
+
+  const btn = document.getElementById('compose-send-btn');
+  const st  = document.getElementById('compose-status');
+  btn.disabled = true; st.textContent = '⏳ กำลังส่ง…';
+
+  // Convert proxy/blob image URLs → data URIs so PHP can embed them as CID attachments
+  body = await normalizeImagesForSend(body);
+
+  const payload = { to, cc, subject, body, is_html: true };
+  if (_openMsg && (_composeMode === 'reply' || _composeMode === 'replyAll')) {
+    payload.in_reply_to = _openMsg.message_id;
+    payload.references  = _openMsg.message_id;
+  }
+
+  const res = await API.inbox.send(payload);
+  btn.disabled = false;
+  st.textContent = '';
+
+  if (!res?.ok) {
+    st.innerHTML = '<i data-icon="alert-triangle"></i> ส่งไม่สำเร็จ: ' + (res?.data?.message || 'unknown error');
+    st.style.color = '#ef4444';
+    return;
+  }
+  trackInboxSend(_composeMode || 'new');
+  Toast.success('<i data-icon="upload"></i> ส่ง Email สำเร็จ!');
+  // Send succeeded — wipe the draft slot so it doesn't linger.
+  if (_currentDraftSlot) { _clearDraft(_currentDraftSlot); }
+  _closeComposeSilent();
+}
+
+/* ══════════════════════════════════════════════════════════
+   RICH-TEXT COMMANDS (toolbar buttons)
+══════════════════════════════════════════════════════════ */
+function cxExec(command, value = null) {
+  document.execCommand('styleWithCSS', false, true);
+  document.execCommand(command, false, value);
+  document.getElementById('compose-body')?.focus();
+  _cxUpdatePlaceholder();
+  _scheduleDraftSave();
+}
+function cxInsertLink() {
+  const sel = window.getSelection();
+  const selectedText = sel && !sel.isCollapsed ? sel.toString() : '';
+  const url = window.prompt('URL:', 'https://');
+  if (!url) return;
+  if (selectedText) {
+    cxExec('createLink', url);
+  } else {
+    document.execCommand('insertHTML', false,
+      `<a href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">${escHtml(url)}</a>`);
+    _cxUpdatePlaceholder();
+    _scheduleDraftSave();
+  }
+}
+function cxInsertImageFile(file) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    document.execCommand('insertHTML', false, `<img src="${r.result}" style="max-width:60%">`);
+    _cxUpdatePlaceholder();
+    setupImageResize(document.getElementById('compose-body'));
+    _scheduleDraftSave();
+  };
+  r.readAsDataURL(file);
+}
+function _cxUpdatePlaceholder() {
+  const el = document.getElementById('compose-body');
+  if (!el) return;
+  const empty = !el.textContent.trim() && !el.querySelector('img');
+  el.dataset.empty = empty ? 'true' : 'false';
+}
+
+/* ══════════════════════════════════════════════════════════
+   DRAFT AUTO-SAVE (team-scoped, per-message slots)
+
+   Key:   som_inbox_drafts_{team}_{userId}
+   Value: { "new": {...}, "reply_1234": {...}, "forward_5678": {...} }
+   Slot:  "new" for compose-new; else "{mode}_{msgUid}"
+══════════════════════════════════════════════════════════ */
+const _DRAFT_TTL_DAYS = 30;
+let _currentDraftSlot = null;
+let _draftSaveTimer   = null;
+
+function _draftStorageKey() {
+  const u    = Auth.getUser?.() || {};
+  const team = u.team || 'default';
+  const uid  = u.id || u.sub || 'anon';
+  return `som_inbox_drafts_${team}_${uid}`;
+}
+function _draftSlot(mode, msgUid) {
+  return mode === 'new' ? 'new' : `${mode}_${msgUid || 'none'}`;
+}
+function _getDraftStore() {
+  try {
+    const raw   = localStorage.getItem(_draftStorageKey());
+    const store = raw ? JSON.parse(raw) : {};
+    // Prune stale drafts (> 30 days)
+    const cutoff = Date.now() - _DRAFT_TTL_DAYS * 86400_000;
+    let mutated = false;
+    for (const k of Object.keys(store)) {
+      const t = store[k]?.savedAt ? new Date(store[k].savedAt).getTime() : 0;
+      if (t && t < cutoff) { delete store[k]; mutated = true; }
+    }
+    if (mutated) _setDraftStore(store);
+    return store;
+  } catch (_) { return {}; }
+}
+function _setDraftStore(store) {
+  try { localStorage.setItem(_draftStorageKey(), JSON.stringify(store)); }
+  catch (_) { /* quota exceeded — ignore */ }
+}
+function _loadDraft(slot) {
+  return _getDraftStore()[slot] || null;
+}
+function _clearDraft(slot) {
+  const store = _getDraftStore();
+  delete store[slot];
+  _setDraftStore(store);
+}
+
+function _scheduleDraftSave() {
+  if (!_currentDraftSlot) return;
+  const ind = document.getElementById('compose-save-ind');
+  if (ind) {
+    ind.dataset.state = 'saving';
+    document.getElementById('compose-save-time').textContent = 'กำลังบันทึก…';
+  }
+  clearTimeout(_draftSaveTimer);
+  _draftSaveTimer = setTimeout(_saveDraftNow, 1500);
+}
+
+function _saveDraftNow() {
+  if (!_currentDraftSlot) return;
+  const to      = _chipTo?.getEmails() || '';
+  const cc      = _chipCc?.getEmails() || '';
+  const subject = document.getElementById('compose-subject')?.value || '';
+  const bodyEl  = document.getElementById('compose-body');
+  const body    = bodyEl?.innerHTML || '';
+  const hasContent = to || cc || subject.trim() || bodyEl?.textContent?.trim() || bodyEl?.querySelector('img');
+
+  const ind    = document.getElementById('compose-save-ind');
+  const timeEl = document.getElementById('compose-save-time');
+
+  if (!hasContent) {
+    // Empty compose — no draft to keep
+    _clearDraft(_currentDraftSlot);
+    if (ind)    ind.dataset.state = 'idle';
+    if (timeEl) timeEl.textContent = '—';
+    return;
+  }
+
+  const store = _getDraftStore();
+  store[_currentDraftSlot] = {
+    mode: _composeMode, to, cc, subject, body,
+    replyToUid: _openMsg?.uid || null,
+    savedAt: new Date().toISOString(),
+  };
+  _setDraftStore(store);
+
+  if (ind)    ind.dataset.state = 'saved';
+  if (timeEl) timeEl.textContent = 'บันทึก ' + new Date().toLocaleTimeString('th-TH', { hour12: false });
+}
+
+async function discardDraft() {
+  const bodyEl = document.getElementById('compose-body');
+  const dirty = (
+    _chipTo?.getEmails() ||
+    _chipCc?.getEmails() ||
+    (document.getElementById('compose-subject')?.value || '').trim() ||
+    (bodyEl?.textContent || '').trim() ||
+    bodyEl?.querySelector('img')
+  );
+  if (dirty) {
+    const ok = await confirmDialog(
+      'draft นี้จะถูกลบทิ้งและกู้คืนไม่ได้',
+      'ทิ้ง Draft?',
+      { confirmText: 'ทิ้ง Draft', cancelText: 'เขียนต่อ', variant: 'danger' }
+    );
+    if (!ok) return;
+  }
+  if (_currentDraftSlot) _clearDraft(_currentDraftSlot);
+  _closeComposeSilent();
+  Toast.info('🗑 ทิ้ง draft แล้ว');
+}
+
+// ── Wire up input / paste / drop on the editor (once at parse-time) ──
+(function bindComposeEditorHandlers() {
+  const bodyEl = document.getElementById('compose-body');
+  if (!bodyEl) return;
+
+  bodyEl.addEventListener('input', () => {
+    _cxUpdatePlaceholder();
+    _scheduleDraftSave();
+  });
+  bodyEl.addEventListener('paste', e => {
+    // Handle image paste (Cmd/Ctrl+V a copied image) — otherwise fall through
+    // and let the browser paste text/HTML normally.
+    const items = e.clipboardData?.items || [];
+    for (const item of items) {
+      if (item.type && item.type.startsWith('image/')) {
+        e.preventDefault();
+        cxInsertImageFile(item.getAsFile());
+        return;
+      }
+    }
+    setTimeout(() => { _cxUpdatePlaceholder(); _scheduleDraftSave(); }, 0);
+  });
+  bodyEl.addEventListener('drop', e => {
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type.startsWith('image/')) {
+      e.preventDefault();
+      cxInsertImageFile(f);
+    }
+  });
+  bodyEl.addEventListener('dragover', e => e.preventDefault());
+  bodyEl.addEventListener('blur', () => {
+    if (_currentDraftSlot) _saveDraftNow();
+  });
+
+  // Also trigger a draft save when the To/Cc/Subject fields change.
+  ['compose-subject', 'chip-to-input', 'chip-cc-input'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', _scheduleDraftSave);
+    el.addEventListener('blur',  () => { if (_currentDraftSlot) _saveDraftNow(); });
+  });
+
+  // Best-effort save before the tab closes / reloads.
+  window.addEventListener('beforeunload', () => {
+    if (_currentDraftSlot) _saveDraftNow();
+  });
+})();
+
+/* ══════════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════════ */
+function fmtTime(iso) {
+  if (!iso) return '';
+  const d   = new Date(iso);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString())
+    return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+  if (now - d < 7 * 86400000)
+    return d.toLocaleDateString('en-US', { weekday: 'short' });
+  return d.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' });
+}
+
+// Search
+document.getElementById('list-search').addEventListener('input', e => {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => { _search = e.target.value; renderList(); }, 200);
+});
+
+// Keyboard shortcuts
+// Guard: skip when typing in ANY input/textarea, or inside a contenteditable
+// (use isContentEditable — .contentEditable returns "inherit" for child nodes
+// that Chrome wraps typed text in, breaking the old check). Also skip when a
+// modifier key is held so Cmd/Ctrl+C/V/R/E work as normal clipboard/browser
+// shortcuts inside the compose editor.
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target;
+  if (t?.tagName === 'INPUT' || t?.tagName === 'TEXTAREA' || t?.tagName === 'SELECT') return;
+  if (t?.isContentEditable) return;
+  if (e.key === 'Escape') closeCompose();
+  else if (e.key === 'c' || e.key === 'C') openCompose('new');
+  else if (e.key === 'r' || e.key === 'R') { if (_openMsg) openCompose('reply'); }
+  else if (e.key === 'e' || e.key === 'E') { if (_uid) archiveEmail(); }
+});
+
+/* ══════════════════════════════════════════════════════════
+   EMAIL BODY RENDERER — proxies cid: images through /api/inbox/cid.php
+   (browsers block the cid: scheme via CSP; proxy URLs are 'self' → allowed)
+══════════════════════════════════════════════════════════ */
+function renderEmailBody(container, rawHtml, uid, folder, cidMap = {}) {
+  const token  = Auth.getToken() || '';
+  const base   = API_BASE; // e.g. "/centralize-som/api"
+
+  // 1. Replace cid: references — use pre-built data URIs from cid_map first,
+  //    fall back to cid.php proxy only for CIDs not already in the map.
+  let html = rawHtml.replace(/\bcid:([^\s"'>\)]+)/gi, (match, cid) => {
+    cid = cid.replace(/[;.,]+$/, ''); // strip trailing punctuation
+    // Direct match
+    if (cidMap[cid]) return cidMap[cid];
+    // Bare match (strip domain suffix, e.g. "image1@mail.gmail.com" → "image1")
+    const bare = cid.replace(/@.*$/, '');
+    if (cidMap[bare]) return cidMap[bare];
+    // Fallback: proxy through cid.php
+    return `${base}/inbox/cid.php?uid=${encodeURIComponent(uid)}&folder=${encodeURIComponent(folder || 'INBOX')}&cid=${encodeURIComponent(cid)}&token=${encodeURIComponent(token)}`;
+  });
+
+  // 2. Sanitize: strip <script> and inline event handlers
+  html = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+    .replace(/\son\w+\s*=\s*'[^']*'/gi, '');
+
+  // 3. Render in sandboxed iframe (isolates CSS + JS from parent page)
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'width:100%;border:none;min-height:200px;background:#fff;border-radius:6px;display:block;';
+  // allow-same-origin: needed to read scrollHeight for auto-resize
+  iframe.setAttribute('sandbox', 'allow-same-origin allow-popups');
+  iframe.srcdoc = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;
+             padding: 16px; margin: 0; word-break: break-word; color: #111; }
+      img  { max-width: 100%; height: auto; }
+      a    { color: #1a73e8; }
+      pre  { white-space: pre-wrap; }
+    </style>
+  </head><body>${html}</body></html>`;
+  container.innerHTML = '';
+  container.appendChild(iframe);
+
+  // 4. Auto-resize iframe height to fit content
+  const resize = () => {
+    try {
+      const h = iframe.contentDocument?.body?.scrollHeight;
+      if (h) iframe.style.height = h + 24 + 'px';
+    } catch (e) {}
+  };
+  iframe.onload = resize;
+  setTimeout(resize, 300); // fallback
+}
+
+/* ══════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════ */
+_chipTo = createChipInput('chip-to-wrap', 'chip-to-input');
+_chipCc = createChipInput('chip-cc-wrap', 'chip-cc-input');
+loadFolders();
+loadList(true);
+// Auto-refresh every 60s
+setInterval(() => { if (!document.hidden) { loadList(true); loadFolders(); } }, 60_000);
+</script>
+</body>
+</html>

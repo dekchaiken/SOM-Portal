@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firt-hop Email Config — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/fh-config/fh-config.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="mail"></i> Firt-hop Email Config</div>
+        <div class="page-sub">ตั้งค่า To / CC / Dear / Subject เริ่มต้นสำหรับแต่ละ project</div>
+      </div>
+      <div class="topbar-actions">
+        <span class="saved-badge" id="saved-badge"><i data-icon="check"></i> บันทึกแล้ว</span>
+        <button class="btn btn-ghost btn-sm" onclick="loadConfig()" style="font-size:11px">↺ Reload</button>
+        <button class="btn btn-primary" id="save-btn" onclick="saveConfig()">บันทึก</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="mail"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>First-hop Email Config</h1>
+          <p>ตั้งค่า To / CC / Dear / Subject เริ่มต้นสำหรับแต่ละ project — TMN · Nano · Welth</p>
+        </div>
+      </section>
+
+      <div class="proj-pills">
+        <button class="proj-pill active" id="pill-tmn"   onclick="switchProj('tmn')"><span class="proj-dot dot-tmn"></span>TMN</button>
+        <button class="proj-pill"        id="pill-nano"  onclick="switchProj('nano')"><span class="proj-dot dot-nano"></span>Nano</button>
+        <button class="proj-pill"        id="pill-welth" onclick="switchProj('welth')"><span class="proj-dot dot-welth"></span>Welth</button>
+        <button class="proj-pill"        id="pill-all"   onclick="switchProj('all')"><span class="proj-dot dot-all"></span>All</button>
+      </div>
+
+      <!-- TMN -->
+      <div class="config-card" id="panel-tmn">
+        <div class="config-card-hd">
+          <div>
+            <div class="config-card-title"><i data-icon="satellite"></i> TMN — Email Defaults</div>
+            <div class="config-card-sub">ใช้เมื่อ Firt-hop tab อยู่ที่ TMN</div>
+          </div>
+        </div>
+        <div class="config-card-body">
+          <div>
+            <label class="form-label">To</label>
+            <div class="email-tag-wrap" id="to-wrap-tmn" onclick="focusTagInput('to-input-tmn')"></div>
+          </div>
+          <div>
+            <label class="form-label">CC <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+            <div class="email-tag-wrap" id="cc-wrap-tmn" onclick="focusTagInput('cc-input-tmn')"></div>
+          </div>
+          <div>
+            <label class="form-label">Dear</label>
+            <input class="form-input" id="dear-tmn" type="text" placeholder="เช่น TMN-CBO">
+          </div>
+          <div>
+            <label class="form-label">Subject Template</label>
+            <input class="form-input" id="subject-tmn" type="text" placeholder="ใส่ {month} สำหรับเดือนอัตโนมัติ">
+            <div class="form-hint">ใช้ <code>{month}</code> ในชื่อ subject — จะถูกแทนที่ด้วยเดือนที่เลือก เช่น Jun 2026</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nano -->
+      <div class="config-card" id="panel-nano" style="display:none">
+        <div class="config-card-hd">
+          <div>
+            <div class="config-card-title">💜 Nano — Email Defaults</div>
+            <div class="config-card-sub">ใช้เมื่อ Firt-hop tab อยู่ที่ Nano</div>
+          </div>
+        </div>
+        <div class="config-card-body">
+          <div>
+            <label class="form-label">To</label>
+            <div class="email-tag-wrap" id="to-wrap-nano" onclick="focusTagInput('to-input-nano')"></div>
+          </div>
+          <div>
+            <label class="form-label">CC <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+            <div class="email-tag-wrap" id="cc-wrap-nano" onclick="focusTagInput('cc-input-nano')"></div>
+          </div>
+          <div>
+            <label class="form-label">Dear</label>
+            <input class="form-input" id="dear-nano" type="text" placeholder="เช่น Nano-CBO">
+          </div>
+          <div>
+            <label class="form-label">Subject Template</label>
+            <input class="form-input" id="subject-nano" type="text" placeholder="ใส่ {month} สำหรับเดือนอัตโนมัติ">
+            <div class="form-hint">ใช้ <code>{month}</code> ในชื่อ subject — จะถูกแทนที่ด้วยเดือนที่เลือก</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Welth -->
+      <div class="config-card" id="panel-welth" style="display:none">
+        <div class="config-card-hd">
+          <div>
+            <div class="config-card-title">💚 Welth — Email Defaults</div>
+            <div class="config-card-sub">ใช้เมื่อ Firt-hop tab อยู่ที่ Welth</div>
+          </div>
+        </div>
+        <div class="config-card-body">
+          <div>
+            <label class="form-label">To</label>
+            <div class="email-tag-wrap" id="to-wrap-welth" onclick="focusTagInput('to-input-welth')"></div>
+          </div>
+          <div>
+            <label class="form-label">CC <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+            <div class="email-tag-wrap" id="cc-wrap-welth" onclick="focusTagInput('cc-input-welth')"></div>
+          </div>
+          <div>
+            <label class="form-label">Dear</label>
+            <input class="form-input" id="dear-welth" type="text" placeholder="เช่น Welth-CBO">
+          </div>
+          <div>
+            <label class="form-label">Subject Template</label>
+            <input class="form-input" id="subject-welth" type="text" placeholder="ใส่ {month} สำหรับเดือนอัตโนมัติ">
+            <div class="form-hint">ใช้ <code>{month}</code> ในชื่อ subject — จะถูกแทนที่ด้วยเดือนที่เลือก</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- All -->
+      <div class="config-card" id="panel-all" style="display:none">
+        <div class="config-card-hd">
+          <div>
+            <div class="config-card-title"><i data-icon="plus-circle"></i> All — Email Defaults</div>
+            <div class="config-card-sub">ใช้เมื่อ Firt-hop tab อยู่ที่ All (TMN + Nano + Welth)</div>
+          </div>
+        </div>
+        <div class="config-card-body">
+          <div>
+            <label class="form-label">To</label>
+            <div class="email-tag-wrap" id="to-wrap-all" onclick="focusTagInput('to-input-all')"></div>
+          </div>
+          <div>
+            <label class="form-label">CC <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+            <div class="email-tag-wrap" id="cc-wrap-all" onclick="focusTagInput('cc-input-all')"></div>
+          </div>
+          <div>
+            <label class="form-label">Dear</label>
+            <input class="form-input" id="dear-all" type="text" placeholder="เช่น All, TMN-CBO">
+          </div>
+          <div>
+            <label class="form-label">Subject Template</label>
+            <input class="form-input" id="subject-all" type="text" placeholder="ใส่ {month} สำหรับเดือนอัตโนมัติ">
+            <div class="form-hint">ใช้ <code>{month}</code> ในชื่อ subject — จะถูกแทนที่ด้วยเดือนที่เลือก</div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/fh-config/fh-config.js"></script>
+</body>
+</html>

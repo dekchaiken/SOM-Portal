@@ -1,0 +1,399 @@
+{
+  "n": 6,
+  "title": "7-Eleven · SoF Wallet",
+  "refresh": "1m",
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "valueName": "last"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 104
+      },
+      "id": 2022,
+      "options": {
+        "composites": [],
+        "content": "%%{init: {\"flowchart\": {\"useMaxWidth\": true, \"htmlLabels\": true}, \"theme\": \"dark\"}}%%\ngraph TD\n  ACQ[\"Acquiring Service\"] --> EW[\"Wallet / EW\n(retail-seven-composite)\"]\n  EW -->|200| bal_ok([\"Charge: OK\"])\n  EW -->|non-200| bal_fail([\"Charge: Fail\"])\n  classDef svc    fill:#242930,stroke:#5794c7,stroke-width:2px,color:#fff\n  classDef ok     fill:#1c2c22,stroke:#47a468,stroke-width:2px,color:#fff\n  classDef fail   fill:#2c1e1e,stroke:#cc3333,stroke-width:2px,color:#fff\n  classDef client fill:#2c2020,stroke:#e05252,stroke-width:3px,color:#e05252,font-weight:bold\n  classDef net    fill:#2c251e,stroke:#ff8c42,stroke-width:2px,color:#fff",
+        "legend": {
+          "show": true
+        },
+        "links": [],
+        "mermaidThemeVariablesDark": {
+          "common": {
+            "fontFamily": "Roboto,Helvetica Neue,Arial,sans-serif"
+          }
+        },
+        "mermaidThemeVariablesLight": {
+          "common": {
+            "fontFamily": "Roboto,Helvetica Neue,Arial,sans-serif"
+          }
+        },
+        "nodeSize": {
+          "minHeight": 30,
+          "minWidth": 30
+        },
+        "pluginVersion": "latest",
+        "style": "width:100%;",
+        "useBackground": false,
+        "valueName": "current"
+      },
+      "pluginVersion": "1.10.4",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"200\",sof_code=\"BALANCE\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "bal_ok",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status!=\"200\",sof_code=\"BALANCE\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "bal_fail",
+          "refId": "B"
+        }
+      ],
+      "title": "Balance - Charge Flow (5m window)",
+      "type": "jdbranham-diagram-panel"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 114
+      },
+      "hiddenSeries": false,
+      "id": 2023,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"200\",sof_code=\"BALANCE\"}[1m])) by (sof_code)",
+          "interval": "",
+          "legendFormat": "Balance Success",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "7-Eleven SOF Balance  Charge Success",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:364",
+          "format": "short",
+          "label": "count",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:365",
+          "format": "short",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน Wallet charge ที่ fail แยกตาม error code\n\nดูยังไง: error status_code=0 = success แต่ process ไม่ครบ, status_code=-1 = timeout, 500 = server error",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 114
+      },
+      "hiddenSeries": false,
+      "id": 2024,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"200\", sof_code=\"BALANCE\"}[1m])) by (sof_type, sof_code, status)",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{sof_type}} - {{sof_code}} - {{status}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"500\",uri=\"/retail-seven-composite/par/v1/charges/{charge-id}\"}[2m])) by (sof_code, status)",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{sof_code}} - {{status}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"500\", sof_code=\"BALANCE\"}[2m])) by (sof_type, sof_code, status)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{sof_type}} - {{sof_code}} - {{status}}",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 10,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "7-Eleven SOF Balance Charge Fail",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:71",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:72",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 122
+      },
+      "hiddenSeries": false,
+      "id": 2025,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(rate(retail_seven_composite_requests_seconds_sum{status=\"200\",sof_code=\"BALANCE\"}[1m])) / sum(rate(retail_seven_composite_requests_seconds_count{status=\"200\",sof_code=\"BALANCE\"}[1m]))",
+          "interval": "",
+          "legendFormat": "Balance avg (s)",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "7-Eleven SOF Balance  Processing Time",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:446",
+          "format": "short",
+          "label": "seconds",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:447",
+          "format": "short",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    }
+  ]
+}

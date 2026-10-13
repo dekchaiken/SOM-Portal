@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Team — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/dev-badge.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/my-team/my-team.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title" id="page-title-text">My Team</div>
+        <div class="page-sub" id="date-display"></div>
+      </div>
+      <div class="topbar-actions"></div>
+    </header>
+    <main class="page-content">
+
+<div class="mt-wrap">
+  <div class="mt-head">
+    <div>
+      <h1 class="mt-title">
+        My Team
+        <span class="mt-team-badge" id="mt-team-badge">SM</span>
+      </h1>
+      <div class="mt-sub" id="mt-sub">
+        รายชื่อทีมที่มีชื่ออยู่ในตารางเวร · แสดงข้อมูลติดต่อ, TMN.ID, และเครือข่ายอินเทอร์เน็ต
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-toolbar">
+    <div class="mt-search">
+      <span style="color:var(--text-muted)">⌕</span>
+      <input id="mt-search"/>
+    </div>
+    <div class="mt-chip on" data-role="all">ทั้งหมด</div>
+    <div class="mt-chip" data-role="sm_admin">Admin</div>
+    <div class="mt-chip" data-role="sm_lead">Lead</div>
+    <div class="mt-chip" data-role="sm_user">User</div>
+    <div class="mt-chip" data-role="dev_sm">Dev</div>
+    <span class="mt-count-pill" id="mt-count">— คน</span>
+    <div class="mt-copy-wrap">
+      <button class="mt-copy-btn" onclick="copyTeam('text')" title="Copy all filtered members as text">
+        <i data-icon="clipboard"></i> <span>Copy team</span>
+      </button>
+      <button class="mt-copy-more" onclick="toggleCopyMenu(event)" title="เลือก format">▾</button>
+      <div class="mt-copy-menu" id="mt-copy-menu">
+        <div onclick="copyTeam('text'); closeCopyMenu()"><i data-icon="file"></i> Text <span class="desc">multi-line</span></div>
+        <div onclick="copyTeam('csv');  closeCopyMenu()"><i data-icon="bar-chart"></i> CSV <span class="desc">spreadsheet</span></div>
+        <div onclick="copyTeam('md');   closeCopyMenu()"><i data-icon="edit"></i> Markdown <span class="desc">table</span></div>
+        <div onclick="copyTeam('json'); closeCopyMenu()">🧩 JSON <span class="desc">raw</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-grid" id="mt-grid">
+    <div class="mt-skel"></div>
+    <div class="mt-skel"></div>
+    <div class="mt-skel"></div>
+    <div class="mt-skel"></div>
+    <div class="mt-skel"></div>
+    <div class="mt-skel"></div>
+  </div>
+</div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="mt-modal-overlay" id="mt-modal-overlay">
+  <div class="mt-modal">
+    <div class="mt-m-head">
+      <div class="mt-m-av-wrap" id="mt-m-av-wrap" title="คลิกเพื่อเปลี่ยนรูป">
+        <div class="mt-m-av" id="mt-m-av"><span id="mt-m-av-initials">—</span></div>
+        <div class="mt-m-av-ov" id="mt-m-av-ov"><i data-icon="camera"></i><br/>เปลี่ยนรูป</div>
+      </div>
+      <div class="mt-m-info">
+        <div class="mt-m-title" id="mt-m-title">—</div>
+        <div class="mt-m-sub"  id="mt-m-sub">—</div>
+      </div>
+      <button class="mt-m-close" onclick="closeEditModal()"><i data-icon="x"></i></button>
+    </div>
+    <input type="file" id="mt-avatar-file" accept="image/png,image/jpeg,image/gif,image/webp">
+    <canvas id="mt-avatar-canvas" width="200" height="200" style="display:none"></canvas>
+
+    <div class="mt-m-body">
+      <div class="mt-fld">
+        <label>🇹🇭 ชื่อ-นามสกุลภาษาไทย</label>
+        <input type="text" id="mt-in-name-th" maxlength="80">
+      </div>
+      <div class="mt-fld" id="mt-fld-nickname">
+        <label><i data-icon="message-circle"></i> Nickname</label>
+        <input type="text" id="mt-in-nickname" maxlength="30">
+      </div>
+      <div class="mt-fld">
+        <label><i data-icon="id-card"></i> รหัสพนักงาน (Employee ID)</label>
+        <input type="text" id="mt-in-emp-id" maxlength="20">
+      </div>
+      <div class="mt-fld">
+        <label><i data-icon="smartphone"></i> เบอร์มือถือ</label>
+        <input type="text" id="mt-in-phone" maxlength="20">
+      </div>
+      <div class="mt-fld">
+        <label><img src="./uploads/tmn.png" alt="TMN" class="lbl-img"> TMN.ID </label>
+        <input type="text" id="mt-in-tmn-id" maxlength="20">
+      </div>
+      <div class="mt-fld">
+        <label><i data-icon="home"></i> เน็ตบ้าน (ISP + speed)</label>
+        <input type="text" id="mt-in-net-home" maxlength="100">
+      </div>
+      <div class="mt-fld">
+        <label><i data-icon="wifi"></i> เครือข่ายมือถือ</label>
+        <input type="text" id="mt-in-net-mobile" maxlength="50">
+      </div>
+      <div class="mt-m-hint" id="mt-m-hint">
+        คลิกที่รูปด้านบนเพื่ออัปโหลด · การเปลี่ยนแปลงจะบันทึกเมื่อกด “Save”
+      </div>
+    </div>
+
+    <div class="mt-m-foot">
+      <button class="mt-btn" onclick="closeEditModal()">Cancel</button>
+      <button class="mt-btn primary" id="mt-save-btn" onclick="saveEdit()"><i data-icon="save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/skeletons.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/pages/my-team/my-team.js"></script>
+</body>
+</html>

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EKS Restart Monitor — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  <link rel="stylesheet" href="./assets/pages/restart-monitor/restart-monitor.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">EKS Restart Monitor</div>
+        <div class="page-sub">acm-tmn-eks-prod · daily 09:00 ICT</div>
+      </div>
+      <div class="topbar-actions">
+        <span id="last-updated" style="font-size:11px;color:var(--text-muted)"></span>
+        <button class="btn btn-ghost rm-monthly-btn" data-action="write" style="font-size:11px" onclick="openMonthlyModal()">รายงานรายเดือน</button>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="loadReports()">รีเฟรช</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- Tab toggle -->
+      <div class="rm-tabs-bar">
+        <button class="rm-tab-btn active" data-tab="analyzed" onclick="switchTab('analyzed')">
+          Analyzed <span class="rm-tab-badge" id="tab-badge-analyzed"></span>
+        </button>
+        <button class="rm-tab-btn" data-tab="raw" onclick="switchTab('raw')">
+          Raw / Auto <span class="rm-tab-badge" id="tab-badge-raw"></span>
+        </button>
+      </div>
+
+      <!-- ── Tab: Analyzed (Claude data) ── -->
+      <div id="tab-analyzed" class="rm-tab-panel">
+      <div class="rm-wrap">
+
+        <!-- Runway sub-tabs -->
+        <div class="rm-runway-bar" id="analyzed-runway-bar">
+          <button class="rm-runway-btn active" data-rw="EKS TMN"  onclick="switchAnalyzedRunway('EKS TMN')"><span class="rm-rw-dot rw-tmn"></span> EKS TMN</button>
+          <button class="rm-runway-btn"        data-rw="EKS NANO" onclick="switchAnalyzedRunway('EKS NANO')"><span class="rm-rw-dot rw-nano"></span> EKS NANO</button>
+          <button class="rm-runway-btn"        data-rw="OCP"      onclick="switchAnalyzedRunway('OCP')"><span class="rm-rw-dot rw-ocp"></span> OCP</button>
+          <span class="rm-runway-hint" id="analyzed-runway-hint">acm-tmn-eks-prod</span>
+        </div>
+
+        <!-- Period filter (preset pills + custom range panel) -->
+        <div class="rm-month-bar">
+          <span class="rm-month-bar-lbl">ช่วง</span>
+          <div class="rm-month-tabs" id="analyzed-period-tabs">
+            <span style="font-size:11px;color:var(--text-muted);padding:5px 8px">—</span>
+          </div>
+        </div>
+        <div class="rm-period-custom" id="analyzed-period-custom" style="display:none">
+          <span class="rm-period-custom-label">จาก</span>
+          <input type="date" id="analyzed-range-from" class="rm-day-date" onchange="onAnalyzedRangeChange()">
+          <span class="rm-range-sep">—</span>
+          <span class="rm-period-custom-label">ถึง</span>
+          <input type="date" id="analyzed-range-to" class="rm-day-date" onchange="onAnalyzedRangeChange()">
+          <span class="rm-period-badge" id="analyzed-range-badge"></span>
+        </div>
+
+        <!-- KPI Strip -->
+        <div class="rm-section-title">Overview</div>
+        <section class="rm-kpi-strip">
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label" id="kpi-lbl-restarts">Restarts · 7d</div>
+            <div class="rm-kpi-val" id="kpi-7d">—</div>
+          </div>
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label" id="kpi-lbl-crit">Critical · 7d</div>
+            <div class="rm-kpi-val" id="kpi-crit">—</div>
+          </div>
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label" id="kpi-lbl-oom">OOMKilled · 30d</div>
+            <div class="rm-kpi-val" id="kpi-oom">—</div>
+          </div>
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label">Days tracked</div>
+            <div class="rm-kpi-val" id="kpi-days">—</div>
+          </div>
+        </section>
+
+        <!-- Daily reports — date toolbar (scales for 100+ days) -->
+        <div class="rm-section-title" id="daily-reports-title">Daily reports</div>
+        <section class="rm-card" id="daily-reports-card" style="padding:12px 14px">
+          <div class="rm-day-toolbar">
+            <!-- Prev / Date picker / Next -->
+            <div class="rm-day-nav">
+              <button class="rm-nav-btn" id="day-prev" onclick="navigateDay(-1)" title="วันก่อน (←)">←</button>
+              <input
+                type="date"
+                id="day-date-input"
+                class="rm-day-date"
+                onchange="if(this.value)loadDay(this.value)"
+                title="เลือกวันด้วย calendar">
+              <button class="rm-nav-btn" id="day-next" onclick="navigateDay(1)" title="วันถัดไป (→)">→</button>
+              <span id="day-count" style="font-size:10.5px;color:var(--text-muted);margin-left:6px"></span>
+            </div>
+
+            <!-- Recent shortcuts -->
+            <div class="rm-day-recent">
+              <button id="analyzed-sort-btn" onclick="toggleAnalyzedSort()" style="font-size:10.5px;padding:2px 8px;margin-right:6px;background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;color:var(--text-muted);white-space:nowrap;flex-shrink:0" title="สลับเรียงจากเก่า→ใหม่ / ใหม่→เก่า">↓ ใหม่→เก่า</button>
+              <div id="day-pills" class="rm-day-pills">
+                <span style="font-size:11px;color:var(--text-muted)">—</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Day summary -->
+        <div class="rm-section-title" id="selected-day-title" style="margin-top:24px">Selected day</div>
+        <section class="rm-card" id="day-summary-card">
+          <div id="day-summary-body" style="padding:18px;color:var(--text-muted);font-size:12px">เลือกวันที่ด้านบน</div>
+        </section>
+
+        <!-- Pods / Pod detail — swap content in same card -->
+        <div class="rm-section-title" id="pods-title" style="margin-top:24px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span id="pods-title-text">Pods</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="rm-svc-combo" id="analyzed-svc-combo">
+              <input type="text"
+                     id="analyzed-svc-input"
+                     autocomplete="off"
+                     spellcheck="false"
+                     placeholder="🔍 กรอง service…"
+                     oninput="onAnalyzedSvcInput(this.value)"
+                     onfocus="openAnalyzedSvcDropdown()"
+                     onkeydown="onAnalyzedSvcKeydown(event)">
+              <button type="button" class="rm-svc-clear" onclick="clearAnalyzedSvcFilter()" title="ล้าง filter">×</button>
+              <div class="rm-svc-dropdown" id="analyzed-svc-dropdown" style="display:none"></div>
+            </div>
+            <div class="rm-view-toggle" id="analyzed-view-toggle" style="display:none">
+              <button type="button" data-view="agg" onclick="setAnalyzedRangeView('agg')">รวมช่วง</button>
+              <button type="button" data-view="day" onclick="setAnalyzedRangeView('day')">รายวัน</button>
+            </div>
+            <button id="pod-close-btn"
+                    onclick="closePodDetail()"
+                    style="display:none;background:none;border:1px solid var(--border);color:var(--text-muted);font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer;letter-spacing:0;text-transform:none;font-weight:500"
+                    title="กลับไปดู table (ESC)">
+              ← Back to table
+            </button>
+          </div>
+        </div>
+        <section class="rm-card" id="pods-section-card">
+          <div id="pods-table-wrap"></div>
+          <div id="pod-detail-wrap" style="display:none"></div>
+        </section>
+
+        <p style="font-size:10.5px;color:var(--text-muted);margin-top:24px;text-align:center">
+          Auto-refresh every 5 min · ← → คีย์ลัดเปลี่ยนวัน · ESC ปิด pod detail
+        </p>
+
+      </div>
+      </div><!-- /tab-analyzed -->
+
+      <!-- ── Tab: Raw / Auto (server cron, no AI) ── -->
+      <div id="tab-raw" class="rm-tab-panel" style="display:none">
+      <div class="rm-wrap">
+
+        <!-- Runway sub-tabs -->
+        <div class="rm-runway-bar" id="raw-runway-bar">
+          <button class="rm-runway-btn active" data-rw="EKS TMN"  onclick="switchRawRunway('EKS TMN')"><span class="rm-rw-dot rw-tmn"></span> EKS TMN</button>
+          <button class="rm-runway-btn"        data-rw="EKS NANO" onclick="switchRawRunway('EKS NANO')"><span class="rm-rw-dot rw-nano"></span> EKS NANO</button>
+          <button class="rm-runway-btn"        data-rw="OCP"      onclick="switchRawRunway('OCP')"><span class="rm-rw-dot rw-ocp"></span> OCP</button>
+          <span class="rm-runway-hint" id="raw-runway-hint">acm-tmn-eks-prod</span>
+        </div>
+
+        <!-- Period filter (preset pills + custom range panel) -->
+        <div class="rm-month-bar">
+          <span class="rm-month-bar-lbl">ช่วง</span>
+          <div class="rm-month-tabs" id="raw-period-tabs">
+            <span style="font-size:11px;color:var(--text-muted);padding:5px 8px">—</span>
+          </div>
+        </div>
+        <div class="rm-period-custom" id="raw-period-custom" style="display:none">
+          <span class="rm-period-custom-label">จาก</span>
+          <input type="date" id="raw-range-from" class="rm-day-date" onchange="onRawRangeChange()">
+          <span class="rm-range-sep">—</span>
+          <span class="rm-period-custom-label">ถึง</span>
+          <input type="date" id="raw-range-to" class="rm-day-date" onchange="onRawRangeChange()">
+          <span class="rm-period-badge" id="raw-range-badge"></span>
+        </div>
+
+        <!-- KPI strip -->
+        <div class="rm-section-title">Overview</div>
+        <section class="rm-kpi-strip">
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label" id="raw-kpi-lbl-restarts">Restart events · 7d</div>
+            <div class="rm-kpi-val" id="raw-kpi-restarts">—</div>
+          </div>
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label" id="raw-kpi-lbl-crit">Critical · 7d</div>
+            <div class="rm-kpi-val" id="raw-kpi-crit">—</div>
+          </div>
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label" id="raw-kpi-lbl-oom">OOMKilled · 30d</div>
+            <div class="rm-kpi-val" id="raw-kpi-oom">—</div>
+          </div>
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label">Days tracked</div>
+            <div class="rm-kpi-val" id="raw-kpi-days">—</div>
+          </div>
+        </section>
+
+        <!-- Day picker -->
+        <div class="rm-section-title" id="raw-daily-reports-title">Daily reports</div>
+        <section class="rm-card" id="raw-daily-reports-card" style="padding:12px 14px">
+          <div class="rm-day-toolbar">
+            <div class="rm-day-nav">
+              <button class="rm-nav-btn" id="raw-day-prev" onclick="rawNavigateDay(-1)">←</button>
+              <input type="date" id="raw-day-date" class="rm-day-date" onchange="if(this.value)loadRawDay(this.value)">
+              <button class="rm-nav-btn" id="raw-day-next" onclick="rawNavigateDay(1)">→</button>
+              <span id="raw-day-count" style="font-size:10.5px;color:var(--text-muted);margin-left:6px"></span>
+            </div>
+            <div class="rm-day-recent">
+              <button id="raw-sort-btn" onclick="toggleRawSort()" style="font-size:10.5px;padding:2px 8px;margin-right:6px;background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;color:var(--text-muted);white-space:nowrap;flex-shrink:0" title="สลับเรียงจากเก่า→ใหม่ / ใหม่→เก่า">↓ ใหม่→เก่า</button>
+              <div id="raw-day-pills" class="rm-day-pills"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Day summary -->
+        <div class="rm-section-title" id="raw-selected-day-title" style="margin-top:24px">Selected day</div>
+        <section class="rm-card" id="raw-summary-card">
+          <div id="raw-summary-body" style="padding:18px;color:var(--text-muted);font-size:12px">เลือกวันที่ด้านบน</div>
+        </section>
+
+        <!-- Pods table -->
+        <div class="rm-section-title" id="raw-pods-title" style="margin-top:24px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span id="raw-pods-title-text">Pods</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="rm-svc-combo" id="raw-svc-combo">
+              <input type="text"
+                     id="raw-svc-input"
+                     autocomplete="off"
+                     spellcheck="false"
+                     placeholder="🔍 กรอง service…"
+                     oninput="onRawSvcInput(this.value)"
+                     onfocus="openRawSvcDropdown()"
+                     onkeydown="onRawSvcKeydown(event)">
+              <button type="button" class="rm-svc-clear" onclick="clearRawSvcFilter()" title="ล้าง filter">×</button>
+              <div class="rm-svc-dropdown" id="raw-svc-dropdown" style="display:none"></div>
+            </div>
+            <div class="rm-view-toggle" id="raw-view-toggle" style="display:none">
+              <button type="button" data-view="agg" onclick="setRawRangeView('agg')">รวมช่วง</button>
+              <button type="button" data-view="day" onclick="setRawRangeView('day')">รายวัน</button>
+            </div>
+          </div>
+        </div>
+        <section class="rm-card">
+          <div id="raw-pods-table"></div>
+        </section>
+
+        <p style="font-size:10.5px;color:var(--text-muted);margin-top:24px;text-align:center">
+          Source: cron/restart-monitor-fetch.php · runs daily 08:45 ICT · no AI analysis
+        </p>
+
+      </div>
+      </div><!-- /tab-raw -->
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Monthly Report Modal ── -->
+<div id="monthly-modal" class="modal-overlay" onclick="if(event.target===this)closeMonthlyModal()">
+  <div class="modal modal-xl" style="background:var(--bg-card)">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="mo-title">รายงานรายเดือน — Pod Restarts ของ EKS TMN</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Cluster <code id="mo-cluster" style="font-family:monospace">acm-tmn-eks-prod</code></div>
+      </div>
+      <button class="btn-close" onclick="closeMonthlyModal()" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body" style="padding:20px 24px">
+
+      <div class="rm-wrap">
+
+        <!-- Runway sub-tabs -->
+        <div class="rm-runway-bar" id="mo-runway-bar" style="margin-bottom:14px">
+          <button class="rm-runway-btn active" data-rw="EKS TMN"  onclick="switchMonthlyRunway('EKS TMN')"><span class="rm-rw-dot rw-tmn"></span> EKS TMN</button>
+          <button class="rm-runway-btn"        data-rw="EKS NANO" onclick="switchMonthlyRunway('EKS NANO')"><span class="rm-rw-dot rw-nano"></span> EKS NANO</button>
+          <button class="rm-runway-btn"        data-rw="OCP"      onclick="switchMonthlyRunway('OCP')"><span class="rm-rw-dot rw-ocp"></span> OCP</button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="rm-month-toolbar">
+          <span style="font-size:10.5px;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase">เดือน</span>
+          <select id="mo-select" class="rm-day-select" onchange="loadMonthly(this.value)">
+            <option>กำลังโหลด…</option>
+          </select>
+          <button class="rm-mo-btn" id="mo-refresh" onclick="loadMonthly(document.getElementById('mo-select').value)">
+            รีเฟรช
+          </button>
+          <div style="flex:1"></div>
+          <span style="font-size:10.5px;color:var(--text-muted);margin-right:6px">รวม (ทุก runway)</span>
+          <button class="rm-mo-btn" onclick="previewMonthlyEmail()" id="mo-preview-btn" disabled>
+            พรีวิว
+          </button>
+          <button class="rm-mo-btn primary" onclick="sendMonthlyEmail()" id="mo-send-btn" disabled>
+            ส่งอีเมล
+          </button>
+        </div>
+
+        <!-- Empty state -->
+        <div id="mo-empty" class="rm-card" style="display:none">
+          <div class="rm-empty">
+            <div class="rm-empty-title">ยังไม่มีข้อมูลของเดือนนี้</div>
+            <div class="rm-empty-sub">รอข้อมูล daily อย่างน้อย 1 วันก่อน</div>
+          </div>
+        </div>
+
+        <div id="mo-content" style="display:none">
+
+          <!-- KPI strip -->
+          <div class="rm-section-title">ภาพรวม</div>
+          <section class="rm-mo-kpi">
+            <div class="rm-mo-kpi-cell">
+              <div class="rm-mo-kpi-lbl">Restart ทั้งหมด</div>
+              <div class="rm-mo-kpi-val" id="mo-kpi-total">—</div>
+              <div class="rm-mo-kpi-sub" id="mo-kpi-delta">—</div>
+            </div>
+            <div class="rm-mo-kpi-cell">
+              <div class="rm-mo-kpi-lbl">Critical</div>
+              <div class="rm-mo-kpi-val crit" id="mo-kpi-crit">—</div>
+              <div class="rm-mo-kpi-sub" id="mo-kpi-crit-pct">—</div>
+            </div>
+            <div class="rm-mo-kpi-cell">
+              <div class="rm-mo-kpi-lbl">Pod ที่ไม่ซ้ำ</div>
+              <div class="rm-mo-kpi-val" id="mo-kpi-pods">—</div>
+              <div class="rm-mo-kpi-sub" id="mo-kpi-ns">—</div>
+            </div>
+            <div class="rm-mo-kpi-cell">
+              <div class="rm-mo-kpi-lbl">วันที่แย่ที่สุด</div>
+              <div class="rm-mo-kpi-val small" id="mo-kpi-worst">—</div>
+              <div class="rm-mo-kpi-sub" id="mo-kpi-worst-sub">—</div>
+            </div>
+          </section>
+
+          <!-- Daily trend -->
+          <div class="rm-section-title">แนวโน้ม Restart รายวัน</div>
+          <section class="rm-card">
+            <div class="rm-card-head">
+              <div class="rm-card-title">แยกตามความรุนแรง (Stacked)</div>
+              <div class="rm-card-sub">Critical · Warning · Info</div>
+            </div>
+            <div class="rm-mo-card-body">
+              <div class="rm-mo-legend">
+                <span><span class="sw" style="background:#ef4444"></span>Critical <span id="lg-crit" style="color:var(--text);font-weight:600;margin-left:2px">0</span></span>
+                <span><span class="sw" style="background:#f59e0b"></span>Warning <span id="lg-warn" style="color:var(--text);font-weight:600;margin-left:2px">0</span></span>
+                <span><span class="sw" style="background:#94a3b8"></span>Info <span id="lg-info" style="color:var(--text);font-weight:600;margin-left:2px">0</span></span>
+              </div>
+              <div class="rm-mo-chart-wrap">
+                <canvas id="mo-trend" role="img" aria-label="Daily restart trend stacked by severity"></canvas>
+              </div>
+            </div>
+          </section>
+
+          <!-- Reason + Top namespaces -->
+          <div class="rm-mo-grid-2" style="margin-top:24px">
+            <section class="rm-card">
+              <div class="rm-card-head">
+                <div class="rm-card-title">แยกตามสาเหตุ</div>
+              </div>
+              <div class="rm-mo-card-body">
+                <div class="rm-mo-chart-wrap donut">
+                  <canvas id="mo-reason" role="img" aria-label="Donut of restart reasons"></canvas>
+                </div>
+                <div id="mo-reason-legend" class="rm-mo-legend" style="flex-direction:column;gap:6px;margin-top:12px"></div>
+              </div>
+            </section>
+
+            <section class="rm-card">
+              <div class="rm-card-head">
+                <div class="rm-card-title">Namespace อันดับสูงสุด</div>
+              </div>
+              <div class="rm-mo-card-body">
+                <div id="mo-ns-list">
+                  <div style="color:var(--text-muted);font-size:11.5px;padding:8px 0">—</div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Top offenders -->
+          <div class="rm-section-title" style="margin-top:24px">Pod ที่มีปัญหามากที่สุด</div>
+          <section class="rm-card">
+            <div id="mo-pods-wrap">
+              <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:12px">—</div>
+            </div>
+          </section>
+
+          <!-- Email distribution -->
+          <div class="rm-section-title" style="margin-top:24px">การส่งอีเมล</div>
+          <section class="rm-card">
+            <div class="rm-mo-card-body">
+              <div style="font-size:10.5px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">ผู้รับ (To)</div>
+              <div class="rm-mo-chips" id="mo-to-chips">
+                <span style="font-size:11px;color:var(--text-muted)">กำลังโหลด…</span>
+              </div>
+              <div class="rm-mo-add">
+                <input type="email" id="mo-new-to" placeholder="recipient@ascendcorp.com" onkeydown="if(event.key==='Enter')addRecipient('to')">
+                <button class="rm-mo-btn" onclick="addRecipient('to')">+ เพิ่ม To</button>
+              </div>
+
+              <div style="font-size:10.5px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin:18px 0 6px">ผู้รับสำเนา (CC)</div>
+              <div class="rm-mo-chips" id="mo-cc-chips">
+                <span style="font-size:11px;color:var(--text-muted)">—</span>
+              </div>
+              <div class="rm-mo-add">
+                <input type="email" id="mo-new-cc" placeholder="cc@ascendcorp.com" onkeydown="if(event.key==='Enter')addRecipient('cc')">
+                <button class="rm-mo-btn" onclick="addRecipient('cc')">+ เพิ่ม CC</button>
+                <button class="rm-mo-btn primary" onclick="saveRecipients()" id="mo-save-rcpt" style="display:none;margin-left:auto">บันทึก</button>
+                <span id="mo-rcpt-status" style="font-size:10.5px;color:var(--text-muted);margin-left:6px"></span>
+              </div>
+            </div>
+          </section>
+
+          <p style="font-size:10.5px;color:var(--text-muted);margin-top:24px;text-align:center">
+            รวมข้อมูลจากไฟล์ Analyzed JSON รายวัน
+          </p>
+
+        </div><!-- /mo-content -->
+
+      </div><!-- /rm-wrap -->
+
+    </div><!-- /modal-body -->
+  </div><!-- /modal -->
+</div><!-- /monthly-modal -->
+
+<!-- ── Email Preview Modal ── -->
+<div id="email-preview-modal" class="modal-overlay" onclick="if(event.target===this)closeEmailPreview()">
+  <div class="modal modal-xl" style="background:var(--bg-card);display:flex;flex-direction:column;height:min(90vh,calc(100dvh - 40px));max-height:none;overflow:hidden">
+    <div class="modal-header" style="flex-shrink:0">
+      <div>
+        <div class="modal-title">พรีวิวอีเมล</div>
+        <div id="email-preview-subtitle" style="font-size:11px;color:var(--text-muted);margin-top:2px"></div>
+      </div>
+      <button class="btn-close" onclick="closeEmailPreview()" aria-label="Close">×</button>
+    </div>
+    <div style="flex:1;min-height:0;overflow:hidden;padding:0;position:relative">
+      <div id="email-preview-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px">
+        กำลังโหลดพรีวิว…
+      </div>
+      <iframe id="email-preview-frame"
+        style="display:none;position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff"
+        sandbox="allow-same-origin"></iframe>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="./assets/pages/restart-monitor/restart-monitor.js"></script>
+</body>
+</html>

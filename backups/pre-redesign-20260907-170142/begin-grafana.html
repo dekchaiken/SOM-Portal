@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Begin Grafana — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <style>
+    /* Begin Grafana — inherits the SP2 dashboard's theme tokens. Prefixed
+     * with `.bg2` so nothing leaks into pages sharing the same tab. */
+    .bg2 {
+      --bg2-bg-subtle: var(--bg-input, color-mix(in srgb, var(--bg-card) 96%, var(--text)));
+      --bg2-hover:     color-mix(in srgb, var(--text) 5%, transparent);
+      --bg2-r-card: var(--radius-lg, 12px);
+      --bg2-r-btn:  var(--radius, 8px);
+      --ok:      #16a34a;
+      --warn:    #d97706;
+      --hot:     #dc2626;
+      --cool:    #2563eb;
+      --violet:  #7c3aed;
+      --gray:    #6b7280;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    html[data-theme="dark"] .bg2 {
+      --ok:#4ade80; --warn:#fbbf24; --hot:#f87171; --cool:#60a5fa; --violet:#a78bfa; --gray:#9ca3af;
+    }
+    .bg2 .hidden { display:none !important; }
+    .bg2 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+    /* Search hero */
+    .bg2-hero {
+      background:var(--bg-card); border:1px solid var(--border); border-radius:var(--bg2-r-card);
+      box-shadow:var(--shadow); padding:20px 22px;
+    }
+    .bg2-hero-lbl { font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:600; color:var(--text-muted); margin-bottom:10px; }
+    .bg2-hero-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .bg2-search { flex:1; min-width:280px; position:relative; }
+    .bg2-search input {
+      width:100%; height:48px; padding:0 44px; font-size:15px; font-weight:500;
+      color:var(--text); background:var(--bg2-bg-subtle);
+      border:1px solid var(--border); border-radius:var(--bg2-r-btn); outline:none;
+      transition:border-color .15s, box-shadow .15s;
+    }
+    .bg2-search input:focus { border-color:var(--cool); box-shadow:0 0 0 3px color-mix(in srgb, var(--cool) 15%, transparent); }
+    .bg2-search svg { position:absolute; left:14px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:var(--text-muted); }
+    .bg2-range { display:inline-flex; gap:4px; padding:4px; background:var(--bg2-bg-subtle); border:1px solid var(--border); border-radius:var(--bg2-r-btn); }
+    .bg2-range button {
+      background:transparent; border:none; padding:6px 12px; border-radius:6px;
+      font-size:12.5px; font-weight:500; color:var(--text-muted); cursor:pointer; transition:all .15s;
+    }
+    .bg2-range button.on { background:var(--bg-card); color:var(--text); box-shadow:var(--shadow); }
+
+    /* Summary chip row */
+    .bg2-summary { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+    .bg2-chip {
+      display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:999px;
+      font-size:12px; font-weight:600; border:1px solid var(--border); background:var(--bg-card);
+    }
+    .bg2-chip .dot { width:8px; height:8px; border-radius:999px; display:inline-block; }
+    .bg2-chip.ok  .dot { background:var(--ok); }  .bg2-chip.ok  { color:var(--ok); border-color:color-mix(in srgb, var(--ok) 30%, var(--border)); }
+    .bg2-chip.wr  .dot { background:var(--warn); } .bg2-chip.wr { color:var(--warn); border-color:color-mix(in srgb, var(--warn) 30%, var(--border)); }
+    .bg2-chip.hot .dot { background:var(--hot); }  .bg2-chip.hot { color:var(--hot); border-color:color-mix(in srgb, var(--hot) 35%, var(--border)); }
+    .bg2-chip.na  .dot { background:var(--gray); } .bg2-chip.na  { color:var(--text-muted); }
+
+    /* 3-col grid */
+    .bg2-grid {
+      display:grid; gap:16px; margin-top:16px;
+      grid-template-columns: minmax(320px, 1.1fr) minmax(360px, 1.6fr) minmax(340px, 1.3fr);
+    }
+    @media (max-width:1200px) { .bg2-grid { grid-template-columns: 1fr; } }
+    .bg2-card {
+      background:var(--bg-card); border:1px solid var(--border); border-radius:var(--bg2-r-card);
+      box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column;
+    }
+    .bg2-card-hd {
+      padding:12px 16px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+      font-size:13px; font-weight:600; letter-spacing:.02em; color:var(--text);
+    }
+    .bg2-card-hd .sub { font-size:11px; color:var(--text-muted); font-weight:500; }
+    .bg2-card-bd { padding:8px 0; overflow:auto; max-height:640px; }
+
+    /* Endpoint list */
+    .bg2-ep {
+      padding:10px 16px; border-bottom:1px solid var(--border); cursor:pointer;
+      display:flex; flex-direction:column; gap:6px; transition:background .1s;
+    }
+    .bg2-ep:hover { background:var(--bg2-hover); }
+    .bg2-ep.sel { background:color-mix(in srgb, var(--cool) 10%, transparent); border-left:3px solid var(--cool); padding-left:13px; }
+    .bg2-ep-top { display:flex; align-items:center; gap:8px; }
+    .bg2-ep-verd {
+      width:8px; height:8px; border-radius:999px; flex:none;
+    }
+    .bg2-ep-verd.healthy { background:var(--ok); }
+    .bg2-ep-verd.degraded { background:var(--warn); }
+    .bg2-ep-verd.failing { background:var(--hot); }
+    .bg2-ep-verd.idle { background:var(--gray); }
+    .bg2-method {
+      font-size:10.5px; font-weight:700; padding:2px 6px; border-radius:4px;
+      color:#fff; font-family:ui-monospace, Menlo, monospace; letter-spacing:.02em;
+    }
+    .bg2-method.GET { background:#2563eb; }
+    .bg2-method.POST { background:#059669; }
+    .bg2-method.PUT { background:#d97706; }
+    .bg2-method.DELETE { background:#dc2626; }
+    .bg2-method.PATCH, .bg2-method.HEAD, .bg2-method.OPTIONS { background:#6b7280; }
+    .bg2-uri { flex:1; font-family:ui-monospace, Menlo, monospace; font-size:12.5px; color:var(--text); word-break:break-all; }
+    .bg2-ep-meta { display:flex; gap:12px; font-size:11.5px; color:var(--text-muted); padding-left:16px; flex-wrap:wrap; }
+    .bg2-ep-pills { display:flex; gap:4px; padding-left:16px; flex-wrap:wrap; }
+    .bg2-pill { font-size:10.5px; font-weight:600; padding:1px 6px; border-radius:4px; font-family:ui-monospace, Menlo, monospace; }
+    .bg2-pill.s2 { background:color-mix(in srgb, var(--ok) 15%, transparent); color:var(--ok); }
+    .bg2-pill.s3 { background:color-mix(in srgb, var(--cool) 15%, transparent); color:var(--cool); }
+    .bg2-pill.s4 { background:color-mix(in srgb, var(--warn) 15%, transparent); color:var(--warn); }
+    .bg2-pill.s5 { background:color-mix(in srgb, var(--hot) 15%, transparent); color:var(--hot); }
+
+    /* Center pane */
+    .bg2-tabs { display:flex; gap:4px; padding:12px 16px 0; border-bottom:1px solid var(--border); }
+    .bg2-tab {
+      background:transparent; border:none; padding:8px 14px; font-size:13px; font-weight:500;
+      color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;
+    }
+    .bg2-tab.on { color:var(--text); border-bottom-color:var(--cool); }
+    .bg2-verdict-card {
+      margin:12px 16px; padding:14px 16px; border-radius:var(--bg2-r-btn); border:1px solid var(--border);
+      display:flex; align-items:center; gap:12px;
+    }
+    .bg2-verdict-card.healthy { background:color-mix(in srgb, var(--ok) 8%, transparent); border-color:color-mix(in srgb, var(--ok) 30%, var(--border)); }
+    .bg2-verdict-card.degraded { background:color-mix(in srgb, var(--warn) 10%, transparent); border-color:color-mix(in srgb, var(--warn) 30%, var(--border)); }
+    .bg2-verdict-card.failing { background:color-mix(in srgb, var(--hot) 10%, transparent); border-color:color-mix(in srgb, var(--hot) 35%, var(--border)); }
+    .bg2-verdict-card.idle { background:var(--bg2-bg-subtle); }
+    .bg2-verdict-badge { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; padding:4px 8px; border-radius:4px; color:#fff; }
+    .bg2-verdict-badge.healthy { background:var(--ok); }
+    .bg2-verdict-badge.degraded { background:var(--warn); }
+    .bg2-verdict-badge.failing { background:var(--hot); }
+    .bg2-verdict-badge.idle { background:var(--gray); }
+
+    .bg2-chart { padding:8px 16px 16px; }
+    .bg2-chart svg { width:100%; height:260px; display:block; }
+    .bg2-legend { display:flex; gap:10px; flex-wrap:wrap; padding:0 16px 12px; font-size:11.5px; color:var(--text-muted); }
+    .bg2-legend .sw { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:middle; }
+
+    /* PromQL pane */
+    .bg2-q {
+      padding:10px 16px; border-bottom:1px solid var(--border);
+    }
+    .bg2-q-hd {
+      display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;
+      font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted);
+    }
+    .bg2-q-copy {
+      background:transparent; border:1px solid var(--border); padding:3px 10px; border-radius:5px;
+      font-size:11px; font-weight:600; color:var(--text-muted); cursor:pointer;
+    }
+    .bg2-q-copy:hover { color:var(--text); border-color:var(--cool); }
+    .bg2-q-copy.ok { color:var(--ok); border-color:var(--ok); }
+    .bg2-q-code {
+      background:var(--bg2-bg-subtle); border:1px solid var(--border); border-radius:6px;
+      padding:8px 10px; font-family:ui-monospace, Menlo, monospace; font-size:11.5px;
+      color:var(--text); white-space:pre-wrap; word-break:break-all; line-height:1.5;
+    }
+    .bg2-explore-btn {
+      display:inline-flex; align-items:center; gap:6px; padding:8px 14px; margin:12px 16px;
+      background:var(--cool); color:#fff; border:none; border-radius:var(--bg2-r-btn);
+      font-size:13px; font-weight:600; cursor:pointer; text-decoration:none;
+    }
+    .bg2-explore-btn:hover { filter:brightness(1.1); }
+
+    /* Empty state */
+    .bg2-empty {
+      padding:40px 20px; text-align:center; color:var(--text-muted); font-size:13.5px;
+    }
+    .bg2-empty svg { width:44px; height:44px; opacity:.4; margin-bottom:10px; }
+    /* Section header (Business Metrics / HTTP Endpoints) */
+    .bg2-section-hd {
+      display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+      margin: 4px 4px 10px;
+    }
+    .bg2-section-hd h3 {
+      font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+      color:var(--text-muted); margin:0;
+    }
+    .bg2-section-hd .cnt { font-size:11.5px; color:var(--text-muted); }
+
+    /* Business-metric card: 2 stacked charts (Success + Fail) + queries below */
+    .bg2-bm {
+      background:var(--bg-card); border:1px solid var(--border); border-radius:var(--bg2-r-card);
+      box-shadow:var(--shadow); margin-bottom:16px; overflow:hidden;
+    }
+    .bg2-bm-hd {
+      padding:12px 18px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    }
+    .bg2-bm-name {
+      font-family:ui-monospace, Menlo, monospace; font-size:13px; font-weight:600;
+      color:var(--text); flex:1;
+    }
+    .bg2-bm-tag {
+      font-size:10.5px; font-weight:600; padding:2px 7px; border-radius:4px;
+      background:var(--bg2-bg-subtle); color:var(--text-muted);
+    }
+    .bg2-bm-body { padding:14px 18px; }
+    .bg2-bm-charts {
+      display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:14px;
+    }
+    @media (max-width:900px) { .bg2-bm-charts { grid-template-columns: 1fr; } }
+    .bg2-bm-chart {
+      background:var(--bg2-bg-subtle); border-radius:8px; padding:10px 12px;
+    }
+    .bg2-bm-chart-hd {
+      display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600;
+      margin-bottom:6px;
+    }
+    .bg2-bm-chart-hd .dot { width:8px; height:8px; border-radius:999px; }
+    .bg2-bm-chart-hd.suc .dot { background:var(--ok); }  .bg2-bm-chart-hd.suc { color:var(--ok); }
+    .bg2-bm-chart-hd.fal .dot { background:var(--hot); } .bg2-bm-chart-hd.fal { color:var(--hot); }
+    .bg2-bm-chart svg { width:100%; height:180px; display:block; }
+    .bg2-bm-legend {
+      display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;
+      font-size:10.5px; color:var(--text-muted);
+    }
+    .bg2-bm-legend .sw { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:3px; vertical-align:middle; }
+    .bg2-bm-queries { border-top:1px solid var(--border); padding-top:12px; }
+
+    /* Endpoint detail card (one per endpoint in the stack) */
+    .bg2-ec {
+      background:var(--bg-card); border:1px solid var(--border); border-radius:var(--bg2-r-card);
+      box-shadow:var(--shadow); margin-bottom:16px; overflow:hidden;
+    }
+    .bg2-ec-hd {
+      padding:14px 18px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    }
+    .bg2-ec-title { display:flex; align-items:center; gap:10px; flex:1; min-width:280px; }
+    .bg2-ec-title .bg2-uri { font-size:14px; font-weight:600; }
+    .bg2-ec-metrics { display:flex; gap:16px; font-size:12px; color:var(--text-muted); }
+    .bg2-ec-metrics b { color:var(--text); font-weight:600; }
+    .bg2-ec-verd {
+      font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+      padding:3px 8px; border-radius:4px; color:#fff;
+    }
+    .bg2-ec-verd.healthy { background:var(--ok); }
+    .bg2-ec-verd.degraded { background:var(--warn); }
+    .bg2-ec-verd.failing { background:var(--hot); }
+    .bg2-ec-verd.idle { background:var(--gray); }
+
+    .bg2-ec-body { display:grid; grid-template-columns: 1.4fr 1fr; gap:0; }
+    @media (max-width:1100px) { .bg2-ec-body { grid-template-columns: 1fr; } }
+    .bg2-ec-charts { padding:14px 18px; border-right:1px solid var(--border); }
+    @media (max-width:1100px) { .bg2-ec-charts { border-right:none; border-bottom:1px solid var(--border); } }
+    .bg2-ec-tabs { display:flex; gap:2px; margin-bottom:8px; padding:3px; background:var(--bg2-bg-subtle); border-radius:var(--bg2-r-btn); width:fit-content; }
+    .bg2-ec-tabs button {
+      background:transparent; border:none; padding:5px 12px; font-size:12px; font-weight:500;
+      color:var(--text-muted); cursor:pointer; border-radius:5px;
+    }
+    .bg2-ec-tabs button.on { background:var(--bg-card); color:var(--text); box-shadow:var(--shadow); }
+    .bg2-ec-chart svg { width:100%; height:200px; display:block; }
+    .bg2-ec-legend { display:flex; gap:10px; flex-wrap:wrap; font-size:11px; color:var(--text-muted); margin-top:6px; }
+    .bg2-ec-legend .sw { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:middle; }
+
+    .bg2-ec-pql {
+      padding:12px 16px; max-height:520px; overflow-y:auto;
+    }
+    .bg2-ec-pql-hd {
+      font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+      color:var(--text-muted); margin-bottom:8px;
+    }
+    .bg2-ec-explore {
+      display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:7px 12px;
+      background:var(--cool); color:#fff; border-radius:6px; text-decoration:none; font-size:12px; font-weight:600;
+    }
+    .bg2-spinner {
+      display:inline-block; width:16px; height:16px; border:2px solid var(--border);
+      border-top-color:var(--cool); border-radius:50%; animation:bg2sp .8s linear infinite;
+    }
+    @keyframes bg2sp { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Begin Grafana</div>
+        <div class="page-sub">Discover HTTP endpoints · health · PromQL for Grafana</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+  <div class="bg2" id="bg2Root">
+    <div class="bg2-hero">
+      <div class="bg2-hero-lbl">Service</div>
+      <div class="bg2-hero-row">
+        <div class="bg2-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="bg2Input" type="text" placeholder="e.g. acm-bay-pp-out-gateway" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="bg2-range" id="bg2Range">
+          <button data-w="15">15m</button>
+          <button data-w="30" class="on">30m</button>
+          <button data-w="60">1h</button>
+          <button data-w="180">3h</button>
+          <button data-w="360">6h</button>
+          <button data-w="1440">24h</button>
+        </div>
+      </div>
+      <div class="bg2-summary" id="bg2Summary" style="display:none;"></div>
+    </div>
+
+    <div id="bg2Custom" style="display:none; margin-top:16px;"></div>
+    <div id="bg2Stack" style="display:none; margin-top:16px;"></div>
+
+    <div id="bg2Empty" class="bg2-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <div>Enter a service name to discover its endpoints, health, and Grafana-ready PromQL.</div>
+    </div>
+  </div>
+    </main>
+  </div>
+</div>
+
+  <script src="assets/js/theme.js?v=bg20260823b"></script>
+  <script src="assets/js/utils.js?v=bg20260823b"></script>
+  <script src="assets/js/auth.js?v=bg20260823b"></script>
+  <script src="assets/js/api.js?v=bg20260823b"></script>
+  <script src="assets/js/layout.js?v=bg20260823b"></script>
+  <script>
+    Auth.requireAuth();
+    Layout.render('begin-grafana');
+  </script>
+
+  <script>
+  (function() {
+    const S = {
+      service: '',
+      window: 30,
+      endpoints: [],
+      runway: null,
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const input = $('bg2Input');
+    const rangeEl = $('bg2Range');
+
+    let inputTimer = null;
+    input.addEventListener('input', () => {
+      const v = input.value.trim();
+      clearTimeout(inputTimer);
+      if (v.length < 3) return;
+      inputTimer = setTimeout(() => { S.service = v; load(); }, 400);
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const v = input.value.trim();
+        if (v) { S.service = v; load(); }
+      }
+    });
+
+    rangeEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-w]');
+      if (!btn) return;
+      rangeEl.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      S.window = parseInt(btn.dataset.w, 10);
+      if (S.service) load();
+    });
+
+    const unwrap = (res) => (res && res.data && res.data.data) ? res.data.data : (res && res.data) ? res.data : res;
+
+    function epKey(ep) { return ep.method + '__' + ep.uri.replace(/[^a-z0-9]+/gi, '_'); }
+
+    async function load() {
+      if (!S.service) return;
+      $('bg2Empty').style.display = 'none';
+      $('bg2Stack').style.display = '';
+      $('bg2Custom').style.display = '';
+      $('bg2Summary').style.display = 'none';
+      $('bg2Stack').innerHTML = '<div class="bg2-empty"><span class="bg2-spinner"></span> Loading endpoints…</div>';
+      $('bg2Custom').innerHTML = '<div class="bg2-empty"><span class="bg2-spinner"></span> Discovering business metrics…</div>';
+      loadCustom();
+
+      try {
+        const res = await API.beginGrafana.endpoints(S.service, { window: S.window });
+        const d = unwrap(res);
+        if (!d.found) {
+          const probes = (d.probes || []).map(p => {
+            const hits = (p.labelsFound && p.labelsFound.length)
+              ? '<div style="padding-left:16px; margin-top:2px; color:var(--warn); font-size:11px;">↳ similar labels found: ' + p.labelsFound.map(escapeHtml).join(', ') + '</div>' : '';
+            return (
+              '<div style="margin-top:6px; font-size:11px; text-align:left; padding-left:20px;">' +
+                '• <b>' + escapeHtml(p.name || p.slug || '?') + '</b> ' +
+                '(tried: ' + (p.triedLabels || []).join(', ') + ') → ' +
+                (p.error ? '<span style="color:var(--hot)">' + escapeHtml(p.error) + '</span>'
+                         : (p.seriesReturned || 0) + ' series') +
+              '</div>' + hits
+            );
+          }).join('');
+          $('bg2Stack').innerHTML =
+            '<div class="bg2-card"><div class="bg2-empty">' +
+            '<div><strong>No metrics found</strong> for <span class="mono">' + escapeHtml(S.service) + '</span>.</div>' +
+            '<div style="margin-top:8px; font-size:12px;">' + escapeHtml(d.reason || '') + '</div>' +
+            (probes ? '<div style="margin-top:10px; text-align:left; display:inline-block;">' + probes + '</div>' : '') +
+            '</div></div>';
+          return;
+        }
+        S.endpoints = d.endpoints || [];
+        S.runway = d.runway || null;
+        renderSummary(d);
+        renderStack();
+      } catch (e) {
+        $('bg2Stack').innerHTML = '<div class="bg2-empty">Error: ' + escapeHtml(String(e.message || e)) + '</div>';
+      }
+    }
+
+    function renderSummary(d) {
+      const c = d.summary.counts || {};
+      const runway = d.runway ? (d.runway.name || d.runway.slug) + (d.runway.cluster ? ' · ' + d.runway.cluster : '') : '';
+      const html = [
+        chipHtml('ok',  c.healthy || 0,  'Healthy'),
+        chipHtml('wr',  c.degraded || 0, 'Degraded'),
+        chipHtml('hot', c.failing || 0,  'Failing'),
+        chipHtml('na',  c.idle || 0,     'Idle'),
+        '<span class="bg2-chip na"><span class="dot"></span>' + (d.summary.totalRps || 0).toFixed(2) + ' req/s total</span>',
+        runway ? '<span class="bg2-chip na"><span class="dot"></span>' + escapeHtml(runway) + '</span>' : '',
+      ].join('');
+      $('bg2Summary').innerHTML = html;
+      $('bg2Summary').style.display = 'flex';
+    }
+    function chipHtml(cls, n, label) {
+      return '<span class="bg2-chip ' + cls + '"><span class="dot"></span>' + n + ' ' + label + '</span>';
+    }
+
+    // ── Business Metrics section ──────────────────────────────
+    async function loadCustom() {
+      try {
+        const res = await API.beginGrafana.customList(S.service);
+        const d = unwrap(res);
+        if (!d || !d.found || !d.metrics || !d.metrics.length) {
+          const appL = d && d.appLabel ? d.appLabel : 'app_name';
+          $('bg2Custom').innerHTML =
+            '<div class="bg2-section-hd"><h3>Business Metrics</h3>' +
+            '<span class="cnt">no <span class="mono">*_total</span> counters scraped from <span class="mono">' + appL + '="' + escapeHtml(S.service) + '"</span> (excluding standard JVM/Micrometer families)</span></div>';
+          return;
+        }
+        const appL = d.appLabel || 'app_name';
+        let html = '<div class="bg2-section-hd"><h3>Business Metrics</h3>' +
+          '<span class="cnt">' + d.metricCount + ' counter' + (d.metricCount === 1 ? '' : 's') +
+          ' scraped from <span class="mono">' + appL + '="' + escapeHtml(S.service) + '"</span></span></div>';
+        html += d.metrics.map((m, i) => bmCardShell(m, i)).join('');
+        $('bg2Custom').innerHTML = html;
+        // Wire copy buttons
+        $('bg2Custom').querySelectorAll('.bg2-q-copy').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const txt = document.getElementById(btn.dataset.t).textContent;
+            try {
+              await navigator.clipboard.writeText(txt);
+              btn.textContent = 'Copied ✓'; btn.classList.add('ok');
+              setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 1200);
+            } catch (e) { btn.textContent = 'Failed'; }
+          });
+        });
+        // Fetch series for every metric in parallel. When status_code is
+        // absent we skip success/fail (would be empty) and load one Total
+        // chart instead. scoped=false for metrics with no app_name label.
+        d.metrics.forEach((m, i) => {
+          const ns = m.narrowSel || '';
+          if (m.hasStatusCode) {
+            loadBmSeries(i, m.name, 'success', ns);
+            loadBmSeries(i, m.name, 'fail',    ns);
+          } else {
+            loadBmSeries(i, m.name, 'total', ns);
+          }
+        });
+      } catch (e) {
+        $('bg2Custom').innerHTML = '<div class="bg2-empty">Business metrics error: ' + escapeHtml(String(e.message || e)) + '</div>';
+      }
+    }
+
+    function bmCardShell(m, i) {
+      const q = m.queries || {};
+      const labels = {
+        success:      { l: 'Success (200-*)',      cls: 'suc' },
+        fail:         { l: 'Fail (non-200)',       cls: 'fal' },
+        fail_rate_1m: { l: 'Fail rate (per-sec)',  cls: 'fal' },
+        total_1m:     { l: 'Total (1m increase)',  cls: 'na'  },
+        rate_5m:      { l: 'Rate (5m)',            cls: 'na'  },
+      };
+      const tags = [];
+      if (m.hasService)    tags.push('<span class="bg2-bm-tag">has service</span>');
+      if (m.hasStatusCode) tags.push('<span class="bg2-bm-tag">has status_code</span>');
+      let queriesHtml = '';
+      Object.keys(labels).forEach(k => {
+        if (!q[k]) return;
+        const id = 'bmq_' + i + '_' + k;
+        queriesHtml += (
+          '<div class="bg2-q">' +
+            '<div class="bg2-q-hd">' +
+              '<span>' + labels[k].l + '</span>' +
+              '<button class="bg2-q-copy" data-t="' + id + '">Copy</button>' +
+            '</div>' +
+            '<div class="bg2-q-code" id="' + id + '">' + escapeHtml(q[k]) + '</div>' +
+          '</div>'
+        );
+      });
+      const explore = m.grafanaExploreUrl
+        ? '<a class="bg2-ec-explore" target="_blank" rel="noopener" href="' + escapeAttr(m.grafanaExploreUrl) + '">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v7H3V3h7"/></svg>' +
+            'Open in Grafana Explore</a>'
+        : '';
+      let leftBlock, rightBlock;
+      if (m.hasStatusCode) {
+        leftBlock =
+          '<div class="bg2-bm-chart">' +
+            '<div class="bg2-bm-chart-hd suc"><span class="dot"></span> Success (200-*) by service · status_code</div>' +
+            '<svg id="bm_' + i + '_success" viewBox="0 0 800 180" preserveAspectRatio="none"><text x="400" y="90" text-anchor="middle" fill="#888" font-size="12">Loading…</text></svg>' +
+            '<div class="bg2-bm-legend" id="bm_' + i + '_success_lg"></div>' +
+          '</div>';
+        rightBlock =
+          '<div class="bg2-bm-chart">' +
+            '<div class="bg2-bm-chart-hd fal"><span class="dot"></span> Fail (non-200) by service · status_code</div>' +
+            '<svg id="bm_' + i + '_fail" viewBox="0 0 800 180" preserveAspectRatio="none"><text x="400" y="90" text-anchor="middle" fill="#888" font-size="12">Loading…</text></svg>' +
+            '<div class="bg2-bm-legend" id="bm_' + i + '_fail_lg"></div>' +
+          '</div>';
+      } else {
+        // No status_code — show a single Total chart spanning both columns
+        leftBlock =
+          '<div class="bg2-bm-chart" style="grid-column:1 / span 2;">' +
+            '<div class="bg2-bm-chart-hd"><span class="dot" style="background:var(--cool);"></span> Total rate (metric has no status_code label)</div>' +
+            '<svg id="bm_' + i + '_total" viewBox="0 0 800 180" preserveAspectRatio="none"><text x="400" y="90" text-anchor="middle" fill="#888" font-size="12">Loading…</text></svg>' +
+            '<div class="bg2-bm-legend" id="bm_' + i + '_total_lg"></div>' +
+          '</div>';
+        rightBlock = '';
+      }
+      return (
+        '<div class="bg2-bm">' +
+          '<div class="bg2-bm-hd">' +
+            '<span class="bg2-bm-name">' + escapeHtml(m.name) + '</span>' +
+            tags.join('') +
+          '</div>' +
+          '<div class="bg2-bm-body">' +
+            '<div class="bg2-bm-charts">' + leftBlock + rightBlock + '</div>' +
+            '<div class="bg2-bm-queries">' + queriesHtml + explore + '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    async function loadBmSeries(i, metric, mode, narrowSel) {
+      const svgEl = document.getElementById('bm_' + i + '_' + mode);
+      const lgEl  = document.getElementById('bm_' + i + '_' + mode + '_lg');
+      if (!svgEl) return;
+      try {
+        const res = await API.beginGrafana.customSeries(S.service, metric, mode, S.window, narrowSel || '');
+        const d = unwrap(res);
+        drawStacked(svgEl, lgEl, (d && d.series) || [], mode);
+      } catch (e) {
+        svgEl.innerHTML = '<text x="400" y="90" text-anchor="middle" fill="#c33" font-size="12">' + escapeHtml(String(e.message || e)) + '</text>';
+      }
+    }
+
+    // Categorical stacked-area chart for business metrics. Uses a fixed palette
+    // cycling through the series list — same colours as the Grafana screenshot.
+    function drawStacked(svgEl, legendEl, series, mode) {
+      const W = 800, H = 180, P = { l: 44, r: 12, t: 10, b: 24 };
+      const cw = W - P.l - P.r, ch = H - P.t - P.b;
+      // Cap series shown to avoid a 40-legend blowout on high-cardinality metrics
+      series = (series || []).slice(0, 12);
+      let allPts = [];
+      series.forEach(s => allPts = allPts.concat((s.points || []).filter(p => p[1] !== null)));
+      if (!allPts.length) {
+        svgEl.innerHTML = '<text x="400" y="90" text-anchor="middle" fill="#888" font-size="12">No data in window</text>';
+        if (legendEl) legendEl.innerHTML = '';
+        return;
+      }
+      const tMin = Math.min(...allPts.map(p => p[0]));
+      const tMax = Math.max(...allPts.map(p => p[0]));
+      // Stacked total per timestamp
+      const stackAt = {};
+      series.forEach(s => (s.points || []).forEach(p => { stackAt[p[0]] = (stackAt[p[0]] || 0) + (p[1] || 0); }));
+      let vMax = Math.max(1e-9, ...Object.values(stackAt));
+      vMax = vMax > 0 ? vMax * 1.1 : 1;
+      const x = t => P.l + ((t - tMin) / Math.max(1, (tMax - tMin))) * cw;
+      const y = v => P.t + ch - (v / vMax) * ch;
+
+      // Palette — greens/olives for success, reds/oranges for fail
+      const paletteSuc = ['#a3a537', '#7fa03a', '#5c8f3a', '#3d7c3d', '#8fb84d', '#c3c96b', '#e6d55c', '#4ea36a'];
+      const paletteFal = ['#dc2626', '#ef6a4b', '#f59e0b', '#ee7a53', '#a63636', '#c94a3f', '#f0865f', '#e6522c'];
+      const paletteNa  = ['#2563eb', '#7c3aed', '#0891b2', '#059669', '#d97706', '#dc2626', '#6b7280', '#a855f7'];
+      const palette = mode === 'success' ? paletteSuc : mode === 'fail' ? paletteFal : paletteNa;
+
+      // Stacked area draw (bottom-up)
+      const stackAcc = {};
+      let paths = ''; let legendHtml = '';
+      series.forEach((s, si) => {
+        const color = palette[si % palette.length];
+        const pts = (s.points || []).map(p => {
+          const prev = stackAcc[p[0]] || 0;
+          const top  = prev + (p[1] || 0);
+          stackAcc[p[0]] = top;
+          return { t: p[0], v0: prev, v1: top };
+        });
+        if (!pts.length) return;
+        const top = pts.map((p, k) => (k ? 'L' : 'M') + x(p.t).toFixed(1) + ' ' + y(p.v1).toFixed(1)).join(' ');
+        const bot = pts.slice().reverse().map(p => 'L' + x(p.t).toFixed(1) + ' ' + y(p.v0).toFixed(1)).join(' ');
+        paths += '<path d="' + top + ' ' + bot + ' Z" fill="' + color + '" fill-opacity=".75" stroke="' + color + '" stroke-width="1"/>';
+        legendHtml += '<span><span class="sw" style="background:' + color + ';"></span>' + escapeHtml(s.name || '?') + '</span>';
+      });
+      // Axes
+      let axis = '';
+      [0, vMax/2, vMax].forEach(v => {
+        const yy = y(v);
+        axis += '<line x1="' + P.l + '" x2="' + (W - P.r) + '" y1="' + yy + '" y2="' + yy + '" stroke="currentColor" stroke-opacity=".08"/>';
+        axis += '<text x="' + (P.l - 6) + '" y="' + (yy + 3) + '" text-anchor="end" fill="currentColor" fill-opacity=".55" font-size="10">' + fmtAxis(v, '') + '</text>';
+      });
+      [tMin, (tMin + tMax) / 2, tMax].forEach((t, k) => {
+        axis += '<text x="' + x(t) + '" y="' + (H - 6) + '" text-anchor="' + (k === 0 ? 'start' : k === 2 ? 'end' : 'middle') + '" fill="currentColor" fill-opacity=".55" font-size="10">' + fmtTime(t) + '</text>';
+      });
+      svgEl.innerHTML = axis + paths;
+      if (legendEl) legendEl.innerHTML = legendHtml;
+    }
+
+    // ── Render one card per endpoint ──────────────────────────
+    function renderStack() {
+      if (!S.endpoints.length) {
+        $('bg2Stack').innerHTML = '<div class="bg2-card"><div class="bg2-empty">No endpoints returned.</div></div>';
+        return;
+      }
+      // Skeleton HTML per card — chart + PromQL fill in as async fetches complete.
+      $('bg2Stack').innerHTML =
+        '<div class="bg2-section-hd"><h3>HTTP Endpoints</h3>' +
+        '<span class="cnt">' + S.endpoints.length + ' endpoint' + (S.endpoints.length === 1 ? '' : 's') +
+        ' via <span class="mono">http_server_requests_seconds_*</span></span></div>' +
+        S.endpoints.map((ep, i) => cardShell(ep, i)).join('');
+
+      // Wire tab clicks per card
+      $('bg2Stack').querySelectorAll('.bg2-ec-tabs button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const card = btn.closest('.bg2-ec');
+          const metric = btn.dataset.metric;
+          card.querySelectorAll('.bg2-ec-tabs button').forEach(b => b.classList.remove('on'));
+          btn.classList.add('on');
+          card.dataset.metric = metric;
+          const i = parseInt(card.dataset.i, 10);
+          loadCardSeries(i, metric);
+        });
+      });
+
+      // Fetch series (status) + promql for every endpoint IN PARALLEL.
+      S.endpoints.forEach((ep, i) => {
+        loadCardSeries(i, 'status');
+        loadCardPromql(i);
+      });
+    }
+
+    function cardShell(ep, i) {
+      const key = epKey(ep);
+      const rpsTxt = ep.rps > 0 ? fmtRate(ep.rps) + '/s' : '— /s';
+      const s2 = ep.rps > 0 ? ((ep.rate2xx / ep.rps) * 100).toFixed(1) : '0.0';
+      const s4 = ep.rps > 0 ? ((ep.rate4xx / ep.rps) * 100).toFixed(1) : '0.0';
+      const s5 = ep.rps > 0 ? ((ep.rate5xx / ep.rps) * 100).toFixed(1) : '0.0';
+      const pills = (ep.statusBreakdown || []).slice(0, 8).map(sb => {
+        const c = String(sb.status).charAt(0);
+        const cls = c === '2' ? 's2' : c === '3' ? 's3' : c === '4' ? 's4' : c === '5' ? 's5' : '';
+        return '<span class="bg2-pill ' + cls + '">' + sb.status + ' · ' + fmtRate(sb.rate) + '/s</span>';
+      }).join('');
+      return (
+        '<div class="bg2-ec" id="ec_' + i + '" data-i="' + i + '" data-metric="status">' +
+          '<div class="bg2-ec-hd">' +
+            '<div class="bg2-ec-title">' +
+              '<span class="bg2-method ' + ep.method + '">' + escapeHtml(ep.method) + '</span>' +
+              '<span class="bg2-uri mono">' + escapeHtml(ep.uri) + '</span>' +
+              '<span class="bg2-ec-verd ' + ep.verdict + '">' + ep.verdict + '</span>' +
+            '</div>' +
+            '<div class="bg2-ec-metrics">' +
+              '<span><b>' + rpsTxt + '</b></span>' +
+              '<span>avg <b>' + (ep.avgMs !== null ? Math.round(ep.avgMs) + ' ms' : '—') + '</b></span>' +
+              '<span>max <b>' + (ep.maxMs !== null ? fmtMs(ep.maxMs) : '—') + '</b></span>' +
+              '<span>2xx <b>' + s2 + '%</b></span>' +
+              '<span>4xx <b>' + s4 + '%</b></span>' +
+              '<span>5xx <b>' + s5 + '%</b></span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="bg2-ec-body">' +
+            '<div class="bg2-ec-charts">' +
+              '<div class="bg2-ec-tabs">' +
+                '<button class="on" data-metric="status">Status Breakdown</button>' +
+                '<button data-metric="rps">RPS</button>' +
+                '<button data-metric="latency">Latency</button>' +
+              '</div>' +
+              '<div class="bg2-ec-chart"><svg id="chart_' + i + '" viewBox="0 0 800 200" preserveAspectRatio="none"><text x="400" y="100" text-anchor="middle" fill="#888" font-size="12">Loading chart…</text></svg></div>' +
+              '<div class="bg2-ec-legend" id="legend_' + i + '"></div>' +
+              (pills ? '<div style="margin-top:10px; display:flex; gap:4px; flex-wrap:wrap;">' + pills + '</div>' : '') +
+              '<div style="margin-top:8px; font-size:11px; color:var(--text-muted);">' + escapeHtml(ep.verdictReason || '') + '</div>' +
+            '</div>' +
+            '<div class="bg2-ec-pql">' +
+              '<div class="bg2-ec-pql-hd">PromQL Queries</div>' +
+              '<div id="pql_' + i + '"><div style="font-size:11px; color:var(--text-muted);"><span class="bg2-spinner"></span> Building…</div></div>' +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    async function loadCardSeries(i, metric) {
+      const ep = S.endpoints[i];
+      if (!ep) return;
+      const chartEl = document.getElementById('chart_' + i);
+      const legendEl = document.getElementById('legend_' + i);
+      if (!chartEl) return;
+      chartEl.innerHTML = '<text x="400" y="100" text-anchor="middle" fill="#888" font-size="12">Loading…</text>';
+      try {
+        const res = await API.beginGrafana.series(S.service, ep.method, ep.uri, metric, { window: S.window });
+        const d = unwrap(res);
+        drawChart(chartEl, legendEl, (d && d.series) || [], metric);
+      } catch (e) {
+        chartEl.innerHTML = '<text x="400" y="100" text-anchor="middle" fill="#c33" font-size="12">' + escapeHtml(String(e.message || e)) + '</text>';
+      }
+    }
+
+    async function loadCardPromql(i) {
+      const ep = S.endpoints[i];
+      if (!ep) return;
+      const wrap = document.getElementById('pql_' + i);
+      if (!wrap) return;
+      try {
+        const res = await API.beginGrafana.promql(S.service, ep.method, ep.uri);
+        const d = unwrap(res);
+        wrap.innerHTML = buildPqlHtml(d, i);
+        wrap.querySelectorAll('.bg2-q-copy').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const txt = document.getElementById(btn.dataset.t).textContent;
+            try {
+              await navigator.clipboard.writeText(txt);
+              btn.textContent = 'Copied ✓'; btn.classList.add('ok');
+              setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 1200);
+            } catch (e) { btn.textContent = 'Failed'; }
+          });
+        });
+      } catch (e) {
+        wrap.innerHTML = '<div style="font-size:11px; color:var(--hot);">Error: ' + escapeHtml(String(e.message || e)) + '</div>';
+      }
+    }
+
+    function buildPqlHtml(d, i) {
+      const labels = {
+        rps:              'RPS (req/s)',
+        rps_by_status:    'RPS by status',
+        p50:              'p50 latency (s)',
+        p95:              'p95 latency (s)',
+        p99:              'p99 latency (s)',
+        avg_latency_ms:   'Avg latency (ms)',
+        max_latency_ms:   'Max latency (ms)',
+        error_ratio:      'Error ratio (5xx / total)',
+        success_ratio:    'Success ratio (2xx / total)',
+        '4xx_ratio':      '4xx ratio',
+      };
+      let html = '';
+      Object.keys(labels).forEach(k => {
+        const q = (d.queries || {})[k];
+        if (!q) return;
+        const id = 'q_' + i + '_' + k;
+        html += (
+          '<div class="bg2-q">' +
+            '<div class="bg2-q-hd">' +
+              '<span>' + labels[k] + '</span>' +
+              '<button class="bg2-q-copy" data-t="' + id + '">Copy</button>' +
+            '</div>' +
+            '<div class="bg2-q-code" id="' + id + '">' + escapeHtml(q) + '</div>' +
+          '</div>'
+        );
+      });
+      if (d.grafanaExploreUrl) {
+        html += '<a class="bg2-ec-explore" target="_blank" rel="noopener" href="' + escapeAttr(d.grafanaExploreUrl) + '">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v7H3V3h7"/></svg>' +
+          'Open in Grafana Explore</a>';
+      }
+      return html;
+    }
+
+    function drawChart(svgEl, legendEl, series, metric) {
+      const W = 800, H = 200, P = { l: 44, r: 12, t: 10, b: 24 };
+      const cw = W - P.l - P.r, ch = H - P.t - P.b;
+      let allPts = [];
+      series.forEach(s => allPts = allPts.concat((s.points || []).filter(p => p[1] !== null)));
+      if (!allPts.length) {
+        svgEl.innerHTML = '<text x="400" y="100" text-anchor="middle" fill="#888" font-size="12">No data in window</text>';
+        legendEl.innerHTML = '';
+        return;
+      }
+      const tMin = Math.min(...allPts.map(p => p[0]));
+      const tMax = Math.max(...allPts.map(p => p[0]));
+      let vMax = Math.max(...allPts.map(p => p[1]));
+      if (metric === 'status') {
+        // stacked → recompute max on stacked sums
+        const stackAt = {};
+        series.forEach(s => (s.points || []).forEach(p => { stackAt[p[0]] = (stackAt[p[0]] || 0) + (p[1] || 0); }));
+        vMax = Math.max(1e-9, ...Object.values(stackAt));
+      }
+      vMax = vMax > 0 ? vMax * 1.1 : 1;
+
+      const x = t => P.l + ((t - tMin) / Math.max(1, (tMax - tMin))) * cw;
+      const y = v => P.t + ch - (v / vMax) * ch;
+
+      const palette = {
+        RPS:  '#2563eb',
+        P50:  '#2563eb', P95:  '#d97706', P99:  '#dc2626', AVG: '#7c3aed',
+        '2xx':'#16a34a', '3xx':'#2563eb', '4xx':'#d97706', '5xx':'#dc2626', 'other':'#6b7280',
+      };
+
+      let paths = '';
+      let legend = '';
+      if (metric === 'status') {
+        // Stacked areas — draw bottom→top
+        const stackAcc = {}; // ts → cumulative
+        const stacked = series.map(s => {
+          const pts = (s.points || []).map(p => {
+            const prev = stackAcc[p[0]] || 0;
+            const top = prev + (p[1] || 0);
+            stackAcc[p[0]] = top;
+            return { t: p[0], v0: prev, v1: top };
+          });
+          return { name: s.name, pts };
+        });
+        stacked.forEach(s => {
+          if (!s.pts.length) return;
+          const color = palette[s.name] || '#888';
+          const top = s.pts.map((p, i) => (i ? 'L' : 'M') + x(p.t) + ' ' + y(p.v1)).join(' ');
+          const bot = s.pts.slice().reverse().map(p => 'L' + x(p.t) + ' ' + y(p.v0)).join(' ');
+          paths += '<path d="' + top + ' ' + bot + ' Z" fill="' + color + '" fill-opacity=".7" stroke="' + color + '" stroke-width="1"/>';
+          legend += '<span><span class="sw" style="background:' + color + ';"></span>' + s.name + '</span>';
+        });
+      } else {
+        series.forEach(s => {
+          const color = palette[s.name] || '#2563eb';
+          const pts = (s.points || []).filter(p => p[1] !== null);
+          if (!pts.length) return;
+          const d = pts.map((p, i) => (i ? 'L' : 'M') + x(p[0]) + ' ' + y(p[1])).join(' ');
+          paths += '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="1.8"/>';
+          legend += '<span><span class="sw" style="background:' + color + ';"></span>' + s.name + '</span>';
+        });
+      }
+
+      // Y-axis ticks (3 levels)
+      const ticks = [0, vMax/2, vMax];
+      let axis = '';
+      ticks.forEach(v => {
+        const yy = y(v);
+        axis += '<line x1="' + P.l + '" x2="' + (W - P.r) + '" y1="' + yy + '" y2="' + yy + '" stroke="currentColor" stroke-opacity=".08"/>';
+        axis += '<text x="' + (P.l - 6) + '" y="' + (yy + 3) + '" text-anchor="end" fill="currentColor" fill-opacity=".55" font-size="10">' + fmtAxis(v, metric) + '</text>';
+      });
+      // X-axis: 3 timestamps
+      const xTicks = [tMin, (tMin + tMax) / 2, tMax];
+      xTicks.forEach((t, i) => {
+        const xx = x(t);
+        axis += '<text x="' + xx + '" y="' + (H - 6) + '" text-anchor="' + (i === 0 ? 'start' : i === 2 ? 'end' : 'middle') + '" fill="currentColor" fill-opacity=".55" font-size="10">' + fmtTime(t) + '</text>';
+      });
+
+      svgEl.innerHTML = axis + paths;
+      legendEl.innerHTML = legend;
+    }
+
+    // ── Formatters ────────────────────────────────────────────
+    function fmtRate(v) { if (v == null) return '—'; if (v >= 100) return v.toFixed(0); if (v >= 10) return v.toFixed(1); return v.toFixed(2); }
+    function fmtMs(v)   { if (v == null) return '—'; if (v >= 1000) return (v / 1000).toFixed(2) + ' s'; return v.toFixed(0) + ' ms'; }
+    function fmtTime(unix) { const d = new Date(unix * 1000); return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0'); }
+    function fmtAxis(v, m) {
+      if (m === 'latency') return v >= 1 ? v.toFixed(1) : v.toFixed(3);
+      return v >= 10 ? v.toFixed(0) : v.toFixed(2);
+    }
+    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]); }
+    function escapeAttr(s) { return escapeHtml(s); }
+
+    // ── Bootstrap from ?service= ──────────────────────────────
+    const urlSvc = new URLSearchParams(location.search).get('service');
+    if (urlSvc) { input.value = urlSvc; S.service = urlSvc; setTimeout(load, 200); }
+  })();
+  </script>
+</body>
+</html>

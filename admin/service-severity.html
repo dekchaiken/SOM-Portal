@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Severity — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/service-severity/service-severity.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Service Severity</div>
+        <div class="page-sub">Priority registry สำหรับ Restart Monitor</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="shield"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Service Severity</h1>
+          <p>Priority registry สำหรับ Restart Monitor — กำหนด Sev level ของแต่ละ service</p>
+        </div>
+      </section>
+
+      <!-- Hero -->
+      <div class="ss-hero">
+        <div class="ss-hero-info">
+          <div class="ss-hero-icon"><i data-icon="shield"></i></div>
+          <div>
+            <h1>Service Severity Registry</h1>
+            <p>กำหนด Priority ของแต่ละ service · P1 = <i data-icon="circle"></i> Critical · P2 = <i data-icon="circle"></i> Warning · P3 = <i data-icon="circle"></i> Info</p>
+          </div>
+        </div>
+        <div class="ss-hero-actions">
+          <button class="btn btn-ghost"   id="btn-webhooks" title="ตั้งค่า Google Chat webhook ของ Restart Monitor ต่อ runway"><i data-icon="message-circle"></i> Webhooks</button>
+          <button class="btn btn-ghost"   id="btn-sync"  title="ดึงข้อมูลจาก Google Sheet ผ่าน n8n"><i data-icon="refresh-cw"></i> Sync from Sheet</button>
+          <button class="btn btn-ghost"   id="btn-import"><i data-icon="arrow-up"></i> Import CSV</button>
+          <button class="btn btn-primary" id="btn-add">+ Add Service</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="ss-stats">
+        <div class="ss-stat">
+          <div class="ss-stat-label">Total</div>
+          <div class="ss-stat-value" id="stat-total">—</div>
+          <div class="ss-stat-foot">services registered</div>
+        </div>
+        <div class="ss-stat p1">
+          <div class="ss-stat-label">P1 · Critical</div>
+          <div class="ss-stat-value" id="stat-p1">—</div>
+          <div class="ss-stat-foot">highest priority</div>
+        </div>
+        <div class="ss-stat p2">
+          <div class="ss-stat-label">P2 · Warning</div>
+          <div class="ss-stat-value" id="stat-p2">—</div>
+          <div class="ss-stat-foot">medium priority</div>
+        </div>
+        <div class="ss-stat p3">
+          <div class="ss-stat-label">P3 · Info</div>
+          <div class="ss-stat-value" id="stat-p3">—</div>
+          <div class="ss-stat-foot">low priority</div>
+        </div>
+        <div class="ss-stat">
+          <div class="ss-stat-label">Last Updated</div>
+          <div class="ss-stat-value" id="stat-updated" style="font-size:13px;color:var(--text-muted)">—</div>
+          <div class="ss-stat-foot" id="stat-updatedby">—</div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="ss-toolbar">
+        <div class="ss-search">
+          <span class="ss-search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+          <input type="text" id="search" placeholder="ค้นหา service name หรือ group…">
+        </div>
+        <div class="ss-tabs" id="prio-tabs">
+          <button class="ss-tab active" data-p="all">All</button>
+          <button class="ss-tab" data-p="P1"><i data-icon="circle"></i> P1</button>
+          <button class="ss-tab" data-p="P2"><i data-icon="circle"></i> P2</button>
+          <button class="ss-tab" data-p="P3"><i data-icon="circle"></i> P3</button>
+        </div>
+      </div>
+
+      <!-- Runway filter (each org/runway is a separate Sheet tab) -->
+      <div class="ss-toolbar" style="margin-top:8px">
+        <div class="ss-tabs" id="runway-tabs">
+          <button class="ss-tab active" data-rw="all">All runways</button>
+          <button class="ss-tab" data-rw="EKS TMN">EKS TMN</button>
+          <button class="ss-tab" data-rw="EKS NANO">EKS NANO</button>
+          <button class="ss-tab" data-rw="OCP">OCP</button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="ss-card">
+        <div id="table-wrap">
+          <div class="ss-table-empty">กำลังโหลด…</div>
+        </div>
+        <div class="ss-table-foot" id="table-foot" style="display:none">
+          <span id="table-count"></span>
+          <span id="table-filter"></span>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Add/Edit Modal ─────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="ss-modal">
+    <div class="ss-modal-head">
+      <h3 class="ss-modal-title" id="edit-title">Add Service</h3>
+      <button class="ss-modal-close" data-close="modal-edit">×</button>
+    </div>
+    <div class="ss-modal-body">
+      <div class="frow">
+        <label class="flabel">Service Name</label>
+        <input class="finput" id="f-name" placeholder="เช่น pull-request-noti">
+        <div class="fhint">ชื่อ deployment ตรงกับ pod name prefix (Kubernetes)</div>
+      </div>
+      <div class="frow">
+        <label class="flabel">Priority</label>
+        <div class="psel" id="psel">
+          <div class="popt" data-p="P1">
+            <div class="popt-val">P1</div>
+            <div class="popt-lbl"><i data-icon="circle"></i> Critical</div>
+          </div>
+          <div class="popt" data-p="P2">
+            <div class="popt-val">P2</div>
+            <div class="popt-lbl"><i data-icon="circle"></i> Warning</div>
+          </div>
+          <div class="popt" data-p="P3">
+            <div class="popt-val">P3</div>
+            <div class="popt-lbl"><i data-icon="circle"></i> Info</div>
+          </div>
+        </div>
+      </div>
+      <div class="frow-2">
+        <div>
+          <label class="flabel">Service Group</label>
+          <input class="finput" id="f-group" placeholder="เช่น mobile-backend">
+        </div>
+        <div>
+          <label class="flabel">BU</label>
+          <input class="finput" id="f-bu" value="Truemoney">
+        </div>
+      </div>
+      <div class="frow">
+        <label class="flabel">Runway / Org</label>
+        <select class="finput" id="f-runway">
+          <option value="">— (unspecified)</option>
+          <option value="EKS TMN">EKS TMN</option>
+          <option value="EKS NANO">EKS NANO</option>
+          <option value="OCP">OCP</option>
+        </select>
+        <div class="fhint">ทีม/แพลตฟอร์มที่ service นี้รันอยู่ (จะถูก sync จาก Sheet tab)</div>
+      </div>
+    </div>
+    <div class="ss-modal-foot">
+      <button class="btn btn-ghost" data-close="modal-edit">Cancel</button>
+      <button class="btn btn-primary" id="btn-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Modal ───────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="ss-modal" style="max-width:420px">
+    <div class="ss-modal-head">
+      <h3 class="ss-modal-title">Delete Service</h3>
+      <button class="ss-modal-close" data-close="modal-delete">×</button>
+    </div>
+    <div class="ss-modal-body">
+      <div class="del-warn">
+        <div style="margin-bottom:8px">ต้องการลบ service ออกจาก registry?</div>
+        <div><span class="del-name" id="del-name"></span></div>
+        <div style="margin-top:10px;font-size:11px;color:var(--text-muted)">
+          Pod ที่ match กับ service นี้จะ fallback เป็น <b style="color:var(--ss-p3)">P3 / Info</b>
+        </div>
+      </div>
+    </div>
+    <div class="ss-modal-foot">
+      <button class="btn btn-ghost" data-close="modal-delete">Cancel</button>
+      <button class="btn btn-danger" id="btn-del-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Import Modal ───────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-import">
+  <div class="ss-modal wide">
+    <div class="ss-modal-head">
+      <h3 class="ss-modal-title">Import CSV</h3>
+      <button class="ss-modal-close" data-close="modal-import">×</button>
+    </div>
+    <div class="ss-modal-body">
+      <div class="info-banner">
+        <b>รูปแบบ CSV:</b> ต้องมี <code>Service name</code> และ <code>Priority</code> (P1/P2/P3)<br>
+        ออปชั่น: <code>Service group</code>, <code>BU</code><br>
+        <b>Merge</b> = เพิ่ม/อัพเดต ไม่ลบของเดิม · <b>Replace</b> = แทนที่ทั้งหมด
+      </div>
+
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="csv-input" accept=".csv,text/csv">
+        <div class="drop-zone-icon"><i data-icon="folder-open"></i></div>
+        <div class="drop-zone-title">คลิกหรือลาก CSV มาวางที่นี่</div>
+        <div class="drop-zone-sub">รองรับ .csv เท่านั้น</div>
+      </div>
+
+      <div class="import-preview-wrap" id="preview-wrap">
+        <div class="import-preview-head">
+          <span class="import-preview-label" id="preview-label"></span>
+          <div class="import-mode-group">
+            <button id="mode-merge"  data-mode="merge">Merge</button>
+            <button id="mode-replace" data-mode="replace" class="on">Replace</button>
+          </div>
+        </div>
+        <div class="import-preview-table" id="preview-table"></div>
+      </div>
+    </div>
+    <div class="ss-modal-foot">
+      <button class="btn btn-ghost" data-close="modal-import">Cancel</button>
+      <button class="btn btn-primary" id="btn-import-do" disabled>Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Sync from Sheet modal ──────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-sync">
+  <div class="ss-modal">
+    <div class="ss-modal-head">
+      <h3 class="ss-modal-title"><i data-icon="refresh-cw"></i> Sync from Google Sheet (via n8n)</h3>
+      <button class="ss-modal-close" data-close="modal-sync">×</button>
+    </div>
+    <div class="ss-modal-body">
+      <div class="info-banner">
+        <b>How it works:</b> ระบบจะเรียก n8n webhook → n8n อ่าน Sheet → ส่งกลับเป็นรายการ services<br>
+        <b>Mode:</b> Sheet is the source of truth — services ที่ไม่อยู่ใน Sheet จะถูกลบ, ใหม่จะถูกเพิ่ม, ที่เปลี่ยนจะถูกอัพเดต
+      </div>
+
+      <div class="form-row" style="margin-top:14px">
+        <label class="form-label" for="sync-url">n8n Webhook URL</label>
+        <input type="url" id="sync-url" class="form-control" placeholder="https://nodemation-console.tmn-dev.com/webhook/service-severity-sync">
+        <div class="form-hint">Production Webhook URL จาก n8n workflow "Service Severity Sync"</div>
+      </div>
+
+      <div id="sync-last" style="margin-top:14px;font-size:12px;color:var(--text-muted)"></div>
+      <div id="sync-result" style="margin-top:10px"></div>
+    </div>
+    <div class="ss-modal-foot">
+      <button class="btn btn-ghost"   data-close="modal-sync">Close</button>
+      <button class="btn btn-ghost"   id="btn-sync-save">Save URL</button>
+      <button class="btn btn-primary" id="btn-sync-run">Sync now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Sync confirmation modal ──────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-sync-confirm">
+  <div class="ss-modal" style="max-width:440px">
+    <div class="ss-modal-head">
+      <h3 class="ss-modal-title">Sync จาก Google Sheet?</h3>
+      <button class="ss-modal-close" data-close="modal-sync-confirm">×</button>
+    </div>
+    <div class="ss-modal-body">
+      <div class="del-warn">
+        <div style="margin-bottom:10px;font-size:13px;color:var(--text)">
+          ระบบจะดึงข้อมูลจาก Sheet ผ่าน n8n แล้ว <b>เขียนทับ</b> registry ทั้งหมด
+        </div>
+        <div style="font-size:11.5px;color:var(--text-muted);line-height:1.6">
+          <i data-icon="circle"></i> Service ใหม่ใน Sheet → <b style="color:var(--ss-p3)">เพิ่ม</b><br>
+          <i data-icon="circle"></i> Priority/Group เปลี่ยน → <b style="color:#3b82f6">อัพเดต</b><br>
+          <i data-icon="circle"></i> ไม่อยู่ใน Sheet แล้ว → <b style="color:#dc2626">ลบทิ้ง</b>
+        </div>
+      </div>
+    </div>
+    <div class="ss-modal-foot">
+      <button class="btn btn-ghost"   data-close="modal-sync-confirm">Cancel</button>
+      <button class="btn btn-primary" id="btn-sync-confirm">Yes, sync now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Webhooks modal — per-runway Google Chat webhook URLs ───────────── -->
+<div class="modal-overlay" id="modal-webhooks">
+  <div class="ss-modal wide">
+    <div class="ss-modal-head">
+      <h3 class="ss-modal-title"><i data-icon="message-circle"></i> Restart Monitor · Google Chat Webhooks</h3>
+      <button class="ss-modal-close" data-close="modal-webhooks">×</button>
+    </div>
+    <div class="ss-modal-body">
+      <div class="info-banner">
+        <b>How it works:</b> ทุก 9 โมงระบบจะ fetch pod-restart แล้ว POST ไปที่ <code>api/restart-monitor/upload.php</code><br>
+        หลังบันทึกไฟล์ ระบบจะส่ง Google Chat แจ้งเตือนไปยัง webhook ของ runway นั้น<br>
+        <b>ลำดับความสำคัญ URL:</b> ค่าที่ตั้งในหน้านี้ &gt; <code>.env[chatWebhookEnv]</code> &gt; <code>.env[RESTART_MONITOR_CHAT_WEBHOOK]</code>
+      </div>
+
+      <div id="webhooks-list" style="margin-top:14px">
+        <div class="ss-table-empty">กำลังโหลด…</div>
+      </div>
+
+      <div id="webhooks-meta" style="margin-top:14px;font-size:11.5px;color:var(--text-muted)"></div>
+    </div>
+    <div class="ss-modal-foot">
+      <button class="btn btn-primary" data-close="modal-webhooks">Done</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/service-severity/service-severity.js"></script>
+</body>
+</html>

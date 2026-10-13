@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maintenance Mode — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/maintenance/maintenance.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="wrench"></i> Maintenance Mode</div>
+        <div class="page-sub">Platform-wide MA controls · Super admin only · Real-time sync every 10s</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadMA()" style="font-size:11px">↺ Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="wrench"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Platform · Super Admin</div>
+          <h1>Maintenance Mode</h1>
+          <p>เปิด / ปิด user access ทั้ง platform, ทีละหน้า หรือทีละ tool — sync ทุก 10 วินาที</p>
+        </div>
+      </section>
+
+      <!-- ── Toolbar / status ── -->
+      <div class="ma-toolbar">
+        <div class="ma-toolbar-left">
+          <div class="ma-conn-dot" id="conn-dot"></div>
+          <span class="ma-sync-label">Real-time</span>
+          <span class="ma-sync-label" id="last-sync">—</span>
+        </div>
+        <div class="ma-toolbar-right">
+          <div class="ma-summary">
+            <span><strong id="tot-pages">0</strong> pages · <strong id="tot-tools">0</strong> tools</span>
+          </div>
+          <span class="ma-summary-warn" id="global-warn">Global MA is ON — all users blocked</span>
+        </div>
+      </div>
+
+      <!-- ═════════════════════════════════════════════════════════════
+           GLOBAL MAINTENANCE
+           ═════════════════════════════════════════════════════════════ -->
+      <div class="ma-card g-card" id="global-card">
+        <div class="ma-card-hd">
+          <div class="ma-card-mark tint-orange"><i data-icon="globe"></i></div>
+          <div>
+            <div class="ma-card-title">Global Maintenance</div>
+            <div class="ma-card-sub">Blocks all non-admin users at login until turned off</div>
+          </div>
+          <div class="ma-card-actions">
+            <span class="g-badge" id="global-badge">Active</span>
+            <label class="ma-toggle" title="Toggle global maintenance">
+              <input type="checkbox" id="global-toggle" onchange="toggleGlobal(this.checked)">
+              <span class="ma-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="g-body" id="global-body">
+          <div class="g-field">
+            <label for="global-msg">Message shown to users</label>
+            <input type="text" id="global-msg"
+                   placeholder="ระบบปิดปรับปรุงชั่วคราว..."
+                   oninput="scheduleGlobalSave()">
+          </div>
+          <div class="g-field">
+            <label for="global-eta">ETA (ISO / local)</label>
+            <input type="datetime-local" id="global-eta" oninput="scheduleGlobalSave()">
+          </div>
+        </div>
+        <div class="g-footer hidden" id="global-footer">
+          <span class="g-footer-avatar" id="global-by-avatar">—</span>
+          Activated by <strong id="global-by-name">—</strong> · <strong id="global-by-at">—</strong>
+        </div>
+      </div>
+
+      <!-- ═════════════════════════════════════════════════════════════
+           PAGE MAINTENANCE
+           ═════════════════════════════════════════════════════════════ -->
+      <div class="ma-card">
+        <div class="ma-card-hd">
+          <div class="ma-card-mark tint-blue"><i data-icon="file"></i></div>
+          <div>
+            <div class="ma-card-title">Page Maintenance</div>
+            <div class="ma-card-sub">Show overlay on specific pages — sidebar stays usable</div>
+          </div>
+          <div class="ma-card-actions">
+            <span class="ma-count-pill" id="pages-count">0 active</span>
+          </div>
+        </div>
+        <div class="ma-list-toolbar">
+          <div class="ma-search" id="pages-search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
+            <input type="text" id="pages-search" placeholder="Search pages by name or file..." oninput="filterList('pages')">
+            <button type="button" class="clear-btn" onclick="clearSearch('pages')">×</button>
+          </div>
+          <div class="ma-seg" role="tablist" aria-label="Filter pages by state">
+            <button type="button" class="active" data-filter="all" onclick="setFilter('pages','all')">All <span class="seg-count" id="pages-all-count">0</span></button>
+            <button type="button" data-filter="active" onclick="setFilter('pages','active')">Active <span class="seg-count" id="pages-active-count">0</span></button>
+            <button type="button" data-filter="inactive" onclick="setFilter('pages','inactive')">Off</button>
+          </div>
+        </div>
+        <div class="ma-list-body" id="pages-body"></div>
+        <div class="ma-empty" id="pages-empty">
+          <div class="ma-empty-mark"><i data-icon="search"></i></div>
+          <div class="ma-empty-title">No pages match your filters</div>
+          <div class="ma-empty-sub">Try clearing the search or switching to "All"</div>
+        </div>
+      </div>
+
+      <!-- ═════════════════════════════════════════════════════════════
+           TOOL MAINTENANCE
+           ═════════════════════════════════════════════════════════════ -->
+      <div class="ma-card">
+        <div class="ma-card-hd">
+          <div class="ma-card-mark tint-violet"><i data-icon="wrench"></i></div>
+          <div>
+            <div class="ma-card-title">Tool Maintenance</div>
+            <div class="ma-card-sub">Disable specific integrations / features across the platform</div>
+          </div>
+          <div class="ma-card-actions">
+            <span class="ma-count-pill" id="tools-count">0 active</span>
+          </div>
+        </div>
+        <div class="ma-list-toolbar">
+          <div class="ma-search" id="tools-search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
+            <input type="text" id="tools-search" placeholder="Search tools by name..." oninput="filterList('tools')">
+            <button type="button" class="clear-btn" onclick="clearSearch('tools')">×</button>
+          </div>
+          <div class="ma-seg" role="tablist" aria-label="Filter tools by state">
+            <button type="button" class="active" data-filter="all" onclick="setFilter('tools','all')">All <span class="seg-count" id="tools-all-count">0</span></button>
+            <button type="button" data-filter="active" onclick="setFilter('tools','active')">Active <span class="seg-count" id="tools-active-count">0</span></button>
+            <button type="button" data-filter="inactive" onclick="setFilter('tools','inactive')">Off</button>
+          </div>
+        </div>
+        <div class="ma-list-body" id="tools-body"></div>
+        <div class="ma-empty" id="tools-empty">
+          <div class="ma-empty-mark"><i data-icon="search"></i></div>
+          <div class="ma-empty-title">No tools match your filters</div>
+          <div class="ma-empty-sub">Try clearing the search or switching to "All"</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/maintenance/maintenance-page.js"></script>
+
+</body>
+</html>

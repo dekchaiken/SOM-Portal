@@ -1,0 +1,1926 @@
+{
+ "title": "7-Eleven · SoF Wallet & Credit Card",
+ "uid": "711-sof-monitoring",
+ "refresh": "1m",
+ "time": {
+  "from": "now-3h",
+  "to": "now"
+ },
+ "timezone": "Asia/Bangkok",
+ "panels": [
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "valueName": "last"
+     },
+     "mappings": [],
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 10,
+    "w": 24,
+    "x": 0,
+    "y": 104
+   },
+   "id": 2022,
+   "options": {
+    "composites": [],
+    "content": "%%{init: {\"flowchart\": {\"useMaxWidth\": true, \"htmlLabels\": true}, \"theme\": \"dark\"}}%%\ngraph TD\n  ACQ[\"Acquiring Service\"] --> EW[\"Wallet / EW\n(retail-seven-composite)\"]\n  EW -->|200| bal_ok([\"Charge: OK\"])\n  EW -->|non-200| bal_fail([\"Charge: Fail\"])\n  classDef svc    fill:#242930,stroke:#5794c7,stroke-width:2px,color:#fff\n  classDef ok     fill:#1c2c22,stroke:#47a468,stroke-width:2px,color:#fff\n  classDef fail   fill:#2c1e1e,stroke:#cc3333,stroke-width:2px,color:#fff\n  classDef client fill:#2c2020,stroke:#e05252,stroke-width:3px,color:#e05252,font-weight:bold\n  classDef net    fill:#2c251e,stroke:#ff8c42,stroke-width:2px,color:#fff",
+    "legend": {
+     "show": true
+    },
+    "links": [],
+    "mermaidThemeVariablesDark": {
+     "common": {
+      "fontFamily": "Roboto,Helvetica Neue,Arial,sans-serif"
+     }
+    },
+    "mermaidThemeVariablesLight": {
+     "common": {
+      "fontFamily": "Roboto,Helvetica Neue,Arial,sans-serif"
+     }
+    },
+    "nodeSize": {
+     "minHeight": 30,
+     "minWidth": 30
+    },
+    "pluginVersion": "latest",
+    "style": "width:100%;",
+    "useBackground": false,
+    "valueName": "current"
+   },
+   "pluginVersion": "1.10.4",
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"200\",sof_code=\"BALANCE\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "bal_ok",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status!=\"200\",sof_code=\"BALANCE\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "bal_fail",
+     "refId": "B"
+    }
+   ],
+   "title": "Balance - Charge Flow (5m window)",
+   "type": "jdbranham-diagram-panel"
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 114
+   },
+   "hiddenSeries": false,
+   "id": 2023,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "options": {
+    "alertThreshold": true
+   },
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"200\",sof_code=\"BALANCE\"}[1m])) by (sof_code)",
+     "interval": "",
+     "legendFormat": "Balance Success",
+     "refId": "A"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "7-Eleven SOF Balance  Charge Success",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:364",
+     "format": "short",
+     "label": "count",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:365",
+     "format": "short",
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "จำนวน Wallet charge ที่ fail แยกตาม error code\n\nดูยังไง: error status_code=0 = success แต่ process ไม่ครบ, status_code=-1 = timeout, 500 = server error",
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 114
+   },
+   "hiddenSeries": false,
+   "id": 2024,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null as zero",
+   "options": {
+    "alertThreshold": true
+   },
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"200\", sof_code=\"BALANCE\"}[1m])) by (sof_type, sof_code, status)",
+     "hide": true,
+     "interval": "",
+     "legendFormat": "{{sof_type}} - {{sof_code}} - {{status}}",
+     "range": true,
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"500\",uri=\"/retail-seven-composite/par/v1/charges/{charge-id}\"}[2m])) by (sof_code, status)",
+     "hide": true,
+     "interval": "",
+     "legendFormat": "{{sof_code}} - {{status}}",
+     "range": true,
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"500\", sof_code=\"BALANCE\"}[2m])) by (sof_type, sof_code, status)",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "{{sof_type}} - {{sof_code}} - {{status}}",
+     "range": true,
+     "refId": "C"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "fill": true,
+     "line": true,
+     "op": "gt",
+     "value": 10,
+     "visible": true
+    }
+   ],
+   "timeRegions": [],
+   "title": "7-Eleven SOF Balance Charge Fail",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:71",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:72",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 24,
+    "x": 0,
+    "y": 122
+   },
+   "hiddenSeries": false,
+   "id": 2025,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(rate(retail_seven_composite_requests_seconds_sum{status=\"200\",sof_code=\"BALANCE\"}[1m])) / sum(rate(retail_seven_composite_requests_seconds_count{status=\"200\",sof_code=\"BALANCE\"}[1m]))",
+     "interval": "",
+     "legendFormat": "Balance avg (s)",
+     "refId": "A"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "7-Eleven SOF Balance  Processing Time",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:446",
+     "format": "short",
+     "label": "seconds",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:447",
+     "format": "short",
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "gridPos": {
+    "h": 14,
+    "w": 24,
+    "x": 0,
+    "y": 131
+   },
+   "id": 2027,
+   "options": {
+    "composites": [],
+    "content": "%%{init: {\"flowchart\": {\"useMaxWidth\": true, \"htmlLabels\": true}, \"theme\": \"dark\"}}%%\ngraph TD\n  ACQ[\"Acquiring Service\"] --> FR[\"Financial Router\"]\n  FR --> OMISE[\"Omise / OPN Gateway\"]\n\n  subgraph KTC_G[\"Gateway: KTC\"]\n    ktc_ok([\"OK\"])\n    ktc_fail([\"Fail\"])\n  end\n\n  subgraph BAY_G[\"Gateway: BAY (Krungsri Cybersource)\"]\n    bay_ok([\"OK\"])\n    bay_fail([\"Fail\"])\n  end\n\n  subgraph ALL_G[\"All Card — Total\"]\n    cc_ok([\"OK\"])\n    cc_fail([\"Fail\"])\n  end\n\n  OMISE --> KTC_G\n  OMISE --> BAY_G\n  OMISE --> ALL_G\n  classDef svc    fill:#242930,stroke:#5794c7,stroke-width:2px,color:#fff\n  classDef ok     fill:#1c2c22,stroke:#47a468,stroke-width:2px,color:#fff\n  classDef fail   fill:#2c1e1e,stroke:#cc3333,stroke-width:2px,color:#fff\n  classDef client fill:#2c2020,stroke:#e05252,stroke-width:3px,color:#e05252,font-weight:bold\n  classDef net    fill:#2c251e,stroke:#ff8c42,stroke-width:2px,color:#fff",
+    "links": [],
+    "style": "width:100%;",
+    "useBackground": false,
+    "valueName": "current"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"SUCCESS\",backend=\"ktc_v2\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "ktc_ok",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code!=\"SUCCESS\",backend=\"ktc_v2\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "ktc_fail",
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"SUCCESS\",backend=\"krungsri_cybersource\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "bay_ok",
+     "refId": "C"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code!=\"SUCCESS\",backend=\"krungsri_cybersource\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "bay_fail",
+     "refId": "D"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"SUCCESS\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "cc_ok",
+     "refId": "E"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code!=\"SUCCESS\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "cc_fail",
+     "refId": "F"
+    }
+   ],
+   "title": "Credit Card - Charge via Omise/OPN (5m window)",
+   "type": "jdbranham-diagram-panel"
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "จำนวน Credit/Debit Card charge สำเร็จทั้งหมด ผ่าน Omise/OPN Gateway\n\nดูยังไง: trend ควรสม่ำเสมอ ถ้า drop ให้ดูว่าเป็น KTC หรือ BAY หรือทั้งคู่",
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 145
+   },
+   "hiddenSeries": false,
+   "id": 2028,
+   "legend": {
+    "alignAsTable": true,
+    "avg": false,
+    "current": true,
+    "max": true,
+    "min": false,
+    "rightSide": true,
+    "show": true,
+    "sort": "max",
+    "sortDesc": true,
+    "total": false,
+    "values": true
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null as zero",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (service,mcc,status_code) (increase(omise_gateway_transaction_total{service=\"charge\", mcc=\"711\", status_code=\"SUCCESS\"}[1m]))",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "{{service}} - {{mcc}}- {{status_code}}",
+     "range": true,
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (service,mcc,bank,status_code) (increase(omise_gateway_transaction_total{service=\"charge\", mcc=\"711\", status_code=\"SUCCESS\"}[1m]))",
+     "hide": true,
+     "interval": "",
+     "legendFormat": "{{service}} - {{mcc}} - {{bank}} - {{status_code}}",
+     "range": true,
+     "refId": "B"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "fill": true,
+     "line": true,
+     "op": "lt",
+     "value": 1,
+     "visible": true
+    }
+   ],
+   "timeRegions": [],
+   "title": "7-Eleven SOF Credit Card Charge Success",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:71",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:72",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "จำนวน Credit Card charge fail แยกตาม bank และ status_code\n\nดูยังไง: ถ้า fail เฉพาะ bank ใด bank หนึ่ง ให้ escalate ไปที่ OMISE/KTC หรือ BAY ตาม bank ที่มีปัญหา",
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 145
+   },
+   "hiddenSeries": false,
+   "id": 2029,
+   "legend": {
+    "alignAsTable": true,
+    "avg": false,
+    "current": true,
+    "max": true,
+    "min": false,
+    "rightSide": true,
+    "show": true,
+    "total": false,
+    "values": true
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null as zero",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (service,mcc,bank,status_code)  (increase(omise_gateway_transaction_total{service=\"charge\", mcc=\"711\",status_code!~\"SUCCESS|PAYMENT_REJECT|INVALID_PARAM|UNEXPECTED_ERROR|INSUFFICIENT\"}[2m]))",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "{{service}} - {{mcc}} - {{bank}} {{status_code}}",
+     "range": true,
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (service,mcc,bank,status_code,backend)  (increase(omise_gateway_transaction_total{service=\"charge\", mcc=\"711\",status_code!=\"SUCCESS\"}[2m]))",
+     "hide": true,
+     "interval": "",
+     "legendFormat": "{{service}} - {{mcc}} - {{bank}} - {{backend}} - {{status_code}}",
+     "range": true,
+     "refId": "B"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "fill": true,
+     "line": true,
+     "op": "gt",
+     "value": 3,
+     "visible": true
+    }
+   ],
+   "timeRegions": [],
+   "title": "7-Eleven SOF Credit Card Charge Fail",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:71",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:72",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "Processing time เฉลี่ยของ Credit Card charge (ทุก bank)\n\nดูยังไง: ถ้าสูงขึ้นให้ดู KTC vs BAY แยกกันว่า gateway ไหน slow",
+   "fieldConfig": {
+    "defaults": {
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 153
+   },
+   "hiddenSeries": false,
+   "id": 2030,
+   "legend": {
+    "alignAsTable": true,
+    "avg": false,
+    "current": true,
+    "max": true,
+    "min": false,
+    "rightSide": true,
+    "show": true,
+    "sort": "max",
+    "sortDesc": true,
+    "total": false,
+    "values": true
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null as zero",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "max by (service,mcc) (omise_gateway_processing_time{service=\"charge\", mcc=\"711\",status_code=\"SUCCESS\",bank!~\"NONE|THE GOVERNMENT SAVINGS BANK|GOVERNMENT SAVINGS BANK|XENDIT WALLET COMPANY LIMITED|T2P COMPANY LIMITED|INDUSTRIAL.*\"})",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "{{service}} - {{mcc}} - {{bank}}",
+     "range": true,
+     "refId": "A"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "fill": true,
+     "line": true,
+     "op": "gt",
+     "value": 9000,
+     "visible": true
+    }
+   ],
+   "timeRegions": [],
+   "title": "7-Eleven SOF Credit Card Charge Process Time",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:71",
+     "format": "ms",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:72",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "",
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 153
+   },
+   "hiddenSeries": false,
+   "id": 2031,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum(increase(omise_gateway_transaction_total{status_code=\"SUCCESS\",service=\"charge\",mcc=\"711\"}[1m]))",
+     "interval": "",
+     "legendFormat": "{{service}}{{status_code}}",
+     "range": true,
+     "refId": "A"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "7-Eleven Sof Credit Omise Charge Success",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:71",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:72",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 161
+   },
+   "hiddenSeries": false,
+   "id": 2032,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum(increase(omise_gateway_transaction_total{status_code!=\"SUCCESS\",service=\"charge\",mcc=\"711\"}[1m]))",
+     "interval": "",
+     "legendFormat": "Fail",
+     "range": true,
+     "refId": "A"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "7-Eleven Sof Credit Omise Charge Fail",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:684",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:685",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 161
+   },
+   "hiddenSeries": false,
+   "id": 2033,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "avg by (mcc) (omise_gateway_processing_time{status_code=\"SUCCESS\",mcc=\"711\",service=\"charge\"})",
+     "interval": "",
+     "legendFormat": "Fail",
+     "range": true,
+     "refId": "A"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "7-Eleven Sof Credit Omise Processing Time",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:684",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:685",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {
+    "charge - 711 - INDUSTRIAL AND COMMERCIAL BANK OF CHINA (THAI) PUBLIC COMPANY LIMITED": "green"
+   },
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "Processing time ของ KTC gateway แยกตาม issuing bank\n\nดูยังไง: topk แสดง 5 bank ที่ช้าที่สุด เส้น max คือ worst case ของทุก bank\n\nถ้า slow: escalate ไปที่ OMISE/KTC LINE group",
+   "fieldConfig": {
+    "defaults": {
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 169
+   },
+   "hiddenSeries": false,
+   "id": 2034,
+   "legend": {
+    "alignAsTable": true,
+    "avg": false,
+    "current": true,
+    "max": true,
+    "min": false,
+    "rightSide": true,
+    "show": true,
+    "sort": "max",
+    "sortDesc": true,
+    "total": false,
+    "values": true
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null as zero",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "topk(5,max by (service,mcc,bank) (omise_gateway_processing_time{service=\"charge\", mcc=\"711\",status_code=\"SUCCESS\", bank!~\"NONE|XENDIT WALLET COMPANY LIMITED|T2P COMPANY LIMITED|INDUSTRIAL.*\", backend=\"ktc_v2\"})) / 1.1",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "{{service}} - {{mcc}} - {{bank}}",
+     "range": true,
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "max by (service,mcc) (omise_gateway_processing_time{service=\"charge\", mcc=\"711\",status_code=\"SUCCESS\"})",
+     "hide": true,
+     "interval": "",
+     "legendFormat": "{{service}} - {{mcc}}",
+     "range": true,
+     "refId": "B"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "fill": true,
+     "line": true,
+     "op": "gt",
+     "value": 8000,
+     "visible": true
+    }
+   ],
+   "timeRegions": [],
+   "title": "7-Eleven SOF Credit Card Charge Process Time{Gateway KTC}",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:71",
+     "format": "ms",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:72",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "แสดง volume transaction แยกตาม issuing bank ผ่าน KTC gateway\n\nดูยังไง: ใช้ดูว่า bank ไหน active มาก ถ้า bank ใดหายไปอาจมีปัญหาเฉพาะ bank นั้น",
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 169
+   },
+   "hiddenSeries": false,
+   "id": 2035,
+   "legend": {
+    "alignAsTable": true,
+    "avg": false,
+    "current": true,
+    "max": true,
+    "min": false,
+    "rightSide": true,
+    "show": true,
+    "sort": "current",
+    "sortDesc": true,
+    "total": false,
+    "values": true
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null as zero",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (service,mcc,bank) (increase(omise_gateway_transaction_total{service=\"charge\", mcc=\"711\",status_code=\"SUCCESS\", bank!=\"NONE\", backend=\"ktc_v2\"}[1m]))",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "{{service}} - {{mcc}} - {{bank}}",
+     "range": true,
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (service,mcc,bank) (increase(omise_gateway_transaction_total{service=\"charge\", status_code=\"PROCESSING_FAILED\"}[1m]))",
+     "hide": true,
+     "interval": "",
+     "legendFormat": "{{service}} - {{mcc}} - {{bank}}",
+     "range": true,
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (service,mcc,bank) (increase(omise_gateway_transaction_total{bank!=\"NONE\", backend=\"ktc_v2\", bank=\"TMBTHANACHART BANK PUBLIC COMPANY LIMITED\"}[1m]))",
+     "hide": true,
+     "interval": "",
+     "legendFormat": "{{service}} - {{mcc}} - {{bank}}",
+     "range": true,
+     "refId": "C"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "7-Eleven SOF Credit Card Transaction by Card{Gateway KTC}",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:71",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:72",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "Processing time ของ BAY (Krungsri Cybersource) gateway\n\nดูยังไง: เทียบกับ KTC เพื่อดูว่า gateway ไหนเป็นต้นเหตุ\n\nถ้า slow: ให้ switch gateway ไป KTC ถ้า fail นานกว่า 15 นาที",
+   "fieldConfig": {
+    "defaults": {
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 177
+   },
+   "hiddenSeries": false,
+   "id": 2036,
+   "legend": {
+    "alignAsTable": true,
+    "avg": false,
+    "current": true,
+    "max": true,
+    "min": false,
+    "rightSide": true,
+    "show": true,
+    "sort": "max",
+    "sortDesc": true,
+    "total": false,
+    "values": true
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null as zero",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "topk(5,max by (service,mcc,bank) (omise_gateway_processing_time{service=\"charge\", mcc=\"711\",status_code=\"SUCCESS\", bank!=\"NONE\", backend=\"krungsri_cybersource\"})) / 1.1",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "{{service}} - {{mcc}} - {{bank}}",
+     "range": true,
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "max by (service,mcc) (omise_gateway_processing_time{service=\"charge\", mcc=\"711\",status_code=\"SUCCESS\"})",
+     "hide": true,
+     "interval": "",
+     "legendFormat": "{{service}} - {{mcc}}",
+     "range": true,
+     "refId": "B"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "7-Eleven SOF Credit Card Charge Process Time{Gateway BAY}",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:71",
+     "format": "ms",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:72",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "Volume transaction แยกตาม issuing bank ผ่าน BAY (Krungsri Cybersource) gateway\n\nดูยังไง: เทียบกับ KTC panel เพื่อดู traffic distribution ระหว่าง 2 gateway",
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 177
+   },
+   "hiddenSeries": false,
+   "id": 2037,
+   "legend": {
+    "alignAsTable": true,
+    "avg": false,
+    "current": true,
+    "max": true,
+    "min": false,
+    "rightSide": true,
+    "show": true,
+    "sort": "current",
+    "sortDesc": true,
+    "total": false,
+    "values": true
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null as zero",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (service,mcc,bank) (increase(omise_gateway_transaction_total{service=\"charge\", mcc=\"711\",status_code=\"SUCCESS\", bank!=\"NONE\", backend=\"krungsri_cybersource\"}[1m]))",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "{{service}} - {{mcc}} - {{bank}}",
+     "range": true,
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (service,mcc,bank) (increase(omise_gateway_transaction_total{service=\"charge\", status_code=\"PROCESSING_FAILED\"}[1m]))",
+     "hide": true,
+     "interval": "",
+     "legendFormat": "{{service}} - {{mcc}} - {{bank}}",
+     "range": true,
+     "refId": "B"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "7-Eleven SOF Credit Card Transaction by Card {Gateway BAY[krungsri_cybersource]}",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:71",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:72",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "จำนวน Card payment fail ที่ Acquiring layer (alert threshold > 10)\n\nดูยังไง: ถ้าขึ้นมา alert ให้ดู Omise/OPN error breakdown ใน Section D ก่อน",
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 185
+   },
+   "hiddenSeries": false,
+   "id": 2038,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum(increase(acquiring_service_total_payment_payment_method_transaction_total{payment_method=\"Card\",status_code!=\"200\"}[1m])) by (status_code)",
+     "interval": "",
+     "legendFormat": "{{status_code}}",
+     "range": true,
+     "refId": "A"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "Acquiring payment via SOF Card Fail > 10",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:1588",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:1589",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "tOZ1JoTMk"
+   },
+   "description": "จำนวน Card payment success ที่ Acquiring layer\n\nใช้เทียบกับ Omise success ว่าตรงกันหรือเปล่า ถ้าไม่ตรงอาจมี data inconsistency",
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 185
+   },
+   "hiddenSeries": false,
+   "id": 2039,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "links": [
+    {
+     "title": "acquiring_service_processing_time",
+     "url": ""
+    }
+   ],
+   "nullPointMode": "null",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum(increase(acquiring_service_total_payment_payment_method_transaction_total{payment_method=\"Card\",status_code=\"200\"}[5m]))",
+     "interval": "",
+     "legendFormat": "",
+     "range": true,
+     "refId": "A"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "Acquiring Sof Credit Success",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:302",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:303",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "tOZ1JoTMk"
+   },
+   "description": "จำนวน Card payment fail ที่ Acquiring layer\n\nดูประกอบกับ Omise error panel เพื่อดูว่า fail เกิดที่ Acquiring หรือที่ Omise gateway",
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 193
+   },
+   "hiddenSeries": false,
+   "id": 2040,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "links": [
+    {
+     "title": "acquiring_service_processing_time",
+     "url": ""
+    }
+   ],
+   "nullPointMode": "null",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum(increase(acquiring_service_total_payment_payment_method_transaction_total{payment_method=\"Card\",status_code!=\"200\",app_name=\"acquiring-service\"}[1m]))",
+     "interval": "",
+     "legendFormat": "",
+     "range": true,
+     "refId": "A"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "Acquiring Sof Credit Fail",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:302",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:303",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "tOZ1JoTMk"
+   },
+   "description": "Average processing time ของ Card payment ที่ Acquiring layer\n\nดูยังไง: ควรใกล้เคียงกับ Omise processing time รวม overhead ของ Acquiring ด้วย",
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 193
+   },
+   "hiddenSeries": false,
+   "id": 2041,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "links": [
+    {
+     "title": "omise_gateway_transaction_count",
+     "url": ""
+    }
+   ],
+   "nullPointMode": "null",
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "avg(acquiring_service_time_payment_payment_method_transaction{payment_method=\"Card\",status_code=\"200\"})",
+     "interval": "",
+     "legendFormat": "",
+     "range": true,
+     "refId": "A"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "Acquiring Sof Card Processing Time",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:634",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:635",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  }
+ ]
+}

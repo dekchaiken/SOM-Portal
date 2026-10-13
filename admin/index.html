@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/index/index.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="settings"></i> Admin Panel</div>
+        <div class="page-sub">System management — SM Admin only</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="status-pill"><span class="status-dot"></span> System Online</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="settings"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Admin Panel</h1>
+          <p>System management สำหรับ SM Admin — รวมเครื่องมือดูแลผู้ใช้, ระบบ, content, config และ tools ทั้งหมด</p>
+        </div>
+      </section>
+
+      <!-- ── Metric Cards ── -->
+      <div class="metric-row">
+
+        <div class="metric-card" style="--mc-color:#f97316">
+          <div class="metric-top">
+            <div class="metric-icon"><i data-icon="users"></i></div>
+            <span class="metric-trend">USERS</span>
+          </div>
+          <div class="metric-value loading" id="stat-users">—</div>
+          <div class="metric-label">Total Users</div>
+          <div class="metric-live"><span class="metric-live-dot"></span>Active accounts</div>
+        </div>
+
+        <div class="metric-card" style="--mc-color:#3b82f6">
+          <div class="metric-top">
+            <div class="metric-icon">◫</div>
+            <span class="metric-trend">BOARD</span>
+          </div>
+          <div class="metric-value loading" id="stat-posts">—</div>
+          <div class="metric-label">Board Posts</div>
+          <div class="metric-live"><span class="metric-live-dot"></span>All time</div>
+        </div>
+
+        <div class="metric-card" style="--mc-color:#f59e0b">
+          <div class="metric-top">
+            <div class="metric-icon"><i data-icon="zap"></i></div>
+            <span class="metric-trend">JIRA</span>
+          </div>
+          <div class="metric-value loading" id="stat-tpls">—</div>
+          <div class="metric-label">Jira Templates</div>
+          <div class="metric-live"><span class="metric-live-dot"></span>Ready to use</div>
+        </div>
+
+        <div class="metric-card" style="--mc-color:#8b5cf6">
+          <div class="metric-top">
+            <div class="metric-icon"><i data-icon="link"></i></div>
+            <span class="metric-trend">LINKS</span>
+          </div>
+          <div class="metric-value loading" id="stat-links">—</div>
+          <div class="metric-label">Total Links</div>
+          <div class="metric-live"><span class="metric-live-dot"></span>Configured</div>
+        </div>
+
+        <div class="metric-card" style="--mc-color:#10b981">
+          <div class="metric-top">
+            <div class="metric-icon"><i data-icon="bar-chart"></i></div>
+            <span class="metric-trend">REPORTS</span>
+          </div>
+          <div class="metric-value loading" id="stat-weeks">—</div>
+          <div class="metric-label">Weekly Reports</div>
+          <div class="metric-live"><span class="metric-live-dot"></span>Active</div>
+        </div>
+
+      </div>
+
+      <!-- ── Filter Bar ── -->
+      <div class="admin-filter-bar">
+        <div class="admin-search-wrap">
+          <span class="search-icon"><i data-icon="search"></i></span>
+          <input type="text" id="admin-search" placeholder="ค้นหา module..." autocomplete="off">
+          <button class="search-clear-btn" id="search-clear" style="display:none" title="ล้างการค้นหา"><i data-icon="x"></i></button>
+        </div>
+        <div class="admin-tabs" id="admin-tabs">
+          <button class="admin-tab active" data-cat="all">All <span class="tab-count" id="cnt-all">34</span></button>
+          <button class="admin-tab" data-cat="team"><i data-icon="users"></i> Team <span class="tab-count">6</span></button>
+          <button class="admin-tab" data-cat="board"><i data-icon="clipboard"></i> Content <span class="tab-count">8</span></button>
+          <button class="admin-tab" data-cat="learning"><i data-icon="graduation-cap"></i> Learning <span class="tab-count">3</span></button>
+          <button class="admin-tab" data-cat="integrations"><i data-icon="plug"></i> Integrations <span class="tab-count">4</span></button>
+          <button class="admin-tab" data-cat="operations"><i data-icon="settings"></i> Operations <span class="tab-count">7</span></button>
+          <button class="admin-tab" data-cat="system"><i data-icon="shield"></i> System <span class="tab-count">5</span></button>
+          <button class="admin-tab" data-cat="platform"><i data-icon="zap"></i> Platform <span class="tab-count">1</span></button>
+        </div>
+        <span class="filter-results" id="filter-results" style="display:none"></span>
+      </div>
+
+      <!-- ── Section Groups ── -->
+      <div id="sections-container">
+
+        <!-- ── TEAM ── -->
+        <div class="section-group" data-cat="team" style="--sg-color:#f97316">
+          <div class="section-group-header">
+            <div class="section-group-icon" style="--sg-color:#f97316"><i data-icon="users"></i></div>
+            <div class="section-group-info">
+              <div class="section-group-title">Team</div>
+              <div class="section-group-sub">User management · Scheduling · Leave & Announcements</div>
+            </div>
+            <div class="section-group-count">6 modules</div>
+          </div>
+          <div class="section-group-body">
+            <div class="section-grid">
+
+              <a href="./users.html" class="section-card" style="--sc-color:#f97316">
+                <div class="section-icon"><i data-icon="users"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Users</div>
+                  <div class="section-desc">เพิ่ม / แก้ไข / ลบ Users · Reset password · กำหนด Role</div>
+                  <div class="section-badge">Users</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./schedule.html" class="section-card" style="--sc-color:#06b6d4">
+                <div class="section-icon"><i data-icon="calendar"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Schedule</div>
+                  <div class="section-desc">ตาราง Shift ทีม · On-call · WFH · TDPK รายสัปดาห์</div>
+                  <div class="section-badge">Schedule</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./holiday-plans.html" class="section-card" style="--sc-color:#f59e0b">
+                <div class="section-icon"><i data-icon="calendar"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Holiday Plans</div>
+                  <div class="section-desc">ภาพรวมแผนวันหยุดล่วงหน้าทั้งทีม · toggle แต่ละคนได้</div>
+                  <div class="section-badge">Holiday Plans</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./leave-approval.html" class="section-card" style="--sc-color:#10b981">
+                <div class="section-icon"><i data-icon="umbrella-beach"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Leave Management</div>
+                  <div class="section-desc">อนุมัติ / ปฏิเสธ คำขอลา · ดูสรุปโควต้าทีม</div>
+                  <div class="section-badge">Leave</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./announcements.html" class="section-card" style="--sc-color:#f59e0b">
+                <div class="section-icon"><i data-icon="megaphone"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Announcements</div>
+                  <div class="section-desc">ประกาศข่าวสาร · แสดงบน Dashboard ทุก user</div>
+                  <div class="section-badge">Announcements</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./requests.html" class="section-card" style="--sc-color:#8b5cf6">
+                <div class="section-icon"><i data-icon="edit"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Requests</div>
+                  <div class="section-desc">Feature requests · Bug reports จากผู้ใช้งาน</div>
+                  <div class="section-badge">Requests</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ── BOARD & CONTENT ── -->
+        <div class="section-group" data-cat="board" style="--sg-color:#3b82f6">
+          <div class="section-group-header">
+            <div class="section-group-icon" style="--sg-color:#3b82f6"><i data-icon="clipboard"></i></div>
+            <div class="section-group-info">
+              <div class="section-group-title">Board &amp; Content</div>
+              <div class="section-group-sub">Posts · Templates · Knowledge · Reports · Links</div>
+            </div>
+            <div class="section-group-count">8 modules</div>
+          </div>
+          <div class="section-group-body">
+            <div class="section-grid">
+
+              <a href="./board.html" class="section-card" style="--sc-color:#3b82f6">
+                <div class="section-icon">◫</div>
+                <div class="section-body">
+                  <div class="section-name">Board</div>
+                  <div class="section-desc">จัดการโพสต์ทั้งหมด · Pin / Unpin · เปลี่ยน Status</div>
+                  <div class="section-badge">Board</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./templates.html" class="section-card" data-feature="jira-templates" style="--sc-color:#f59e0b">
+                <div class="section-icon"><i data-icon="zap"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Jira Templates</div>
+                  <div class="section-desc">Template สร้าง Jira Ticket พร้อม field สำเร็จรูป</div>
+                  <div class="section-badge">Jira Templates</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./knowledge-base.html" class="section-card" data-feature="team-docs" data-team="sm" style="--sc-color:#6366f1">
+                <div class="section-icon"><i data-icon="book-open"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Knowledge Base</div>
+                  <div class="section-desc">คลังความรู้ทีม · คู่มือ · วิธีแก้ปัญหาที่พบบ่อย</div>
+                  <div class="section-badge">Knowledge Base</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./weekly-report.html" class="section-card" data-feature="weekly-report" style="--sc-color:#10b981">
+                <div class="section-icon"><i data-icon="bar-chart"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Weekly Report</div>
+                  <div class="section-desc">รายงานประจำสัปดาห์ · Incidents · Tasks · Highlights</div>
+                  <div class="section-badge">Weekly Report</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./sheets.html" class="section-card" data-feature="sheets" style="--sc-color:#22c55e">
+                <div class="section-icon">≡</div>
+                <div class="section-body">
+                  <div class="section-name">Docs &amp; Sheets</div>
+                  <div class="section-desc">Google Sheets · Grafana · DataDog embeds ทีม</div>
+                  <div class="section-badge">Docs</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./links.html" class="section-card" data-feature="links" style="--sc-color:#8b5cf6">
+                <div class="section-icon"><i data-icon="link"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Links</div>
+                  <div class="section-desc">Quick links · Monitoring · Test · Batch · Report</div>
+                  <div class="section-badge">Links</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./tools.html" class="section-card" style="--sc-color:#22c55e">
+                <div class="section-icon"><i data-icon="plus-circle"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Sidebar Tools</div>
+                  <div class="section-desc">Jira · Confluence · External tools แสดงใน Sidebar</div>
+                  <div class="section-badge">Sidebar Tools</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./ops-runbook.html" class="section-card" data-feature="team-docs" data-team="sm" style="--sc-color:#94a3b8">
+                <div class="section-icon"><i data-icon="book-open"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Ops Runbook</div>
+                  <div class="section-desc">Runbook · SOP · ขั้นตอนปฏิบัติงาน Operations</div>
+                  <div class="section-badge">Ops Runbook</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ── LEARNING & ONBOARDING ── -->
+        <div class="section-group" data-cat="learning" style="--sg-color:#a78bfa">
+          <div class="section-group-header">
+            <div class="section-group-icon" style="--sg-color:#a78bfa"><i data-icon="graduation-cap"></i></div>
+            <div class="section-group-info">
+              <div class="section-group-title">Learning &amp; Onboarding</div>
+              <div class="section-group-sub">Courses · Exams · Team onboarding portal</div>
+            </div>
+            <div class="section-group-count">3 modules</div>
+          </div>
+          <div class="section-group-body">
+            <div class="section-grid">
+
+              <a href="./courses.html" class="section-card" style="--sc-color:#f26419">
+                <div class="section-icon"><i data-icon="graduation-cap"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Courses</div>
+                  <div class="section-desc">คอร์สเรียน · phases · lessons · quiz สำหรับพนักงานใหม่</div>
+                  <div class="section-badge">Courses</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./exams.html" class="section-card" style="--sc-color:#ef4444">
+                <div class="section-icon"><i data-icon="edit"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Exams</div>
+                  <div class="section-desc">ข้อสอบประจำปี · question pool · security &amp; anti-cheat</div>
+                  <div class="section-badge">Exams</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./onboarding.html" class="section-card" data-feature="onboarding" style="--sc-color:#06b6d4">
+                <div class="section-icon"><i data-icon="compass"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Onboarding</div>
+                  <div class="section-desc">Team onboarding portal · chapters · tasks · notebook</div>
+                  <div class="section-badge">Onboarding</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ── INTEGRATIONS ── -->
+        <div class="section-group" data-cat="integrations" data-features="jira-templates jenkins notifications inbox" style="--sg-color:#06b6d4">
+          <div class="section-group-header">
+            <div class="section-group-icon" style="--sg-color:#06b6d4"><i data-icon="plug"></i></div>
+            <div class="section-group-info">
+              <div class="section-group-title">Integrations</div>
+              <div class="section-group-sub">Jira · Jenkins · Mail · On-Call webhook</div>
+            </div>
+            <div class="section-group-count">4 modules</div>
+          </div>
+          <div class="section-group-body">
+            <div class="section-grid">
+
+              <a href="./jira-config.html" class="section-card" data-feature="jira-templates" style="--sc-color:#06b6d4">
+                <div class="section-icon">◈</div>
+                <div class="section-body">
+                  <div class="section-name">Jira Config</div>
+                  <div class="section-desc">Service Types · Email mapping · Issue Types · Custom fields</div>
+                  <div class="section-badge">Jira Config</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./jenkins-servers.html" class="section-card" data-feature="jenkins" style="--sc-color:#ef4444">
+                <div class="section-icon">⊞</div>
+                <div class="section-body">
+                  <div class="section-name">Jenkins Servers</div>
+                  <div class="section-desc">Jenkins credentials · Token &amp; Cookie auth · Pipeline health</div>
+                  <div class="section-badge">Jenkins</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./mail-config.html" class="section-card" data-feature="mail" style="--sc-color:#3b82f6">
+                <div class="section-icon"><i data-icon="mail"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Mail Config</div>
+                  <div class="section-desc">SMTP · Global CC · Email branding · Signature</div>
+                  <div class="section-badge">Mail Config</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./email-noti.html" class="section-card" data-feature="notifications" style="--sc-color:#f97316">
+                <div class="section-icon"><i data-icon="megaphone"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Email Notification</div>
+                  <div class="section-desc">ส่งเมลแจ้งคอร์ส / ข้อสอบ / ประกาศ ให้ทีมทั้งหมด</div>
+                  <div class="section-badge">Email Noti</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./mail-logs.html" class="section-card" data-feature="mail" style="--sc-color:#64748b">
+                <div class="section-icon"><i data-icon="clipboard"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Mail Logs</div>
+                  <div class="section-desc">ประวัติเมลที่ส่งออก · สถานะ sent / failed · ค้นย้อนหลัง</div>
+                  <div class="section-badge">Mail Logs</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./n8n-oncall-config.html" class="section-card" data-team="sm" style="--sc-color:#10b981">
+                <div class="section-icon"><i data-icon="phone"></i></div>
+                <div class="section-body">
+                  <div class="section-name">On-Call Config</div>
+                  <div class="section-desc">n8n Webhook · ดึงข้อมูล On-call จากทีมภายนอก</div>
+                  <div class="section-badge">On-Call</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ── OPERATIONS ── -->
+        <div class="section-group" data-cat="operations" data-features="batch-monitor ma-services test-service alert-monitor sms-gateway syncup monitoring service-severity" style="--sg-color:#10b981">
+          <div class="section-group-header">
+            <div class="section-group-icon" style="--sg-color:#10b981"><i data-icon="settings"></i></div>
+            <div class="section-group-info">
+              <div class="section-group-title">Operations</div>
+              <div class="section-group-sub">MA · Test · Batch · Notifications · Monitoring · Severity</div>
+            </div>
+            <div class="section-group-count">7 modules</div>
+          </div>
+          <div class="section-group-body">
+            <div class="section-grid">
+
+              <a href="./ma-config.html" class="section-card" data-feature="ma-services" style="--sc-color:#ec4899">
+                <div class="section-icon"><i data-icon="zap"></i></div>
+                <div class="section-body">
+                  <div class="section-name">MA Config</div>
+                  <div class="section-desc">Modules · Use-cases · Cutoff services สำหรับ MA</div>
+                  <div class="section-badge">MA Config</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./test-service.html" class="section-card" data-feature="test-service" style="--sc-color:#f26419">
+                <div class="section-icon"><i data-icon="test-tube"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Test Service</div>
+                  <div class="section-desc">Service groups · Reconcile credentials · Test records</div>
+                  <div class="section-badge">Test Service</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./batch-monitor.html" class="section-card" data-feature="batch-monitor" style="--sc-color:#2563eb">
+                <div class="section-icon">⊞</div>
+                <div class="section-body">
+                  <div class="section-name">Batch Monitor</div>
+                  <div class="section-desc">Batch daily records · ลบ / ล้าง / Export CSV</div>
+                  <div class="section-badge">Batch Monitor</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./alert-monitor-config.html" class="section-card" data-feature="alert-monitor" style="--sc-color:#f26419">
+                <div class="section-icon"><i data-icon="bell"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Alert Monitor</div>
+                  <div class="section-desc">JSM Ops alerts · classification rules · sync backfill</div>
+                  <div class="section-badge">Alert Monitor</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./scheduled-noti.html" class="section-card" data-feature="notifications" style="--sc-color:#f59e0b">
+                <div class="section-icon"><i data-icon="bell"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Notifications</div>
+                  <div class="section-desc">ตั้งเวลา popup แจ้งเตือนอัตโนมัติทุก user</div>
+                  <div class="section-badge">Notifications</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./pw-schedule.html" class="section-card" data-team="sm" style="--sc-color:#8b5cf6">
+                <div class="section-icon">◐</div>
+                <div class="section-body">
+                  <div class="section-name">PW Schedule</div>
+                  <div class="section-desc">Password rotation schedule · ตารางเปลี่ยนรหัสผ่าน</div>
+                  <div class="section-badge">PW Schedule</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./system-monitor.html" class="section-card" data-feature="monitoring" style="--sc-color:#06b6d4">
+                <div class="section-icon"><i data-icon="monitor"></i></div>
+                <div class="section-body">
+                  <div class="section-name">System Monitor</div>
+                  <div class="section-desc">Real-time server metrics · CPU · Memory · Uptime</div>
+                  <div class="section-badge">System Monitor</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./service-severity.html" class="section-card" data-feature="service-severity" style="--sc-color:#dc2626">
+                <div class="section-icon"><i data-icon="shield"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Service Severity</div>
+                  <div class="section-desc">Priority registry P1/P2/P3 · Restart Monitor severity mapping</div>
+                  <div class="section-badge">Service Severity</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SYSTEM ── -->
+        <div class="section-group" data-cat="system" style="--sg-color:#64748b">
+          <div class="section-group-header">
+            <div class="section-group-icon" style="--sg-color:#64748b"><i data-icon="shield"></i></div>
+            <div class="section-group-info">
+              <div class="section-group-title">System</div>
+              <div class="section-group-sub">Settings · Menu · Backup · Analytics · Trash</div>
+            </div>
+            <div class="section-group-count">5 modules</div>
+          </div>
+          <div class="section-group-body">
+            <div class="section-grid">
+
+              <a href="./system-settings.html" class="section-card" data-team="sm" style="--sc-color:#64748b">
+                <div class="section-icon"><i data-icon="settings"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Settings</div>
+                  <div class="section-desc">Session timeout · Rate limits · System-wide config</div>
+                  <div class="section-badge">Settings</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./menu-permissions.html" class="section-card" data-team="sm" style="--sc-color:#8b5cf6">
+                <div class="section-icon"><i data-icon="shield"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Menu Permissions</div>
+                  <div class="section-desc">Role × menu matrix — sidebar access ต่อ role</div>
+                  <div class="section-badge">Menu Access</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./backup.html" class="section-card" data-team="sm" style="--sc-color:#22c55e">
+                <div class="section-icon"><i data-icon="save"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Backup</div>
+                  <div class="section-desc">สำรองข้อมูล · ดาวน์โหลด · อัตโนมัติทุก 7 วัน</div>
+                  <div class="section-badge">Backup</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./analytics.html" class="section-card" data-feature="analytics" style="--sc-color:#10b981">
+                <div class="section-icon"><i data-icon="trending-up"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Analytics</div>
+                  <div class="section-desc">ติดตามการใช้งาน · Top features · User trends</div>
+                  <div class="section-badge">Analytics</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./logs.html" class="section-card" data-role="super_admin" style="--sc-color:#94a3b8">
+                <div class="section-icon">◈</div>
+                <div class="section-body">
+                  <div class="section-name">Audit Log</div>
+                  <div class="section-desc">Activity audit trail · Security events · API logs</div>
+                  <div class="section-badge">Logs</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+              <a href="./trash.html" class="section-card" data-team="sm" style="--sc-color:#a855f7">
+                <div class="section-icon"><i data-icon="trash"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Trash</div>
+                  <div class="section-desc">โพสต์ / comment ที่ถูกลบ · กู้คืน · ลบถาวร</div>
+                  <div class="section-badge" id="trash-badge">Trash</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ── PLATFORM (super_admin only) ── -->
+        <div class="section-group" data-cat="platform" style="--sg-color:#f26419">
+          <div class="section-group-header">
+            <div class="section-group-icon" style="--sg-color:#f26419"><i data-icon="zap"></i></div>
+            <div class="section-group-info">
+              <div class="section-group-title">Platform</div>
+              <div class="section-group-sub">Super Admin — เครื่องมือระดับ platform ที่กระทบทุก team</div>
+            </div>
+            <div class="section-group-count">1 module</div>
+          </div>
+          <div class="section-group-body">
+            <div class="section-grid">
+
+              <a href="./maintenance.html" class="section-card" data-role="super_admin" style="--sc-color:#f26419">
+                <div class="section-icon"><i data-icon="wrench"></i></div>
+                <div class="section-body">
+                  <div class="section-name">Maintenance Mode</div>
+                  <div class="section-desc">Global MA · Page MA · Tool MA — Real-time · platform-wide</div>
+                  <div class="section-badge" id="ma-badge">Maintenance</div>
+                </div>
+                <div class="section-arrow">→</div>
+              </a>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty search state -->
+        <div class="search-empty-state" id="search-empty">
+          <div class="search-empty-icon"><i data-icon="search"></i></div>
+          <div>ไม่พบ module ที่ตรงกับ "<span id="search-query-label"></span>"</div>
+        </div>
+
+      </div>
+
+      <!-- ── Integration Health ── -->
+      <div class="health-card">
+        <div class="health-header">
+          <div class="health-header-left">
+            <div style="width:30px;height:30px;border-radius:8px;background:rgba(34,197,94,.1);display:flex;align-items:center;justify-content:center;font-size:15px"><i data-icon="plug"></i></div>
+            <div>
+              <div class="health-title">Integration Health</div>
+              <div class="health-sub">Jira & Jenkins connectivity</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="health-overall" style="font-size:10px;color:var(--text-muted)">Checking...</span>
+            <button class="btn btn-ghost btn-sm" onclick="loadHealth(true)" style="font-size:10.5px">↺ Refresh</button>
+          </div>
+        </div>
+        <div id="health-grid" class="health-grid">
+          <div class="health-empty">กำลังตรวจสอบ...</div>
+        </div>
+        <div class="health-cache-note" id="health-cache-note"></div>
+      </div>
+
+      <!-- ── System Info ── -->
+      <div class="sysinfo-card">
+        <div class="sysinfo-header">
+          <div class="sysinfo-title">
+            <span class="sysinfo-title-dot"></span>
+            System Information
+          </div>
+          <span id="sysinfo-time" style="font-size:10px;color:var(--text-muted)"></span>
+        </div>
+        <div class="sysinfo-body">
+          <div class="sysinfo-row">
+            <span class="sysinfo-key">Project</span>
+            <span class="sysinfo-val">SOM-Portal</span>
+          </div>
+          <div class="sysinfo-row">
+            <span class="sysinfo-key">Jira Project</span>
+            <span class="sysinfo-val">SMC — <a href="https://truemoney.atlassian.net/jira/software/c/projects/SMC/boards/1591" target="_blank">truemoney.atlassian.net ↗</a></span>
+          </div>
+          <div class="sysinfo-row">
+            <span class="sysinfo-key">Backend</span>
+            <span class="sysinfo-val">PHP + JSON flat files (MAMP)</span>
+          </div>
+          <div class="sysinfo-row">
+            <span class="sysinfo-key">Jira Email</span>
+            <span class="sysinfo-val">warapon.lea@ascendcorp.com</span>
+          </div>
+          <div class="sysinfo-row">
+            <span class="sysinfo-key">Status</span>
+            <span class="sysinfo-val"><span class="status-pill"><span class="status-dot"></span> All systems operational</span></span>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/index/index.js"></script>
+
+</body>
+</html>

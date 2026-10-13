@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About SOM Team</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <script src="assets/js/theme.js"></script>
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <style>
+    /* ── Page tokens ──────────────────────────────────────────────────────── */
+    .ab-page { --ab-orange: var(--orange, #F26419); --ab-radius: 14px; }
+
+    /* ── Hero ─────────────────────────────────────────────────────────────── */
+    .ab-hero {
+      position: relative; overflow: hidden;
+      padding: 56px 32px 48px;
+      border-radius: var(--ab-radius); margin-bottom: 32px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+    }
+    .ab-hero::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 80% at 10% 40%,
+        color-mix(in srgb,var(--ab-orange) 10%,transparent),
+        transparent 60%),
+        radial-gradient(ellipse 50% 60% at 90% 60%,
+        color-mix(in srgb,#6366f1 8%,transparent),
+        transparent 55%);
+      pointer-events: none;
+    }
+    .ab-hero-eyebrow {
+      font-size: 10.5px; font-weight: 800; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--ab-orange);
+      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .ab-hero h1 {
+      font-size: clamp(28px, 4vw, 42px); font-weight: 900;
+      color: var(--text); line-height: 1.1; letter-spacing: -.03em;
+      margin-bottom: 14px;
+    }
+    .ab-hero h1 span { color: var(--ab-orange); }
+    .ab-hero-sub {
+      font-size: 14px; color: var(--text-muted); line-height: 1.65;
+      max-width: 580px;
+    }
+    .ab-hero-badge-row {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px;
+    }
+    .ab-hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 700;
+      padding: 4px 12px; border-radius: 999px;
+      background: color-mix(in srgb, var(--ab-orange) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--ab-orange) 22%, transparent);
+      color: var(--ab-orange);
+    }
+
+    /* ── Section heading ──────────────────────────────────────────────────── */
+    .ab-section { margin-bottom: 36px; }
+    .ab-section-head {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px;
+    }
+    .ab-section-icon {
+      width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: color-mix(in srgb, var(--ab-orange) 12%, transparent);
+      color: var(--ab-orange);
+    }
+    .ab-section-title {
+      font-size: 11px; font-weight: 800; letter-spacing: .09em;
+      text-transform: uppercase; color: var(--text-muted);
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════
+       ORG CHART — Design A: Tree + Side Panel
+    ══════════════════════════════════════════════════════════════════════ */
+
+    /* Outer flex: tree grows, side panel opens with width transition */
+    .org-outer {
+      display: flex; gap: 0; align-items: start;
+    }
+
+    /* Tree fills remaining space */
+    .org-tree {
+      flex: 1 1 0; min-width: 0;
+      display: flex; flex-direction: column; align-items: stretch;
+      overflow-x: auto; padding-bottom: 4px;
+    }
+    .org-tree-inner {
+      display: flex; flex-direction: column; align-items: center;
+      /* no min-width — let it flex naturally inside the tree */
+    }
+
+    /* ── Manager row — Minimal Noir ── */
+    .org-managers { display: flex; gap: 24px; justify-content: center; margin-bottom: 0; }
+    .org-manager-card {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      background: var(--bg-card);
+      border: 1.5px solid color-mix(in srgb, var(--border) 100%, var(--text) 8%);
+      border-radius: 14px; padding: 22px 26px; min-width: 160px;
+      position: relative; cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .org-manager-card:hover {
+      border-color: color-mix(in srgb,var(--ab-orange) 55%,var(--border));
+      box-shadow: 0 4px 16px rgba(0,0,0,.1);
+    }
+    /* No ::after — SVG draws all connector lines */
+    .org-manager-card::after { display: none; }
+
+    .org-manager-avatar {
+      width: 52px; height: 52px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+      background: var(--bg);
+      border: 1.5px solid color-mix(in srgb, var(--border) 100%, var(--text) 12%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 900; color: var(--text-muted);
+    }
+    .org-manager-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .org-manager-name {
+      font-size: 12.5px; font-weight: 700; color: var(--text);
+      text-align: center; line-height: 1.35;
+    }
+    .org-manager-nick { font-size: 10.5px; color: var(--text-muted); text-align: center; }
+    .org-manager-badge {
+      font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+      color: var(--text-muted);
+    }
+
+    /* ── Connector (drawn by SVG JS) ── */
+    #org-svg { pointer-events: none; overflow: visible; }
+
+    /* ── Teams row — 64px gap so hairlines are visible ── */
+    .org-teams-row {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      justify-content: center; width: 100%;
+      padding-top: 64px; position: relative;
+    }
+    /* No ::before tick — SVG handles all lines */
+    .org-team-card::before { display: none; }
+
+    .org-team-card {
+      background: var(--bg-card);
+      border: 1.5px solid color-mix(in srgb, var(--border) 100%, var(--text) 8%);
+      border-radius: 12px; padding: 16px 14px;
+      min-width: 120px; flex: 1 1 120px; max-width: 176px;
+      cursor: pointer; position: relative; user-select: none;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      transition: border-color .2s, transform .2s, box-shadow .2s;
+    }
+    /* Left accent bar slides in on hover */
+    .org-team-card::after {
+      content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+      width: 2.5px; height: 0;
+      background: var(--team-c,#6366f1); border-radius: 2px;
+      transition: height .25s cubic-bezier(.4,0,.2,1);
+    }
+    .org-team-card:hover::after { height: 44%; }
+    .org-team-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,.1);
+      border-color: color-mix(in srgb,var(--team-c,#6366f1) 45%,var(--border));
+    }
+    .org-team-card.active {
+      border-color: color-mix(in srgb,var(--team-c,#6366f1) 65%,var(--border));
+      box-shadow: 0 0 0 3px color-mix(in srgb,var(--team-c,#6366f1) 12%,transparent);
+    }
+    .org-team-card.active::after { height: 44%; }
+
+    .org-team-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--team-c,#6366f1); opacity: .75;
+      margin-bottom: 10px;
+    }
+    .org-team-name { font-size: 12.5px; font-weight: 800; color: var(--text); margin-bottom: 2px; white-space: nowrap; }
+    .org-team-slug { font-family: monospace; font-size: 9.5px; color: var(--text-muted); margin-bottom: 10px; }
+    .org-team-count { font-size: 10px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+
+    .org-avatar-strip { display: flex; margin-top: 10px; gap: 2px; }
+    .org-avatar-strip .oa {
+      width: 20px; height: 20px; border-radius: 4px;
+      background: var(--bg); overflow: hidden; flex-shrink: 0;
+      font-size: 6.5px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; color: var(--text-muted);
+    }
+    .org-avatar-strip .oa img { width: 100%; height: 100%; object-fit: cover; }
+    .org-avatar-strip .oa-more { color: var(--text-muted); }
+
+    /* ════════════════════════════════════════════
+       SIDE PANEL — fixed height, sticky, no layout shift
+    ════════════════════════════════════════════ */
+    :root { --panel-h: 560px; }
+
+    .org-side-panel {
+      /* Width transition: 0 → 380px */
+      max-width: 0; overflow: hidden; flex-shrink: 0;
+      /* sticky so scrolling doesn't make it disappear */
+      position: sticky; top: 20px; align-self: flex-start;
+      transition: max-width .42s cubic-bezier(.4,0,.2,1),
+                  margin-left .42s cubic-bezier(.4,0,.2,1),
+                  opacity .3s ease;
+      opacity: 0;
+    }
+    .org-side-panel.open { max-width: 380px; margin-left: 16px; opacity: 1; }
+    @media (max-width: 960px) {
+      .org-side-panel { position: static; }
+      .org-side-panel.open { max-width: 100%; margin-left: 0; margin-top: 16px; }
+    }
+
+    /* Inner — fixed total height = no layout shift below */
+    .org-side-inner {
+      width: 380px; height: var(--panel-h);
+      display: flex; flex-direction: column;
+      background: var(--bg-card);
+      border: 1.5px solid var(--team-c, #6366f1);
+      border-radius: 18px; overflow: hidden;
+      transform: translateX(16px) scale(.98);
+      transition: transform .42s cubic-bezier(.4,0,.2,1) .04s,
+                  border-color .28s ease;
+      pointer-events: none;
+    }
+    .org-side-panel.open .org-side-inner {
+      transform: translateX(0) scale(1); pointer-events: all;
+    }
+
+    /* Top accent bar */
+    .org-side-accent { height: 3px; flex-shrink: 0; background: var(--team-c,#6366f1); transition: background .3s; }
+
+    /* Header — fixed height */
+    .org-side-header {
+      flex-shrink: 0; padding: 14px 16px 12px;
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--team-c,#6366f1) 5%, var(--bg-card));
+      transition: background .3s;
+    }
+    .org-side-team-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--team-c); flex-shrink: 0; margin-top: 5px; transition: background .3s; }
+    .org-side-name { font-size: 15px; font-weight: 900; color: var(--text); line-height: 1.25; }
+    .org-side-slug { font-family: monospace; font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .org-side-close {
+      background: none; border: 1px solid var(--border); border-radius: 7px;
+      padding: 3px 9px; font-size: 11px; font-weight: 700;
+      color: var(--text-muted); cursor: pointer; flex-shrink: 0;
+      transition: color .15s, border-color .15s, background .15s;
+    }
+    .org-side-close:hover { color: var(--text); border-color: var(--text-muted); background: var(--bg); }
+
+    /* Desc + count — fixed, part of header zone */
+    .org-side-meta { flex-shrink: 0; border-bottom: 1px solid var(--border); }
+    .org-side-desc { padding: 10px 16px 8px; font-size: 11px; color: var(--text-muted); line-height: 1.6; }
+    .org-side-count {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 10px; font-weight: 700;
+      color: var(--team-c,#6366f1);
+      background: color-mix(in srgb, var(--team-c,#6366f1) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--team-c,#6366f1) 22%, transparent);
+      padding: 2px 10px; border-radius: 999px;
+      margin: 0 16px 10px; transition: all .3s;
+    }
+
+    /* ── Two-view slider — both views are absolute, container is fixed height ── */
+    .org-side-views {
+      position: relative; flex: 1; overflow: hidden;
+      /* flex:1 = fills remaining panel height exactly */
+    }
+    /* Both views absolutely positioned — height always = parent = no shift */
+    .org-side-view {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      transition: transform .38s cubic-bezier(.35, 0, .25, 1),
+                  opacity .3s ease;
+      will-change: transform;
+    }
+    /* View 1: team member grid — starts visible */
+    #org-view-team  { transform: translateX(0);    opacity: 1; }
+    #org-view-team.slide-out  { transform: translateX(-100%); opacity: 0; pointer-events: none; }
+    /* View 2: member profile — starts off-screen right */
+    #org-view-member { transform: translateX(100%); opacity: 0; pointer-events: none; overflow-y: auto; }
+    #org-view-member.slide-in { transform: translateX(0);    opacity: 1; pointer-events: all; }
+
+    /* Member grid — scrollable within the fixed view height */
+    .org-side-members { padding: 12px 12px 16px; overflow-y: auto; height: 100%; }
+    .org-member-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px;
+    }
+    .org-member-card {
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+      padding: 14px 8px 12px; border-radius: 12px; gap: 6px;
+      background: var(--bg); border: 1.5px solid var(--border);
+      cursor: pointer;
+      transition: border-color .18s, transform .2s, box-shadow .2s, background .18s;
+      animation: memberFadeIn .28s ease both;
+    }
+    @keyframes memberFadeIn {
+      from { opacity: 0; transform: translateY(10px) scale(.96); }
+      to   { opacity: 1; transform: none; }
+    }
+    .org-member-card:hover {
+      border-color: color-mix(in srgb, var(--team-c,#6366f1) 60%, var(--border));
+      background: color-mix(in srgb, var(--team-c,#6366f1) 3%, var(--bg));
+      transform: translateY(-2px);
+      box-shadow: 0 5px 18px rgba(0,0,0,.13);
+    }
+    .org-member-av {
+      width: 46px; height: 46px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+      border: 2px solid color-mix(in srgb, var(--team-c,#6366f1) 28%, var(--bg-card));
+      background: var(--bg-card);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; color: var(--text-muted);
+    }
+    .org-member-av img { width: 100%; height: 100%; object-fit: cover; }
+    .org-member-name { font-size: 10px; font-weight: 700; color: var(--text); line-height: 1.35; }
+    .org-member-nick { font-size: 9px; color: var(--text-muted); }
+    .org-member-role {
+      font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+      padding: 2px 7px; border-radius: 999px; margin-top: 1px;
+      background: color-mix(in srgb, var(--team-c,#6366f1) 10%, transparent);
+      color: var(--team-c,#6366f1);
+      border: 1px solid color-mix(in srgb, var(--team-c,#6366f1) 22%, transparent);
+    }
+
+    /* ── Member profile view ── */
+    .org-profile-wrap { padding: 20px 18px 24px; }
+    .org-profile-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      background: none; border: 1px solid var(--border); border-radius: 8px;
+      padding: 4px 12px; cursor: pointer; margin-bottom: 20px;
+      transition: color .15s, border-color .15s, background .15s;
+    }
+    .org-profile-back:hover { color: var(--text); border-color: var(--text-muted); background: var(--bg); }
+
+    .org-profile-av-wrap { text-align: center; margin-bottom: 18px; }
+    .org-profile-av {
+      width: 88px; height: 88px; border-radius: 50%; overflow: hidden;
+      margin: 0 auto;
+      border: 3px solid color-mix(in srgb, var(--team-c,#6366f1) 40%, var(--border));
+      background: color-mix(in srgb, var(--team-c,#6366f1) 10%, var(--bg-card));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; font-weight: 900; color: var(--team-c,#6366f1);
+      box-shadow: 0 0 0 5px color-mix(in srgb, var(--team-c,#6366f1) 10%, transparent);
+    }
+    .org-profile-av img { width: 100%; height: 100%; object-fit: cover; }
+    .org-profile-name { font-size: 17px; font-weight: 900; color: var(--text); margin: 10px 0 4px; line-height: 1.25; text-align: center; }
+    .org-profile-nick { font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 12px; }
+    .org-profile-badges { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+    .org-profile-role-badge {
+      font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em;
+      padding: 3px 10px; border-radius: 999px;
+      background: color-mix(in srgb, var(--team-c,#6366f1) 12%, transparent);
+      color: var(--team-c,#6366f1);
+      border: 1px solid color-mix(in srgb, var(--team-c,#6366f1) 25%, transparent);
+    }
+    .org-profile-team-badge {
+      font-size: 9.5px; font-weight: 800; letter-spacing: .05em;
+      padding: 3px 10px; border-radius: 999px;
+      background: var(--bg); color: var(--text-muted);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .org-profile-team-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+    .org-profile-rows { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .org-profile-row {
+      display: flex; align-items: center; padding: 11px 14px; gap: 10px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      transition: background .15s;
+    }
+    .org-profile-row:last-child { border-bottom: none; }
+    .org-profile-row:hover { background: var(--bg-card); }
+    .org-profile-row-icon {
+      width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+      background: color-mix(in srgb, var(--team-c,#6366f1) 10%, transparent);
+      color: var(--team-c,#6366f1);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .org-profile-row-label { font-size: 9.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+    .org-profile-row-val { font-size: 12.5px; font-weight: 700; color: var(--text); margin-top: 1px; }
+
+    /* ── Mission / Vision ─────────────────────────────────────────────────── */
+    .mv-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    @media (max-width: 640px) { .mv-grid { grid-template-columns: 1fr; } }
+    .mv-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--ab-radius); padding: 24px;
+    }
+    .mv-label {
+      font-size: 10px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .1em; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .mv-label.mission { color: var(--ab-orange); }
+    .mv-label.vision  { color: #6366f1; }
+    .mv-text { font-size: 13.5px; line-height: 1.7; color: var(--text); }
+
+    /* ── Services grid ────────────────────────────────────────────────────── */
+    .services-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    .service-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--ab-radius); padding: 20px;
+      display: flex; gap: 14px; align-items: flex-start;
+      transition: border-color .15s, transform .15s;
+    }
+    .service-card:hover { border-color: color-mix(in srgb, var(--ab-orange) 30%, var(--border)); transform: translateY(-1px); }
+    .service-icon {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: color-mix(in srgb, var(--ab-orange) 10%, transparent);
+      color: var(--ab-orange);
+    }
+    .service-body { min-width: 0; }
+    .service-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .service-desc  { font-size: 11.5px; color: var(--text-muted); line-height: 1.6; }
+
+    /* ── Contacts ─────────────────────────────────────────────────────────── */
+    .contacts-row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .contact-card {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--ab-radius); padding: 14px 20px; flex: 1; min-width: 200px;
+    }
+    .contact-icon {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: color-mix(in srgb, #6366f1 10%, transparent);
+      color: #6366f1;
+    }
+    .contact-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); }
+    .contact-value { font-size: 13px; font-weight: 700; color: var(--text); margin-top: 2px; }
+
+    /* ── Skeleton ─────────────────────────────────────────────────────────── */
+    .ab-skeleton { border-radius: 8px; background: var(--bg-card); animation: ab-pulse 1.5s ease-in-out infinite; }
+    @keyframes ab-pulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+
+    /* ── Admin edit button ────────────────────────────────────────────────── */
+    #edit-fab {
+      position: fixed; bottom: 24px; right: 24px; z-index: 100;
+      display: none;
+    }
+
+    /* ── Leader card styling ──────────────────────────────────────────────── */
+    .org-member-card.is-leader {
+      border-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(245,158,11,.08), transparent);
+      position: relative;
+    }
+    .org-leader-badge {
+      position: absolute; top: 6px; right: 6px;
+      background: #f59e0b; color: #fff;
+      font-size: 8px; font-weight: 800;
+      padding: 2px 6px; border-radius: 8px;
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+
+    /* ── Leader chip on team card ─────────────────────────────────────────── */
+    .org-team-leader-line {
+      font-size: 9px; color: var(--text-muted); margin-top: 5px;
+      display: flex; align-items: center; gap: 3px;
+    }
+
+    /* ── Manager card clickable ───────────────────────────────────────────── */
+    .org-manager-card.is-clickable {
+      cursor: pointer;
+    }
+    .org-manager-card.is-clickable:hover {
+      border-color: var(--ab-orange);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 28px rgba(0,0,0,.18), 0 0 0 4px color-mix(in srgb,var(--ab-orange) 10%,transparent);
+    }
+
+    /* ── Manager profile modal ────────────────────────────────────────────── */
+    .mgr-modal-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,.45); backdrop-filter: blur(3px);
+      display: flex; align-items: center; justify-content: center;
+      animation: mgrOverlayIn .18s ease both;
+    }
+    @keyframes mgrOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+    .mgr-modal {
+      background: var(--bg-card); border: 1.5px solid var(--border);
+      border-radius: 20px; width: 360px; max-width: calc(100vw - 32px);
+      overflow: hidden;
+      animation: mgrModalIn .22s cubic-bezier(.4,0,.2,1) both;
+    }
+    @keyframes mgrModalIn { from { opacity: 0; transform: translateY(16px) scale(.97); } to { opacity: 1; transform: none; } }
+    .mgr-modal-accent { height: 3px; background: var(--ab-orange); }
+    .mgr-modal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .mgr-modal-title { font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: .07em; }
+    .mgr-modal-close {
+      background: none; border: 1px solid var(--border); border-radius: 7px;
+      padding: 3px 9px; font-size: 11px; font-weight: 700;
+      color: var(--text-muted); cursor: pointer;
+      transition: color .15s, border-color .15s, background .15s;
+    }
+    .mgr-modal-close:hover { color: var(--text); border-color: var(--text-muted); background: var(--bg); }
+    .mgr-modal-body { padding: 20px 20px 24px; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content" id="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="users"></i> About SOM Team</div>
+        <div class="page-sub">Service Operations Management — ทีมดูแลระบบ TrueMoney</div>
+      </div>
+      <div class="topbar-actions">
+        <button id="admin-edit-btn" class="btn btn-outline btn-sm" style="display:none" onclick="openEditPage()">
+          <i data-icon="pencil"></i> Edit Content
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content ab-page" id="ab-main">
+      <!-- ── Hero ──────────────────────────────────────────────────────── -->
+      <div class="ab-hero" id="ab-hero">
+        <div class="ab-hero-eyebrow"><i data-icon="zap"></i> Service Operations Management</div>
+        <h1>About <span>SOM</span> Team</h1>
+        <div class="ab-hero-sub" id="ab-hero-sub">
+          <div class="ab-skeleton" style="height:14px;width:90%;margin-bottom:8px"></div>
+          <div class="ab-skeleton" style="height:14px;width:70%"></div>
+        </div>
+        <div class="ab-hero-badge-row" id="ab-hero-badges"></div>
+      </div>
+
+      <!-- ── Org Chart ──────────────────────────────────────────────────── -->
+      <div class="ab-section">
+        <div class="ab-section-head">
+          <div class="ab-section-icon"><i data-icon="git-branch"></i></div>
+          <div class="ab-section-title">Team Structure</div>
+        </div>
+        <!-- Outer grid: tree left / side panel right -->
+        <div class="org-outer" id="org-outer">
+
+          <!-- Left: Tree -->
+          <div class="org-tree" id="org-tree">
+            <div class="org-tree-inner" id="org-tree-inner">
+              <!-- skeleton -->
+              <div class="org-managers">
+                <div class="ab-skeleton" style="width:162px;height:130px;border-radius:16px"></div>
+                <div class="ab-skeleton" style="width:162px;height:130px;border-radius:16px"></div>
+              </div>
+              <div style="display:flex;gap:10px;justify-content:center;margin-top:64px">
+                <div class="ab-skeleton" style="width:112px;height:120px;border-radius:14px"></div>
+                <div class="ab-skeleton" style="width:112px;height:120px;border-radius:14px"></div>
+                <div class="ab-skeleton" style="width:112px;height:120px;border-radius:14px"></div>
+                <div class="ab-skeleton" style="width:112px;height:120px;border-radius:14px"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Side panel (hidden until team clicked) -->
+          <div class="org-side-panel" id="org-side-panel">
+            <div class="org-side-inner" id="org-side-inner">
+              <div class="org-side-accent" id="org-side-accent"></div>
+
+              <!-- Header (always visible) -->
+              <div class="org-side-header" id="org-side-header">
+                <div style="display:flex;align-items:flex-start;gap:10px;min-width:0">
+                  <div class="org-side-team-dot" id="org-side-dot"></div>
+                  <div>
+                    <div class="org-side-name" id="org-side-name">—</div>
+                    <div class="org-side-slug" id="org-side-slug">—</div>
+                  </div>
+                </div>
+                <button class="org-side-close" onclick="closeOrgPanel()">✕ ปิด</button>
+              </div>
+
+              <!-- Desc + count (always visible, outside the sliding views) -->
+              <div class="org-side-meta">
+                <div class="org-side-desc" id="org-side-desc">—</div>
+                <div class="org-side-count" id="org-side-count"><i data-icon="users"></i> —</div>
+              </div>
+
+              <!-- Two-view slider — fixed height, no layout shift -->
+              <div class="org-side-views" id="org-side-views">
+
+                <!-- View 1: team info + member grid -->
+                <div class="org-side-view" id="org-view-team">
+                  <div class="org-side-members">
+                    <div class="org-member-grid" id="org-member-grid"></div>
+                  </div>
+                </div>
+
+                <!-- View 2: individual member profile -->
+                <div class="org-side-view" id="org-view-member">
+                  <div class="org-profile-wrap" id="org-profile-wrap">
+                    <!-- populated by selectMember() -->
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Mission / Vision ──────────────────────────────────────────── -->
+      <div class="ab-section">
+        <div class="ab-section-head">
+          <div class="ab-section-icon"><i data-icon="target"></i></div>
+          <div class="ab-section-title">Mission &amp; Vision</div>
+        </div>
+        <div class="mv-grid" id="mv-grid">
+          <div class="mv-card"><div class="ab-skeleton" style="height:60px"></div></div>
+          <div class="mv-card"><div class="ab-skeleton" style="height:60px"></div></div>
+        </div>
+      </div>
+
+      <!-- ── Services ──────────────────────────────────────────────────── -->
+      <div class="ab-section">
+        <div class="ab-section-head">
+          <div class="ab-section-icon"><i data-icon="layers"></i></div>
+          <div class="ab-section-title">What We Do</div>
+        </div>
+        <div class="services-grid" id="services-grid">
+          <div class="service-card"><div class="ab-skeleton" style="width:36px;height:36px;border-radius:10px;flex-shrink:0"></div><div style="flex:1"><div class="ab-skeleton" style="height:12px;margin-bottom:8px"></div><div class="ab-skeleton" style="height:36px"></div></div></div>
+          <div class="service-card"><div class="ab-skeleton" style="width:36px;height:36px;border-radius:10px;flex-shrink:0"></div><div style="flex:1"><div class="ab-skeleton" style="height:12px;margin-bottom:8px"></div><div class="ab-skeleton" style="height:36px"></div></div></div>
+          <div class="service-card"><div class="ab-skeleton" style="width:36px;height:36px;border-radius:10px;flex-shrink:0"></div><div style="flex:1"><div class="ab-skeleton" style="height:12px;margin-bottom:8px"></div><div class="ab-skeleton" style="height:36px"></div></div></div>
+        </div>
+      </div>
+
+      <!-- ── Contact ───────────────────────────────────────────────────── -->
+      <div class="ab-section">
+        <div class="ab-section-head">
+          <div class="ab-section-icon"><i data-icon="phone"></i></div>
+          <div class="ab-section-title">Contact</div>
+        </div>
+        <div class="contacts-row" id="contacts-row">
+          <div class="contact-card" style="flex:1"><div class="ab-skeleton" style="height:40px"></div></div>
+          <div class="contact-card" style="flex:1"><div class="ab-skeleton" style="height:40px"></div></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/skeletons.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/layout.js"></script>
+<script>
+Auth.requireAuth();
+Layout.render('about-som');
+
+// Show edit button for admins
+const _u = Auth.getUser();
+if (['sm_admin','dev_sm','super_admin'].includes(_u?.role)) {
+  document.getElementById('admin-edit-btn').style.display = '';
+}
+
+function openEditPage() {
+  window.location.href = 'admin/about-page.html';
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function getInitials(name) {
+  if (!name) return '?';
+  return name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0,2);
+}
+function avatarEl(u, size = 34) {
+  const style = `width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;border:2px solid var(--bg-card);`;
+  if (u.avatar_url)
+    return `<img src="${u.avatar_url}" alt="${escHtml(u.name)}" style="${style}" onerror="this.outerHTML='<span class=\\'org-member-av\\' style=\\'width:${size}px;height:${size}px\\'>${getInitials(u.name)}</span>'">`;
+  return `<span style="${style}background:var(--bg);display:inline-flex;align-items:center;justify-content:center;font-size:${Math.round(size*0.3)}px;font-weight:800;color:var(--text-muted)">${getInitials(u.name)}</span>`;
+}
+const ROLE_LABELS = { sm_admin:'Admin', sm_lead:'Lead', sm_user:'User', dev_sm:'Dev', external:'External' };
+
+// ── Org chart ─ Design A: Tree + Side Panel ─────────────────────────────────
+let _activeSlug = null;
+let _managers   = [];
+
+// Redraw SVG lines when the side panel finishes its open/close transition
+(function _setupPanelTransitionEnd() {
+  const panel = document.getElementById('org-side-panel');
+  if (!panel) return;
+  panel.addEventListener('transitionend', e => {
+    if (e.propertyName === 'max-width') drawOrgLines();
+  });
+})();
+
+// Redraw when theme changes (body class toggles dark/light)
+new MutationObserver(() => drawOrgLines())
+  .observe(document.documentElement, { attributes: true, attributeFilter: ['class','data-theme'] });
+
+function renderOrg(managers, orgTeams) {
+  const inner = document.getElementById('org-tree-inner');
+
+  const mgrHtml = managers.map(m => `
+    <div class="org-manager-card is-clickable" onclick="openManagerProfile('${escHtml(m.id)}')">
+      <div class="org-manager-avatar">
+        ${m.avatar_url
+          ? `<img src="${escHtml(m.avatar_url)}" alt="${escHtml(m.name)}">`
+          : getInitials(m.name)}
+      </div>
+      <div class="org-manager-name">${escHtml(m.name)}</div>
+      ${m.nickname ? `<div class="org-manager-nick">(${escHtml(m.nickname)})</div>` : ''}
+      <span class="org-manager-badge">Manager</span>
+    </div>`).join('');
+
+  const teamCardsHtml = orgTeams.map(t => {
+    const strip = t.members.slice(0, 5).map(m =>
+      `<div class="oa">${m.avatar_url ? `<img src="${escHtml(m.avatar_url)}" alt="">` : getInitials(m.name)}</div>`
+    ).join('') + (t.count > 5 ? `<div class="oa oa-more">+${t.count - 5}</div>` : '');
+    const leaderNames = (t.leaders || []).map(l => escHtml(l.nickname || l.name)).join(', ');
+    const leaderLine = leaderNames
+      ? `<div class="org-team-leader-line"><i data-icon="crown" style="width:9px;height:9px"></i> ${leaderNames}</div>`
+      : '';
+    return `
+      <div class="org-team-card" id="tc-${t.slug}" style="--team-c:${t.color}"
+           onclick="selectTeam('${t.slug}')">
+        <div class="org-team-dot"></div>
+        <div class="org-team-name">${escHtml(t.name)}</div>
+        <div class="org-team-slug">/${t.slug}</div>
+        <div class="org-team-count"><i data-icon="users" style="width:11px;height:11px"></i>${t.count} คน</div>
+        <div class="org-avatar-strip">${strip}</div>
+        ${leaderLine}
+      </div>`;
+  }).join('');
+
+  inner.innerHTML = `
+    <div class="org-managers">${mgrHtml || '<span style="color:var(--text-muted)">ยังไม่มี Manager</span>'}</div>
+    <div class="org-teams-row" id="org-teams-row">${teamCardsHtml}</div>`;
+
+  requestAnimationFrame(() => requestAnimationFrame(() => drawOrgLines()));
+  if (typeof window.Icons !== 'undefined') window.Icons.replace?.();
+}
+
+function drawOrgLines() {
+  const old = document.getElementById('org-svg');
+  if (old) old.remove();
+
+  const inner    = document.getElementById('org-tree-inner');
+  const mgrCards = inner.querySelectorAll('.org-manager-card');
+  const teamCards= inner.querySelectorAll('.org-team-card');
+  if (!mgrCards.length || !teamCards.length) return;
+
+  inner.style.position = 'relative';
+  const ref = inner.getBoundingClientRect();
+
+  const pos = el => {
+    const r = el.getBoundingClientRect();
+    return { cx: r.left - ref.left + r.width / 2, top: r.top - ref.top, bottom: r.bottom - ref.top };
+  };
+
+  const mgrs  = [...mgrCards].map(pos);
+  const teams = [...teamCards].map(pos);
+  if (!mgrs.length || !teams.length) return;
+
+  const mgrMidX  = (mgrs[0].cx + mgrs[mgrs.length - 1].cx) / 2;
+  const mgrBottom= Math.max(...mgrs.map(m => m.bottom));
+  const cardTop  = Math.min(...teams.map(t => t.top));   // actual top of team cards
+  const hBarY    = mgrBottom + (cardTop - mgrBottom) * 0.42;  // upper portion of gap
+  const spineY   = mgrBottom + (cardTop - mgrBottom) * 0.78;  // lower portion, above cards
+  const leftX    = Math.min(...teams.map(t => t.cx));
+  const rightX   = Math.max(...teams.map(t => t.cx));
+  const svgH     = Math.max(...teams.map(t => t.bottom)) + 8;
+
+  // Adaptive line color — read --border CSS var, boost with text color
+  const bgRaw  = getComputedStyle(document.body).backgroundColor;
+  const rgb    = (bgRaw.match(/\d+/g) || [255,255,255]).map(Number);
+  const lum    = (rgb[0]*299 + rgb[1]*587 + rgb[2]*114) / 1000;
+  const isDark = lum < 128;
+  // Use readable contrasting line: dark mode = soft white, light mode = clear dark
+  const clr = isDark ? 'rgba(255,255,255,.35)' : 'rgba(0,0,0,.28)';
+  const SW  = '1.5';
+
+  const NS  = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.id = 'org-svg';
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', svgH);
+  svg.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;overflow:visible';
+
+  const mk = (x1, y1, x2, y2) => {
+    const l = document.createElementNS(NS, 'line');
+    ['x1','y1','x2','y2'].forEach((a,i) => l.setAttribute(a, [x1,y1,x2,y2][i]));
+    l.setAttribute('stroke', clr);
+    l.setAttribute('stroke-width', SW);
+    l.setAttribute('stroke-linecap', 'round');
+    return l;
+  };
+
+  // ① Vertical ticks from each manager bottom → hBarY
+  mgrs.forEach(m => svg.appendChild(mk(m.cx, m.bottom + 1, m.cx, hBarY)));
+  // ② Horizontal bar connecting all managers at hBarY
+  if (mgrs.length > 1) svg.appendChild(mk(mgrs[0].cx, hBarY, mgrs[mgrs.length - 1].cx, hBarY));
+  // ③ Center trunk: hBarY → spineY
+  svg.appendChild(mk(mgrMidX, hBarY, mgrMidX, spineY));
+  // ④ Horizontal spine across all team columns
+  svg.appendChild(mk(leftX, spineY, rightX, spineY));
+  // ⑤ Vertical drop from spine to each team card top
+  teams.forEach(t => svg.appendChild(mk(t.cx, spineY, t.cx, t.top - 1)));
+
+  inner.appendChild(svg);
+}
+
+// ── helpers for two-view slide (both views are absolute — no height change) ───
+function _showTeamView() {
+  document.getElementById('org-view-team').classList.remove('slide-out');
+  document.getElementById('org-view-member').classList.remove('slide-in');
+}
+function _showMemberView() {
+  document.getElementById('org-view-team').classList.add('slide-out');
+  // tiny rAF so slide-out starts before slide-in triggers
+  requestAnimationFrame(() => {
+    document.getElementById('org-view-member').classList.add('slide-in');
+  });
+}
+
+// ── Select team ───────────────────────────────────────────────────────────────
+function selectTeam(slug) {
+  // Toggle off if same
+  if (_activeSlug === slug) { closeOrgPanel(); return; }
+
+  const wasOpen = !!_activeSlug;
+  _activeSlug = slug;
+
+  document.querySelectorAll('.org-team-card').forEach(c =>
+    c.classList.toggle('active', c.id === `tc-${slug}`)
+  );
+
+  const t = _orgTeams.find(x => x.slug === slug);
+  if (!t) return;
+
+  // Update panel header + color
+  const si = document.getElementById('org-side-inner');
+  si.style.setProperty('--team-c', t.color);
+  document.getElementById('org-side-accent').style.background = t.color;
+  document.getElementById('org-side-dot').style.background    = t.color;
+  document.getElementById('org-side-name').textContent        = t.name;
+  document.getElementById('org-side-slug').textContent        = `/${t.slug}`;
+  document.getElementById('org-side-desc').textContent        = t.desc || 'ยังไม่มีคำอธิบาย — แก้ไขได้ที่ Edit Content';
+  document.getElementById('org-side-count').innerHTML         = `<i data-icon="users"></i> ${t.count} สมาชิก`;
+
+  // Build member grid — leaders first
+  const grid = document.getElementById('org-member-grid');
+  if (!t.members.length) {
+    grid.innerHTML = `<div style="color:var(--text-muted);font-size:12px;padding:16px;text-align:center;grid-column:1/-1">ยังไม่มีสมาชิก</div>`;
+  } else {
+    const leaders = t.leaders || [];
+    const leaderIds = new Set(leaders.map(l => l.id));
+    // Leaders first (in configured order), then rest alphabetically
+    const sorted = [
+      ...leaders,
+      ...t.members.filter(m => !leaderIds.has(m.id)),
+    ];
+    grid.innerHTML = sorted.map((m, i) => {
+      const isLeader = leaderIds.has(m.id);
+      return `
+      <div class="org-member-card${isLeader ? ' is-leader' : ''}" style="--team-c:${t.color};animation-delay:${i * .04}s"
+           onclick="selectMember('${escHtml(m.id)}','${slug}')">
+        ${isLeader ? '<span class="org-leader-badge">Leader</span>' : ''}
+        <div class="org-member-av">
+          ${m.avatar_url
+            ? `<img src="${escHtml(m.avatar_url)}" alt="${escHtml(m.name)}">`
+            : `<span>${getInitials(m.name)}</span>`}
+        </div>
+        <div class="org-member-name">${escHtml(m.name)}</div>
+        ${m.nickname ? `<div class="org-member-nick">(${escHtml(m.nickname)})</div>` : ''}
+        <span class="org-member-role">${escHtml(ROLE_LABELS[m.role] || m.role)}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Make sure we're on team view (not profile view)
+  _showTeamView();
+
+  // Open panel — CSS transition handles animation; transitionend redraws SVG
+  document.getElementById('org-side-panel').classList.add('open');
+
+  if (typeof window.Icons !== 'undefined') window.Icons.replace?.();
+}
+
+// ── Member profile ────────────────────────────────────────────────────────────
+function selectMember(userId, teamSlug) {
+  const t = _orgTeams.find(x => x.slug === teamSlug);
+  const m = t?.members.find(x => x.id === userId);
+  if (!m || !t) return;
+
+  const roleLabel = ROLE_LABELS[m.role] || m.role;
+
+  const rows = [
+    m.name_th   ? { icon:'user',      label:'ชื่อภาษาไทย',    val: m.name_th }   : null,
+    m.emp_id    ? { icon:'badge',     label:'Employee ID',   val: m.emp_id }    : null,
+    m.position  ? { icon:'briefcase', label:'ตำแหน่ง',        val: m.position }  : null,
+    m.team      ? { icon:'users',     label:'Team',          val: t.name }      : null,
+    m.role      ? { icon:'shield',    label:'Role',          val: roleLabel }   : null,
+    m.email     ? { icon:'mail',      label:'Email',         val: m.email }     : null,
+    m.phone     ? { icon:'phone',     label:'Phone',         val: m.phone }     : null,
+  ].filter(Boolean);
+
+  document.getElementById('org-profile-wrap').innerHTML = `
+    <button class="org-profile-back" onclick="backToTeam()">
+      <i data-icon="arrow-left"></i> กลับหาทีม ${escHtml(t.name)}
+    </button>
+
+    <div class="org-profile-av-wrap" style="--team-c:${t.color}">
+      <div class="org-profile-av">
+        ${m.avatar_url
+          ? `<img src="${escHtml(m.avatar_url)}" alt="${escHtml(m.name)}">`
+          : getInitials(m.name)}
+      </div>
+      <div class="org-profile-name">${escHtml(m.name)}</div>
+      ${m.nickname ? `<div class="org-profile-nick">(${escHtml(m.nickname)})</div>` : ''}
+      <div class="org-profile-badges">
+        <span class="org-profile-role-badge" style="--team-c:${t.color}">${escHtml(roleLabel)}</span>
+        <span class="org-profile-team-badge">
+          <span class="org-profile-team-dot" style="background:${t.color}"></span>
+          ${escHtml(t.name)}
+        </span>
+      </div>
+    </div>
+
+    ${rows.length ? `
+    <div class="org-profile-rows" style="--team-c:${t.color}">
+      ${rows.map(r => {
+        let valHtml;
+        if (r.icon === 'mail') {
+          valHtml = `<a href="mailto:${escHtml(r.val)}" style="color:var(--text);text-decoration:none">${escHtml(r.val)}</a>`;
+        } else if (r.icon === 'phone') {
+          valHtml = `<a href="tel:${escHtml(r.val)}" style="color:var(--text);text-decoration:none">${escHtml(r.val)}</a>`;
+        } else {
+          valHtml = escHtml(r.val);
+        }
+        return `
+        <div class="org-profile-row">
+          <div class="org-profile-row-icon"><i data-icon="${r.icon}"></i></div>
+          <div>
+            <div class="org-profile-row-label">${r.label}</div>
+            <div class="org-profile-row-val">${valHtml}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : ''}`;
+
+  _showMemberView();
+  if (typeof window.Icons !== 'undefined') window.Icons.replace?.();
+}
+
+function backToTeam() {
+  _showTeamView();
+}
+
+// ── Manager profile modal ─────────────────────────────────────────────────────
+function openManagerProfile(userId) {
+  const m = _managers.find(x => x.id === userId);
+  if (!m) return;
+
+  const color = '#f26419';
+  const initials = getInitials(m.name);
+
+  const rows = [
+    m.name_th  ? { icon:'user',      label:'ชื่อภาษาไทย', val: m.name_th  } : null,
+    m.emp_id   ? { icon:'badge',     label:'Employee ID',  val: m.emp_id   } : null,
+    m.position ? { icon:'briefcase', label:'ตำแหน่ง',      val: m.position } : null,
+    { icon:'shield', label:'Role', val: 'Manager' },
+    m.email    ? { icon:'mail',      label:'Email',        val: m.email    } : null,
+    m.phone    ? { icon:'phone',     label:'Phone',        val: m.phone    } : null,
+  ].filter(Boolean);
+
+  const rowsHtml = rows.map(r => {
+    let valHtml;
+    if (r.icon === 'mail')  valHtml = `<a href="mailto:${escHtml(r.val)}" style="color:var(--text);text-decoration:none">${escHtml(r.val)}</a>`;
+    else if (r.icon === 'phone') valHtml = `<a href="tel:${escHtml(r.val)}" style="color:var(--text);text-decoration:none">${escHtml(r.val)}</a>`;
+    else valHtml = escHtml(r.val);
+    return `
+      <div class="org-profile-row">
+        <div class="org-profile-row-icon" style="--team-c:${color}"><i data-icon="${r.icon}"></i></div>
+        <div>
+          <div class="org-profile-row-label">${r.label}</div>
+          <div class="org-profile-row-val">${valHtml}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const overlay = document.createElement('div');
+  overlay.className = 'mgr-modal-overlay';
+  overlay.innerHTML = `
+    <div class="mgr-modal">
+      <div class="mgr-modal-accent"></div>
+      <div class="mgr-modal-head">
+        <div class="mgr-modal-title"><i data-icon="shield"></i> Manager Profile</div>
+        <button class="mgr-modal-close" onclick="this.closest('.mgr-modal-overlay').remove()">✕ ปิด</button>
+      </div>
+      <div class="mgr-modal-body">
+        <div class="org-profile-av-wrap" style="--team-c:${color}">
+          <div class="org-profile-av">
+            ${m.avatar_url ? `<img src="${escHtml(m.avatar_url)}" alt="${escHtml(m.name)}">` : initials}
+          </div>
+          <div class="org-profile-name">${escHtml(m.name)}</div>
+          ${m.nickname ? `<div class="org-profile-nick">(${escHtml(m.nickname)})</div>` : ''}
+          <div class="org-profile-badges">
+            <span class="org-profile-role-badge" style="--team-c:${color}">Manager</span>
+          </div>
+        </div>
+        ${rows.length ? `<div class="org-profile-rows" style="--team-c:${color}">${rowsHtml}</div>` : ''}
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  if (typeof window.Icons !== 'undefined') window.Icons.replace?.();
+}
+
+function closeOrgPanel() {
+  _activeSlug = null;
+  document.querySelectorAll('.org-team-card').forEach(c => c.classList.remove('active'));
+  document.getElementById('org-side-panel').classList.remove('open');
+  _showTeamView();
+  // transitionend listener handles redraw
+}
+
+// ── Render Mission/Vision ────────────────────────────────────────────────────
+function renderMV(mission, vision) {
+  document.getElementById('mv-grid').innerHTML = `
+    <div class="mv-card">
+      <div class="mv-label mission"><i data-icon="target"></i> Mission</div>
+      <div class="mv-text">${escHtml(mission) || '<span style="color:var(--text-muted)">ยังไม่ได้ตั้งค่า</span>'}</div>
+    </div>
+    <div class="mv-card">
+      <div class="mv-label vision"><i data-icon="eye"></i> Vision</div>
+      <div class="mv-text">${escHtml(vision) || '<span style="color:var(--text-muted)">ยังไม่ได้ตั้งค่า</span>'}</div>
+    </div>`;
+}
+
+// ── Render Services ──────────────────────────────────────────────────────────
+function renderServices(services) {
+  if (!services?.length) {
+    document.getElementById('services-grid').innerHTML = '<div style="color:var(--text-muted);font-size:12px">ยังไม่มีข้อมูล</div>';
+    return;
+  }
+  document.getElementById('services-grid').innerHTML = services.map(s => `
+    <div class="service-card">
+      <div class="service-icon"><i data-icon="${escHtml(s.icon || 'star')}"></i></div>
+      <div class="service-body">
+        <div class="service-title">${escHtml(s.title)}</div>
+        <div class="service-desc">${escHtml(s.desc)}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Render Contacts ──────────────────────────────────────────────────────────
+function renderContacts(contacts) {
+  if (!contacts?.length) {
+    document.getElementById('contacts-row').innerHTML = '<div style="color:var(--text-muted);font-size:12px">ยังไม่มีข้อมูล</div>';
+    return;
+  }
+  document.getElementById('contacts-row').innerHTML = contacts.map(c => `
+    <div class="contact-card">
+      <div class="contact-icon"><i data-icon="${escHtml(c.icon || 'info')}"></i></div>
+      <div>
+        <div class="contact-label">${escHtml(c.label)}</div>
+        <div class="contact-value">${escHtml(c.value)}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Render Hero badges ───────────────────────────────────────────────────────
+function renderHeroBadges(orgTeams) {
+  const total = orgTeams.reduce((s,t) => s + t.count, 0);
+  document.getElementById('ab-hero-badges').innerHTML = `
+    <span class="ab-hero-badge"><i data-icon="users"></i> ${total} สมาชิก</span>
+    <span class="ab-hero-badge"><i data-icon="layers"></i> ${orgTeams.length} ทีม</span>
+    <span class="ab-hero-badge"><i data-icon="clock"></i> 24/7 Support</span>`;
+}
+
+// ── Load ─────────────────────────────────────────────────────────────────────
+let _orgTeams = [];
+
+async function loadPage() {
+  const res = await API.aboutPage.get();
+  if (!res?.ok) { Toast.error('ไม่สามารถโหลดข้อมูลได้'); return; }
+  const d = res.data?.data || res.data;
+
+  _orgTeams  = d.org_teams  || [];
+  _managers  = d.managers   || [];
+
+  // Hero sub-text = mission preview
+  const heroSub = document.getElementById('ab-hero-sub');
+  heroSub.textContent = d.mission || 'Service Operations Management Team ที่ดูแลความเสถียรของระบบ TrueMoney';
+
+  renderHeroBadges(_orgTeams);
+  renderOrg(_managers, _orgTeams);
+  renderMV(d.mission, d.vision);
+  renderServices(d.services);
+  renderContacts(d.contacts);
+
+  if (typeof window.Icons !== 'undefined') window.Icons.replace?.();
+}
+
+loadPage();
+</script>
+
+</body>
+</html>

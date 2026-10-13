@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viewer — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <style>
+    .viewer-topbar { display:flex; align-items:center; gap:10px; padding:0 16px; height:48px; border-bottom:1px solid var(--border); background:#fff; flex-shrink:0; }
+    .viewer-title  { font-size:13px; font-weight:700; color:var(--text); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .viewer-url    { font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:320px; }
+    .viewer-frame  { flex:1; border:none; width:100%; display:block; }
+    .viewer-body   { display:flex; flex-direction:column; height:100%; overflow:hidden; }
+    .main-content  { display:flex; flex-direction:column; overflow:hidden; }
+    .page-content  { flex:1; display:flex; flex-direction:column; padding:0; overflow:hidden; }
+    .viewer-error  { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--text-muted); font-size:13px; }
+    .viewer-error a { color:var(--orange); }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title" id="v-title">—</div>
+        <div class="page-sub" id="v-url-sub" style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" style="font-size:11px" onclick="history.back()">← Back</button>
+        <a id="v-open-link" href="#" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:11px">↗ เปิด Tab ใหม่</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <iframe id="viewer-frame" class="viewer-frame" src="" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals" allowfullscreen></iframe>
+      <div id="viewer-error" style="display:none" class="viewer-error">
+        <div style="font-size:28px"><i data-icon="ban"></i></div>
+        <div>หน้านี้ไม่อนุญาตให้ embed (X-Frame-Options)</div>
+        <div style="font-size:12px">
+          <a id="err-link" href="#" target="_blank" rel="noopener">↗ เปิดใน Tab ใหม่แทน</a>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/analytics.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script>
+if (!Auth.requireAuth()) {}
+
+const params = new URLSearchParams(window.location.search);
+const src    = params.get('src')  || '';
+const title  = params.get('title') || 'Embedded Tool';
+
+Layout.render('viewer');
+// Override presence with the tool name
+API.presence?.update?.({ room: 'tool_' + title.slice(0,20).replace(/\s+/g,'_').toLowerCase(), room_label: '<i data-icon="wrench"></i> ' + title.slice(0,30) });
+
+document.title = title + ' — SOM-Portal';
+document.getElementById('v-title').textContent    = title;
+document.getElementById('v-url-sub').textContent  = src;
+document.getElementById('v-open-link').href        = src;
+document.getElementById('err-link').href           = src;
+
+if (src) {
+  const frame = document.getElementById('viewer-frame');
+  frame.src = src;
+
+  frame.addEventListener('load', () => {
+    // Auto-focus iframe so keyboard shortcuts (Ctrl+F, etc.) work immediately
+    try { frame.contentWindow.focus(); } catch(_) {}
+    frame.focus();
+  });
+  frame.addEventListener('error', () => {
+    frame.style.display = 'none';
+    document.getElementById('viewer-error').style.display = '';
+  });
+} else {
+  document.getElementById('viewer-frame').style.display = 'none';
+  document.getElementById('viewer-error').style.display = '';
+}
+</script>
+</body>
+</html>

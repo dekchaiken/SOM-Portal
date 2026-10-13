@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Command Center — Real Data (Schedule)</title>
+<link rel="stylesheet" href="../assets/css/dark.css">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/ui-themes.css">
+<script src="../assets/js/theme.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<style>
+  :root {
+    --sc-hot:#ef4444; --sc-warn:#f59e0b; --sc-ok:#22c55e;
+    --sc-cool:#3b82f6; --sc-violet:#8b5cf6; --sc-emerald:#10b981; --sc-orange:#f26419;
+    --sc-text-soft: color-mix(in srgb, var(--text-muted) 70%, transparent);
+    --sc-bg-subtle: color-mix(in srgb, var(--border) 40%, transparent);
+  }
+
+  .page-wrap { padding:20px 24px; max-width:1600px; margin:0 auto; }
+  .mockup-banner {
+    background:linear-gradient(90deg, color-mix(in srgb, var(--sc-orange) 12%, var(--bg-card)), var(--bg-card));
+    border:1px solid var(--border); border-radius:12px; padding:10px 16px; font-size:12px;
+    color:var(--text-muted); margin-bottom:14px;
+  }
+  .mockup-banner strong { color:var(--text); }
+
+  /* Header hero */
+  .sc-head {
+    position:relative;
+    background:linear-gradient(90deg, color-mix(in srgb, var(--sc-orange) 5%, var(--bg-card)) 0%, var(--bg-card) 45%);
+    border:1px solid var(--border); border-radius:14px;
+    padding:16px 22px; display:grid; grid-template-columns:auto 1fr auto; gap:16px; align-items:center;
+    margin-bottom:14px;
+  }
+  .sc-head::before {
+    content:''; position:absolute; left:0; top:14px; bottom:14px; width:3px;
+    background:var(--sc-orange); border-radius:0 2px 2px 0;
+  }
+  .sc-pulse {
+    width:44px; height:44px; border-radius:12px;
+    display:grid; place-items:center; position:relative;
+    background:color-mix(in srgb, var(--sc-ok) 14%, transparent); color:var(--sc-ok);
+  }
+  .sc-pulse::after {
+    content:''; position:absolute; inset:0; border-radius:12px;
+    border:2px solid currentColor; opacity:0;
+    animation:scPulse 2.4s ease-out infinite;
+  }
+  @keyframes scPulse { 0%{transform:scale(.95);opacity:.5} 70%{transform:scale(1.25);opacity:0} 100%{transform:scale(1.25);opacity:0} }
+  .sc-pulse svg { width:22px; height:22px; }
+  .sc-title { font-size:22px; font-weight:700; letter-spacing:-.02em; line-height:1.1; }
+  .sc-sub   { font-size:12.5px; color:var(--text-muted); margin-top:3px; }
+
+  .sc-navbar { display:flex; gap:6px; align-items:center; }
+  .sc-nav-btn {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:8px;
+    width:32px; height:32px; display:grid; place-items:center; cursor:pointer;
+    color:var(--text); font-weight:700; transition:all .15s;
+  }
+  .sc-nav-btn:hover { background:var(--sc-orange); color:#fff; border-color:var(--sc-orange); }
+  .sc-nav-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .sc-month-title { font-size:14px; font-weight:700; padding:0 12px; min-width:170px; text-align:center; color:var(--text); }
+  .sc-btn {
+    background:var(--bg-card); border:1px solid var(--border);
+    padding:7px 12px; border-radius:8px; font-size:12px; font-weight:600;
+    color:var(--text); cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+  }
+  .sc-btn:hover { border-color:var(--sc-orange); color:var(--sc-orange); }
+  .sc-btn.primary { background:var(--sc-orange); color:#fff; border-color:var(--sc-orange); }
+  .sc-btn.primary:hover { color:#fff; }
+
+  /* Command Center grid */
+  .sc-cc-grid { display:grid; grid-template-columns:290px 1fr 240px; gap:14px; margin-bottom:14px; }
+  @media (max-width:1280px) { .sc-cc-grid { grid-template-columns:1fr 1fr; } .sc-cc-grid > .sc-cc-right { grid-column:1/-1; } }
+  @media (max-width:720px)  { .sc-cc-grid { grid-template-columns:1fr; } }
+
+  .sc-card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .sc-section-title {
+    padding:10px 16px; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
+    font-weight:600; color:var(--sc-text-soft); background:var(--sc-bg-subtle);
+    border-bottom:1px solid var(--border); display:flex; align-items:center; gap:6px;
+  }
+  .sc-divider { height:1px; background:var(--border); margin:6px 16px; }
+
+  /* Left column */
+  .sc-now-list { padding:8px 14px 14px; display:flex; flex-direction:column; gap:11px; }
+  .sc-now-row {
+    display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:flex-start;
+    padding-bottom:11px; border-bottom:1px dashed var(--border);
+  }
+  .sc-now-row:last-child { border-bottom:none; padding-bottom:0; }
+  .sc-now-lbl { font-size:10.5px; color:var(--sc-text-soft); text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+  .sc-now-lbl b { color:var(--text); text-transform:none; letter-spacing:0; font-size:11.5px; }
+  .sc-now-names { font-size:12.5px; font-weight:600; color:var(--text); margin-top:3px; line-height:1.4; }
+  .sc-now-names .me { color:var(--sc-orange); }
+  .sc-now-names .on-leave { color:var(--sc-text-soft); text-decoration:line-through; }
+  .sc-now-time { font-size:10.5px; color:var(--sc-text-soft); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; margin-top:2px; }
+  .sc-av-stack { display:flex; flex:none; }
+  .sc-av-stack .av { margin-left:-9px; border:2px solid var(--bg-card); }
+  .sc-av-stack .av:first-child { margin-left:0; }
+  .av {
+    width:30px; height:30px; border-radius:9px; display:grid; place-items:center;
+    font-size:10px; font-weight:800; color:#fff; letter-spacing:-.02em;
+    box-shadow:inset 0 -3px 5px rgba(0,0,0,.18);
+  }
+  .av.me { box-shadow:inset 0 -3px 5px rgba(0,0,0,.18), 0 0 0 2px var(--text); }
+  .av.on-leave { opacity:.4; }
+  .av.empty { background:var(--sc-bg-subtle); color:var(--sc-text-soft); box-shadow:none; border:1px dashed var(--sc-text-soft); }
+
+  .sc-my-summary { padding:8px 16px 14px; display:flex; flex-direction:column; gap:9px; }
+  .sc-my-row { display:flex; align-items:center; justify-content:space-between; font-size:11.5px; }
+  .sc-my-lbl { color:var(--text-muted); }
+  .sc-my-val { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:700; color:var(--text); }
+  .sc-my-val .frac { color:var(--sc-text-soft); font-weight:500; }
+  .sc-bar { height:5px; border-radius:3px; background:var(--sc-bg-subtle); overflow:hidden; margin-top:3px; }
+  .sc-bar > i { display:block; height:100%; background:var(--sc-ok); border-radius:3px; }
+
+  /* Calendar */
+  .sc-cal-card { padding:0; }
+  .sc-cal-scroll { overflow-x:auto; }
+  .sc-cal {
+    width:100%; border-collapse:separate; border-spacing:0;
+    font-size:11px; min-width:900px;
+  }
+  .sc-cal th, .sc-cal td { border-right:1px solid var(--border); border-bottom:1px solid var(--border); }
+  .sc-cal th:last-child, .sc-cal td:last-child { border-right:none; }
+  .sc-cal thead th {
+    background:var(--sc-bg-subtle); color:var(--sc-text-soft);
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600;
+    padding:6px 4px; text-align:center; min-width:34px;
+    position:sticky; top:0; z-index:1;
+  }
+  .sc-cal thead th.day-num {
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px; padding-top:3px;
+    position:relative;
+  }
+  .sc-cal thead th.day-num .dow { font-size:9px; opacity:.65; display:block; margin-top:1px; }
+  .sc-cal thead th.day-num .ev-dot {
+    position:absolute; top:3px; right:3px;
+    width:5px; height:5px; border-radius:50%; background:var(--sc-cool);
+  }
+  .sc-cal thead th.today { background:color-mix(in srgb, var(--sc-orange) 12%, transparent); color:var(--sc-orange); }
+  .sc-cal thead th.weekend { color:var(--sc-cool); }
+  .sc-cal thead th.holiday { color:var(--sc-hot); }
+  .sc-cal th.col-label {
+    text-align:left; padding-left:12px; min-width:150px;
+    background:var(--sc-bg-subtle);
+  }
+  .sc-cal .sec-row td {
+    background:color-mix(in srgb, var(--sc-orange) 5%, transparent);
+    border-top:2px solid var(--sc-orange); font-weight:700;
+    padding:5px 12px; font-size:11px;
+  }
+  .sc-cal .sec-row.s2 td { background:color-mix(in srgb, var(--sc-violet) 5%, transparent); border-top-color:var(--sc-violet); }
+  .sc-cal .sec-row.ev td { background:color-mix(in srgb, var(--sc-cool) 5%, transparent); border-top-color:var(--sc-cool); }
+  .sc-cal .sec-row .sec-lbl { display:flex; align-items:center; gap:6px; }
+  .sc-cal .sec-row .sec-time { color:var(--sc-text-soft); font-weight:500; font-size:10.5px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .sc-cal td { padding:2px; text-align:center; vertical-align:middle; }
+  .sc-cal td.col-label {
+    text-align:left; padding:0 12px; font-weight:600; font-size:11px; color:var(--text);
+    background:var(--bg-card); vertical-align:middle;
+  }
+  .sc-cal td.col-label .lbl-sub { font-size:9.5px; color:var(--sc-text-soft); font-weight:500; margin-top:1px; }
+  .sc-cal td.col-label.oc { color:var(--sc-warn); }
+  .sc-cal td.day.today { background:color-mix(in srgb, var(--sc-orange) 7%, transparent); }
+  .sc-cal td.day.weekend { background:color-mix(in srgb, var(--sc-cool) 3%, transparent); }
+  .sc-cal td.day.holiday { background:color-mix(in srgb, var(--sc-hot) 5%, transparent); }
+  .sc-cal td.day.gap { background:color-mix(in srgb, var(--sc-hot) 15%, transparent); }
+
+  .sc-dot-stack {
+    display:flex; flex-wrap:wrap; gap:2px; justify-content:center; align-items:center;
+    padding:3px 2px;
+  }
+  .sc-dot {
+    width:20px; height:20px; border-radius:5px;
+    display:grid; place-items:center;
+    font-size:8.5px; font-weight:800; color:#fff; letter-spacing:-.02em;
+    box-shadow:inset 0 -2px 3px rgba(0,0,0,.2);
+  }
+  .sc-dot.me { box-shadow:inset 0 -2px 3px rgba(0,0,0,.2), 0 0 0 1.5px var(--text); }
+  .sc-dot.on-leave { opacity:.35; text-decoration:line-through; }
+  .sc-dot.empty {
+    background:transparent; color:var(--sc-text-soft);
+    border:1px dashed color-mix(in srgb, var(--sc-text-soft) 60%, transparent); font-size:10px;
+  }
+  .oc-chip {
+    display:inline-block; padding:2px 8px; border-radius:5px;
+    font-size:10px; font-weight:800; color:#fff; letter-spacing:.01em;
+    background:var(--sc-warn);
+  }
+  .oc-chip.me { box-shadow:0 0 0 1.5px var(--text); }
+  .oc-chip.s2 { background:var(--sc-violet); }
+  .ev-cell {
+    font-size:9px; color:var(--sc-cool); font-weight:800;
+    max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    padding:2px 3px; cursor:help;
+  }
+
+  /* Right column */
+  .sc-right { display:flex; flex-direction:column; gap:14px; }
+  .sc-legend-list { padding:10px 14px 14px; display:flex; flex-direction:column; gap:7px; font-size:11.5px; max-height:340px; overflow-y:auto; }
+  .sc-legend-row { display:flex; align-items:center; gap:8px; }
+  .sc-legend-sw { width:14px; height:14px; border-radius:4px; flex:none; }
+  .sc-legend-name { color:var(--text); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .sc-legend-name.me { color:var(--sc-orange); }
+  .sc-legend-sub { color:var(--sc-text-soft); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px; }
+
+  .sc-coverage { padding:10px 14px 14px; display:flex; flex-direction:column; gap:8px; }
+  .sc-cov-row { display:flex; align-items:flex-start; gap:8px; font-size:11.5px; }
+  .sc-cov-ico {
+    width:20px; height:20px; border-radius:6px; display:grid; place-items:center;
+    font-size:11px; font-weight:800; flex:none;
+  }
+  .sc-cov-ico.warn { background:color-mix(in srgb, var(--sc-warn) 15%, transparent); color:var(--sc-warn); }
+  .sc-cov-ico.hot { background:color-mix(in srgb, var(--sc-hot) 15%, transparent); color:var(--sc-hot); }
+  .sc-cov-ico.ok  { background:color-mix(in srgb, var(--sc-ok) 15%, transparent); color:var(--sc-ok); }
+  .sc-cov-txt { flex:1; color:var(--text); line-height:1.35; }
+  .sc-cov-txt small { color:var(--sc-text-soft); font-size:10.5px; display:block; margin-top:1px; }
+
+  /* Stats table */
+  .sc-stats-card { overflow-x:auto; }
+  .sc-tbl { width:100%; border-collapse:collapse; font-size:12px; }
+  .sc-tbl th, .sc-tbl td { padding:9px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  .sc-tbl th {
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600;
+    color:var(--sc-text-soft); background:var(--sc-bg-subtle);
+  }
+  .sc-tbl td.right, .sc-tbl th.right { text-align:right; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .sc-tbl tbody tr:hover td { background:color-mix(in srgb, var(--sc-orange) 4%, transparent); }
+  .sc-tbl tbody tr.me td { background:color-mix(in srgb, var(--sc-orange) 6%, transparent); font-weight:600; }
+  .sc-tbl .name-cell { display:flex; align-items:center; gap:9px; font-weight:600; }
+  .sc-tbl .name-cell .av { width:26px; height:26px; border-radius:8px; font-size:9.5px; }
+
+  /* Skeleton (SP2 pattern) */
+  .sk { background:linear-gradient(90deg, var(--sc-bg-subtle), color-mix(in srgb, var(--sc-bg-subtle) 60%, transparent), var(--sc-bg-subtle)); background-size:200% 100%; animation:sk 1.4s infinite; border-radius:6px; }
+  @keyframes sk { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="mockup-banner">
+    <strong>Command Center · Real data</strong> — โหลดจริงผ่าน API layer (auth-required). กดลูกศรเลื่อนเดือนได้. "ฉัน" = ผู้ที่ login อยู่. ต้อง login ที่หน้าหลักก่อน (ถ้ายัง)
+  </div>
+
+  <!-- Header hero -->
+  <div class="sc-head">
+    <div class="sc-pulse">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+    </div>
+    <div>
+      <div class="sc-title">📅 Team Schedule</div>
+      <div class="sc-sub" id="header-sub">Loading real schedule data…</div>
+    </div>
+    <div class="sc-navbar">
+      <button class="sc-nav-btn" id="nav-prev" title="Previous month">‹</button>
+      <div class="sc-month-title" id="month-title">—</div>
+      <button class="sc-nav-btn" id="nav-next" title="Next month">›</button>
+      <button class="sc-btn" id="btn-today" style="margin-left:8px">Today</button>
+      <button class="sc-btn">👤 My days</button>
+      <button class="sc-btn primary">📋 Leave</button>
+    </div>
+  </div>
+
+  <div class="sc-cc-grid">
+
+    <!-- LEFT: Now + My month summary -->
+    <div>
+      <div class="sc-card" style="margin-bottom:14px">
+        <div class="sc-section-title"><span>●</span> <span id="now-title">ON DUTY NOW</span></div>
+        <div class="sc-now-list" id="now-list"></div>
+      </div>
+      <div class="sc-card">
+        <div class="sc-section-title" id="my-title">MY MONTH</div>
+        <div class="sc-my-summary" id="my-summary"></div>
+      </div>
+    </div>
+
+    <!-- CENTER: Calendar -->
+    <div class="sc-card sc-cal-card">
+      <div class="sc-section-title">
+        <span>CALENDAR</span>
+        <span style="margin-left:auto;font-size:10px;color:var(--sc-text-soft);text-transform:none;letter-spacing:0;font-weight:500">
+          <span style="display:inline-block;width:10px;height:10px;background:color-mix(in srgb, var(--sc-hot) 15%, transparent);border:1px solid var(--sc-hot);border-radius:2px;vertical-align:middle;margin-right:3px"></span> gap
+          &nbsp;·&nbsp;
+          <span style="display:inline-block;width:5px;height:5px;background:var(--sc-cool);border-radius:50%;vertical-align:middle;margin-right:3px"></span> has event
+          &nbsp;·&nbsp;
+          <span style="display:inline-block;width:10px;height:10px;background:color-mix(in srgb, var(--sc-orange) 8%, transparent);border:1px solid var(--sc-orange);border-radius:2px;vertical-align:middle;margin-right:3px"></span> today
+        </span>
+      </div>
+      <div class="sc-cal-scroll">
+        <table class="sc-cal" id="calendar"></table>
+      </div>
+    </div>
+
+    <!-- RIGHT: Legend + Coverage -->
+    <div class="sc-right">
+      <div class="sc-card">
+        <div class="sc-section-title" id="team-title">TEAM</div>
+        <div class="sc-legend-list" id="team-list"></div>
+      </div>
+      <div class="sc-card">
+        <div class="sc-section-title">COVERAGE & ALERTS</div>
+        <div class="sc-coverage" id="coverage"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Stats table -->
+  <div class="sc-card sc-stats-card">
+    <div class="sc-section-title">
+      <span>MONTHLY STATS</span>
+      <span style="margin-left:auto;font-size:10px;color:var(--sc-text-soft);text-transform:none;letter-spacing:0;font-weight:500" id="stats-sub">—</span>
+    </div>
+    <table class="sc-tbl" id="stats"></table>
+  </div>
+
+</div>
+
+<script>
+Auth.requireAuth();
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const MONTH_TH = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const MONTH_EN = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+const DOW_TH = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+const ME_ID = Auth.getUser()?.id || '';
+
+// Fallback palette (used only if the server's user-colors don't cover a user)
+const PALETTE = ['#f26419','#8b5cf6','#22c55e','#3b82f6','#ec4899','#14b8a6','#eab308','#f43f5e','#a855f7','#06b6d4','#10b981','#f97316','#6366f1','#84cc16','#0ea5e9','#d946ef','#f59e0b','#64748b','#22d3ee','#e11d48'];
+
+const S = {
+  users: [],
+  usersById: {},   // id → user (with .color)
+  schedule: {},    // "YYYY-MM-DD" → day obj — populated per-month via API
+  holidays: {},    // "YYYY-MM-DD" → holiday name (year-scoped, cached)
+  holidaysLoadedYear: null,
+  quotas: {},      // usr_id → quota
+  leavesByDate: {},// "YYYY-MM-DD" → [userIds]
+  leavesByUser: {},// usr_id → [approved requests]
+  userColors: {},  // usr_id → hex
+  year: new Date().getFullYear(),
+  month: new Date().getMonth() + 1,
+};
+
+// ── Init: load users + colors + quotas + leaves once, then month data ────
+async function init() {
+  renderPlaceholder();
+  try {
+    const [usersR, colorsR, quotasR, leavesR] = await Promise.all([
+      API.users.list(),
+      API.userColors.get(),
+      API.vacation.getQuotas(),
+      API.leave.list(),
+    ]);
+    if (!usersR.ok) throw new Error('users API failed: ' + (usersR.data?.message || usersR.status));
+
+    // API responses are already scrubbed by the server (no password/email)
+    const usersRaw = Array.isArray(usersR.data?.data) ? usersR.data.data
+                   : Array.isArray(usersR.data) ? usersR.data : [];
+    S.userColors = (colorsR.ok ? (colorsR.data?.data || colorsR.data || {}) : {}) || {};
+    S.quotas     = (quotasR.ok ? (quotasR.data?.data || quotasR.data || {}) : {}) || {};
+
+    S.users = usersRaw.map((u, i) => ({ ...u, color: S.userColors[u.id] || PALETTE[i % PALETTE.length] }));
+    S.usersById = Object.fromEntries(S.users.map(u => [u.id, u]));
+
+    // Approved leave requests only — expand into per-date + per-user maps
+    const lvs = (leavesR.ok ? (leavesR.data?.data || leavesR.data || []) : []) || [];
+    lvs.filter(r => r.status === 'approved').forEach(r => {
+      const s = new Date(r.start_date), e = new Date(r.end_date);
+      for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+        const dIso = d.toISOString().slice(0, 10);
+        (S.leavesByDate[dIso] ||= []).push(r.user_id);
+      }
+      (S.leavesByUser[r.user_id] ||= []).push(r);
+    });
+
+    await loadMonth(S.year, S.month);
+    renderAll();
+    wireNav();
+  } catch (e) {
+    console.error(e);
+    $('header-sub').innerHTML = `<span style="color:var(--sc-hot)">❌ โหลดข้อมูลไม่สำเร็จ: ${esc(e.message || e)}</span>`;
+  }
+}
+
+// Load schedule + holidays for the target month/year (holidays cached per year)
+async function loadMonth(year, month) {
+  const [schR, holR] = await Promise.all([
+    API.schedule.get(year, month),
+    S.holidaysLoadedYear === year
+      ? Promise.resolve({ ok: true, data: { data: Object.entries(S.holidays).map(([date, name]) => ({ date, name })) } })
+      : API.holidays.list(year),
+  ]);
+  if (!schR.ok) throw new Error('schedule API failed');
+  S.schedule = schR.data?.data || schR.data || {};
+  if (S.holidaysLoadedYear !== year) {
+    const hols = holR.ok ? (holR.data?.data || holR.data || []) : [];
+    S.holidays = Object.fromEntries(hols.map(h => [h.date, h.name]));
+    S.holidaysLoadedYear = year;
+  }
+}
+
+function renderPlaceholder() {
+  // SP2-style scaffold — placeholder rows in each area
+  $('month-title').innerHTML = '<span class="sk" style="display:inline-block;width:150px;height:18px"></span>';
+  $('now-list').innerHTML = ['','',''].map(() =>
+    `<div class="sc-now-row"><div class="av sk" style="background:transparent"></div><div style="flex:1"><div class="sk" style="height:10px;width:60%"></div><div class="sk" style="height:14px;width:80%;margin-top:5px"></div></div></div>`).join('');
+  $('my-summary').innerHTML = Array.from({length:5}, () => `<div class="sc-my-row"><span class="sc-my-lbl"><span class="sk" style="display:inline-block;width:80px;height:11px"></span></span><span class="sk" style="display:inline-block;width:36px;height:11px"></span></div>`).join('');
+  $('team-list').innerHTML = Array.from({length:6}, () => `<div class="sc-legend-row"><span class="sc-legend-sw sk"></span><span class="sc-legend-name"><span class="sk" style="display:inline-block;width:120px;height:11px"></span></span></div>`).join('');
+  $('coverage').innerHTML = `<div class="sc-cov-row"><div class="sc-cov-ico sk"></div><div class="sc-cov-txt"><span class="sk" style="display:inline-block;width:160px;height:12px"></span></div></div>`;
+  $('calendar').innerHTML = `<tbody><tr><td style="padding:60px;text-align:center;color:var(--sc-text-soft);font-size:12px">Loading real data…</td></tr></tbody>`;
+  $('stats').innerHTML = `<tbody><tr><td style="padding:40px;text-align:center;color:var(--sc-text-soft);font-size:12px">Loading…</td></tr></tbody>`;
+}
+
+// ── Helpers ───────────────────────────────────────────────
+const iso = (y, m, d) => `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+const daysIn = (y, m) => new Date(y, m, 0).getDate();
+function shortName(u) {
+  if (!u) return '?';
+  if (u.nickname) return u.nickname;
+  // First 2 letters of English name
+  const parts = u.name.split(' ');
+  return (parts[0][0] + (parts[1]?.[0] || parts[0][1] || '')).toUpperCase();
+}
+function displayName(u) { return u ? (u.nickname ? `${u.nickname} (${u.name.split(' ')[0]})` : u.name) : '—'; }
+function slotPeople(day, slot) {
+  const v = day?.[slot];
+  if (!v) return [];
+  return Array.isArray(v) ? v : [v];
+}
+function isMe(uid) { return uid === ME_ID; }
+function isOnLeave(uid, isoDate) {
+  return (S.leavesByDate[isoDate] || []).includes(uid);
+}
+
+// Expected staffing per slot per weekday (0=Sun..6=Sat)
+// Based on real data patterns
+function expected(slot, dow) {
+  const weekend = dow === 0 || dow === 6;
+  return {
+    shift1_tdpk: weekend ? 0 : 2,
+    shift1_wah:  weekend ? 3 : 2,
+    shift1_oncall: 1,
+    shift2_wah:  2,
+    shift2_oncall: 1,
+  }[slot];
+}
+
+// ── Render ────────────────────────────────────────────────
+function renderAll() {
+  renderHeader();
+  renderNow();
+  renderMy();
+  renderCalendar();
+  renderTeam();
+  renderCoverage();
+  renderStats();
+  wireNav();
+}
+
+function renderHeader() {
+  const me = S.usersById[ME_ID];
+  $('month-title').textContent = `${MONTH_EN[S.month]} ${S.year}`;
+
+  // "Live now" — check today's actual date if within this month
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === S.year && (today.getMonth() + 1) === S.month;
+  const displayDay = isCurrentMonth ? today.getDate() : 1;
+  const displayIso = iso(S.year, S.month, displayDay);
+  const day = S.schedule[displayIso];
+  const inShift1 = (today.getHours() >= 9 && today.getHours() < 21);
+  const activeShift = isCurrentMonth ? (inShift1 ? 'Shift#1 active' : 'Shift#2 active') : 'viewing';
+  $('header-sub').innerHTML = isCurrentMonth
+    ? `<span style="color:var(--sc-ok)">● Live</span> · ${today.toLocaleDateString('en-GB', {weekday:'short',day:'numeric',month:'short',year:'numeric'})} · ${activeShift}`
+    : `Viewing ${MONTH_EN[S.month]} ${S.year} · you: <b>${displayName(me)}</b>`;
+}
+
+function renderNow() {
+  // "Today" — use actual today if in current month, else 1st of shown month
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === S.year && (today.getMonth() + 1) === S.month;
+  const targetDay = isCurrentMonth ? today.getDate() : 1;
+  const isoDate = iso(S.year, S.month, targetDay);
+  const day = S.schedule[isoDate];
+
+  $('now-title').textContent = isCurrentMonth
+    ? `● ON DUTY TODAY (${today.toLocaleDateString('en-GB', {day:'numeric',month:'short'})})`
+    : `● SNAPSHOT · ${MONTH_EN[S.month]} ${targetDay}`;
+
+  if (!day) {
+    $('now-list').innerHTML = `<div style="color:var(--sc-text-soft);font-size:12px;font-style:italic">ไม่มีข้อมูลตารางเวรวันนี้</div>`;
+    return;
+  }
+
+  const slots = [
+    { key: 'shift1_tdpk', lbl: 'Shift#1 TDPK', sub: 'on-site',       time: '09:00–21:00' },
+    { key: 'shift1_wah',  lbl: 'Shift#1 W@H',  sub: 'remote',        time: '09:00–21:00' },
+    { key: 'shift1_oncall', lbl: 'Shift#1 On Call', sub: 'primary',  time: '09:00–21:00', oc: true },
+    { key: 'shift2_wah',  lbl: 'Shift#2 W@H',  sub: 'night · remote',time: '21:00–09:00 (+1)' },
+    { key: 'shift2_oncall', lbl: 'Shift#2 On Call', sub: 'night pri',time: '21:00–09:00 (+1)', oc: true, s2: true },
+  ];
+
+  const html = slots.map(sl => {
+    const people = slotPeople(day, sl.key).map(id => S.usersById[id]).filter(Boolean);
+    if (sl.oc) {
+      const p = people[0];
+      if (!p) return `<div class="sc-now-row"><div class="av empty">—</div><div><div class="sc-now-lbl"><b>${sl.lbl}</b> · ${sl.sub}</div><div class="sc-now-names" style="color:var(--sc-hot)">ไม่มี on-call</div><div class="sc-now-time">${sl.time}</div></div></div>`;
+      const onLeave = isOnLeave(p.id, isoDate);
+      return `<div class="sc-now-row">
+        <span class="av ${isMe(p.id) ? 'me' : ''} ${onLeave ? 'on-leave' : ''}" style="background:${p.color}">${shortName(p)}</span>
+        <div>
+          <div class="sc-now-lbl"><b>${sl.lbl}</b> · ${sl.sub}</div>
+          <div class="sc-now-names ${isMe(p.id) ? 'me' : ''} ${onLeave ? 'on-leave' : ''}">${displayName(p)}${isMe(p.id) ? ' 🌟' : ''}${onLeave ? ' · (ลา)' : ''}</div>
+          <div class="sc-now-time">${sl.time}</div>
+        </div>
+      </div>`;
+    }
+    // Team slot — multi-person
+    const stack = people.length
+      ? people.map(p => `<span class="av ${isMe(p.id) ? 'me' : ''} ${isOnLeave(p.id, isoDate) ? 'on-leave' : ''}" style="background:${p.color}" title="${displayName(p)}">${shortName(p)}</span>`).join('')
+      : `<span class="av empty">—</span>`;
+    const names = people.length
+      ? people.map(p => {
+          const onLeave = isOnLeave(p.id, isoDate);
+          const cls = [isMe(p.id) ? 'me' : '', onLeave ? 'on-leave' : ''].filter(Boolean).join(' ');
+          return `<span class="${cls}">${displayName(p)}${isMe(p.id) ? ' 🌟' : ''}</span>`;
+        }).join(', ')
+      : 'ไม่มีเวร';
+    return `<div class="sc-now-row">
+      <div class="sc-av-stack">${stack}</div>
+      <div>
+        <div class="sc-now-lbl"><b>${sl.lbl}</b> · ${sl.sub} · ${people.length} คน</div>
+        <div class="sc-now-names">${names}</div>
+        <div class="sc-now-time">${sl.time}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Add events row if any
+  const evs = day.events || [];
+  const evHtml = evs.length
+    ? `<div class="sc-now-row" style="border-color:color-mix(in srgb,var(--sc-cool) 40%,transparent)">
+        <div class="av" style="background:color-mix(in srgb,var(--sc-cool) 20%,transparent);color:var(--sc-cool);box-shadow:none">📌</div>
+        <div>
+          <div class="sc-now-lbl"><b>Events</b> · วันนี้</div>
+          <div class="sc-now-names" style="font-size:12px">${evs.map(esc).join('<br>')}</div>
+        </div>
+      </div>`
+    : '';
+
+  $('now-list').innerHTML = html + evHtml;
+}
+
+function renderMy() {
+  const me = S.usersById[ME_ID];
+  const stats = monthStats().find(r => r.id === ME_ID) || { total: 0, s1_tdpk:0, s1_wah:0, s1_oncall:0, s2_wah:0, s2_oncall:0, leave:0 };
+  const quotaMax = S.quotas[ME_ID] || 12;
+  // Count approved leaves that fall in this year
+  const yearStr = String(S.year);
+  const quotaUsed = (S.leavesByUser[ME_ID] || [])
+    .filter(r => r.type === 'vacation' && r.start_date.startsWith(yearStr))
+    .reduce((acc, r) => {
+      const s = new Date(r.start_date), e = new Date(r.end_date);
+      return acc + Math.floor((e - s) / 86400000) + 1;
+    }, 0);
+  $('my-title').textContent = `MY MONTH · ${displayName(me).toUpperCase()}`;
+  const row = (lbl, val, sub = '') => `<div class="sc-my-row"><span class="sc-my-lbl">${lbl}</span><span class="sc-my-val">${val}${sub ? `<span class="frac"> ${sub}</span>` : ''}</span></div>`;
+  const quotaLeft = Math.max(0, quotaMax - quotaUsed);
+  const barPct = quotaMax > 0 ? (quotaLeft / quotaMax) * 100 : 0;
+  const barColor = barPct > 50 ? 'var(--sc-ok)' : barPct > 20 ? 'var(--sc-warn)' : 'var(--sc-hot)';
+
+  $('my-summary').innerHTML =
+    row('Total shifts', stats.total) +
+    row('Shift#1 TDPK', stats.s1_tdpk) +
+    row('Shift#1 W@H',  stats.s1_wah) +
+    row('Shift#2 W@H',  stats.s2_wah) +
+    row('On call',      stats.s1_oncall + stats.s2_oncall) +
+    row('Leave (month)',stats.leave) +
+    `<div style="margin-top:4px">
+      <div class="sc-my-row"><span class="sc-my-lbl">Vacation quota (year)</span><span class="sc-my-val">${quotaLeft}<span class="frac"> / ${quotaMax} left</span></span></div>
+      <div class="sc-bar"><i style="width:${barPct}%;background:${barColor}"></i></div>
+    </div>`;
+}
+
+function renderCalendar() {
+  const days = daysIn(S.year, S.month);
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === S.year && (today.getMonth() + 1) === S.month;
+  const todayDay = isCurrentMonth ? today.getDate() : -1;
+
+  // Header row
+  let head = '<thead><tr><th class="col-label">Slot / Day</th>';
+  for (let d = 1; d <= days; d++) {
+    const isoDate = iso(S.year, S.month, d);
+    const dow = new Date(S.year, S.month - 1, d).getDay();
+    const isToday = d === todayDay;
+    const holiday = S.holidays[isoDate];
+    const isWeekend = dow === 0 || dow === 6;
+    const evs = (S.schedule[isoDate]?.events || []);
+    const cls = [
+      'day-num',
+      isToday ? 'today' : '',
+      holiday ? 'holiday' : (isWeekend ? 'weekend' : ''),
+    ].filter(Boolean).join(' ');
+    const title = [holiday, ...evs].filter(Boolean).join(' · ');
+    head += `<th class="${cls}" title="${esc(title)}">${d}${evs.length ? '<span class="ev-dot"></span>' : ''}<span class="dow">${DOW_TH[dow]}</span></th>`;
+  }
+  head += '</tr></thead>';
+
+  const rows = [
+    { kind:'sec', lbl:'Shift#1 · 09:00–21:00', accent:'s1' },
+    { kind:'row', slot:'shift1_tdpk',  lbl:'TDPK',    sub:'on-site' },
+    { kind:'row', slot:'shift1_wah',   lbl:'W@H',     sub:'remote' },
+    { kind:'row', slot:'shift1_oncall',lbl:'On Call', oc:true },
+    { kind:'sec', lbl:'Shift#2 · 21:00–09:00 (+1)', accent:'s2' },
+    { kind:'row', slot:'shift2_wah',   lbl:'W@H',     sub:'night · remote' },
+    { kind:'row', slot:'shift2_oncall',lbl:'On Call', oc:true, s2:true },
+    { kind:'sec', lbl:'Events / Notes', accent:'ev' },
+    { kind:'evrow' },
+  ];
+
+  let body = '<tbody>';
+  for (const r of rows) {
+    if (r.kind === 'sec') {
+      body += `<tr class="sec-row ${r.accent}"><td colspan="${days + 1}"><span class="sec-lbl">${esc(r.lbl)}</span></td></tr>`;
+      continue;
+    }
+    if (r.kind === 'evrow') {
+      body += `<tr><td class="col-label" style="color:var(--sc-cool)">Notes</td>`;
+      for (let d = 1; d <= days; d++) {
+        const isoDate = iso(S.year, S.month, d);
+        const evs = S.schedule[isoDate]?.events || [];
+        if (!evs.length) { body += `<td class="day"></td>`; continue; }
+        const short = evs.length === 1 ? (evs[0].length > 6 ? evs[0].slice(0, 6) + '…' : evs[0]) : `${evs.length}✎`;
+        body += `<td class="day"><span class="ev-cell" title="${esc(evs.join(' · '))}">${esc(short)}</span></td>`;
+      }
+      body += '</tr>';
+      continue;
+    }
+    body += `<tr><td class="col-label ${r.oc ? 'oc' : ''}">${esc(r.lbl)}${r.sub ? `<div class="lbl-sub">${esc(r.sub)}</div>` : ''}</td>`;
+    for (let d = 1; d <= days; d++) {
+      const isoDate = iso(S.year, S.month, d);
+      const dow = new Date(S.year, S.month - 1, d).getDay();
+      const day = S.schedule[isoDate];
+      const people = day ? slotPeople(day, r.slot) : [];
+      const cls = [
+        'day',
+        d === todayDay ? 'today' : '',
+        S.holidays[isoDate] ? 'holiday' : (dow === 0 || dow === 6 ? 'weekend' : ''),
+      ];
+
+      let content;
+      if (r.oc) {
+        if (!people.length) {
+          cls.push('gap');
+          content = `<span style="color:var(--sc-hot);font-size:10px;font-weight:700">gap</span>`;
+        } else {
+          const p = S.usersById[people[0]];
+          const onLeave = isOnLeave(p?.id, isoDate);
+          content = `<span class="oc-chip ${r.s2 ? 's2' : ''} ${isMe(p?.id) ? 'me' : ''}" style="${onLeave ? 'opacity:.5;text-decoration:line-through' : ''}" title="${esc(displayName(p))}">${shortName(p)}</span>`;
+        }
+      } else {
+        const exp = expected(r.slot, dow);
+        if (!people.length && exp > 0) {
+          cls.push('gap');
+          content = `<span style="color:var(--sc-hot);font-size:10px;font-weight:700">gap</span>`;
+        } else if (!people.length) {
+          content = `<span class="sc-dot empty">—</span>`;
+        } else {
+          const dots = people.map(pid => {
+            const p = S.usersById[pid];
+            if (!p) return '';
+            const onLeave = isOnLeave(pid, isoDate);
+            return `<span class="sc-dot ${isMe(pid) ? 'me' : ''} ${onLeave ? 'on-leave' : ''}" style="background:${p.color}" title="${esc(displayName(p))}${onLeave ? ' (ลา)' : ''}">${shortName(p)}</span>`;
+          }).join('');
+          content = `<div class="sc-dot-stack">${dots}</div>`;
+        }
+      }
+      body += `<td class="${cls.join(' ')}">${content}</td>`;
+    }
+    body += '</tr>';
+  }
+  body += '</tbody>';
+  $('calendar').innerHTML = head + body;
+}
+
+function renderTeam() {
+  const stats = monthStats();
+  const byId = Object.fromEntries(stats.map(s => [s.id, s]));
+  // Sort: me first, then by role, then by total shifts desc
+  const roleRank = { sm_admin: 0, sm_lead: 1, dev_sm: 2, sm_user: 3, external: 4 };
+  const list = S.users.slice().sort((a, b) => {
+    if (a.id === ME_ID) return -1;
+    if (b.id === ME_ID) return 1;
+    return (roleRank[a.role] ?? 9) - (roleRank[b.role] ?? 9);
+  });
+  $('team-title').textContent = `TEAM · ${S.users.length} คน`;
+  $('team-list').innerHTML = list.map(u => {
+    const s = byId[u.id] || { total: 0 };
+    return `<div class="sc-legend-row">
+      <span class="sc-legend-sw" style="background:${u.color}"></span>
+      <span class="sc-legend-name ${isMe(u.id) ? 'me' : ''}" title="${esc(u.name)} · ${esc(u.role)}">${esc(displayName(u))}</span>
+      <span class="sc-legend-sub">${s.total}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderCoverage() {
+  const days = daysIn(S.year, S.month);
+  const gaps = [];
+  let totalExpected = 0, totalFilled = 0;
+  for (let d = 1; d <= days; d++) {
+    const isoDate = iso(S.year, S.month, d);
+    const dow = new Date(S.year, S.month - 1, d).getDay();
+    const day = S.schedule[isoDate];
+    ['shift1_tdpk','shift1_wah','shift1_oncall','shift2_wah','shift2_oncall'].forEach(slot => {
+      const exp = expected(slot, dow);
+      totalExpected += exp;
+      const got = day ? slotPeople(day, slot).length : 0;
+      totalFilled += Math.min(got, exp);
+      if (got < exp) {
+        gaps.push({ d, slot, exp, got });
+      }
+    });
+  }
+
+  // Group gaps by day
+  const gapDays = {};
+  gaps.forEach(g => (gapDays[g.d] ||= []).push(g));
+
+  const covPct = totalExpected > 0 ? (totalFilled / totalExpected * 100) : 100;
+  const covIco = covPct >= 95 ? 'ok' : covPct >= 80 ? 'warn' : 'hot';
+  const covIcoText = covPct >= 95 ? '✓' : '!';
+
+  const rows = [];
+  rows.push(`<div class="sc-cov-row">
+    <span class="sc-cov-ico ${covIco}">${covIcoText}</span>
+    <div class="sc-cov-txt"><b>${covPct.toFixed(1)}%</b> coverage<small>${totalFilled}/${totalExpected} slot-persons filled</small></div>
+  </div>`);
+
+  const gapDayList = Object.keys(gapDays).slice(0, 6);
+  gapDayList.forEach(d => {
+    const gs = gapDays[d];
+    const worst = gs.reduce((a, b) => (b.exp - b.got) > (a.exp - a.got) ? b : a);
+    const isoDate = iso(S.year, S.month, +d);
+    const hol = S.holidays[isoDate];
+    rows.push(`<div class="sc-cov-row">
+      <span class="sc-cov-ico hot">!</span>
+      <div class="sc-cov-txt"><b>${MONTH_EN[S.month].slice(0,3)} ${d}</b>${hol ? ` · <span style="color:var(--sc-hot)">${esc(hol)}</span>` : ''}<small>${gs.length} slot short · e.g. ${worst.slot.replace('shift','S')} needs ${worst.exp - worst.got} more</small></div>
+    </div>`);
+  });
+  if (Object.keys(gapDays).length > 6) {
+    rows.push(`<div class="sc-cov-row"><span class="sc-cov-ico warn">…</span><div class="sc-cov-txt">…and ${Object.keys(gapDays).length - 6} more days with gaps</div></div>`);
+  }
+  if (!gaps.length) {
+    rows.push(`<div class="sc-cov-row"><span class="sc-cov-ico ok">✓</span><div class="sc-cov-txt">No coverage gaps this month<small>every slot has expected staffing</small></div></div>`);
+  }
+  $('coverage').innerHTML = rows.join('');
+}
+
+function monthStats() {
+  const days = daysIn(S.year, S.month);
+  const rows = S.users.map(u => ({ id: u.id, ...u, s1_tdpk:0, s1_wah:0, s1_oncall:0, s2_wah:0, s2_oncall:0, total:0, leave:0 }));
+  const byId = Object.fromEntries(rows.map(r => [r.id, r]));
+
+  for (let d = 1; d <= days; d++) {
+    const isoDate = iso(S.year, S.month, d);
+    const day = S.schedule[isoDate];
+    if (!day) continue;
+    const leaveSet = new Set(S.leavesByDate[isoDate] || []);
+    [['shift1_tdpk','s1_tdpk'],['shift1_wah','s1_wah'],['shift1_oncall','s1_oncall'],['shift2_wah','s2_wah'],['shift2_oncall','s2_oncall']].forEach(([sk, tk]) => {
+      slotPeople(day, sk).forEach(uid => {
+        if (byId[uid] && !leaveSet.has(uid)) {
+          byId[uid][tk]++;
+          byId[uid].total++;
+        }
+      });
+    });
+    leaveSet.forEach(uid => { if (byId[uid]) byId[uid].leave++; });
+  }
+  return rows;
+}
+
+function renderStats() {
+  const stats = monthStats();
+  const totalPeople = stats.filter(r => r.total > 0 || r.leave > 0).length;
+  $('stats-sub').textContent = `${MONTH_EN[S.month]} ${S.year} · ${totalPeople} active people · ${S.users.length} team total`;
+  const sorted = stats.slice().sort((a, b) => b.total - a.total);
+  let html = `<thead><tr>
+    <th>Person</th><th>Role</th>
+    <th class="right">S1·TDPK</th><th class="right">S1·W@H</th><th class="right">S1·OC</th>
+    <th class="right">S2·W@H</th><th class="right">S2·OC</th>
+    <th class="right">Total</th><th class="right">Leave</th><th class="right">Quota left</th>
+  </tr></thead><tbody>`;
+  sorted.forEach(r => {
+    const qMax = S.quotas[r.id] || 12;
+    const qUsed = (S.leavesByUser[r.id] || [])
+      .filter(rq => rq.type === 'vacation' && rq.start_date.startsWith(String(S.year)))
+      .reduce((a, rq) => a + Math.floor((new Date(rq.end_date) - new Date(rq.start_date)) / 86400000) + 1, 0);
+    const qLeft = Math.max(0, qMax - qUsed);
+    html += `<tr class="${isMe(r.id) ? 'me' : ''}">
+      <td><div class="name-cell"><span class="av" style="background:${r.color}">${shortName(r)}</span><span>${esc(displayName(r))}${isMe(r.id) ? ' 🌟' : ''}</span></div></td>
+      <td style="font-size:10.5px;color:var(--sc-text-soft)">${esc(r.role)}</td>
+      <td class="right">${r.s1_tdpk}</td>
+      <td class="right">${r.s1_wah}</td>
+      <td class="right" style="color:var(--sc-warn);font-weight:700">${r.s1_oncall}</td>
+      <td class="right">${r.s2_wah}</td>
+      <td class="right" style="color:var(--sc-violet);font-weight:700">${r.s2_oncall}</td>
+      <td class="right" style="font-weight:800">${r.total}</td>
+      <td class="right">${r.leave}</td>
+      <td class="right">${qLeft} <span style="color:var(--sc-text-soft);font-size:11px">/${qMax}</span></td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  $('stats').innerHTML = html;
+}
+
+async function changeMonth(delta) {
+  if (delta < 0) { if (S.month === 1) { S.month = 12; S.year--; } else { S.month--; } }
+  else if (delta > 0) { if (S.month === 12) { S.month = 1; S.year++; } else { S.month++; } }
+  else { const t = new Date(); S.year = t.getFullYear(); S.month = t.getMonth() + 1; }
+  $('month-title').innerHTML = '<span class="sk" style="display:inline-block;width:150px;height:18px"></span>';
+  try {
+    await loadMonth(S.year, S.month);
+    renderAll();
+  } catch (e) {
+    console.error(e);
+    $('header-sub').innerHTML = `<span style="color:var(--sc-hot)">❌ ${esc(e.message || e)}</span>`;
+  }
+}
+
+function wireNav() {
+  $('nav-prev').onclick = () => changeMonth(-1);
+  $('nav-next').onclick = () => changeMonth(1);
+  $('btn-today').onclick = () => changeMonth(0);
+}
+
+init();
+</script>
+</body>
+</html>

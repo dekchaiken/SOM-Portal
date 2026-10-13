@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jenkins Build — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="./assets/pages/jenkins-build/jenkins-build.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content jb-page" style="display:flex;flex-direction:column">
+    <div class="jb-wrap" id="jb-wrap">
+      <!-- Hero title (wealth-portal style) -->
+      <header class="jb-hero">
+        <h1>Trigger <span class="jb-orange">Jenkins Job</span></h1>
+        <p id="jb-page-sub">Pipeline: Config-driven build launcher</p>
+      </header>
+
+      <div class="jb-loading" id="jb-loading">กำลังโหลด...</div>
+
+      <div id="jb-body" style="display:none">
+        <!-- ── Portal-style status strip ──────────────────── -->
+        <div class="jb-status-grid">
+          <div class="jb-stat">
+            <div class="jb-stat-icon">J</div>
+            <div>
+              <div class="jb-stat-label">Jenkins Status</div>
+              <div class="jb-stat-value" id="jb-jenkins-status">—</div>
+            </div>
+          </div>
+          <div class="jb-stat">
+            <div class="jb-stat-icon">P</div>
+            <div>
+              <div class="jb-stat-label">รออนุมัติ</div>
+              <div class="jb-stat-value" id="jb-status-pending">—</div>
+            </div>
+          </div>
+          <div class="jb-stat">
+            <div class="jb-stat-icon">%</div>
+            <div>
+              <div class="jb-stat-label">Success Rate (50 ล่าสุด)</div>
+              <div class="jb-stat-value" id="jb-status-rate">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Role banner (checker/maker/admin) -->
+        <div class="jb-banner" id="jb-role-banner" style="display:none"></div>
+
+        <div class="jb-toolbar" id="jb-toolbar" style="display:none">
+          <button class="jb-refresh-btn" id="jb-refresh-btn">↻ Refresh</button>
+        </div>
+
+        <!-- ── Landing: choice cards (every role) ────────── -->
+        <div class="jb-checker-home" id="jb-checker-home" style="display:none">
+          <button class="jb-ch-card" id="jb-home-trigger" onclick="openCheckerPanel('trigger')">
+            <span class="jb-ch-icon">&#9889;</span>
+            <span class="jb-ch-title">Trigger</span>
+            <span class="jb-ch-sub">สร้างรายการ Build ใหม่</span>
+            <span class="jb-ch-count zero">สร้างได้เลย</span>
+          </button>
+          <button class="jb-ch-card" onclick="openCheckerPanel('approvals')">
+            <span class="jb-ch-icon">&#10003;</span>
+            <span class="jb-ch-title">รออนุมัติ</span>
+            <span class="jb-ch-sub">รายการที่รอการตัดสินใจ</span>
+            <span class="jb-ch-count" id="jb-ch-approvals-count">0 รายการ</span>
+          </button>
+          <button class="jb-ch-card" onclick="openCheckerPanel('history')">
+            <span class="jb-ch-icon">&#8635;</span>
+            <span class="jb-ch-title">Build History</span>
+            <span class="jb-ch-sub">ประวัติการ Build ของทีมทั้งหมด</span>
+            <span class="jb-ch-count" id="jb-ch-history-count">0 รายการ</span>
+          </button>
+        </div>
+
+        <!-- ── Panels (one at a time, slide in) ── -->
+        <div class="jb-checker-panels" id="jb-checker-panels">
+          <!-- Trigger panel: form (left) + System Status / Validation Rules (right) -->
+          <div id="jb-panel-trigger">
+            <button class="jb-panel-back" onclick="backToCheckerHome()">&larr; กลับไปหน้าหลัก</button>
+            <div class="jb-grid">
+              <div class="jb-card">
+                <h3>Build Parameters <span style="font-weight:400;color:var(--jb-muted);font-size:.8rem" id="jb-form-tool-name"></span></h3>
+                <p class="jb-card-sub" id="jb-form-desc">Please fill in all required information correctly to initiate the automation process.</p>
+                <div class="jb-toolbar">
+                  <select class="jb-tool-select" id="jb-tool-select"></select>
+                  <span class="jb-server-pill" id="jb-server-pill"></span>
+                </div>
+                <form id="jb-form" autocomplete="off"></form>
+              </div>
+
+              <div class="jb-side-col">
+                <div class="jb-card jb-status-card">
+                  <h4>System Status</h4>
+                  <div class="jb-status-line">
+                    <span class="jb-dot" id="jb-side-dot"></span>
+                    <span id="jb-side-user">Connecting...</span>
+                  </div>
+                </div>
+                <div class="jb-card">
+                  <h4>Validation Rules</h4>
+                  <ul class="jb-rules" id="jb-rules-list">
+                    <li><b>ID:</b> Must be a valid numerical customer ID. <b>No special characters allowed.</b></li>
+                    <li><b>TMNID:</b> Must be <code>tmn.</code> followed by exactly <code>11 digits</code>. <b>No special characters allowed.</b></li>
+                    <li><b>Mobile:</b> Exactly <code>10 digits</code>, no spaces or special characters.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="jb-panel-approvals">
+            <button class="jb-panel-back" onclick="backToCheckerHome()">&larr; กลับไปหน้าหลัก</button>
+            <div class="jb-card">
+              <h3>Pending <span class="jb-orange">Approvals</span> <span class="jb-count" id="jb-approvals-count">0</span></h3>
+              <p class="jb-card-sub">Review and authorize submitted pipelines · Maker ส่งรายการแล้วรอ Checker ตัดสินใจ</p>
+              <div class="jb-table-wrap" id="jb-approvals-list">
+                <table class="jb-table">
+                  <thead>
+                    <tr>
+                      <th style="width:170px">Submitted On</th>
+                      <th>Maker</th>
+                      <th>Target Parameters</th>
+                      <th class="jb-decision-cell" style="width:200px">Decision</th>
+                    </tr>
+                  </thead>
+                  <tbody id="jb-approvals-body">
+                    <tr><td colspan="4" class="jb-empty">ไม่มีรายการรออนุมัติ</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div id="jb-panel-history">
+            <button class="jb-panel-back" onclick="backToCheckerHome()">&larr; กลับไปหน้าหลัก</button>
+            <div class="jb-card">
+              <h3>Build History <span class="jb-count" id="jb-history-count">0</span></h3>
+              <p class="jb-card-sub">ประวัติการ Build ของทีม (auto-refresh ทุก 30 วิ)</p>
+              <div class="jb-table-wrap">
+                <table class="jb-table">
+                  <thead>
+                    <tr>
+                      <th>Tool</th><th>Params</th><th>Status / Result</th><th>Submitted By</th><th>Time</th><th>Build #</th>
+                    </tr>
+                  </thead>
+                  <tbody id="jb-history-body">
+                    <tr><td colspan="6" style="text-align:center;color:var(--jb-muted)">ยังไม่มีประวัติ</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress modal -->
+<div class="jb-modal-overlay" id="jb-progress-modal">
+  <div class="jb-modal">
+    <h3 id="jb-modal-title">Executing Pipeline</h3>
+    <div class="jb-modal-sub" id="jb-modal-status">Initializing build sequence...</div>
+    <div class="jb-progress-track"><div class="jb-progress-bar" id="jb-progress-bar"></div></div>
+    <div class="jb-progress-pct" id="jb-progress-pct">0%</div>
+    <div class="jb-modal-result" id="jb-modal-result"></div>
+    <button class="jb-submit" id="jb-modal-close" style="display:none">ปิด</button>
+  </div>
+</div>
+
+<!-- Approval-sent modal (Maker) — shows what was submitted + live status -->
+<div class="jb-modal-overlay" id="jb-approval-modal">
+  <div class="jb-modal">
+    <div class="jb-modal-icon" id="jb-appr-icon">&#8987;</div>
+    <h3 id="jb-appr-title">ส่งรายการให้ Checker แล้ว</h3>
+    <div class="jb-modal-sub" id="jb-appr-sub">Checker กำลังตรวจสอบคำขอของคุณ</div>
+
+    <div class="jb-appr-status pending" id="jb-appr-status">
+      <span class="jb-dot"></span>
+      <span id="jb-appr-status-text">Pending Approval</span>
+    </div>
+
+    <div class="jb-confirm-details" id="jb-appr-details"></div>
+
+    <div style="display:flex;gap:.75rem">
+      <button type="button" class="jb-btn-sm jb-btn-reject-sm" id="jb-appr-close" style="flex:1;justify-content:center;padding:.85rem 1rem">ปิด</button>
+      <button type="button" class="jb-submit" id="jb-appr-view" style="flex:1;margin-top:0;padding:.85rem 1rem;font-size:.82rem">ดูรายการรออนุมัติทั้งหมด</button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/pages/jenkins-build/jenkins-build.js"></script>
+</body>
+</html>

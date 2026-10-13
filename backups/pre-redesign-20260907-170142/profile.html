@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/dev-badge.css">
+  <style>
+    /* ══════════════════════════════════════════════════
+       Profile — Full-width, Fixed-height, Light Theme
+       Blocks.so polish: soft shadows, accent glow,
+       lift-on-hover, stagger entrance, chevron arrows.
+    ══════════════════════════════════════════════════ */
+
+    :root {
+      --accent:        var(--orange);
+      --accent-soft:   rgba(242,100,25,.10);
+      --accent-line:   rgba(242,100,25,.32);
+      --accent-glow:   rgba(242,100,25,.18);
+      --depth-sm:      0 1px 2px rgba(15,17,23,.04), 0 1px 1px rgba(15,17,23,.03);
+      --depth-md:      0 4px 12px rgba(15,17,23,.06), 0 2px 4px rgba(15,17,23,.04);
+      --depth-lg:      0 12px 28px rgba(15,17,23,.10), 0 4px 10px rgba(15,17,23,.05);
+    }
+    html[data-theme="dark"] {
+      --depth-sm:      0 1px 2px rgba(0,0,0,.30);
+      --depth-md:      0 4px 14px rgba(0,0,0,.35);
+      --depth-lg:      0 14px 32px rgba(0,0,0,.45);
+    }
+
+    /* Page fills exactly one viewport — no outer scroll */
+    .page-content {
+      height: calc(100vh - var(--topbar-h));
+      overflow: hidden;
+      padding: 14px 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Two-level grid: hero row (auto) + two columns (1fr) */
+    .pf-shell {
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      grid-template-rows: auto 1fr;
+      gap: 12px;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden; /* lets CSS grid 1fr rows compute against the flex-allocated height */
+    }
+    .pf-hero-row { grid-column: 1 / -1; }
+
+    /* Left column — scrolls internally if content overflows */
+    .pf-left {
+      display: flex; flex-direction: column; gap: 12px;
+      overflow-y: auto; min-height: 0;
+    }
+    /* Right column — flex column so Activity Feed can fill remaining space */
+    .pf-right {
+      display: flex; flex-direction: column; gap: 12px;
+      min-height: 0; overflow: hidden;
+    }
+
+    /* ── Card base (light) ──────────────────────────── */
+    .c {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--depth-sm);
+      animation: cardEnter .45s cubic-bezier(.16,1,.3,1) both;
+    }
+    @keyframes cardEnter {
+      from { opacity:0; transform:translateY(8px) }
+      to   { opacity:1; transform:translateY(0) }
+    }
+    .pf-hero-row { animation-delay:.02s }
+    .pf-left  > .c:nth-of-type(1) { animation-delay:.10s }
+    .pf-left  > .c:nth-of-type(2) { animation-delay:.16s }
+    .pf-right > .c:nth-of-type(1) { animation-delay:.12s }
+    .pf-right > .c:nth-of-type(2) { animation-delay:.18s }
+    .pf-right > .c:nth-of-type(3) { animation-delay:.24s }
+    .c-head {
+      display: flex; align-items: center; gap: 9px;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(90deg, rgba(242,100,25,.04) 0%, transparent 70%);
+      flex-shrink: 0;
+    }
+    .c-icon {
+      width: 26px; height: 26px; border-radius: 7px;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-line);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; flex-shrink: 0;
+      color: var(--accent);
+    }
+    .c-title { font-size: 10.5px; font-weight: 700; color: var(--text); letter-spacing: .03em; }
+    .c-sub   { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+    .c-body  { padding: 14px 16px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .c { animation: none }
+    }
+
+    /* ── Team-tinted hero (Option B) ─────────────────
+       Vars default to orange (SM); JS overrides with the current team's
+       color so hero-banner/avatar-ring/hero-tag/prompt all shift together
+       and users see "this is my team" the moment the page loads. */
+    :root {
+      --team-color: var(--accent);
+      --team-soft:  var(--accent-soft);
+      --team-line:  var(--accent-line);
+      --team-glow:  var(--accent-glow);
+    }
+
+    /* ── HERO (lighter — blocks.so style) ───────────── */
+    .hero-banner {
+      height: 84px;
+      background: linear-gradient(135deg,
+        color-mix(in srgb, var(--team-color) 8%, var(--bg-card)) 0%,
+        var(--bg-card) 60%);
+      position: relative; overflow: hidden; flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    /* Decorative dot grid — fades right to top */
+    .hero-banner::before {
+      content: ''; position: absolute; inset: 0;
+      background-image: radial-gradient(circle, var(--team-line) 1px, transparent 1px);
+      background-size: 16px 16px;
+      mask-image: linear-gradient(225deg, black 0%, transparent 65%);
+      -webkit-mask-image: linear-gradient(225deg, black 0%, transparent 65%);
+      opacity: .55;
+    }
+    /* Accent radial glow bottom-left */
+    .hero-banner::after {
+      content: ''; position: absolute; bottom: -50px; left: -30px;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, var(--team-glow) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .hero-tag {
+      position: absolute; top: 10px; right: 14px; z-index: 2;
+      font-size: 7.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--team-color); border: 1px solid var(--team-line);
+      padding: 2px 8px; border-radius: 999px; background: var(--team-soft);
+    }
+
+    /* Hero body — light bg */
+    .hero-body {
+      display: flex; align-items: center; gap: 16px;
+      padding: 0 20px;
+      background: var(--bg-card);
+      border-top: none;
+    }
+
+    /* Avatar — static, no spin */
+    .av-wrap { margin-top: -36px; flex-shrink: 0; position: relative; }
+    .av {
+      width: 76px; height: 76px; border-radius: 50%;
+      border: 3px solid var(--bg-card);
+      box-shadow: 0 0 0 2px var(--team-line), 0 6px 22px var(--team-glow);
+      background: linear-gradient(135deg, var(--team-soft), var(--bg-card));
+      overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; color: var(--team-color);
+      cursor: pointer;
+      transition: box-shadow .25s, transform .25s;
+      position: relative;
+    }
+    .av:hover {
+      box-shadow: 0 0 0 2.5px var(--team-color), 0 8px 28px var(--team-glow);
+      transform: scale(1.02);
+    }
+    .av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .av-ov {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: rgba(0,0,0,.50);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px; opacity: 0; transition: opacity .15s; font-size: 14px; pointer-events: none;
+    }
+    .av-ov span { font-size: 7.5px; color: #fff; font-weight: 600; letter-spacing: .04em; }
+    .av:hover .av-ov { opacity: 1; }
+    .av-online {
+      position: absolute; bottom: 3px; right: 3px;
+      width: 13px; height: 13px; border-radius: 50%;
+      background: #22c55e; border: 2.5px solid var(--bg-card);
+      animation: onl 2s ease-in-out infinite;
+    }
+    @keyframes onl {
+      0%  { box-shadow: 0 0 0 0   rgba(34,197,94,.55); }
+      70% { box-shadow: 0 0 0 6px rgba(34,197,94,0);   }
+      100%{ box-shadow: 0 0 0 0   rgba(34,197,94,0);   }
+    }
+    #avatar-file, #avatar-canvas { display: none; }
+
+    /* Hero info */
+    .hero-info { flex: 1; padding: 8px 0 14px; min-width: 0; }
+    .hero-eyebrow { font-size: 8px; color: var(--text-muted); margin-bottom: 3px; letter-spacing: .08em; }
+    .hero-eyebrow .o { color: var(--team-color); }
+    .hero-name  { font-size: 17px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hero-meta  { display: flex; align-items: center; gap: 7px; margin-top: 5px; flex-wrap: wrap; }
+    .role-badge {
+      font-size: 8.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    .un-chip { font-size: 10.5px; color: var(--text-muted); }
+    .un-chip .at { color: var(--orange); }
+    .av-btns { display: flex; gap: 6px; margin-top: 8px; }
+
+    /* Hero stats — right side */
+    .hero-stats-wrap {
+      margin-left: auto; flex-shrink: 0;
+      display: grid; grid-template-columns: repeat(4, 80px);
+      border-left: 1px solid var(--border);
+      padding: 10px 0 14px;
+      align-self: stretch;
+      align-items: center;
+    }
+    .hs {
+      text-align: center; padding: 0 6px;
+      position: relative;
+    }
+    .hs+.hs::before {
+      content: ''; position: absolute; left: 0; top: 15%; bottom: 15%;
+      width: 1px; background: var(--border);
+    }
+    .hs-n {
+      font-size: 20px; font-weight: 800; line-height: 1; color: var(--text);
+    }
+    .hs-n.acc { color: var(--orange); }
+    .hs-l { font-size: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .07em; margin-top: 2px; }
+
+    /* ── Form fields ─────────────────────────────────── */
+    .pf-label {
+      font-size: 9px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .08em;
+      margin-bottom: 5px; display: flex; align-items: center; gap: 4px;
+    }
+    .ltag { font-size: 8px; opacity: .55; }
+    .pf-input {
+      width: 100%; padding: 8px 11px;
+      background: var(--bg-input); border: 1.5px solid var(--border); border-radius: 8px;
+      font-family: var(--font); font-size: 11px; color: var(--text);
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .pf-input:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(242,100,25,.09); }
+    .pf-input:disabled { opacity: .45; cursor: not-allowed; }
+    .pf-hint { font-size: 9px; color: var(--text-muted); margin-top: 3px; }
+    .pf-row  { margin-bottom: 12px; }
+    .form-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+    /* ── HEATMAP ─────────────────────────────────────── */
+    .hm-scroll { overflow-x: auto; padding-bottom: 2px; }
+    .hm-month-row { display: flex; padding-left: 22px; margin-bottom: 3px; }
+    .hm-ml { font-size: 7.5px; color: var(--text-muted); letter-spacing: .03em; flex-shrink: 0; }
+    .hm-row { display: flex; align-items: center; margin-bottom: 2px; }
+    .hm-dl  { width: 20px; font-size: 7.5px; color: var(--text-muted); text-align: right; padding-right: 4px; flex-shrink: 0; }
+    .hm-cols { display: flex; gap: 2px; }
+    .hm-cell {
+      width: var(--hm-cell, 11px); height: var(--hm-cell, 11px); border-radius: 2px;
+      background: #EBEBEB;
+      transition: transform .1s; cursor: default; flex-shrink: 0;
+    }
+    .hm-cell:hover { transform: scale(1.35); z-index: 2; position: relative; }
+    .hm-cell[data-v="1"] { background: rgba(242,100,25,.22); }
+    .hm-cell[data-v="2"] { background: rgba(242,100,25,.46); }
+    .hm-cell[data-v="3"] { background: rgba(242,100,25,.72); }
+    .hm-cell[data-v="4"] { background: var(--orange); box-shadow: 0 0 4px rgba(242,100,25,.45); }
+    .hm-legend { display: flex; align-items: center; gap: 4px; justify-content: flex-end; margin-top: 7px; }
+    .hm-legend span { font-size: 8px; color: var(--text-muted); }
+    .hm-lc { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+    /* ── MY POSTS ────────────────────────────────────── */
+    .pi {
+      position: relative;
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 16px; cursor: pointer; text-decoration: none;
+      border-bottom: 1px solid var(--border);
+      transition: background .15s, padding-left .18s;
+    }
+    .pi:last-child { border-bottom: none; }
+    .pi:hover { background: var(--accent-soft); padding-left: 20px; }
+    .pi::after {
+      content: '→'; position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%) translateX(-4px);
+      color: var(--accent); font-size: 12px; font-weight: 700;
+      opacity: 0; transition: opacity .18s, transform .18s;
+    }
+    .pi:hover::after { opacity: 1; transform: translateY(-50%) translateX(0); }
+    .pi-dot  { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .pi-body { flex: 1; min-width: 0; }
+    .pi-title { font-size: 11px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pi-meta  { display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
+    .pi-badge {
+      font-size: 8px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      padding: 1.5px 6px; border-radius: 3px; flex-shrink: 0;
+    }
+    .pi-badge.open        { background: rgba(34,197,94,.10);   color: #16a34a; border: 1px solid rgba(34,197,94,.25);  }
+    .pi-badge.in_progress { background: rgba(245,158,11,.10);  color: #b45309; border: 1px solid rgba(245,158,11,.25); }
+    .pi-badge.resolved    { background: rgba(107,114,128,.10); color: #6b7280; border: 1px solid rgba(107,114,128,.2); }
+    .pi-type { font-size: 8.5px; color: var(--text-muted); background: var(--bg); padding: 1px 5px; border-radius: 3px; }
+    .pi-time { font-size: 9px; color: var(--text-muted); flex-shrink: 0; margin-top: 2px; white-space: nowrap; }
+    .posts-empty  { padding: 18px; text-align: center; font-size: 11px; color: var(--text-muted); }
+    .posts-footer { padding: 8px 16px; border-top: 1px solid var(--border); text-align: center; flex-shrink: 0; }
+
+    /* ── SECURITY ────────────────────────────────────── */
+    .sec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+    .sec-stat {
+      background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 9px; padding: 9px 12px;
+    }
+    .sec-lbl { font-size: 8.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .07em; }
+    .sec-val { font-size: 12px; font-weight: 700; color: var(--text); margin-top: 3px; }
+    .sec-val.ok   { color: #16a34a; }
+    .sec-val.warn { color: #b45309; }
+    .ip-label { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 8px; }
+
+    /* ── ACHIEVEMENTS ────────────────────────────────── */
+    .ach-stats { display:grid; grid-template-columns:repeat(4, 1fr); gap:6px }
+    .ach-stat {
+      background:var(--bg); border:1px solid var(--border);
+      border-radius:9px; padding:8px 10px; text-align:center;
+    }
+    .ach-stat .n { font-size:18px; font-weight:800; line-height:1; color:var(--text) }
+    .ach-stat .l { font-size:9px; color:var(--text-muted); margin-top:4px; text-transform:uppercase; letter-spacing:.05em }
+    .ach-stat.gold   .n { color:#eab308 }
+    .ach-stat.silver .n { color:#94a3b8 }
+    .ach-stat.bronze .n { color:#c2410c }
+    .ach-stat.orange .n { color:var(--orange) }
+    .ach-stat.green  .n { color:#10b981 }
+    @media (max-width:480px) { .ach-stats { grid-template-columns:repeat(2, 1fr) } }
+
+    .ach-section-label {
+      font-size:9.5px; font-weight:700; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.06em;
+      margin:14px 0 8px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .ach-section-label::before {
+      content:''; width:5px; height:5px; border-radius:50%; background:var(--accent);
+      box-shadow:0 0 0 3px var(--accent-soft); flex-shrink:0;
+    }
+    .ach-section-label::after {
+      content:''; flex:1; height:1px; background:var(--border);
+    }
+    .ach-row {
+      display:flex; align-items:center; gap:10px; padding:10px 12px;
+      background:var(--bg); border:1px solid var(--border);
+      border-radius:9px; margin-bottom:6px;
+      transition:border-color .18s, transform .18s, box-shadow .18s, background .18s;
+    }
+    .ach-row:hover {
+      border-color:var(--accent-line);
+      background:color-mix(in srgb, var(--accent) 4%, var(--bg));
+      transform:translateX(2px);
+      box-shadow:var(--depth-sm);
+    }
+    .ach-row:hover .ico { transform:scale(1.06) rotate(-3deg) }
+    .ach-row .ico { transition:transform .2s }
+    .ach-row.locked { opacity:.55 }
+    .ach-row .ico {
+      width:32px; height:32px; border-radius:8px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:16px;
+      background:color-mix(in srgb, var(--ach-color, var(--orange)) 14%, transparent);
+      color:var(--ach-color, var(--orange));
+    }
+    .ach-row .body { flex:1; min-width:0 }
+    .ach-row .ti { font-size:12px; font-weight:700; color:var(--text); margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+    .ach-row .meta { font-size:10px; color:var(--text-muted); display:flex; gap:6px; flex-wrap:wrap }
+    .ach-row .meta b { color:var(--text); font-weight:700 }
+    .ach-row .badge {
+      font-size:18px; flex-shrink:0;
+    }
+    .ach-row.locked .badge { filter:grayscale(1); opacity:.4 }
+    .ach-empty {
+      text-align:center; padding:20px 12px; color:var(--text-muted);
+      font-size:11px;
+      border:1px dashed var(--border); border-radius:9px;
+    }
+
+    .ach-points-pill {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:3px 10px; border-radius:999px;
+      background:linear-gradient(135deg, rgba(242,100,25,.15), rgba(234,179,8,.12));
+      color:var(--orange); font-weight:700;
+    }
+
+    .ach-skel {
+      background:linear-gradient(90deg, var(--bg) 25%, var(--border) 50%, var(--bg) 75%);
+      background-size:200% 100%; animation:ach-pulse 1.4s infinite;
+      border-radius:9px;
+    }
+    @keyframes ach-pulse { 0% { background-position:200% 0 } 100% { background-position:-200% 0 } }
+    .ip-item {
+      display: flex; align-items: center; gap: 10px; padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .ip-item:last-child { border-bottom: none; }
+    .ip-icon { width: 26px; height: 26px; border-radius: 7px; background: rgba(59,130,246,.08); display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+    .ip-body { flex: 1; min-width: 0; }
+    .ip-addr { font-size: 11px; font-weight: 600; color: var(--text); }
+    .ip-time { font-size: 9.5px; color: var(--text-muted); margin-top: 1px; }
+    .ip-cur  {
+      font-size: 7.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      background: rgba(34,197,94,.10); color: #16a34a;
+      border: 1px solid rgba(34,197,94,.25);
+      padding: 2px 6px; border-radius: 3px; flex-shrink: 0;
+    }
+
+    /* ── ACTIVITY FEED ── */
+    .act-card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    /* the scrollable area inside the card */
+    .act-scroll {
+      flex: 1;
+      min-height: 0;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .act-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 8px 16px;
+      position: relative;
+      transition: background .15s, padding-left .18s;
+    }
+    .act-item:hover { background: var(--accent-soft); padding-left: 20px; }
+    .act-item + .act-item::before {
+      content: ''; position: absolute; left: 29px; top: 0;
+      width: 1px; height: 8px; background: var(--border);
+    }
+    .act-dot {
+      width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 11px; margin-top: 1px;
+    }
+    .act-body  { flex: 1; min-width: 0; }
+    .act-lbl   { font-size: 10.5px; font-weight: 700; color: var(--text); }
+    .act-detail{ font-size: 9.5px; color: var(--text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .act-time  { font-size: 9px; color: var(--text-muted); flex-shrink: 0; margin-top: 2px; }
+    .act-empty { padding: 20px 16px; text-align: center; font-size: 11px; color: var(--text-muted); }
+    .act-more  { padding: 8px 16px; text-align: center; border-top: 1px solid var(--border); flex-shrink: 0; }
+
+    /* ── Responsive ─────────────────────────────────── */
+    @media (max-width: 900px) {
+      .page-content { height: auto; overflow: auto; }
+      .pf-shell { grid-template-columns: 1fr; height: auto; }
+      .pf-left, .pf-right { overflow: visible; }
+      .act-card { flex: none; min-height: 0; }
+      .act-scroll { max-height: 320px; }
+      .hero-stats-wrap { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title" id="page-title">◈ Profile</div>
+        <div class="page-sub" id="page-subtitle">จัดการบัญชีและดูกิจกรรมของคุณ</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" onclick="history.back()" style="font-size:11px">← Back</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="pf-shell">
+
+        <!-- ══ HERO ════════════════════════════════════════ -->
+        <div class="c pf-hero-row" style="overflow:visible">
+          <div class="hero-banner">
+            <div class="hero-tag" id="pf-hero-tag">SM·HUB / profile</div>
+          </div>
+          <div class="hero-body">
+
+            <div class="av-wrap">
+              <div class="av" onclick="document.getElementById('avatar-file').click()"
+                   title="คลิกเพื่อเปลี่ยนรูป">
+                <span id="av-initials"></span>
+                <div class="av-ov"><span><i data-icon="camera"></i></span><span>เปลี่ยนรูป</span></div>
+              </div>
+              <div class="av-online"></div>
+            </div>
+            <input type="file" id="avatar-file" accept="image/png,image/jpeg,image/gif,image/webp">
+            <canvas id="avatar-canvas" width="200" height="200"></canvas>
+
+            <div class="hero-info">
+              <div class="hero-eyebrow"><span class="o">~/<span id="pf-team-slug">sm</span></span> <i data-icon="play"></i> whoami</div>
+              <div class="hero-name" id="pf-name">—</div>
+              <div class="hero-meta">
+                <span class="role-badge" id="pf-role">—</span>
+                <span class="un-chip"><span class="at">#</span><span id="pf-username">—</span></span>
+              </div>
+              <div class="av-btns">
+                <button class="btn btn-ghost btn-sm"
+                        onclick="document.getElementById('avatar-file').click()"
+                        style="font-size:10px"><i data-icon="camera"></i> เปลี่ยนรูป</button>
+                <button class="btn btn-ghost btn-sm" id="rm-av-btn"
+                        onclick="removeAvatar()"
+                        style="font-size:10px;display:none;color:var(--danger)"><i data-icon="x"></i> ลบรูป</button>
+              </div>
+            </div>
+
+            <!-- Stats — right side of hero -->
+            <div class="hero-stats-wrap">
+              <div class="hs"><div class="hs-n acc" id="s-total">—</div><div class="hs-l">Activities</div></div>
+              <div class="hs"><div class="hs-n"     id="s-posts">—</div><div class="hs-l">Posts</div></div>
+              <div class="hs"><div class="hs-n"     id="s-cmt">—</div>  <div class="hs-l">Comments</div></div>
+              <div class="hs"><div class="hs-n"     id="s-login">—</div><div class="hs-l">Logins</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ LEFT ════════════════════════════════════════ -->
+        <div class="pf-left">
+
+          <!-- Account Info -->
+          <div class="c">
+            <div class="c-head">
+              <div class="c-icon"><i data-icon="user"></i></div>
+              <div><div class="c-title">Account Info</div><div class="c-sub">ชื่อแสดงผลและข้อมูลบัญชี</div></div>
+            </div>
+            <div class="c-body">
+              <div class="pf-row">
+                <div class="pf-label"><i data-icon="pencil"></i> ชื่อแสดงผล</div>
+                <input class="pf-input" type="text" id="input-name"
+                       maxlength="60">
+              </div>
+              <div class="pf-row">
+                <div class="pf-label">🇹🇭 ชื่อ-นามสกุลภาษาไทย</div>
+                <input class="pf-input" type="text" id="input-name-th" maxlength="80"
+                      >
+              </div>
+              <div class="pf-row">
+                <div class="pf-label"><i data-icon="id-card"></i> รหัสพนักงาน (Employee ID)</div>
+                <input class="pf-input" type="text" id="input-emp-id" maxlength="20"
+                      >
+              </div>
+              <div class="pf-row">
+                <div class="pf-label"><i data-icon="lock"></i> Username <span class="ltag">· locked</span></div>
+                <input class="pf-input" type="text" id="input-username" disabled>
+                <div class="pf-hint"><i data-icon="lock"></i> ไม่สามารถเปลี่ยนได้</div>
+              </div>
+              <div class="pf-row">
+                <div class="pf-label"><i data-icon="lock"></i> Email <span class="ltag">· locked</span></div>
+                <input class="pf-input" type="email" id="input-email" disabled>
+                <div class="pf-hint"><i data-icon="lock"></i> ติดต่อ Admin เพื่อเปลี่ยน</div>
+              </div>
+              <div class="pf-row">
+                <div class="pf-label"><i data-icon="smartphone"></i> เบอร์มือถือ</div>
+                <input class="pf-input" type="text" id="input-phone" maxlength="20"
+                      >
+              </div>
+              <div class="pf-row">
+                <div class="pf-label"><img src="./uploads/tmn.png" alt="TMN" style="width:14px;height:14px;object-fit:contain;vertical-align:middle"> TMN.ID / เบอร์ TrueMoney Wallet</div>
+                <input class="pf-input" type="text" id="input-tmn-id" maxlength="20"
+                      >
+              </div>
+              <div class="pf-row">
+                <div class="pf-label"><i data-icon="home"></i> เน็ตบ้าน (ISP + speed)</div>
+                <input class="pf-input" type="text" id="input-net-home" maxlength="100"
+                      >
+              </div>
+              <div class="pf-row">
+                <div class="pf-label"><i data-icon="wifi"></i> เครือข่ายมือถือ</div>
+                <input class="pf-input" type="text" id="input-net-mobile" maxlength="50"
+                      >
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" id="save-btn" onclick="saveProfile()"><i data-icon="save"></i> บันทึก</button>
+                <a href="./change-password.html" class="btn btn-ghost" style="font-size:11px"><i data-icon="key"></i> เปลี่ยนรหัสผ่าน</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Achievements -->
+          <div class="c">
+            <div class="c-head">
+              <div class="c-icon"><i data-icon="trophy"></i></div>
+              <div><div class="c-title">Achievements</div><div class="c-sub">คอร์สเรียน · ข้อสอบ · onboarding</div></div>
+              <div id="ach-points" style="margin-left:auto; font-size:11px; font-weight:700; color:var(--orange)"></div>
+            </div>
+            <div class="c-body">
+              <div id="ach-stats" class="ach-stats">
+                <div class="ach-skel" style="height:60px"></div>
+              </div>
+              <div id="ach-list" style="margin-top:14px"></div>
+            </div>
+          </div>
+
+        </div><!-- /pf-left -->
+
+        <!-- ══ RIGHT ════════════════════════════════════════ -->
+        <div class="pf-right">
+
+          <!-- Heatmap -->
+          <div class="c" style="flex-shrink:0">
+            <div class="c-head">
+              <div class="c-icon"><i data-icon="flame"></i></div>
+              <div><div class="c-title">Activity Heatmap</div><div class="c-sub">กิจกรรมย้อนหลัง 12 เดือน</div></div>
+              <div id="hm-total" style="margin-left:auto;font-size:9.5px;color:var(--text-muted)"></div>
+            </div>
+            <div class="c-body" style="padding:12px 14px 12px">
+              <div class="hm-scroll" id="hm-container">
+                <div style="color:var(--text-muted);font-size:11px;padding:6px 0">⏳ กำลังโหลด...</div>
+              </div>
+              <div class="hm-legend">
+                <span>น้อย</span>
+                <div class="hm-lc" style="background:#EBEBEB"></div>
+                <div class="hm-lc" style="background:rgba(242,100,25,.22)"></div>
+                <div class="hm-lc" style="background:rgba(242,100,25,.46)"></div>
+                <div class="hm-lc" style="background:rgba(242,100,25,.72)"></div>
+                <div class="hm-lc" style="background:var(--orange);box-shadow:0 0 4px rgba(242,100,25,.4)"></div>
+                <span>มาก</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- My Recent Posts -->
+          <div class="c" style="flex-shrink:0;min-height:0;overflow:hidden">
+            <div class="c-head">
+              <div class="c-icon"><i data-icon="edit"></i></div>
+              <div><div class="c-title">My Recent Posts</div><div class="c-sub">โพสต์ล่าสุดที่สร้างบน Web Board</div></div>
+              <button class="btn btn-ghost btn-sm" onclick="loadMyPosts()"
+                      style="margin-left:auto;font-size:9.5px">↺</button>
+            </div>
+            <div id="posts-list">
+              <div class="posts-empty">⏳ กำลังโหลด...</div>
+            </div>
+            <div class="posts-footer">
+              <a href="./board.html" class="btn btn-ghost btn-sm" style="font-size:9.5px">
+                <i data-icon="clipboard"></i> ดูทุกโพสต์บน Web Board →
+              </a>
+            </div>
+          </div>
+
+          <!-- Activity Feed — fills remaining space, scrolls internally -->
+          <div class="c act-card">
+            <div class="c-head">
+              <div class="c-icon"><i data-icon="clipboard"></i></div>
+              <div><div class="c-title">Activity Feed</div><div class="c-sub">กิจกรรมทั้งหมดของคุณ</div></div>
+              <button class="btn btn-ghost btn-sm" onclick="loadActivity(true)"
+                      style="margin-left:auto;font-size:9.5px">↺</button>
+            </div>
+            <div id="act-list" class="act-scroll">
+              <div class="act-empty">⏳ กำลังโหลด...</div>
+            </div>
+            <div id="act-more-wrap" class="act-more" style="display:none">
+              <button class="btn btn-ghost btn-sm" id="act-more-btn"
+                      onclick="loadMoreActivity()" style="font-size:10px">
+                โหลดเพิ่มเติม
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /pf-right -->
+
+      </div><!-- /pf-shell -->
+    </main>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/analytics.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script>
+if (!Auth.requireAuth()) {}
+Layout.render('profile');
+
+let pendingAvatar64 = null;
+let rmAvatarFlag    = false;
+
+// ── Team theming (Option B: team-tinted hero) ──────
+// Applies the team's color to hero-banner gradient/dots/glow, avatar ring,
+// hero-tag, and the eyebrow prompt slug. Handles three cases:
+//   1. own profile      → user's team from JWT
+//   2. other's profile  → team from profile API response
+//   3. super_admin      → view-as team (sessionStorage) or SM/global fallback
+function applyTeamTheme(team) {
+  const root  = document.documentElement;
+  const slug  = (team?.slug || 'sm').toLowerCase();
+  const color = team?.color || '#F26419';                 // fallback = orange
+  const name  = (team?.name || slug).toUpperCase().replace(/\s*TEAM\s*$/i, '');
+
+  // Convert hex → rgb tuple so we can build rgba() variants
+  const hex = color.replace('#', '');
+  const n   = parseInt(hex.length === 3
+    ? hex.split('').map(c => c + c).join('')
+    : hex, 16);
+  const rgb = `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+
+  root.style.setProperty('--team-color', color);
+  root.style.setProperty('--team-soft',  `rgba(${rgb},.10)`);
+  root.style.setProperty('--team-line',  `rgba(${rgb},.35)`);
+  root.style.setProperty('--team-glow',  `rgba(${rgb},.20)`);
+
+  const tag = document.getElementById('pf-hero-tag');
+  const eb  = document.getElementById('pf-team-slug');
+  if (tag) tag.textContent = `${name}·HUB / profile`;
+  if (eb)  eb.textContent  = slug;
+}
+
+// Fetch the current user's team (or view-as team) with color, cached in
+// sessionStorage for the tab lifetime so we don't re-hit the API on every
+// profile visit.
+async function _loadOwnTeam() {
+  const viewAs = Auth._getViewAsTeam?.();
+  if (viewAs) return viewAs;                              // super_admin previewing a team
+
+  const slug = Auth.getTeam();
+  if (!slug) return null;                                 // super_admin with no view-as
+
+  try {
+    const cached = sessionStorage.getItem('_pf_own_team');
+    if (cached) {
+      const t = JSON.parse(cached);
+      if (t?.slug === slug) return t;
+    }
+    const res = await API.teams.list();
+    const teams = res?.data?.data || res?.data || [];
+    const t = teams.find(x => x.slug === slug) || teams[0] || null;
+    if (t) sessionStorage.setItem('_pf_own_team', JSON.stringify(t));
+    return t;
+  } catch { return null; }
+}
+
+// ── Multi-user profile support ─────────────────────
+const urlParams = new URLSearchParams(window.location.search);
+const targetUserId = urlParams.get('user');
+let isOwnProfile = true;
+let currentUser = Auth.getUser();
+
+// Check access permissions
+if (targetUserId && targetUserId !== currentUser?.id) {
+  isOwnProfile = false;
+  // Anyone signed in can view another user's profile (read-only).
+  // Edit controls are hidden in initPage() when !isOwnProfile.
+}
+
+/* ── INIT ─────────────────────────────────────────── */
+function initPage() {
+  if (isOwnProfile) {
+    // Tint hero with the user's own team color (or view-as team for super_admin)
+    _loadOwnTeam().then(applyTeamTheme);
+
+    // Show own profile with all fields editable
+    document.getElementById('page-title').textContent = '◈ My Profile';
+    document.getElementById('page-subtitle').textContent = 'จัดการบัญชีและดูกิจกรรมของคุณ';
+    const u = Auth.getUser();
+    if (!u) return;
+    document.getElementById('input-name').value     = u.name     || '';
+    document.getElementById('input-name').disabled  = false;
+    document.getElementById('input-username').value = u.username || '';
+    document.getElementById('input-email').value    = u.email    || '';
+    // Contact + identity fields (not in JWT — fetch from server)
+    API.auth.getProfile().then(res => {
+      if (!res?.ok) return;
+      const d = res.data?.data || {};
+      document.getElementById('input-name-th').value    = d.name_th    || '';
+      document.getElementById('input-emp-id').value     = d.emp_id     || '';
+      document.getElementById('input-phone').value      = d.phone      || '';
+      document.getElementById('input-tmn-id').value     = d.tmn_id     || '';
+      document.getElementById('input-net-home').value   = d.net_home   || '';
+      document.getElementById('input-net-mobile').value = d.net_mobile || '';
+    });
+    document.getElementById('pf-name').textContent     = u.name || '—';
+    const pfRole1 = document.getElementById('pf-role');
+    pfRole1.textContent = Roles.label(u.role || '');
+    pfRole1.className = Roles.badgeClass(u.role || '');
+    document.getElementById('pf-username').textContent = u.username || '—';
+    setAvatar(u.avatar_url || '', u.name || '?');
+    loadAchievements();
+    document.querySelector('.form-actions').style.display = '';
+    document.getElementById('avatar-file').addEventListener('change', handleAvatarChange);
+  } else {
+    // Show other user's read-only profile
+    document.getElementById('page-title').textContent = '◈ User Profile';
+    document.getElementById('page-subtitle').textContent = 'ดูข้อมูลและกิจกรรมของสมาชิกทีม';
+    loadOtherUserProfile();
+    loadOtherUserAchievements();
+    // Hide save button & avatar edit controls (keep inputs visible — they're disabled)
+    document.querySelector('.form-actions').style.display = 'none';
+    document.querySelector('.av-btns').style.display = 'none';  // Hide avatar buttons
+    document.getElementById('avatar-file').disabled = true;
+    // Disable all profile inputs (read-only view)
+    document.getElementById('input-name').disabled = true;
+    // Make avatar non-clickable
+    document.querySelector('.av').style.cursor = 'default';
+    document.querySelector('.av').onclick = null;
+  }
+}
+
+async function loadOtherUserProfile() {
+  try {
+    const res = await fetch(`./api/users/profile.php?user_id=${targetUserId}`, {
+      headers: { 'Authorization': `Bearer ${Auth.getToken()}` }
+    });
+    
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('API Error:', res.status, text);
+      document.body.innerHTML = `<div style="padding:40px;text-align:center"><h2><i data-icon="alert-triangle"></i> Error ${res.status}</h2><p>${text || 'Failed to load profile'}</p><button class="btn btn-primary" onclick="history.back()">← Go Back</button></div>`;
+      return;
+    }
+    
+    const json = await res.json();
+    console.log('Profile data:', json);
+    
+    if (!json.success) {
+      document.body.innerHTML = `<div style="padding:40px;text-align:center"><h2><i data-icon="alert-triangle"></i> ${json.message || 'Profile not found'}</h2><p style="color:var(--text-muted)">${json.error || ''}</p><button class="btn btn-primary" onclick="history.back()">← Go Back</button></div>`;
+      return;
+    }
+    
+    const profile = json.data.profile;
+    const heatmapData = json.data.heatmap;
+    const recentPosts = json.data.recent_posts;
+    const activityFeed = json.data.activity_feed;
+    const stats = json.data.stats;
+    
+    // Tint hero using this user's team (look up color from the teams list)
+    if (profile.team) {
+      try {
+        const tr = await API.teams.list();
+        const teams = tr?.data?.data || tr?.data || [];
+        const t = teams.find(x => x.slug === profile.team) || { slug: profile.team };
+        applyTeamTheme(t);
+      } catch {
+        applyTeamTheme({ slug: profile.team });            // slug-only fallback (no color)
+      }
+    }
+
+    // Update UI with profile
+    document.getElementById('input-name').value = profile.name;
+    document.getElementById('input-name').disabled = true;
+    document.getElementById('input-username').value = profile.username;
+    document.getElementById('input-email').value = profile.email;
+    document.getElementById('input-name-th').value    = profile.name_th    || '';
+    document.getElementById('input-emp-id').value     = profile.emp_id     || '';
+    document.getElementById('input-phone').value      = profile.phone      || '';
+    document.getElementById('input-tmn-id').value     = profile.tmn_id     || '';
+    document.getElementById('input-net-home').value   = profile.net_home   || '';
+    document.getElementById('input-net-mobile').value = profile.net_mobile || '';
+    // Read-only for other users
+    ['input-name-th','input-emp-id','input-phone','input-tmn-id','input-net-home','input-net-mobile'].forEach(id => {
+      document.getElementById(id).disabled = true;
+    });
+    document.getElementById('pf-name').textContent = profile.name || '—';
+    const pfRole2 = document.getElementById('pf-role');
+    pfRole2.textContent = Roles.label(profile.role || '');
+    pfRole2.className = Roles.badgeClass(profile.role || '');
+    document.getElementById('pf-username').textContent = profile.username || '—';
+    setAvatar(profile.avatar_url || '', profile.name || '?');
+    
+    // Update stats
+    document.getElementById('s-total').textContent = stats.total_actions || 0;
+    document.getElementById('s-posts').textContent = recentPosts.length || 0;
+    document.getElementById('s-cmt').textContent = activityFeed.filter(a => a.action === 'board_comment').length || 0;
+    document.getElementById('s-login').textContent = activityFeed.filter(a => a.action === 'login').length || 0;
+    
+    // Build heatmap from API data
+    buildHeatmapFromAPI(heatmapData);
+    
+    // Load recent posts
+    displayRecentPosts(recentPosts);
+    
+    // Load activity feed
+    displayActivityFeed(activityFeed);
+    
+  } catch (err) {
+    console.error('Failed to load profile:', err);
+    document.getElementById('act-list').innerHTML = '<div class="act-empty"><i data-icon="alert-triangle"></i> โหลดไม่ได้</div>';
+  }
+}
+
+function displayRecentPosts(posts) {
+  const el = document.getElementById('posts-list');
+  if (!posts.length) { 
+    el.innerHTML = '<div class="posts-empty">ยังไม่มีโพสต์</div>'; 
+    return; 
+  }
+  el.innerHTML = '';
+  posts.forEach(p => {
+    const a = document.createElement('a');
+    a.className = 'pi'; 
+    a.href = `./board.html#${p.detail?.post_id || p.id}`;
+    const actionLabel = p.action === 'board_create' ? 'สร้าง' : 'แก้ไข';
+    const title = p.detail?.title || 'Post';
+    a.innerHTML = `
+      <div class="pi-dot" style="background:#22c55e"></div>
+      <div class="pi-body">
+        <div class="pi-title">${escHtml(title)}</div>
+        <div class="pi-meta">
+          <span class="pi-type">${actionLabel}</span>
+        </div>
+      </div>
+      <div class="pi-time">${fmtRel(p.ts)}</div>`;
+    el.appendChild(a);
+  });
+}
+
+function displayActivityFeed(items) {
+  const list = document.getElementById('act-list');
+  if (!items.length) {
+    list.innerHTML = '<div class="act-empty">ยังไม่มีกิจกรรม</div>';
+    return;
+  }
+  list.innerHTML = '';
+  items.slice(0, 50).forEach(item => {
+    const m = getMeta(item.action);
+    const d = item.detail || {};
+    let dt = '';
+    switch (item.action) {
+      case 'login':
+        dt = d.username ? `${d.username}${item.ip ? ' · ' + item.ip : ''}` : (item.ip || ''); break;
+      case 'jira_create_ticket':
+        dt = d.issue_key ? `${d.issue_key}${d.summary ? ': ' + d.summary.substring(0,60) : ''}` : (d.summary || ''); break;
+      case 'email_sent':
+        dt = d.subject || (d.to ? `→ ${d.to}` : ''); break;
+      case 'health_check':
+        dt = `Jira: ${d.jira_status || '?'}${d.jenkins_errors > 0 ? ` · Jenkins: ${d.jenkins_errors} err` : ''}`; break;
+      default:
+        dt = d.title || d.summary || d.name || d.display || d.query || d.key || d.subject || d.filename || d.file || '';
+    }
+    const el = document.createElement('div');
+    el.className = 'act-item';
+    el.innerHTML = `
+      <div class="act-dot" style="background:${m.color}">${m.icon}</div>
+      <div class="act-body">
+        <div class="act-lbl">${escHtml(m.label)}</div>
+        ${dt ? `<div class="act-detail">${escHtml(dt)}</div>` : ''}
+      </div>
+      <div class="act-time">${fmtRel(item.ts)}</div>`;
+    list.appendChild(el);
+  });
+}
+
+function setAvatar(url, name) {
+  const initials = document.getElementById('av-initials');
+  const rmBtn    = document.getElementById('rm-av-btn');
+  if (url) {
+    initials.innerHTML = `<img src="${escHtml(url)}" alt="avatar" onerror="this.remove()">`;
+    rmBtn.style.display = '';
+  } else {
+    initials.textContent = getInitials(name);
+    rmBtn.style.display = 'none';
+  }
+}
+
+// Local YYYY-MM-DD formatter — avoids the UTC drift that .toISOString() introduces
+// when the user's timezone is ahead of UTC (e.g., Bangkok +07).
+const fmtLocalDateKey = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+/* ── HEATMAP FROM API ──────────────────────────────── */
+function buildHeatmapFromAPI(heatmapData) {
+  const container = document.getElementById('hm-container');
+  if (!heatmapData || !heatmapData.length) {
+    container.innerHTML = '<div style="color:var(--text-muted);font-size:11px;padding:6px 0">ไม่มีข้อมูลกิจกรรม</div>';
+    return;
+  }
+
+  // Build a daily heatmap from the API's date+hours data
+  const dailyData = {};
+  let totalActivities = 0;
+  let activeDays = 0;
+
+  heatmapData.forEach(item => {
+    dailyData[item.date] = item.total;
+    totalActivities += item.total;
+    if (item.total > 0) activeDays++;
+  });
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days = [];
+  for (let i = 364; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const k = fmtLocalDateKey(d);
+    days.push({ d, k, c: dailyData[k] || 0 });
+  }
+
+  const max = Math.max(...Object.values(dailyData), 1);
+  const lv = c => {
+    if (!c) return 0;
+    if (c <= max*.25) return 1;
+    if (c <= max*.50) return 2;
+    if (c <= max*.75) return 3;
+    return 4;
+  };
+
+  const startDow = days[0].d.getDay();
+  const padded = Array(startDow).fill(null).concat(days);
+  const weeks = [];
+  for (let i = 0; i < padded.length; i += 7) weeks.push(padded.slice(i, i+7));
+
+  const MO = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthPos = {};
+  days.forEach((d, idx) => {
+    const wk = Math.floor((idx + startDow) / 7);
+    const mo = MO[d.d.getMonth()];
+    if (!Object.values(monthPos).includes(mo)) monthPos[wk] = mo;
+  });
+
+  const GAP = 2;
+  const LABEL_W = 22;
+  const MIN_CW = 11;
+  const MAX_CW = 15;
+  const contW = container.clientWidth || 700;
+  const numWeeks = weeks.length;
+  const CW = Math.max(MIN_CW, Math.min(MAX_CW, Math.floor((contW - LABEL_W) / numWeeks)));
+  container.style.setProperty('--hm-cell', (CW - GAP) + 'px');
+
+  let html = '<div class="hm-month-row">';
+  weeks.forEach((_, wi) => {
+    html += `<div class="hm-ml" style="width:${CW}px;min-width:${CW}px">${monthPos[wi]||''}</div>`;
+  });
+  html += '</div>';
+
+  const DS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  for (let dow = 0; dow < 7; dow++) {
+    html += `<div class="hm-row"><div class="hm-dl">${[1,3,5].includes(dow)?DS[dow]:''}</div><div class="hm-cols">`;
+    weeks.forEach(wk => {
+      const d = wk[dow];
+      if (!d) html += `<div class="hm-cell" style="visibility:hidden"></div>`;
+      else html += `<div class="hm-cell" data-v="${lv(d.c)}" title="${d.k}: ${d.c} กิจกรรม"></div>`;
+    });
+    html += '</div></div>';
+  }
+
+  container.innerHTML = html;
+  document.getElementById('hm-total').textContent = `${totalActivities} กิจกรรม · ${activeDays} วัน`;
+}
+
+/* ── AVATAR ───────────────────────────────────────── */
+function handleAvatarChange(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { Toast.show('ไฟล์ใหญ่เกินไป (max 5 MB)', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const cv = document.getElementById('avatar-canvas');
+      cv.width = cv.height = 200;
+      const ctx = cv.getContext('2d');
+      const min = Math.min(img.width, img.height);
+      ctx.drawImage(img, (img.width-min)/2, (img.height-min)/2, min, min, 0, 0, 200, 200);
+      pendingAvatar64 = cv.toDataURL('image/jpeg', 0.82);
+      rmAvatarFlag    = false;
+      setAvatar(pendingAvatar64, Auth.getUser()?.name || '?');
+      document.getElementById('rm-av-btn').style.display = '';
+      Toast.show('เลือกรูปแล้ว — กด "บันทึก" เพื่อยืนยัน', 'info');
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+document.getElementById('avatar-file').addEventListener('change', handleAvatarChange);
+
+function removeAvatar() {
+  pendingAvatar64 = null; rmAvatarFlag = true;
+  setAvatar('', Auth.getUser()?.name || '?');
+  Toast.show('รูปจะถูกลบเมื่อกด "บันทึก"', 'info');
+}
+
+/* ── SAVE ─────────────────────────────────────────── */
+async function saveProfile() {
+  const btn  = document.getElementById('save-btn');
+  const name = document.getElementById('input-name').value.trim();
+  if (!name) { Toast.show('กรุณาใส่ชื่อแสดงผล', 'error'); return; }
+
+  const payload = {
+    name,
+    name_th:    document.getElementById('input-name-th').value.trim(),
+    emp_id:     document.getElementById('input-emp-id').value.trim(),
+    phone:      document.getElementById('input-phone').value.trim(),
+    tmn_id:     document.getElementById('input-tmn-id').value.trim(),
+    net_home:   document.getElementById('input-net-home').value.trim(),
+    net_mobile: document.getElementById('input-net-mobile').value.trim(),
+  };
+  if (pendingAvatar64) payload.avatar_url = pendingAvatar64;
+  if (rmAvatarFlag)    payload.avatar_url = '';
+
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก…';
+  const res = await API.auth.updateProfile(payload);
+  btn.disabled = false; btn.innerHTML = '<i data-icon="save"></i> บันทึก';
+
+  if (!res?.ok) { Toast.show(res?.data?.message || 'บันทึกไม่สำเร็จ', 'error'); return; }
+
+  // Preserve email locally — don't overwrite from server (may return '' if unset in DB)
+  const currentEmail = Auth.getUser()?.email || '';
+  const updated = Auth.updateUser({
+    name:       res.data.data.name,
+    avatar_url: res.data.data.avatar_url,
+    email:      currentEmail,
+  });
+
+  document.getElementById('input-email').value = updated.email || '';
+  document.getElementById('pf-name').textContent = updated.name;
+  setAvatar(updated.avatar_url || '', updated.name);
+  pendingAvatar64 = null; rmAvatarFlag = false;
+
+  Layout.updateUserInfo();
+  Layout._pingPresence(Layout.currentPage);
+  Toast.show('บันทึกโปรไฟล์แล้ว <i data-icon="check"></i>', 'success');
+}
+
+/* ── ACHIEVEMENTS ─────────────────────────────────── */
+async function loadAchievements() {
+  const res = await API.achievements.me();
+  return _renderAchievements(res);
+}
+
+async function loadOtherUserAchievements() {
+  const res = await API.achievements.user(targetUserId);
+  return _renderAchievements(res);
+}
+
+async function _renderAchievements(res) {
+  if (!res?.ok) {
+    document.getElementById('ach-stats').innerHTML =
+      '<div class="ach-empty">โหลด achievements ไม่สำเร็จ</div>';
+    return;
+  }
+  const d = res.data?.data || {};
+  const s = d.stats || {};
+
+  // Header points pill
+  document.getElementById('ach-points').innerHTML =
+    `<span class="ach-points-pill"><i data-icon="star"></i> ${s.total_points || 0} pts</span>`;
+
+  // Stats row
+  document.getElementById('ach-stats').innerHTML = `
+    <div class="ach-stat orange">
+      <div class="n">${s.courses_completed || 0}<span style="font-size:11px; color:var(--text-muted); font-weight:600">/${s.courses_total || 0}</span></div>
+      <div class="l"><i data-icon="book-open"></i> Courses</div>
+    </div>
+    <div class="ach-stat green">
+      <div class="n">${s.exams_passed || 0}<span style="font-size:11px; color:var(--text-muted); font-weight:600">/${s.exams_taken || 0}</span></div>
+      <div class="l"><i data-icon="edit"></i> Exams</div>
+    </div>
+    <div class="ach-stat ${d.onboarding?.finished ? 'gold' : 'silver'}">
+      <div class="n">${d.onboarding?.percent || 0}%</div>
+      <div class="l"><i data-icon="compass"></i> Onboarding</div>
+    </div>
+    <div class="ach-stat orange">
+      <div class="n">${s.total_points || 0}</div>
+      <div class="l"><i data-icon="star"></i> Points</div>
+    </div>
+  `;
+
+  // List section
+  const list = document.getElementById('ach-list');
+  let html = '';
+
+  // Onboarding badge
+  if (d.onboarding?.finished) {
+    html += `
+      <div class="ach-section-label"><i data-icon="award"></i> Milestones</div>
+      <div class="ach-row" style="--ach-color:#10b981">
+        <div class="ico"><i data-icon="compass"></i></div>
+        <div class="body">
+          <div class="ti">Team Onboarding completed</div>
+          <div class="meta">
+            <span><i data-icon="check"></i> <b>${d.onboarding.done}</b> / ${d.onboarding.total} tasks</span>
+            ${d.onboarding.finished_at ? `<span>· ${fmtDate(d.onboarding.finished_at)}</span>` : ''}
+          </div>
+        </div>
+        <div class="badge"><i data-icon="award"></i></div>
+      </div>`;
+  }
+
+  // Courses
+  if (d.courses?.length) {
+    html += `<div class="ach-section-label"><i data-icon="book-open"></i> Courses</div>`;
+    html += d.courses.map(c => {
+      const cls = c.completed ? '' : 'locked';
+      const badge = c.badge === 'gold'   ? '<i data-icon="award"></i>'
+                  : c.badge === 'silver' ? '<i data-icon="award"></i>'
+                  : c.badge === 'bronze' ? '<i data-icon="award"></i>'
+                  : '<i data-icon="lock"></i>';
+      return `
+        <div class="ach-row ${cls}" style="--ach-color:${escHtml(c.cover_color)}">
+          <div class="ico">${renderIcon(c.icon)}</div>
+          <div class="body">
+            <div class="ti">${escHtml(c.title)}</div>
+            <div class="meta">
+              <span><b>${c.phases_passed}</b> / ${c.phases_total} phases</span>
+              <span>· ${c.percent}%</span>
+              ${c.avg_score ? `<span>· avg <b>${c.avg_score}%</b></span>` : ''}
+              ${c.completed_at ? `<span>· ${fmtDate(c.completed_at)}</span>` : ''}
+            </div>
+          </div>
+          <div class="badge">${badge}</div>
+        </div>`;
+    }).join('');
+  }
+
+  // Exams
+  if (d.exams?.length) {
+    html += `<div class="ach-section-label"><i data-icon="edit"></i> Exams</div>`;
+    html += d.exams.map(e => {
+      const cls = e.passed ? '' : 'locked';
+      const badge = e.badge === 'gold'   ? '<i data-icon="award"></i>'
+                  : e.badge === 'silver' ? '<i data-icon="award"></i>'
+                  : e.badge === 'bronze' ? '<i data-icon="award"></i>'
+                  : '<i data-icon="x-circle"></i>';
+      return `
+        <div class="ach-row ${cls}" style="--ach-color:${escHtml(e.cover_color)}">
+          <div class="ico">${renderIcon(e.icon, '<i data-icon="edit"></i>')}</div>
+          <div class="body">
+            <div class="ti">${escHtml(e.title)}</div>
+            <div class="meta">
+              <span>Best: <b>${e.best_score}%</b></span>
+              <span>· pass ${e.pass_score}%</span>
+              <span>· ${e.attempts} attempt${e.attempts > 1 ? 's' : ''}</span>
+              ${e.passed_at ? `<span>· ${fmtDate(e.passed_at)}</span>` : ''}
+            </div>
+          </div>
+          <div class="badge">${badge}</div>
+        </div>`;
+    }).join('');
+  }
+
+  if (!html) {
+    html = `<div class="ach-empty">ยังไม่มี achievement — เริ่มเรียนคอร์สหรือทำข้อสอบเพื่อสะสมรางวัล</div>`;
+  }
+
+  list.innerHTML = html;
+}
+
+/* ── HEATMAP ──────────────────────────────────────── */
+function buildHeatmap(items) {
+  const container = document.getElementById('hm-container');
+  const counts = {};
+  items.forEach(it => {
+    const ts = it.created_at || it.ts;
+    if (!ts) return;
+    // Parse the timestamp so we get the LOCAL date (timestamps include +07:00 offset,
+    // which would otherwise get truncated incorrectly by a plain substring).
+    const dt = new Date(ts);
+    if (isNaN(dt)) return;
+    const d = fmtLocalDateKey(dt);
+    counts[d] = (counts[d] || 0) + 1;
+  });
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days  = [];
+  for (let i = 364; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const k = fmtLocalDateKey(d);
+    days.push({ d, k, c: counts[k] || 0 });
+  }
+
+  const max = Math.max(...Object.values(counts), 1);
+  const lv = c => {
+    if (!c) return 0;
+    if (c <= max*.25) return 1;
+    if (c <= max*.50) return 2;
+    if (c <= max*.75) return 3;
+    return 4;
+  };
+
+  const startDow = days[0].d.getDay();
+  const padded   = Array(startDow).fill(null).concat(days);
+  const weeks    = [];
+  for (let i = 0; i < padded.length; i += 7) weeks.push(padded.slice(i, i+7));
+
+  const MO = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthPos = {};
+  days.forEach((d, idx) => {
+    const wk = Math.floor((idx + startDow) / 7);
+    const mo = MO[d.d.getMonth()];
+    if (!Object.values(monthPos).includes(mo)) monthPos[wk] = mo;
+  });
+
+  // Compute responsive cell width from actual container width
+  const GAP      = 2;
+  const LABEL_W  = 22;
+  const MIN_CW   = 11;   // min col width (9px cell + 2px gap)
+  const MAX_CW   = 15;   // max col width (13px cell + 2px gap)
+  const contW    = container.clientWidth || 700;
+  const numWeeks = weeks.length;
+  const CW       = Math.max(MIN_CW, Math.min(MAX_CW, Math.floor((contW - LABEL_W) / numWeeks)));
+  container.style.setProperty('--hm-cell', (CW - GAP) + 'px');
+
+  let html = '<div class="hm-month-row">';
+  weeks.forEach((_, wi) => {
+    html += `<div class="hm-ml" style="width:${CW}px;min-width:${CW}px">${monthPos[wi]||''}</div>`;
+  });
+  html += '</div>';
+
+  const DS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  for (let dow = 0; dow < 7; dow++) {
+    html += `<div class="hm-row"><div class="hm-dl">${[1,3,5].includes(dow)?DS[dow]:''}</div><div class="hm-cols">`;
+    weeks.forEach(wk => {
+      const d = wk[dow];
+      if (!d) html += `<div class="hm-cell" style="visibility:hidden"></div>`;
+      else     html += `<div class="hm-cell" data-v="${lv(d.c)}" title="${d.k}: ${d.c} กิจกรรม"></div>`;
+    });
+    html += '</div></div>';
+  }
+
+  container.innerHTML = html;
+  const totalAct   = Object.values(counts).reduce((a,b)=>a+b,0);
+  const activeDays = Object.keys(counts).length;
+  document.getElementById('hm-total').textContent = `${totalAct} กิจกรรม · ${activeDays} วัน`;
+}
+
+/* ── MY POSTS ─────────────────────────────────────── */
+const ST_DOT   = { open:'#22c55e', in_progress:'#f59e0b', resolved:'#9ca3af' };
+const ST_LABEL = { open:'Open', in_progress:'In Progress', resolved:'Resolved' };
+
+function fmtDate(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'});
+}
+
+async function loadMyPosts() {
+  const u = Auth.getUser();
+  if (!u) return;
+  const el = document.getElementById('posts-list');
+  el.innerHTML = '<div class="posts-empty">⏳</div>';
+
+  const res = await API.board.myPosts(u.id || u.sub, 5);
+  if (!res?.ok) { el.innerHTML = '<div class="posts-empty"><i data-icon="alert-triangle"></i> โหลดไม่ได้</div>'; return; }
+
+  const items = res.data?.data?.items || [];
+  if (!items.length) { el.innerHTML = '<div class="posts-empty">ยังไม่มีโพสต์</div>'; return; }
+
+  el.innerHTML = '';
+  items.forEach(p => {
+    const st  = p.status || 'open';
+    const dot = ST_DOT[st] || '#9ca3af';
+    const a   = document.createElement('a');
+    a.className = 'pi'; a.href = `./board.html#${p.id}`;
+    a.innerHTML = `
+      <div class="pi-dot" style="background:${dot}"></div>
+      <div class="pi-body">
+        <div class="pi-title">${escHtml(p.title)}</div>
+        <div class="pi-meta">
+          <span class="pi-badge ${st}">${ST_LABEL[st]||st}</span>
+          ${p.board_type_name ? `<span class="pi-type">${escHtml(p.board_type_name)}</span>` : ''}
+          ${p.service_type_name ? `<span class="pi-type">${escHtml(p.service_type_name)}</span>` : ''}
+        </div>
+      </div>
+      <div class="pi-time">${fmtDate(p.created_at)}</div>`;
+    el.appendChild(a);
+  });
+}
+
+/* ── ACTIVITY FEED ────────────────────────────────── */
+const AMETA = {
+  login:                    {icon:'<i data-icon="key"></i>',color:'rgba(59,130,246,.10)', label:'เข้าสู่ระบบ'},
+  logout:                   {icon:'<i data-icon="log-out"></i>',color:'rgba(107,114,128,.10)',label:'ออกจากระบบ'},
+  password_changed:         {icon:'<i data-icon="lock"></i>',color:'rgba(124,58,237,.10)', label:'เปลี่ยนรหัสผ่าน'},
+  password_change:          {icon:'<i data-icon="lock"></i>',color:'rgba(124,58,237,.10)', label:'เปลี่ยนรหัสผ่าน'},
+  profile_updated:          {icon:'<i data-icon="pencil"></i>',color:'rgba(242,100,25,.10)', label:'อัปเดตโปรไฟล์'},
+  profile_update:           {icon:'<i data-icon="pencil"></i>',color:'rgba(242,100,25,.10)', label:'อัปเดตโปรไฟล์'},
+  board_create:             {icon:'<i data-icon="edit"></i>',color:'rgba(34,197,94,.10)',  label:'สร้างโพสต์'},
+  board_post_created:       {icon:'<i data-icon="edit"></i>',color:'rgba(34,197,94,.10)',  label:'สร้างโพสต์'},
+  board_update:             {icon:'<i data-icon="edit"></i>',color:'rgba(245,158,11,.10)', label:'แก้ไขโพสต์'},
+  board_delete:             {icon:'<i data-icon="trash"></i>',color:'rgba(239,68,68,.10)',  label:'ลบโพสต์'},
+  board_post_deleted:       {icon:'<i data-icon="trash"></i>',color:'rgba(239,68,68,.10)',  label:'ลบโพสต์'},
+  board_restore:            {icon:'<i data-icon="recycle"></i>',color:'rgba(34,197,94,.10)',  label:'กู้คืนโพสต์'},
+  board_hard_delete:        {icon:'💀',color:'rgba(239,68,68,.15)',  label:'ลบถาวร'},
+  board_comment:            {icon:'<i data-icon="message-circle"></i>',color:'rgba(34,197,94,.10)',  label:'แสดงความคิดเห็น'},
+  board_comment_created:    {icon:'<i data-icon="message-circle"></i>',color:'rgba(34,197,94,.10)',  label:'แสดงความคิดเห็น'},
+  board_comment_deleted:    {icon:'<i data-icon="message-circle"></i>',color:'rgba(239,68,68,.10)',  label:'ลบ comment'},
+  board_star:               {icon:'<i data-icon="star"></i>',color:'rgba(245,158,11,.10)', label:'Starred โพสต์'},
+  board_unstar:             {icon:'<i data-icon="star"></i>', color:'rgba(107,114,128,.10)',label:'Unstarred โพสต์'},
+  board_search:             {icon:'<i data-icon="search"></i>',color:'rgba(107,114,128,.07)',label:'ค้นหา'},
+  board_status_change:      {icon:'<i data-icon="refresh-cw"></i>',color:'rgba(59,130,246,.10)', label:'เปลี่ยนสถานะ'},
+  avatar_upload:            {icon:'<i data-icon="camera"></i>',color:'rgba(242,100,25,.10)', label:'อัปโหลด Avatar'},
+  file_upload:              {icon:'<i data-icon="paperclip"></i>',color:'rgba(242,100,25,.10)', label:'อัปโหลดไฟล์'},
+  health_check:             {icon:'<i data-icon="building"></i>',color:'rgba(59,130,246,.07)', label:'Health Check'},
+  user_update:              {icon:'<i data-icon="user"></i>',color:'rgba(124,58,237,.07)', label:'อัปเดต User'},
+  user_create:              {icon:'<i data-icon="user"></i>',color:'rgba(34,197,94,.10)',  label:'สร้าง User'},
+  user_delete:              {icon:'<i data-icon="user"></i>',color:'rgba(239,68,68,.10)',  label:'ลบ User'},
+  jira_create_ticket:       {icon:'<i data-icon="ticket"></i>',color:'rgba(0,82,204,.10)',   label:'สร้าง Jira Ticket'},
+  template_create:          {icon:'<i data-icon="clipboard"></i>',color:'rgba(34,197,94,.10)',  label:'สร้าง Template'},
+  template_update:          {icon:'<i data-icon="clipboard"></i>',color:'rgba(245,158,11,.10)', label:'แก้ไข Template'},
+  template_delete:          {icon:'<i data-icon="clipboard"></i>',color:'rgba(239,68,68,.10)',  label:'ลบ Template'},
+  email_sent:               {icon:'<i data-icon="mail"></i>',color:'rgba(59,130,246,.10)', label:'ส่ง Email'},
+  batch_report_submitted:   {icon:'<i data-icon="bar-chart"></i>',color:'rgba(107,114,128,.10)',label:'ส่ง Batch Report'},
+  test_service_submitted:   {icon:'<i data-icon="test-tube"></i>',color:'rgba(107,114,128,.10)',label:'ทดสอบ Service'},
+  noti_schedule_created:    {icon:'<i data-icon="bell"></i>',color:'rgba(34,197,94,.10)',  label:'สร้าง Notification'},
+  noti_schedule_updated:    {icon:'<i data-icon="bell"></i>',color:'rgba(245,158,11,.10)', label:'แก้ไข Notification'},
+  noti_schedule_deleted:    {icon:'<i data-icon="bell"></i>',color:'rgba(239,68,68,.10)',  label:'ลบ Notification'},
+  noti_chat_sent:           {icon:'<i data-icon="message-circle"></i>',color:'rgba(59,130,246,.10)', label:'ส่ง Chat Notification'},
+  jenkins_build_trigger:    {icon:'<i data-icon="settings"></i>',color:'rgba(107,114,128,.10)',label:'Trigger Jenkins Build'},
+  settings_update:          {icon:'<i data-icon="settings"></i>',color:'rgba(124,58,237,.10)', label:'แก้ไข System Settings'},
+  backup_created:           {icon:'<i data-icon="save"></i>',color:'rgba(34,197,94,.10)',  label:'สร้าง Backup'},
+  backup_downloaded:        {icon:'<i data-icon="save"></i>',color:'rgba(59,130,246,.10)', label:'ดาวน์โหลด Backup'},
+  link_create:              {icon:'<i data-icon="link"></i>',color:'rgba(34,197,94,.10)',  label:'เพิ่ม Quick Link'},
+  link_update:              {icon:'<i data-icon="link"></i>',color:'rgba(245,158,11,.10)', label:'แก้ไข Quick Link'},
+  link_delete:              {icon:'<i data-icon="link"></i>',color:'rgba(239,68,68,.10)',  label:'ลบ Quick Link'},
+  doc_create:               {icon:'<i data-icon="file"></i>',color:'rgba(34,197,94,.10)',  label:'เพิ่ม Document'},
+  doc_update:               {icon:'<i data-icon="file"></i>',color:'rgba(245,158,11,.10)', label:'แก้ไข Document'},
+  doc_delete:               {icon:'<i data-icon="file"></i>',color:'rgba(239,68,68,.10)',  label:'ลบ Document'},
+  mail_config_updated:      {icon:'<i data-icon="inbox"></i>',color:'rgba(124,58,237,.10)', label:'แก้ไข Mail Config'},
+};
+const getMeta = a => AMETA[a] || {icon:'<i data-icon="zap"></i>',color:'rgba(107,114,128,.08)',label:a.replace(/_/g,' ')};
+
+function fmtRel(ts) {
+  if (!ts) return '';
+  const s = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+  if (s < 60)      return 'เมื่อกี้';
+  if (s < 3600)    return `${Math.floor(s/60)} นาทีที่แล้ว`;
+  if (s < 86400)   return `${Math.floor(s/3600)} ชม.ที่แล้ว`;
+  if (s < 86400*7) return `${Math.floor(s/86400)} วันที่แล้ว`;
+  return new Date(ts).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'});
+}
+
+const ACT_LIMIT = 5;
+let _off = 0, _total = 0, _all = [], _first = true;
+
+async function loadActivity(reset = false) {
+  if (reset) { _off = 0; _total = 0; _all = []; _first = true; }
+  const list = document.getElementById('act-list');
+  if (reset) list.innerHTML = '<div class="act-empty">⏳ กำลังโหลด...</div>';
+
+  const limit = (_first && reset) ? 500 : ACT_LIMIT;
+  const res   = await API.auth.myActivity({ limit, offset: _off });
+  if (!res?.ok) { list.innerHTML = '<div class="act-empty"><i data-icon="alert-triangle"></i> โหลดไม่ได้</div>'; return; }
+
+  const { items = [], total = 0 } = res.data?.data || {};
+  _total = total; _all = _all.concat(items);
+
+  if (_first && reset) {
+    _first = false;
+    buildHeatmap(_all);
+    document.getElementById('s-total').textContent = total || 0;
+    document.getElementById('s-posts').textContent = _all.filter(i=>i.action==='board_post_created').length;
+    document.getElementById('s-cmt').textContent   = _all.filter(i=>i.action==='board_comment_created').length;
+    document.getElementById('s-login').textContent = _all.filter(i=>i.action==='login').length;
+  }
+
+  if (reset) list.innerHTML = '';
+  if (!items.length && reset) { list.innerHTML = '<div class="act-empty">ยังไม่มีกิจกรรม</div>'; return; }
+
+  (reset ? items.slice(0, ACT_LIMIT) : items).forEach(item => {
+    const m  = getMeta(item.action);
+    const d  = item.detail || {};
+    let dt = '';
+    switch (item.action) {
+      case 'login':
+        dt = d.username ? `${d.username}${item.ip ? ' · ' + item.ip : ''}` : (item.ip || ''); break;
+      case 'jira_create_ticket':
+        dt = d.issue_key ? `${d.issue_key}${d.summary ? ': ' + d.summary.substring(0,60) : ''}` : (d.summary || ''); break;
+      case 'email_sent':
+        dt = d.subject || (d.to ? `→ ${d.to}` : ''); break;
+      case 'batch_report_submitted': case 'test_service_submitted':
+        dt = d.server || d.reporter || ''; break;
+      case 'health_check':
+        dt = `Jira: ${d.jira_status || '?'}${d.jenkins_errors > 0 ? ` · Jenkins: ${d.jenkins_errors} err` : ''}`; break;
+      case 'noti_schedule_updated': case 'noti_schedule_created':
+        dt = d.fields ? `แก้ไข: ${d.fields}` : ''; break;
+      case 'profile_update': case 'profile_updated':
+        dt = Array.isArray(d.changed) && d.changed.length ? `แก้ไข: ${d.changed.join(', ')}` : ''; break;
+      case 'settings_update':
+        dt = Array.isArray(d) && d.length ? `แก้ไข: ${d.slice(0,4).join(', ')}${d.length>4?' …':''}` : ''; break;
+      case 'jenkins_build_trigger':
+        dt = d.job ? d.job.split('/').pop() : (d.server || ''); break;
+      case 'file_upload':
+        dt = d.filename || ''; break;
+      case 'backup_created': case 'backup_downloaded': case 'backup_deleted':
+        dt = d.file || ''; break;
+      case 'board_status_change':
+        dt = d.title ? `${d.title} → ${d.new_status || ''}` : (d.new_status || ''); break;
+      default:
+        dt = d.title || d.summary || d.name || d.display || d.query || d.key || d.subject || d.filename || d.file || '';
+    }
+    const el = document.createElement('div');
+    el.className = 'act-item';
+    el.innerHTML = `
+      <div class="act-dot" style="background:${m.color}">${m.icon}</div>
+      <div class="act-body">
+        <div class="act-lbl">${escHtml(m.label)}</div>
+        ${dt ? `<div class="act-detail">${escHtml(dt)}</div>` : ''}
+      </div>
+      <div class="act-time">${fmtRel(item.created_at)}</div>`;
+    list.appendChild(el);
+  });
+
+  _off += reset ? Math.min(items.length, ACT_LIMIT) : items.length;
+  const mw = document.getElementById('act-more-wrap');
+  const mb = document.getElementById('act-more-btn');
+  if (_off < _total) {
+    mw.style.display = ''; mb.textContent = `โหลดเพิ่ม (${_total - _off} รายการ)`;
+  } else {
+    mw.style.display = 'none';
+  }
+}
+
+function loadMoreActivity() { loadActivity(false); }
+
+/* ── BOOT ─────────────────────────────────────────── */
+initPage();
+if (isOwnProfile) {
+  loadActivity(true);
+  loadMyPosts();
+  // Rebuild heatmap on resize so cells always fill the card width
+  let _resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => { if (_all.length) buildHeatmap(_all); }, 200);
+  });
+} else {
+  // For other user profiles, rebuild heatmap on resize too
+  let _resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => {
+      // Heatmap will be rebuilt when profile loads
+    }, 200);
+  });
+}
+</script>
+</body>
+</html>

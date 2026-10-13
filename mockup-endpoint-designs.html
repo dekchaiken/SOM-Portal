@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Endpoint Design Mockups · SOM-Portal</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  <style>
+    /* ══ Design comparison page ══
+     * 4 alternative designs for the "Endpoint + Status" list inside the
+     * Dependencies drill-down panel of service-performance.html. Each option
+     * gets a labelled card so the user can visually compare side by side.
+     * Sample data mirrors a real service (kyc-svc endpoints) so it's easy
+     * to picture the real thing.
+     */
+    :root {
+      --mk-ok:   #16a34a;
+      --mk-warn: #d97706;
+      --mk-hot:  #dc2626;
+      --mk-cool: #2563eb;
+      --mk-info: #7c3aed;
+      --mk-emerald: #059669;
+    }
+    html[data-theme="dark"] {
+      --mk-ok:   #4ade80;
+      --mk-warn: #fbbf24;
+      --mk-hot:  #f87171;
+      --mk-cool: #60a5fa;
+      --mk-info: #a78bfa;
+      --mk-emerald: #34d399;
+    }
+    body { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .mk-wrap {
+      max-width:1400px; margin:0 auto; padding:32px 24px 80px;
+    }
+    .mk-hero {
+      background:var(--bg-card); border:1px solid var(--border); border-radius:14px;
+      padding:24px 28px; margin-bottom:24px; box-shadow:var(--shadow);
+    }
+    .mk-hero-title { font-size:22px; font-weight:800; margin-bottom:6px; color:var(--text); }
+    .mk-hero-sub { color:var(--text-muted); font-size:13.5px; line-height:1.6; }
+    .mk-hero-legend {
+      display:flex; gap:16px; flex-wrap:wrap; margin-top:14px;
+      font-size:12px; color:var(--text-muted);
+    }
+    .mk-hero-legend .k {
+      display:inline-flex; align-items:center; gap:6px;
+    }
+    .mk-hero-legend .k .dot { width:12px; height:12px; border-radius:3px; }
+
+    .mk-options {
+      display:grid; grid-template-columns:1fr 1fr; gap:24px;
+    }
+    @media (max-width:1100px){ .mk-options { grid-template-columns:1fr; } }
+
+    .mk-opt {
+      background:var(--bg-card); border:1px solid var(--border); border-radius:14px;
+      box-shadow:var(--shadow); overflow:hidden;
+    }
+    .mk-opt-head {
+      padding:14px 18px 12px; border-bottom:1px solid var(--border);
+      display:flex; align-items:baseline; gap:10px;
+    }
+    .mk-opt-badge {
+      width:26px; height:26px; border-radius:7px;
+      display:grid; place-items:center; font-weight:800; font-size:12px;
+      background:color-mix(in srgb, var(--mk-cool) 15%, transparent); color:var(--mk-cool);
+      flex:none;
+    }
+    .mk-opt-title { font-size:15px; font-weight:700; color:var(--text); }
+    .mk-opt-desc { font-size:11.5px; color:var(--text-muted); margin-top:2px; line-height:1.5; }
+    .mk-opt-body { padding:16px 18px 20px; }
+
+    /* Global helpers used across options */
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .method {
+      display:inline-flex; align-items:center; padding:3px 9px; border-radius:6px;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:10.5px; font-weight:800; letter-spacing:.03em;
+      min-width:52px; justify-content:center;
+    }
+    .method.get    { background:color-mix(in srgb, var(--mk-cool)    16%, transparent); color:var(--mk-cool);    }
+    .method.post   { background:color-mix(in srgb, var(--mk-emerald) 16%, transparent); color:var(--mk-emerald); }
+    .method.put    { background:color-mix(in srgb, var(--mk-warn)    16%, transparent); color:var(--mk-warn);    }
+    .method.delete { background:color-mix(in srgb, var(--mk-hot)     16%, transparent); color:var(--mk-hot);     }
+    .uri {
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:12px; color:var(--text); line-height:1.5;
+      overflow-wrap:anywhere; word-break:break-word;
+    }
+
+    /* ─────────── OPTION A · Card + Progress Bar ─────────── */
+    .a-card {
+      padding:14px 16px; margin-bottom:10px;
+      background:color-mix(in srgb, var(--bg-card) 96%, var(--text));
+      border:1px solid var(--border); border-radius:10px;
+      border-left:3px solid var(--border);
+      transition:border-left-color .15s;
+    }
+    .a-card.err  { border-left-color:var(--mk-warn); }
+    .a-card.crit { border-left-color:var(--mk-hot); }
+    .a-card.ok   { border-left-color:var(--mk-ok); }
+    .a-head {
+      display:flex; gap:8px; align-items:flex-start;
+      margin-bottom:10px;
+    }
+    .a-stat-row {
+      display:flex; gap:14px; align-items:baseline;
+      font-size:12px; color:var(--text-muted);
+      padding:6px 0 8px;
+    }
+    .a-stat-row .rate { color:var(--text); font-weight:700; font-size:14px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+    .a-stat-row .err-tag {
+      margin-left:auto; padding:2px 8px; border-radius:5px; font-size:10.5px;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-weight:700;
+    }
+    .a-stat-row .err-tag.ok   { background:color-mix(in srgb, var(--mk-ok)   14%, transparent); color:var(--mk-ok); }
+    .a-stat-row .err-tag.warn { background:color-mix(in srgb, var(--mk-warn) 14%, transparent); color:var(--mk-warn); }
+    .a-stat-row .err-tag.hot  { background:color-mix(in srgb, var(--mk-hot)  14%, transparent); color:var(--mk-hot); }
+    .a-bar {
+      display:flex; height:8px; border-radius:5px; overflow:hidden;
+      background:var(--sp-bg-subtle, color-mix(in srgb, var(--bg-card) 92%, var(--text)));
+    }
+    .a-bar > span { display:block; height:100%; }
+    .a-bar .b-2xx { background:var(--mk-ok); }
+    .a-bar .b-4xx { background:var(--mk-warn); }
+    .a-bar .b-5xx { background:var(--mk-hot); }
+    .a-legend {
+      display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;
+      font-size:11px; color:var(--text-muted);
+    }
+    .a-legend .pill {
+      display:inline-flex; align-items:baseline; gap:5px;
+      padding:3px 8px; border-radius:5px;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      border-left:3px solid transparent;
+    }
+    .a-legend .pill.ok   { background:color-mix(in srgb, var(--mk-ok)   10%, transparent); color:var(--mk-ok);   border-left-color:var(--mk-ok);   }
+    .a-legend .pill.warn { background:color-mix(in srgb, var(--mk-warn) 10%, transparent); color:var(--mk-warn); border-left-color:var(--mk-warn); }
+    .a-legend .pill.hot  { background:color-mix(in srgb, var(--mk-hot)  10%, transparent); color:var(--mk-hot);  border-left-color:var(--mk-hot);  }
+    .a-legend .pill .code { font-weight:800; font-size:11.5px; }
+    .a-legend .pill .rate { opacity:.75; }
+
+    /* ─────────── OPTION B · Data Table ─────────── */
+    .b-tbl { width:100%; border-collapse:separate; border-spacing:0; font-size:12px; }
+    .b-tbl th {
+      text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.06em;
+      font-weight:700; color:var(--text-muted); padding:8px 10px;
+      border-bottom:1px solid var(--border); background:var(--sp-bg-subtle, color-mix(in srgb, var(--bg-card) 94%, var(--text)));
+    }
+    .b-tbl th.right { text-align:right; }
+    .b-tbl td { padding:10px; border-bottom:1px solid var(--border); vertical-align:top; }
+    .b-tbl td.right { text-align:right; font-variant-numeric:tabular-nums; }
+    .b-tbl tr:hover td { background:color-mix(in srgb, var(--bg-card) 92%, var(--text)); }
+    .b-total { font-weight:700; color:var(--text); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+    .b-num {
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:11.5px; font-weight:700;
+    }
+    .b-num.ok   { color:var(--mk-ok); }
+    .b-num.warn { color:var(--mk-warn); }
+    .b-num.hot  { color:var(--mk-hot); }
+    .b-num.zero { color:var(--sp-text-soft, color-mix(in srgb, var(--text-muted) 55%, transparent)); font-weight:400; }
+    .b-lat { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--text-muted); font-size:11.5px; }
+
+    /* ─────────── OPTION C · Grouped by Severity ─────────── */
+    .c-group { margin-bottom:12px; }
+    .c-group-head {
+      display:flex; align-items:center; gap:10px;
+      padding:8px 12px; border-radius:8px; margin-bottom:8px;
+      cursor:pointer;
+    }
+    .c-group-head .swatch { width:5px; align-self:stretch; border-radius:3px; }
+    .c-group.hot  .c-group-head .swatch { background:var(--mk-hot);  }
+    .c-group.warn .c-group-head .swatch { background:var(--mk-warn); }
+    .c-group.ok   .c-group-head .swatch { background:var(--mk-ok);   }
+    .c-group.hot  .c-group-head { background:color-mix(in srgb, var(--mk-hot)  8%, transparent); }
+    .c-group.warn .c-group-head { background:color-mix(in srgb, var(--mk-warn) 8%, transparent); }
+    .c-group.ok   .c-group-head { background:color-mix(in srgb, var(--mk-ok)   8%, transparent); }
+    .c-group-title { font-size:12px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
+    .c-group.hot  .c-group-title { color:var(--mk-hot); }
+    .c-group.warn .c-group-title { color:var(--mk-warn); }
+    .c-group.ok   .c-group-title { color:var(--mk-ok); }
+    .c-group-meta { margin-left:auto; font-size:11.5px; color:var(--text-muted); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+    .c-group-body { padding:0 4px; }
+    .c-row {
+      display:grid; grid-template-columns:auto auto 1fr auto; gap:10px;
+      align-items:center; padding:8px 10px;
+      border-bottom:1px solid var(--border); font-size:12px;
+    }
+    .c-row:last-child { border-bottom:0; }
+    .c-code {
+      display:inline-flex; align-items:center; padding:3px 9px; border-radius:5px;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:12px; font-weight:800;
+      min-width:46px; justify-content:center;
+    }
+    .c-code.hot  { background:color-mix(in srgb, var(--mk-hot)  15%, transparent); color:var(--mk-hot); }
+    .c-code.warn { background:color-mix(in srgb, var(--mk-warn) 15%, transparent); color:var(--mk-warn); }
+    .c-code.ok   { background:color-mix(in srgb, var(--mk-ok)   15%, transparent); color:var(--mk-ok); }
+    .c-rate {
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:11px; color:var(--text-muted); min-width:80px;
+    }
+    .c-rate b { color:var(--text); font-weight:800; font-size:12px; }
+    .c-lat { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:11px; color:var(--text-muted); }
+    .c-collapsed {
+      padding:12px 14px; color:var(--text-muted); font-size:11.5px;
+      background:var(--sp-bg-subtle, color-mix(in srgb, var(--bg-card) 94%, var(--text)));
+      border-radius:6px;
+    }
+
+    /* ─────────── OPTION D · Timeline / Weight Bar ─────────── */
+    .d-row { padding:14px 4px 18px; border-bottom:1px solid var(--border); }
+    .d-row:last-child { border-bottom:0; }
+    .d-head { display:flex; gap:8px; align-items:baseline; margin-bottom:10px; }
+    .d-uri { flex:1; min-width:0; }
+    .d-side {
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:11px; color:var(--text-muted); text-align:right; flex:none;
+    }
+    .d-side .rate { color:var(--text); font-weight:800; font-size:13px; }
+    .d-weightbar {
+      display:flex; height:20px; border-radius:5px; overflow:hidden;
+      background:var(--sp-bg-subtle, color-mix(in srgb, var(--bg-card) 92%, var(--text)));
+      border:1px solid var(--border);
+    }
+    .d-weightbar > span {
+      display:flex; align-items:center; justify-content:center;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:10.5px; font-weight:800; color:#fff;
+      transition:filter .15s;
+      overflow:hidden; white-space:nowrap;
+    }
+    .d-weightbar > span:hover { filter:brightness(1.15); }
+    .d-weightbar .seg-2xx { background:var(--mk-ok); }
+    .d-weightbar .seg-4xx { background:var(--mk-warn); }
+    .d-weightbar .seg-5xx { background:var(--mk-hot); }
+    .d-weightbar .seg-3xx { background:var(--mk-cool); }
+    .d-scale {
+      height:12px; margin-top:4px;
+      background:linear-gradient(to right, var(--sp-bg-subtle, color-mix(in srgb, var(--bg-card) 94%, var(--text))) 0%, var(--sp-bg-subtle, color-mix(in srgb, var(--bg-card) 94%, var(--text))) 100%);
+      border-radius:3px;
+      position:relative;
+    }
+    .d-scale .bar {
+      position:absolute; top:0; bottom:0; left:0;
+      background:color-mix(in srgb, var(--mk-cool) 40%, transparent);
+      border-radius:3px 0 0 3px;
+    }
+    .d-scale .label {
+      position:absolute; top:-16px; right:0;
+      font-size:9.5px; color:var(--text-muted); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    }
+
+    .mk-note {
+      margin-top:24px; padding:14px 18px;
+      background:color-mix(in srgb, var(--mk-cool) 5%, var(--bg-card));
+      border:1px solid color-mix(in srgb, var(--mk-cool) 25%, var(--border));
+      border-radius:10px; font-size:13px; color:var(--text); line-height:1.65;
+    }
+    .mk-note b { color:var(--mk-cool); }
+  </style>
+</head>
+<body>
+
+<div class="mk-wrap">
+  <div class="mk-hero">
+    <div class="mk-hero-title">Endpoint + Status · Design Mockups</div>
+    <div class="mk-hero-sub">
+      4 แบบสำหรับส่วน <b>Endpoint list</b> ใน drill panel ของ Dependencies (service-performance.html).
+      Sample data ใช้ endpoint จริงของ <code>kyc-svc</code> เพื่อให้เห็นภาพชัด.
+      ลองดูแล้วบอกว่าชอบแบบไหน — จะเอาไปใช้แทนของเดิม.
+    </div>
+    <div class="mk-hero-legend">
+      <span class="k"><span class="dot" style="background:var(--mk-ok)"></span>2xx (OK)</span>
+      <span class="k"><span class="dot" style="background:var(--mk-warn)"></span>4xx (Client error)</span>
+      <span class="k"><span class="dot" style="background:var(--mk-hot)"></span>5xx (Server error)</span>
+      <span class="k"><span class="dot" style="background:var(--mk-cool)"></span>3xx (Redirect)</span>
+    </div>
+  </div>
+
+  <div class="mk-options">
+
+    <!-- ══════════ OPTION A ══════════ -->
+    <div class="mk-opt">
+      <div class="mk-opt-head">
+        <span class="mk-opt-badge">A</span>
+        <div>
+          <div class="mk-opt-title">Card + Progress Bar</div>
+          <div class="mk-opt-desc">แต่ละ endpoint เป็นการ์ด · URL อ่านง่าย · progress bar โชว์สัดส่วน 2xx/4xx/5xx · เห็นสุขภาพในไม้เดียว</div>
+        </div>
+      </div>
+      <div class="mk-opt-body">
+
+        <div class="a-card err">
+          <div class="a-head">
+            <span class="method get">GET</span>
+            <span class="uri">/kyc-svc/internal-api/v1/manual-approval/status?tmn_id={tmn_id}&type={type}</span>
+          </div>
+          <div class="a-stat-row">
+            <span><span class="rate">348.2</span> req/s</span>
+            <span>· 42 ms avg</span>
+            <span class="err-tag warn">42.2% error</span>
+          </div>
+          <div class="a-bar" title="200: 57.8% · 404: 42.2%">
+            <span class="b-2xx" style="width:57.8%"></span>
+            <span class="b-4xx" style="width:42.2%"></span>
+          </div>
+          <div class="a-legend">
+            <span class="pill ok"><span class="code">200</span><span class="rate">· 201.3/s</span></span>
+            <span class="pill warn"><span class="code">404</span><span class="rate">· 146.9/s</span></span>
+          </div>
+        </div>
+
+        <div class="a-card ok">
+          <div class="a-head">
+            <span class="method post">POST</span>
+            <span class="uri">/kyc-svc/internal-api/v1/manual-approval/verify-enrollment</span>
+          </div>
+          <div class="a-stat-row">
+            <span><span class="rate">210.6</span> req/s</span>
+            <span>· 180 ms avg</span>
+            <span class="err-tag ok">7.2% error</span>
+          </div>
+          <div class="a-bar" title="200: 92.8% · 400: 7.2%">
+            <span class="b-2xx" style="width:92.8%"></span>
+            <span class="b-4xx" style="width:7.2%"></span>
+          </div>
+          <div class="a-legend">
+            <span class="pill ok"><span class="code">200</span><span class="rate">· 195.4/s</span></span>
+            <span class="pill warn"><span class="code">400</span><span class="rate">· 15.2/s</span></span>
+          </div>
+        </div>
+
+        <div class="a-card crit">
+          <div class="a-head">
+            <span class="method post">POST</span>
+            <span class="uri">/idp-comp/internal-api/v1/verify-enrollment/callback</span>
+          </div>
+          <div class="a-stat-row">
+            <span><span class="rate">89.0</span> req/s</span>
+            <span>· 340 ms avg</span>
+            <span class="err-tag hot">15.7% error</span>
+          </div>
+          <div class="a-bar" title="200: 68% · 502: 15.7%">
+            <span class="b-2xx" style="width:68%"></span>
+            <span class="b-4xx" style="width:16.3%"></span>
+            <span class="b-5xx" style="width:15.7%"></span>
+          </div>
+          <div class="a-legend">
+            <span class="pill ok"><span class="code">200</span><span class="rate">· 60.5/s</span></span>
+            <span class="pill warn"><span class="code">400</span><span class="rate">· 14.5/s</span></span>
+            <span class="pill hot"><span class="code">502</span><span class="rate">· 14.0/s</span></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════ OPTION B ══════════ -->
+    <div class="mk-opt">
+      <div class="mk-opt-head">
+        <span class="mk-opt-badge">B</span>
+        <div>
+          <div class="mk-opt-title">Data Table (คอลัมน์แยก status)</div>
+          <div class="mk-opt-desc">คอลัมน์ 2xx / 4xx / 5xx แยก · scan หา error ได้เร็ว · เหมาะกับ endpoint เยอะๆ (50+) · sortable</div>
+        </div>
+      </div>
+      <div class="mk-opt-body">
+        <table class="b-tbl">
+          <thead>
+            <tr>
+              <th style="width:auto">Endpoint</th>
+              <th class="right" style="width:70px">Total</th>
+              <th class="right" style="width:60px">2xx</th>
+              <th class="right" style="width:60px">4xx</th>
+              <th class="right" style="width:60px">5xx</th>
+              <th class="right" style="width:70px">Latency</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <span class="method get">GET</span>
+                <div class="uri" style="margin-top:5px">/kyc-svc/internal-api/v1/manual-approval/status?tmn_id={tmn_id}&type={type}</div>
+              </td>
+              <td class="right"><span class="b-total">348</span><span style="color:var(--text-muted);font-size:10px">/s</span></td>
+              <td class="right"><span class="b-num ok">201.3</span></td>
+              <td class="right"><span class="b-num warn">146.9</span></td>
+              <td class="right"><span class="b-num zero">—</span></td>
+              <td class="right"><span class="b-lat">42 ms</span></td>
+            </tr>
+            <tr>
+              <td>
+                <span class="method post">POST</span>
+                <div class="uri" style="margin-top:5px">/kyc-svc/internal-api/v1/manual-approval/verify-enrollment</div>
+              </td>
+              <td class="right"><span class="b-total">210</span><span style="color:var(--text-muted);font-size:10px">/s</span></td>
+              <td class="right"><span class="b-num ok">195.4</span></td>
+              <td class="right"><span class="b-num warn">15.2</span></td>
+              <td class="right"><span class="b-num zero">—</span></td>
+              <td class="right"><span class="b-lat">180 ms</span></td>
+            </tr>
+            <tr>
+              <td>
+                <span class="method post">POST</span>
+                <div class="uri" style="margin-top:5px">/idp-comp/internal-api/v1/verify-enrollment/callback</div>
+              </td>
+              <td class="right"><span class="b-total">89</span><span style="color:var(--text-muted);font-size:10px">/s</span></td>
+              <td class="right"><span class="b-num ok">60.5</span></td>
+              <td class="right"><span class="b-num warn">14.5</span></td>
+              <td class="right"><span class="b-num hot">14.0</span></td>
+              <td class="right"><span class="b-lat">340 ms</span></td>
+            </tr>
+            <tr>
+              <td>
+                <span class="method post">POST</span>
+                <div class="uri" style="margin-top:5px">/otp/v2/otp/verification</div>
+              </td>
+              <td class="right"><span class="b-total">67</span><span style="color:var(--text-muted);font-size:10px">/s</span></td>
+              <td class="right"><span class="b-num ok">67.0</span></td>
+              <td class="right"><span class="b-num zero">—</span></td>
+              <td class="right"><span class="b-num zero">—</span></td>
+              <td class="right"><span class="b-lat">12 ms</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════ OPTION C ══════════ -->
+    <div class="mk-opt">
+      <div class="mk-opt-head">
+        <span class="mk-opt-badge">C</span>
+        <div>
+          <div class="mk-opt-title">Grouped by Severity (Errors ก่อน)</div>
+          <div class="mk-opt-desc">3 กลุ่ม · 5xx / 4xx / 2xx · ปัญหาเด้งขึ้นบนสุด · healthy ยุบไว้ · เหมาะกับ on-call ที่อยาก triage เร็ว</div>
+        </div>
+      </div>
+      <div class="mk-opt-body">
+
+        <div class="c-group hot">
+          <div class="c-group-head">
+            <span class="swatch"></span>
+            <span class="c-group-title">5xx errors</span>
+            <span class="c-group-meta">1 endpoint · 14.0 /s</span>
+          </div>
+          <div class="c-group-body">
+            <div class="c-row">
+              <span class="c-code hot">502</span>
+              <span class="method post">POST</span>
+              <span class="uri">/idp-comp/internal-api/v1/verify-enrollment/callback</span>
+              <span class="c-rate"><b>14.0</b>/s · 340 ms</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="c-group warn">
+          <div class="c-group-head">
+            <span class="swatch"></span>
+            <span class="c-group-title">4xx errors</span>
+            <span class="c-group-meta">3 endpoints · 176.6 /s</span>
+          </div>
+          <div class="c-group-body">
+            <div class="c-row">
+              <span class="c-code warn">404</span>
+              <span class="method get">GET</span>
+              <span class="uri">/kyc-svc/internal-api/v1/manual-approval/status?tmn_id={tmn_id}&type={type}</span>
+              <span class="c-rate"><b>146.9</b>/s · 42 ms</span>
+            </div>
+            <div class="c-row">
+              <span class="c-code warn">400</span>
+              <span class="method post">POST</span>
+              <span class="uri">/kyc-svc/internal-api/v1/manual-approval/verify-enrollment</span>
+              <span class="c-rate"><b>15.2</b>/s · 180 ms</span>
+            </div>
+            <div class="c-row">
+              <span class="c-code warn">400</span>
+              <span class="method post">POST</span>
+              <span class="uri">/idp-comp/internal-api/v1/verify-enrollment/callback</span>
+              <span class="c-rate"><b>14.5</b>/s · 340 ms</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="c-group ok">
+          <div class="c-group-head">
+            <span class="swatch"></span>
+            <span class="c-group-title">2xx healthy</span>
+            <span class="c-group-meta">4 endpoints · 524.2 /s</span>
+          </div>
+          <div class="c-collapsed">
+            ยุบไว้ (คลิก header เพื่อกาง) · <b style="color:var(--mk-ok)">524.2 req/s</b> total ·
+            top: /manual-approval/status (201.3/s), /verify-enrollment (195.4/s), /otp/v2/otp/verification (67.0/s), ...
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════ OPTION D ══════════ -->
+    <div class="mk-opt">
+      <div class="mk-opt-head">
+        <span class="mk-opt-badge">D</span>
+        <div>
+          <div class="mk-opt-title">Timeline / Weight Bar</div>
+          <div class="mk-opt-desc">แถบหนา · แต่ละสีเท่ากับสัดส่วน status · โชว์เลขในแท่งเลย · เห็น distribution ทันที · เหมาะกับ eyeballing</div>
+        </div>
+      </div>
+      <div class="mk-opt-body">
+
+        <div class="d-row">
+          <div class="d-head">
+            <div class="d-uri">
+              <span class="method get">GET</span>
+              <span class="uri">/kyc-svc/internal-api/v1/manual-approval/status?tmn_id={tmn_id}&type={type}</span>
+            </div>
+            <div class="d-side">
+              <div><span class="rate">348.2</span> req/s</div>
+              <div>42 ms avg</div>
+            </div>
+          </div>
+          <div class="d-weightbar">
+            <span class="seg-2xx" style="width:57.8%" title="200 · 201.3/s">200 · 201.3</span>
+            <span class="seg-4xx" style="width:42.2%" title="404 · 146.9/s">404 · 146.9</span>
+          </div>
+        </div>
+
+        <div class="d-row">
+          <div class="d-head">
+            <div class="d-uri">
+              <span class="method post">POST</span>
+              <span class="uri">/kyc-svc/internal-api/v1/manual-approval/verify-enrollment</span>
+            </div>
+            <div class="d-side">
+              <div><span class="rate">210.6</span> req/s</div>
+              <div>180 ms avg</div>
+            </div>
+          </div>
+          <div class="d-weightbar">
+            <span class="seg-2xx" style="width:92.8%" title="200 · 195.4/s">200 · 195.4</span>
+            <span class="seg-4xx" style="width:7.2%" title="400 · 15.2/s">400</span>
+          </div>
+        </div>
+
+        <div class="d-row">
+          <div class="d-head">
+            <div class="d-uri">
+              <span class="method post">POST</span>
+              <span class="uri">/idp-comp/internal-api/v1/verify-enrollment/callback</span>
+            </div>
+            <div class="d-side">
+              <div><span class="rate">89.0</span> req/s</div>
+              <div>340 ms avg</div>
+            </div>
+          </div>
+          <div class="d-weightbar">
+            <span class="seg-2xx" style="width:68%" title="200 · 60.5/s">200 · 60.5</span>
+            <span class="seg-4xx" style="width:16.3%" title="400 · 14.5/s">400</span>
+            <span class="seg-5xx" style="width:15.7%" title="502 · 14.0/s">502</span>
+          </div>
+        </div>
+
+        <div class="d-row">
+          <div class="d-head">
+            <div class="d-uri">
+              <span class="method post">POST</span>
+              <span class="uri">/otp/v2/otp/verification</span>
+            </div>
+            <div class="d-side">
+              <div><span class="rate">67.0</span> req/s</div>
+              <div>12 ms avg</div>
+            </div>
+          </div>
+          <div class="d-weightbar">
+            <span class="seg-2xx" style="width:100%" title="200 · 67.0/s">200 · 67.0</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div class="mk-note">
+    <b>วิธีดู:</b> เปิดหน้านี้ที่ <code>10.164.16.47/SOM-Portal/mockup-endpoint-designs.html</code> — ดูทั้ง 4 แบบพร้อมกัน แล้วบอกผมว่า <b>ชอบตัวไหน (A/B/C/D)</b>
+    + <b>ปรับตรงไหนอีก</b> (เพิ่ม/เอาข้อมูลออก, เปลี่ยนสี, ขนาด, etc.) แล้วผมจะเอาไปแทนที่ของเดิมใน drill panel ให้ครับ.
+    <br><br>
+    ผสมกันได้ด้วย เช่น "เอาโครง B แต่ใส่ progress bar แบบ A" — บอกมาได้ตามใจ.
+  </div>
+
+</div>
+
+</body>
+</html>

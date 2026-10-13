@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log Viewer — Dev Tools — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ── Card ─────────────────────────────────── */
+    .dt-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .dt-card-hd {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(90deg, rgba(242,100,25,.07), transparent 60%);
+    }
+    .dt-card-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0;
+      background: rgba(242,100,25,.12); color: var(--orange);
+    }
+    .dt-card-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .dt-card-sub   { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+    .dt-card-body  { padding: 0; }
+    .dt-card-foot  {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 10px 18px;
+      border-top: 1px solid var(--border);
+      background: rgba(0,0,0,.12);
+    }
+
+    /* ── Buttons ───────────────────────────── */
+    .dt-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; font-size: 11px; font-weight: 600;
+      border-radius: 7px; cursor: pointer; font-family: inherit;
+      border: 1.5px solid var(--border); background: var(--bg);
+      color: var(--text); transition: all .15s;
+    }
+    .dt-btn:hover  { border-color: var(--orange); color: var(--orange); }
+    .dt-btn.primary {
+      background: var(--orange); color: #fff; border-color: var(--orange);
+    }
+    .dt-btn.primary:hover { background: #d04e0e; color: #fff; }
+    .dt-btn.danger {
+      background: rgba(239,68,68,.1); color: #f87171; border-color: rgba(239,68,68,.3);
+    }
+    .dt-btn.danger:hover { background: rgba(239,68,68,.2); }
+    .dt-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Toolbar ────────────────────────────── */
+    .log-toolbar {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.01);
+    }
+    .log-search {
+      flex: 1; min-width: 160px; max-width: 260px;
+      padding: 7px 11px; border-radius: 7px;
+      border: 1.5px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 12px; font-family: inherit; outline: none;
+    }
+    .log-search:focus { border-color: var(--orange); }
+    .log-select {
+      padding: 7px 10px; border-radius: 7px;
+      border: 1.5px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 12px; font-family: inherit; outline: none;
+      cursor: pointer;
+    }
+    .log-select:focus { border-color: var(--orange); }
+
+    /* ── Tabs ────────────────────────────────── */
+    .log-tabs {
+      display: flex; gap: 2px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.01);
+    }
+    .log-tab {
+      padding: 10px 14px; font-size: 12px; font-weight: 600;
+      cursor: pointer; color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color .12s, border-color .12s;
+    }
+    .log-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+    .log-tab:hover:not(.active) { color: var(--text); }
+
+    /* ── Stats bar ───────────────────────────── */
+    .log-stats-bar {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      padding: 8px 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,.08);
+      font-size: 11px;
+    }
+    .log-stat-item { display: flex; align-items: center; gap: 5px; color: var(--text-muted); }
+    .log-stat-item strong { color: var(--text); font-family: 'JetBrains Mono', Consolas, monospace; }
+    .log-stat-sep { color: var(--border); }
+
+    /* ── Log rows ─────────────────────────────── */
+    .log-list {
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 11.5px;
+      min-height: 200px;
+    }
+    .log-row {
+      display: grid;
+      grid-template-columns: 160px 140px 110px 1fr;
+      gap: 8px;
+      padding: 7px 18px;
+      border-bottom: 1px solid rgba(255,255,255,.03);
+      align-items: baseline;
+      transition: background .1s;
+    }
+    .log-row:nth-child(even) { background: rgba(255,255,255,.015); }
+    .log-row:hover { background: rgba(242,100,25,.05); }
+    .log-row.sec  { background: rgba(239,68,68,.04); }
+    .log-row.sec:nth-child(even) { background: rgba(239,68,68,.06); }
+    .log-row.sec:hover { background: rgba(239,68,68,.1); }
+
+    .lr-ts   { color: var(--text-muted); font-size: 10.5px; white-space: nowrap; }
+    .lr-user { color: var(--text); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lr-action { font-weight: 700; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lr-action.act  { color: var(--orange); }
+    .lr-action.sec  { color: #f87171; }
+
+    .lr-detail {
+      color: var(--text-muted);
+      font-size: 10.5px;
+      overflow: hidden;
+      word-break: break-word;
+    }
+    .lr-detail .detail-short { cursor: pointer; }
+    .lr-detail .detail-short:hover { color: var(--text); text-decoration: underline; }
+    .lr-detail .detail-full {
+      display: none;
+      white-space: pre-wrap;
+      background: rgba(0,0,0,.3);
+      padding: 6px 8px;
+      border-radius: 5px;
+      margin-top: 4px;
+      border: 1px solid var(--border);
+      font-size: 10px;
+      max-height: 200px;
+      overflow: auto;
+    }
+    .lr-detail .detail-full.expanded { display: block; }
+
+    /* ── Log table header ─────────────────────── */
+    .log-header-row {
+      display: grid;
+      grid-template-columns: 160px 140px 110px 1fr;
+      gap: 8px;
+      padding: 6px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+      font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--text-muted);
+      font-family: var(--font);
+      position: sticky; top: 0; z-index: 1;
+    }
+
+    /* ── Load more / empty ───────────────────── */
+    .load-more-row {
+      padding: 14px 18px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .state-empty {
+      padding: 32px 18px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-family: inherit;
+    }
+    .state-error {
+      margin: 12px 18px;
+      padding: 10px 14px; border-radius: 8px;
+      background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25);
+      color: #f87171; font-size: 11px; font-family: inherit;
+    }
+
+    /* ── Loading ─────────────────────────────── */
+    .spin {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid rgba(242,100,25,.3);
+      border-top-color: var(--orange);
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-row {
+      padding: 24px 18px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 11px; color: var(--text-muted); font-family: inherit;
+    }
+
+    /* ── Banner ────────────────────────────── */
+    .dt-banner {
+      padding: 10px 14px; border-radius: 10px;
+      background: linear-gradient(135deg, rgba(242,100,25,.15), rgba(242,100,25,.05));
+      border: 1px solid rgba(242,100,25,.3);
+      font-size: 11px; color: var(--text);
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .dt-banner-tag {
+      font-size: 9px; font-weight: 800; padding: 3px 7px;
+      border-radius: 5px; background: var(--orange); color: #fff;
+      letter-spacing: .06em; flex-shrink: 0;
+    }
+
+    /* ── Responsive: collapse cols on small screens ── */
+    @media (max-width: 640px) {
+      .log-row,
+      .log-header-row {
+        grid-template-columns: 120px 90px 1fr;
+      }
+      .log-row .lr-user,
+      .log-header-row .h-user { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Log Viewer — Dev Tools</div>
+        <div class="page-sub">Activity และ Security logs แบบ real-time พร้อมค้นหา</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="dt-btn" id="btn-export" onclick="exportLogs()"><i data-icon="arrow-down"></i> Export JSON</button>
+        <button class="dt-btn primary" id="btn-load" onclick="fetchLogs(true)">↺ Load / Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="clipboard"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Dev Tools</div>
+          <h1>Log Viewer</h1>
+          <p>Activity และ Security logs แบบ real-time พร้อมค้นหา + export — เฉพาะ Dev SM</p>
+        </div>
+      </section>
+
+      <div class="dt-banner">
+        <span class="dt-banner-tag">DEV SM</span>
+        <span>Log viewer สำหรับ role <code style="color:var(--orange)">dev_sm</code> — ดู activity &amp; security logs พร้อมระบบค้นหาและ export</span>
+      </div>
+
+      <div class="dt-card">
+        <!-- Tabs -->
+        <div class="log-tabs">
+          <div class="log-tab active" data-tab="activity" onclick="switchTab('activity')"><i data-icon="clipboard"></i> Activity Logs</div>
+          <div class="log-tab"        data-tab="security" onclick="switchTab('security')"><i data-icon="lock"></i> Security Logs</div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="log-toolbar">
+          <input type="text"
+            class="log-search"
+            id="log-search"
+            placeholder="🔍 ค้นหา action หรือ user…"
+            oninput="debounceFetch()">
+          <select class="log-select" id="log-limit" onchange="fetchLogs(true)">
+            <option value="50">50 rows</option>
+            <option value="100" selected>100 rows</option>
+            <option value="200">200 rows</option>
+            <option value="500">500 rows</option>
+          </select>
+          <button class="dt-btn" onclick="clearSearch()"><i data-icon="x"></i> Clear</button>
+          <span style="flex:1"></span>
+          <span style="font-size:10px;color:var(--text-muted)" id="log-meta-right"></span>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="log-stats-bar" id="log-stats-bar" style="display:none">
+          <div class="log-stat-item">Total: <strong id="stat-total">—</strong></div>
+          <span class="log-stat-sep">·</span>
+          <div class="log-stat-item">Showing: <strong id="stat-showing">—</strong></div>
+          <span class="log-stat-sep">·</span>
+          <div class="log-stat-item">Page: <strong id="stat-page">—</strong></div>
+        </div>
+
+        <!-- Log list -->
+        <div class="dt-card-body">
+          <div class="log-header-row">
+            <div>Timestamp</div>
+            <div class="h-user">User</div>
+            <div>Action/Event</div>
+            <div>Detail</div>
+          </div>
+          <div class="log-list" id="log-list">
+            <div class="loading-row"><span class="spin"></span> กำลังโหลด logs…</div>
+          </div>
+
+          <!-- Load more / pagination -->
+          <div class="load-more-row" id="load-more-row" style="display:none">
+            <button class="dt-btn" id="btn-more" onclick="loadMore()"><i data-icon="arrow-down"></i> Load More</button>
+            <span style="font-size:10px;color:var(--text-muted)" id="load-more-info"></span>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+// ── Auth gate: dev_sm only ─────────────────────────────────
+Auth.requireAuth();
+const _u = Auth.getUser?.();
+if (_u && _u.role !== 'dev_sm') {
+  window.location.replace('../index.html');
+}
+
+Layout.render('dev-logs');
+
+// ── State ──────────────────────────────────────────────────
+let _activeTab   = 'activity';
+let _currentPage = 1;
+let _totalItems  = 0;
+let _allItems    = [];    // accumulated items across pages
+let _debounceTimer = null;
+
+// ── Helpers ────────────────────────────────────────────────
+function fmtDateTime(ts) {
+  if (!ts) return '—';
+  try {
+    return new Date(ts).toLocaleString('th-TH', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    });
+  } catch { return String(ts).replace('T', ' ').slice(0, 19); }
+}
+
+function truncDetail(detail, max) {
+  if (!detail) return '';
+  const s = typeof detail === 'string' ? detail : JSON.stringify(detail);
+  return s.length > max ? s.slice(0, max) + '…' : s;
+}
+
+function fullDetail(detail) {
+  if (!detail) return '';
+  if (typeof detail === 'string') return detail;
+  try { return JSON.stringify(detail, null, 2); } catch { return String(detail); }
+}
+
+function debounceFetch() {
+  clearTimeout(_debounceTimer);
+  _debounceTimer = setTimeout(() => fetchLogs(true), 320);
+}
+
+function clearSearch() {
+  document.getElementById('log-search').value = '';
+  fetchLogs(true);
+}
+
+// ── Tab switch ─────────────────────────────────────────────
+function switchTab(tab) {
+  _activeTab = tab;
+  _currentPage = 1;
+  _allItems = [];
+  document.querySelectorAll('.log-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+  fetchLogs(true);
+}
+
+// ── Main fetch ─────────────────────────────────────────────
+async function fetchLogs(reset) {
+  if (reset) {
+    _currentPage = 1;
+    _allItems    = [];
+  }
+
+  const btn  = document.getElementById('btn-load');
+  const list = document.getElementById('log-list');
+  btn.disabled = true;
+
+  if (reset) {
+    list.innerHTML = '<div class="loading-row"><span class="spin"></span> กำลังโหลด logs…</div>';
+    document.getElementById('load-more-row').style.display = 'none';
+    document.getElementById('log-stats-bar').style.display = 'none';
+  } else {
+    document.getElementById('btn-more').disabled = true;
+    document.getElementById('btn-more').textContent = '⏳ Loading…';
+  }
+
+  const limit  = parseInt(document.getElementById('log-limit').value, 10) || 100;
+  const search = document.getElementById('log-search').value.trim();
+
+  const params = {
+    type:  _activeTab,
+    limit: limit,
+    page:  _currentPage,
+  };
+  if (search) params.search = search;
+
+  const t0  = performance.now();
+  const res = await API.logs.query(params);
+  const ms  = Math.round(performance.now() - t0);
+
+  btn.disabled = false;
+  btn.innerHTML = '↺ Load / Refresh';
+
+  if (!res?.ok) {
+    list.innerHTML = `<div class="state-error">Error ${res?.status || ''}: ${escHtml(res?.data?.message || 'โหลด logs ไม่สำเร็จ')}</div>`;
+    Toast.error('โหลด logs ไม่สำเร็จ');
+    return;
+  }
+
+  const payload   = res.data?.data || res.data || {};
+  const items     = payload.items || [];
+  const total     = payload.total ?? items.length;
+
+  _totalItems = total;
+  _allItems   = reset ? items : [..._allItems, ...items];
+
+  renderLogs(_allItems);
+  updateStats(_allItems.length, total, _currentPage, ms);
+  updateLoadMore(_allItems.length, total);
+}
+
+// ── Render log rows ────────────────────────────────────────
+function renderLogs(items) {
+  const list  = document.getElementById('log-list');
+  const isSec = _activeTab === 'security';
+
+  if (!items.length) {
+    list.innerHTML = `<div class="state-empty">ไม่พบ log entries ที่ตรงกัน</div>`;
+    return;
+  }
+
+  const rows = items.map((e, idx) => {
+    const action = e.action || e.event || '';
+    const ts     = fmtDateTime(e.ts);
+    const user   = e.user_name || e.user_id || '—';
+    const detail = e.detail;
+    const shortD = escHtml(truncDetail(detail, 120));
+    const fullD  = escHtml(fullDetail(detail));
+    const rowCls = isSec ? 'log-row sec' : 'log-row';
+    const acCls  = isSec ? 'lr-action sec' : 'lr-action act';
+    const hasMore = fullDetail(detail).length > 120;
+    const uid    = 'det-' + idx;
+
+    return `<div class="${rowCls}">
+      <div class="lr-ts">${escHtml(ts)}</div>
+      <div class="lr-user" title="${escHtml(user)}">${escHtml(user)}</div>
+      <div class="${acCls}">${escHtml(action)}</div>
+      <div class="lr-detail">
+        ${hasMore
+          ? `<span class="detail-short" onclick="toggleDetail('${uid}')" title="คลิกเพื่อดูเพิ่มเติม">${shortD}</span>
+             <pre class="detail-full" id="${uid}">${fullD}</pre>`
+          : `<span>${shortD}</span>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+
+  list.innerHTML = rows;
+}
+
+function toggleDetail(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('expanded');
+}
+
+// ── Stats bar ──────────────────────────────────────────────
+function updateStats(showing, total, page, ms) {
+  const bar = document.getElementById('log-stats-bar');
+  bar.style.display = 'flex';
+  document.getElementById('stat-total').textContent   = total.toLocaleString();
+  document.getElementById('stat-showing').textContent = showing.toLocaleString();
+  document.getElementById('stat-page').textContent    = page;
+  document.getElementById('log-meta-right').textContent = `${ms}ms`;
+}
+
+// ── Load more ──────────────────────────────────────────────
+function updateLoadMore(showing, total) {
+  const row  = document.getElementById('load-more-row');
+  const info = document.getElementById('load-more-info');
+  const btn  = document.getElementById('btn-more');
+
+  if (showing < total) {
+    row.style.display = 'flex';
+    btn.disabled = false;
+    btn.innerHTML = '<i data-icon="arrow-down"></i> Load More';
+    info.textContent = `แสดง ${showing.toLocaleString()} จาก ${total.toLocaleString()} รายการ`;
+  } else {
+    row.style.display = showing > 0 ? 'flex' : 'none';
+    btn.style.display = 'none';
+    info.textContent  = showing > 0 ? `แสดงครบ ${showing.toLocaleString()} รายการ` : '';
+  }
+}
+
+async function loadMore() {
+  _currentPage++;
+  await fetchLogs(false);
+}
+
+// ── Export ─────────────────────────────────────────────────
+function exportLogs() {
+  if (!_allItems.length) {
+    Toast.warning('ไม่มีข้อมูลสำหรับ export');
+    return;
+  }
+  const blob = new Blob(
+    [JSON.stringify({ type: _activeTab, exported_at: new Date().toISOString(), total: _allItems.length, items: _allItems }, null, 2)],
+    { type: 'application/json' }
+  );
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  a.href     = url;
+  a.download = `logs-${_activeTab}-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  Toast.success(`Export ${_allItems.length} รายการ สำเร็จ`);
+}
+
+// ── Init ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  fetchLogs(true);
+});
+</script>
+</body>
+</html>

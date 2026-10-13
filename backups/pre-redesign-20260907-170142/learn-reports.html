@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Reports — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <style>
+    :root {
+      --accent:      #6366F1;
+      --accent-soft: rgba(99,102,241,.10);
+      --accent-line: rgba(99,102,241,.35);
+    }
+
+    .page-hero {
+      position:relative; overflow:hidden;
+      border:1px solid var(--border); border-radius:14px;
+      padding:20px 24px; margin-bottom:18px;
+      background:var(--panel-bg);
+      display:flex; align-items:center; gap:16px;
+    }
+    .page-hero-mark {
+      width:46px; height:46px; border-radius:12px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(135deg, var(--accent-soft), transparent);
+      border:1px solid var(--accent-line);
+      color:var(--accent);
+      font-size:20px; font-weight:700;
+    }
+    .page-hero-body { flex:1; min-width:0 }
+    .page-hero-eyebrow {
+      font-size:10.5px; font-weight:700; color:var(--accent);
+      text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px;
+    }
+    .page-hero h1 { margin:0 0 4px; font-size:18px; font-weight:700; letter-spacing:-.015em }
+    .page-hero p  { margin:0; color:var(--text-muted); font-size:12.5px; line-height:1.6 }
+
+    /* Stat tiles */
+    .stat-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:12px }
+    @media (max-width:900px) { .stat-grid { grid-template-columns:repeat(2, 1fr) } }
+    .stat-tile {
+      background:var(--panel-bg); border:1px solid var(--border); border-radius:10px;
+      padding:14px 18px;
+    }
+    .stat-tile .n { font-size:26px; font-weight:700; line-height:1 }
+    .stat-tile .l { font-size:10.5px; color:var(--text-muted); margin-top:6px; text-transform:uppercase; letter-spacing:.05em }
+    .stat-tile.orange .n { color:var(--orange) }
+    .stat-tile.green  .n { color:#10b981 }
+    .stat-tile.blue   .n { color:#3b82f6 }
+    .stat-tile.gray   .n { color:#94a3b8 }
+
+    /* Progress bar */
+    .pbar { height:6px; background:var(--border); border-radius:3px; overflow:hidden; width:120px; display:inline-block; vertical-align:middle; margin-right:8px }
+    .pbar > div { height:100%; background:linear-gradient(90deg,#f26419,#10b981); transition:width .3s }
+
+    /* Status pill */
+    .pill { display:inline-block; font-size:10px; font-weight:700; padding:3px 9px; border-radius:999px; text-transform:uppercase; letter-spacing:.04em }
+    .pill-gray  { background:rgba(100,116,139,.18); color:#64748b }
+    .pill-blue  { background:rgba(59,130,246,.2);   color:#3b82f6 }
+    .pill-orange{ background:rgba(242,100,25,.2);   color:var(--orange) }
+    .pill-green { background:rgba(16,185,129,.2);   color:#10b981 }
+
+    /* Team badge — colored per team (color pulled from _sa_teams_data cache) */
+    .team-pill {
+      display:inline-block; font-size:10px; font-weight:800;
+      padding:2px 8px; border-radius:999px; letter-spacing:.06em;
+      color:var(--tp-color, #6366F1);
+      background:color-mix(in srgb, var(--tp-color, #6366F1) 12%, transparent);
+      border:1px solid color-mix(in srgb, var(--tp-color, #6366F1) 35%, transparent);
+    }
+
+    /* User drill-down */
+    .user-drill { border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:14px; background:var(--bg-card) }
+    .user-drill h4 { margin:0 0 8px; font-size:13px }
+    .phase-pill { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border:1px solid var(--border); border-radius:999px; font-size:11px; margin:3px 6px 3px 0 }
+    .phase-pill.passed      { border-color:#10b981; color:#10b981; background:rgba(16,185,129,.08) }
+    .phase-pill.in_progress { border-color:var(--orange); color:var(--orange); background:rgba(242,100,25,.08) }
+    .phase-pill.locked      { opacity:.45 }
+
+    .modal-overlay.active { display:flex }
+    .modal.lg { max-width:860px }
+
+    .read-only-tag {
+      display:inline-flex; align-items:center; gap:5px;
+      font-size:10px; font-weight:700; letter-spacing:.06em;
+      color:var(--accent); background:var(--accent-soft);
+      border:1px solid var(--accent-line);
+      padding:2px 8px; border-radius:999px; text-transform:uppercase;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="bar-chart"></i> Course Reports</div>
+        <div class="page-sub">Cross-team learning progress — oversight view</div>
+      </div>
+      <div class="topbar-actions"></div>
+    </header>
+
+    <main class="page-content" style="padding:22px 24px 40px;">
+
+      <div class="page-hero">
+        <div class="page-hero-mark"><i data-icon="book-open"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Oversight · Read-only</div>
+          <h1>Course Progress ข้ามทีม</h1>
+          <p>ดูภาพรวมความคืบหน้าของคอร์สเรียนของทุกทีม (สลับทีมจาก view-as switcher มุมบนขวา) — ไม่มีปุ่ม reset/delete เพราะเป็น oversight view เท่านั้น</p>
+        </div>
+        <div><span class="read-only-tag">Read-only</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">ภาพรวมความคืบหน้า</span>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+            <select id="prog-course-filter" class="form-control" style="min-width:220px">
+              <option value="">ทั้งหมด (ทุก course)</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="exportCsv()"><i data-icon="inbox"></i> Export CSV</button>
+          </div>
+        </div>
+        <div class="card-body">
+
+          <div class="stat-grid" id="stat-row">
+            <div class="stat-tile"><div class="n" id="st-total">—</div><div class="l">พนักงานทั้งหมด</div></div>
+            <div class="stat-tile green"><div class="n" id="st-done">—</div><div class="l">เรียนครบทุก phase</div></div>
+            <div class="stat-tile orange"><div class="n" id="st-inprog">—</div><div class="l">กำลังเรียน</div></div>
+            <div class="stat-tile gray"><div class="n" id="st-none">—</div><div class="l">ยังไม่เริ่ม</div></div>
+            <div class="stat-tile blue"><div class="n" id="st-avg">—</div><div class="l">คะแนนเฉลี่ย</div></div>
+          </div>
+
+          <div id="progress-table" style="margin-top:12px">
+            <div data-skel="text" data-rows="6"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- User Detail Modal -->
+<div id="m-user" class="modal-overlay" onclick="if(event.target===this)closeAllModals()">
+  <div class="modal lg">
+    <div class="modal-header">
+      <span class="modal-title" id="um-title">รายละเอียดผู้ใช้</span>
+      <button class="btn-close" onclick="closeAllModals()"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" id="um-body">
+      <div data-skel="text" data-rows="6"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeAllModals()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/skeletons.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script>
+  if (!Auth.requireAuth()) {}
+
+  (() => {
+    const u = Auth.getUser();
+    if (!['super_viewer', 'super_admin'].includes(u?.role)) {
+      location.replace('./dashboard.html');
+    }
+  })();
+
+  Layout.render('learn-reports');
+
+  let _courses = [];
+  let _progReport = null;
+  let _teamsById = {};
+  (() => {
+    try {
+      const raw = sessionStorage.getItem('_sa_teams_data');
+      (JSON.parse(raw || '[]') || []).forEach(t => {
+        if (t?.slug) _teamsById[t.slug] = t;
+      });
+    } catch {}
+  })();
+  function teamPill(slug) {
+    if (!slug) return '<span class="pill pill-gray">—</span>';
+    const t = _teamsById[slug] || {};
+    const label = (t.name || slug).toUpperCase();
+    const color = t.color || '#6366F1';
+    return `<span class="team-pill" title="${escHtml(t.name || slug)}"
+      style="--tp-color:${color}">${escHtml(label)}</span>`;
+  }
+
+  function closeAllModals() {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModals(); });
+
+  async function loadCourses() {
+    const res = await API.courses.listCourses();
+    if (!res?.ok) return;
+    _courses = res.data.data || [];
+    const sel = document.getElementById('prog-course-filter');
+    _courses.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = `${c.icon || '📘'} ${c.title}`;
+      sel.appendChild(opt);
+    });
+  }
+
+  async function loadProgress() {
+    const cid = document.getElementById('prog-course-filter').value || '';
+    const wrap = document.getElementById('progress-table');
+    wrap.innerHTML = '<div data-skel="text" data-rows="6"></div>';
+
+    const res = await API.courses.allProgress(cid);
+    if (!res?.ok) {
+      Toast.error('โหลด progress ไม่สำเร็จ');
+      wrap.innerHTML = '<div class="empty-state"><p>โหลดข้อมูลไม่สำเร็จ</p></div>';
+      return;
+    }
+    _progReport = res.data.data || {};
+    const stats = _progReport.stats || {};
+    document.getElementById('st-total').textContent  = stats.users_total       || 0;
+    document.getElementById('st-done').textContent   = stats.users_completed   || 0;
+    document.getElementById('st-inprog').textContent = stats.users_in_progress || 0;
+    document.getElementById('st-none').textContent   = stats.users_not_started || 0;
+    document.getElementById('st-avg').textContent    = (stats.avg_percent      || 0) + '%';
+
+    const users = _progReport.users || [];
+    if (!users.length) {
+      wrap.innerHTML = '<div class="empty-state"><p>ยังไม่มีข้อมูล</p></div>';
+      return;
+    }
+
+    wrap.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr>
+        <th>ชื่อ</th><th>Team</th><th>Role</th><th>ความคืบหน้า</th><th>ผ่าน / ทั้งหมด</th><th>รอบที่ลอง</th><th>สถานะ</th><th>Active ล่าสุด</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${users.map(r => `<tr>
+          <td style="font-weight:600">${escHtml(r.name)}<div style="font-size:10px; color:var(--text-muted)">${escHtml(r.username)}</div></td>
+          <td>${teamPill(r.team)}</td>
+          <td><span class="pill pill-gray">${escHtml(r.role)}</span></td>
+          <td>
+            <div class="pbar"><div style="width:${r.percent}%"></div></div>
+            <span style="font-weight:600">${r.percent}%</span>
+          </td>
+          <td>${r.phases_passed} / ${r.phases_total}</td>
+          <td>${r.total_attempts}</td>
+          <td>${statusPill(r.status_bucket)}</td>
+          <td style="color:var(--text-muted); font-size:11px">${r.last_active ? DateTime.formatDate(r.last_active) : '—'}</td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-ghost btn-sm" onclick='openUserDetail(${JSON.stringify(r.user_id)}, ${JSON.stringify(r.name)})'>รายละเอียด</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+  }
+
+  function statusPill(b) {
+    return {
+      completed:   '<span class="pill pill-green"><i data-icon="check"></i> เรียนจบ</span>',
+      in_progress: '<span class="pill pill-orange">● กำลังเรียน</span>',
+      not_started: '<span class="pill pill-gray">— ยังไม่เริ่ม</span>',
+      no_course:   '<span class="pill pill-gray">—</span>',
+    }[b] || '—';
+  }
+
+  async function openUserDetail(userId, name) {
+    document.getElementById('um-title').textContent = 'รายละเอียดของ ' + name;
+    document.getElementById('m-user').classList.add('active');
+    const body = document.getElementById('um-body');
+    body.innerHTML = '<div data-skel="text" data-rows="6"></div>';
+
+    const res = await API.courses.userProgress(userId);
+    if (!res?.ok) {
+      body.innerHTML = '<div style="color:var(--text-muted)">โหลดไม่สำเร็จ</div>';
+      return;
+    }
+    const d = res.data.data;
+    const u = d.user;
+    body.innerHTML = `
+      <div style="margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border)">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:3px">
+          <div style="font-size:14px; font-weight:700">${escHtml(u.name)}</div>
+          ${teamPill(u.team)}
+        </div>
+        <div style="font-size:11px; color:var(--text-muted)">
+          @${escHtml(u.username)} · ${escHtml(u.role)} · ${escHtml(u.email || '')}
+        </div>
+      </div>
+      ${(d.courses || []).map(c => `
+        <div class="user-drill">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px">
+            <div style="font-size:22px">${escHtml(c.course_icon)}</div>
+            <div style="flex:1">
+              <h4>${escHtml(c.course_title)}</h4>
+              <div style="font-size:11px; color:var(--text-muted)">
+                ${c.phases_passed} / ${c.phases_total} phases · ${c.percent}%
+              </div>
+            </div>
+            <div>
+              <div class="pbar" style="width:160px"><div style="width:${c.percent}%"></div></div>
+            </div>
+          </div>
+          <div>
+            ${(c.phases || []).map(p => `
+              <span class="phase-pill ${p.status}" title="${p.status}">
+                ${renderIcon(p.icon)} P${p.order}
+                ${p.score != null ? `<strong>${p.score}%</strong>` : ''}
+                ${p.attempts ? `<span style="opacity:.6">· ${p.attempts}×</span>` : ''}
+              </span>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+    `;
+  }
+
+  function exportCsv() {
+    const users = _progReport?.users || [];
+    if (!users.length) { Toast.warning('ไม่มีข้อมูล'); return; }
+    const head = ['name','username','team','role','percent','phases_passed','phases_total','attempts','status','last_active'];
+    const rows = users.map(r => [
+      r.name, r.username, r.team || '', r.role, r.percent, r.phases_passed, r.phases_total,
+      r.total_attempts, r.status_bucket, r.last_active || ''
+    ]);
+    const csv = [head, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'course_progress_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+  }
+
+  window.openUserDetail = openUserDetail;
+  window.exportCsv = exportCsv;
+  window.closeAllModals = closeAllModals;
+
+  document.getElementById('prog-course-filter').addEventListener('change', loadProgress);
+
+  (async () => {
+    await loadCourses();
+    await loadProgress();
+  })();
+</script>
+</body>
+</html>

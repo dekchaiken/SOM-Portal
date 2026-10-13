@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMC Ticket — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/send-email/send-email.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">◈ SMC Ticket</div>
+        <div class="page-sub">สร้าง · เลือกเคส · ส่ง email — ทั้งหมดในที่เดียว ไม่ต้องเปิด Jira</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="se-btn primary" data-action="add" onclick="openCreateModal()" style="font-size:11px;padding:7px 14px">
+          + Create Ticket
+        </button>
+      </div>
+    </header>
+
+    <main class="se-page" id="se-page">
+
+      <!-- ───── LEFT: case picker ───── -->
+      <section class="se-cases">
+        <div class="se-cases-hd">
+          <div class="se-cases-hd-title">
+            <h2 id="se-cases-title"><i data-icon="clipboard"></i> SMC Cases</h2>
+            <div class="sub" id="se-cases-sub">Loading…</div>
+          </div>
+          <div class="se-cases-hd-actions">
+            <input type="date" id="se-date" class="se-date">
+            <button class="se-btn" onclick="loadCases()" id="se-refresh" style="font-size:11px;padding:5px 10px">↺</button>
+          </div>
+        </div>
+        <div class="se-cases-search">
+          <input type="text" id="se-search" class="se-search-input"
+                 placeholder="🔍 ค้นหา key หรือ summary…">
+        </div>
+        <div class="se-cases-list" id="se-cases-list">
+          <!-- skeletons -->
+        </div>
+      </section>
+
+      <!-- ───── backdrop (closes drawer on click) ───── -->
+      <div class="se-form-backdrop" id="se-form-backdrop" onclick="closeForm()"></div>
+
+      <!-- ───── FULLSCREEN DRAWER: email form ───── -->
+      <section class="se-form" id="se-form">
+
+        <!-- Header bar -->
+        <div class="se-form-hd">
+          <button class="se-form-back" onclick="closeForm()" title="กลับไปเลือก Case">←</button>
+          <div class="se-form-hd-title">
+            <div class="key" id="se-form-key">—</div>
+            <div class="sum" id="se-form-sum">—</div>
+          </div>
+          <button class="se-form-close" onclick="closeForm()" title="ปิด"><i data-icon="x"></i></button>
+        </div>
+
+        <!-- Scrollable inner wrapper (constrains max-width) -->
+        <div class="se-form-inner">
+          <div class="se-form-body">
+            <div>
+              <div class="se-label">ถึง <span style="color:#ef4444">*</span> <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(Enter หรือ , เพื่อเพิ่ม)</span></div>
+              <div class="se-chip-field" id="se-to-field" onclick="document.getElementById('se-to-input').focus()">
+                <input type="text" id="se-to-input" placeholder="email@company.com" autocomplete="off">
+              </div>
+            </div>
+            <div>
+              <div class="se-label">CC <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(โหลดจาก Global CC อัตโนมัติ + เลือก subtype เพิ่มได้)</span></div>
+              <div class="se-chip-field" id="se-cc-field" onclick="document.getElementById('se-cc-input').focus()">
+                <input type="text" id="se-cc-input" placeholder="cc@company.com" autocomplete="off">
+              </div>
+            </div>
+            <div>
+              <div class="se-label">Sub Type <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(เลือกเพื่อโหลด Service)</span></div>
+              <select class="se-input" id="se-subtype">
+                <option value="">— ไม่เลือก —</option>
+              </select>
+            </div>
+            <div id="se-service-row" style="display:none">
+              <div class="se-label">Service <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(เลือกเพื่อเพิ่ม To + CC อัตโนมัติ)</span></div>
+              <select class="se-input" id="se-service">
+                <option value="">— ไม่เลือก —</option>
+              </select>
+            </div>
+            <div>
+              <div class="se-label">หัวเรื่อง <span style="color:#ef4444">*</span></div>
+              <input type="text" id="se-subject" class="se-input">
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+              <div class="se-label">เนื้อหา <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(วางรูปด้วย Cmd+V · คลิกรูปเพื่อปรับขนาด)</span></div>
+              <div class="se-editor">
+                <div class="se-editor-toolbar">
+                  <!-- Font size -->
+                  <select class="se-font-size" id="se-font-size" title="ขนาดตัวอักษร">
+                    <option value="1">9px</option>
+                    <option value="2">11px</option>
+                    <option value="3" selected>13px</option>
+                    <option value="4">16px</option>
+                    <option value="5">20px</option>
+                    <option value="6">26px</option>
+                    <option value="7">34px</option>
+                  </select>
+                  <span class="se-editor-sep"></span>
+                  <button type="button" class="se-editor-btn" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+                  <button type="button" class="se-editor-btn" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+                  <button type="button" class="se-editor-btn" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+                  <button type="button" class="se-editor-btn" data-cmd="strikethrough" title="Strike"><s>S</s></button>
+                  <span class="se-editor-sep"></span>
+                  <button type="button" class="se-editor-btn" data-cmd="insertUnorderedList" title="Bullet"><i data-icon="circle"></i></button>
+                  <button type="button" class="se-editor-btn" data-cmd="insertOrderedList" title="Numbered">1.</button>
+                  <span class="se-editor-sep"></span>
+                  <button type="button" class="se-editor-btn" id="se-img-btn" title="แทรกรูป"><i data-icon="image"></i></button>
+                  <input type="file" id="se-img-input" accept="image/*" style="display:none">
+                  <span class="se-editor-sep"></span>
+                  <button type="button" class="se-editor-btn" data-cmd="removeFormat" title="Clear formatting"><i data-icon="x"></i></button>
+                </div>
+                <div class="se-editor-content" id="se-body" contenteditable="true" spellcheck="true"><p><br></p></div>
+              </div>
+            </div>
+          </div><!-- /.se-form-body -->
+
+          <div class="se-form-foot">
+            <button class="se-btn" onclick="closeForm()">← กลับ</button>
+            <button class="se-btn primary" id="se-send" onclick="sendEmail()"><i data-icon="mail"></i> ส่ง Email</button>
+          </div>
+        </div><!-- /.se-form-inner -->
+
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ══ ASSIGNEE PICKER POPOVER ══ -->
+<div class="as-popover" id="as-popover">
+  <input type="text" class="as-search" id="as-search" placeholder="🔍 ค้นหาชื่อ หรือ email…" autocomplete="off">
+  <div class="as-list" id="as-list">
+    <div class="as-empty">พิมพ์เพื่อค้นหา…</div>
+  </div>
+</div>
+
+<!-- ══ CONFIRM DIALOG (themed) ══ -->
+<div class="cf-overlay" id="cf-overlay">
+  <div class="cf-card">
+    <div class="cf-body">
+      <div class="cf-icon" id="cf-icon">?</div>
+      <div class="cf-title" id="cf-title">Confirm</div>
+      <div class="cf-msg" id="cf-msg"></div>
+    </div>
+    <div class="cf-foot">
+      <button class="se-btn" id="cf-cancel">ยกเลิก</button>
+      <button class="se-btn primary" id="cf-confirm">ตกลง</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TRANSITION FIELDS MODAL ══ -->
+<div class="tf-overlay" id="tf-overlay">
+  <div class="tf-card">
+    <div class="tf-head">
+      <div class="tf-head-title" id="tf-title">เปลี่ยนสถานะ</div>
+      <div class="tf-head-sub" id="tf-subtitle"></div>
+    </div>
+    <div class="tf-body" id="tf-body"></div>
+    <div class="tf-foot">
+      <button class="se-btn" id="tf-cancel">ยกเลิก</button>
+      <button class="se-btn primary" id="tf-confirm"><i data-icon="refresh-cw"></i> เปลี่ยนสถานะ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DETAIL MODAL ══ -->
+<div class="dt-overlay" id="dt-overlay" onclick="if(event.target===this)closeDetailModal()">
+  <div class="dt-modal">
+    <div class="dt-hd">
+      <span class="dt-hd-key" id="dt-key">—</span>
+      <div class="dt-hd-info">
+        <h2 id="dt-summary">—</h2>
+        <div class="meta" id="dt-meta">—</div>
+      </div>
+      <a class="ext-link" id="dt-ext" target="_blank" href="#">Open in Jira ↗</a>
+      <button class="ct-close" onclick="closeDetailModal()"><i data-icon="x"></i></button>
+    </div>
+
+    <div class="dt-body" id="dt-body">
+      <div class="dt-loading">Loading…</div>
+    </div>
+
+    <div class="dt-foot">
+      <button class="se-btn" onclick="closeDetailModal()">ปิด</button>
+      <button class="se-btn primary" onclick="emailFromDetail()"><i data-icon="mail"></i> ส่ง Email เคสนี้</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CREATE TICKET MODAL ══ -->
+<div class="ct-overlay" id="ct-overlay" onclick="if(event.target===this)closeCreateModal()">
+  <div class="ct-modal">
+    <div class="ct-hd">
+      <div class="ct-hd-icon">+</div>
+      <div class="ct-hd-title">
+        <h2>Create SMC Ticket</h2>
+        <div class="sub">สร้าง ticket ใน Jira project SMC โดยตรง — หลังสร้างเสร็จเลือกเคสเพื่อส่ง email ต่อได้</div>
+      </div>
+      <button class="ct-close" onclick="closeCreateModal()"><i data-icon="x"></i></button>
+    </div>
+
+    <div class="ct-body">
+      <div class="ct-grid-2">
+        <div>
+          <label class="ct-label ct-req">Work Type</label>
+          <select id="ct-issuetype" class="ct-select" onchange="onWorkTypeChange()">
+            <option value="Monitoring">Monitoring</option>
+            <option value="Batchfile">Batchfile</option>
+          </select>
+        </div>
+        <div id="ct-detected-cell">
+          <label class="ct-label ct-req">Detected by</label>
+          <div class="ct-single" data-typeahead="single" data-key="detected">
+            <input type="text" class="ct-typeahead" placeholder="พิมพ์เพื่อค้นหา…" autocomplete="off">
+            <div class="ct-dropdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ct-grid-1">
+        <label class="ct-label ct-req">Summary</label>
+        <input type="text" id="ct-summary" class="ct-input" placeholder="หัวข้อปัญหา / เคส (สั้น กระชับ)">
+      </div>
+
+      <div class="ct-grid-1">
+        <label class="ct-label ct-req">Fault Start (Date &amp; Time)</label>
+        <div class="ct-fault-row">
+          <select id="ct-fault-mode" class="ct-select" onchange="onFaultModeChange()">
+            <option value="auto">Auto (current time)</option>
+            <option value="manual">Manual input</option>
+          </select>
+          <input type="datetime-local" id="ct-fault-dt" class="ct-input" disabled>
+        </div>
+      </div>
+
+      <!-- ── Monitoring-specific fields ── -->
+      <div id="ct-monitoring-fields">
+        <div class="ct-grid-1">
+          <label class="ct-label ct-req">Business Unit Impacted</label>
+          <div class="ct-multi" data-typeahead="multi" data-key="bu">
+            <input type="text" class="ct-typeahead" placeholder="พิมพ์เพื่อค้นหาแล้วคลิกเพื่อเพิ่ม…" autocomplete="off">
+            <div class="ct-dropdown"></div>
+          </div>
+        </div>
+
+        <div class="ct-grid-1">
+          <label class="ct-label ct-req">TH Service Impacted</label>
+          <div class="ct-multi" data-typeahead="multi" data-key="svc">
+            <input type="text" class="ct-typeahead" placeholder="พิมพ์เพื่อค้นหาแล้วคลิกเพื่อเพิ่ม…" autocomplete="off">
+            <div class="ct-dropdown"></div>
+          </div>
+        </div>
+
+        <div class="ct-grid-1">
+          <label class="ct-label ct-req">TH Channel / Component</label>
+          <div class="ct-multi" data-typeahead="multi" data-key="chn">
+            <input type="text" class="ct-typeahead" placeholder="พิมพ์เพื่อค้นหาแล้วคลิกเพื่อเพิ่ม…" autocomplete="off">
+            <div class="ct-dropdown"></div>
+          </div>
+        </div>
+
+        <div class="ct-grid-1">
+          <label class="ct-label">Caused by 3rd Party <span style="font-weight:400;color:var(--text-muted);text-transform:none">(optional)</span></label>
+          <div class="ct-single" data-typeahead="single" data-key="3rd">
+            <input type="text" class="ct-typeahead" placeholder="พิมพ์เพื่อค้นหา (ไม่กรอกได้)" autocomplete="off">
+            <div class="ct-dropdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Batchfile-specific fields ── -->
+      <div id="ct-batchfile-fields" style="display:none">
+        <div class="ct-grid-2">
+          <div>
+            <label class="ct-label ct-req">SM Priority</label>
+            <select id="ct-bf-priority" class="ct-select">
+              <option value="">— กำลังโหลด… —</option>
+            </select>
+          </div>
+          <div>
+            <label class="ct-label ct-req">Batch Issue</label>
+            <select id="ct-bf-issue" class="ct-select">
+              <option value="">— กำลังโหลด… —</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="ct-grid-1">
+          <label class="ct-label ct-req">Batch File Type</label>
+          <select id="ct-bf-filetype" class="ct-select" onchange="onBfFileTypeChange()">
+            <option value="">— กำลังโหลด… —</option>
+          </select>
+        </div>
+
+        <div id="ct-bf-subtype-group" style="display:none">
+          <label class="ct-label ct-req">Sub Type</label>
+          <select id="ct-bf-subtype" class="ct-select">
+            <option value="">— เลือก Sub Type —</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ct-grid-1">
+        <label class="ct-label ct-req">Action / Solution</label>
+        <textarea id="ct-action" class="ct-textarea" placeholder="อธิบายอาการ + แนวทางแก้ไข / สิ่งที่ทำไปแล้ว…" style="min-height:120px"></textarea>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:4px">บันทึกไปที่ Description ของ ticket</div>
+      </div>
+
+    </div>
+    <div class="ct-foot">
+      <button class="se-btn" onclick="closeCreateModal()">ยกเลิก</button>
+      <button class="se-btn primary" id="ct-submit" onclick="submitCreate()"><i data-icon="rocket"></i> Create Ticket</button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js?v=20260724"></script>
+<script src="./assets/js/skeletons.js?v=20260724"></script>
+<script src="./assets/js/auth.js?v=20260724"></script>
+<script src="./assets/js/api.js?v=20260724"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/layout.js?v=20260724"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/js/maintenance.js?v=20260724"></script>
+<script src="./assets/pages/send-email/send-email.js"></script>
+</body>
+</html>

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sidebar Tools — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/tools/tools.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="plus-circle"></i> Sidebar Tools</div>
+        <div class="page-sub">จัดการ Tools ทุกประเภทใน Sidebar — Internal pages &amp; External links</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openCreateModal()">+ Add Tool</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="plus-circle"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Sidebar Tools</h1>
+          <p>จัดการ Tools ทุกประเภทใน Sidebar — Internal pages &amp; External links · ลาก ⠿ เรียงลำดับได้</p>
+        </div>
+      </section>
+
+      <div class="info-bar">
+        <span style="font-size:14px"><i data-icon="lightbulb"></i></span>
+        <span>
+          <strong>Internal</strong> — หน้าใน App (ไม่มี ↗) &nbsp;·&nbsp;
+          <strong>External</strong> — เปิด New Tab (มี ↗) &nbsp;·&nbsp;
+          ลาก <strong>⠿</strong> เพื่อเรียงลำดับ &nbsp;·&nbsp;
+          Toggle เพื่อเปิด/ปิด
+        </span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i data-icon="plus-circle"></i> All Sidebar Tools</span>
+          <span class="badge badge-gray" id="tool-count">—</span>
+        </div>
+        <div class="card-body" style="padding:0" id="table-container">
+          <div data-skel="table" data-rows="5"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══ Create / Edit Modal ═══ -->
+<div class="modal-overlay" id="modal-tool">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Add Tool</span>
+      <button class="modal-close" onclick="closeModal('modal-tool')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Link Type selector -->
+      <div class="form-row">
+        <label class="form-label">ประเภท Tool *</label>
+        <div class="type-selector">
+          <div class="type-option selected" id="type-opt-internal" onclick="setLinkType('internal')">
+            <div class="type-option-check"><i data-icon="check"></i></div>
+            <div class="type-option-icon">⬡</div>
+            <div class="type-option-label">Internal</div>
+            <div class="type-option-desc">หน้าใน App<br>ไม่เปิด new tab</div>
+          </div>
+          <div class="type-option" id="type-opt-external" onclick="setLinkType('external')">
+            <div class="type-option-check"><i data-icon="check"></i></div>
+            <div class="type-option-icon">↗</div>
+            <div class="type-option-label">External</div>
+            <div class="type-option-desc">Link ภายนอก<br>เปิด new tab เสมอ</div>
+          </div>
+          <div class="type-option" id="type-opt-embedded" onclick="setLinkType('embedded')">
+            <div class="type-option-check"><i data-icon="check"></i></div>
+            <div class="type-option-icon">⧉</div>
+            <div class="type-option-label">Embedded</div>
+            <div class="type-option-desc">URL เปิดใน App<br>แบบ iframe</div>
+          </div>
+        </div>
+        <input type="hidden" id="f-link-type" value="internal">
+      </div>
+
+      <hr class="divider">
+
+      <!-- Common: name + icon -->
+      <div class="form-row">
+        <label class="form-label">ชื่อ *</label>
+        <input class="form-input" id="f-name" type="text" placeholder="เช่น Monitoring, Board SM">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Icon (Emoji)</label>
+        <div class="icon-preview-row">
+          <div class="icon-preview-box" id="icon-preview"><i data-icon="plus-circle"></i></div>
+          <input class="form-input" id="f-icon" type="text" placeholder="⊕" maxlength="4"
+            oninput="document.getElementById('icon-preview').textContent = this.value || '⊕'"
+            style="flex:1">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">คำอธิบาย <span style="font-weight:400">(tooltip)</span></label>
+        <input class="form-input" id="f-desc" type="text" placeholder="เช่น Grafana Dashboards — Real-time">
+      </div>
+
+      <!-- Internal fields -->
+      <div id="fields-internal">
+        <hr class="divider">
+        <div class="form-row">
+          <label class="form-label">Path <span style="font-weight:400;color:var(--text-muted)">(relative to root)</span></label>
+          <input class="form-input" id="f-path" type="text" placeholder="เช่น monitoring.html, test-service.html">
+          <div class="hint">เขียน path จาก root ของ project เช่น <code>monitoring.html</code></div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Page ID <span style="font-weight:400;color:var(--text-muted)">(สำหรับ active state)</span></label>
+          <input class="form-input" id="f-page-id" type="text" placeholder="เช่น monitoring, test-service">
+          <div class="hint">ต้องตรงกับค่าที่หน้านั้นส่งใน <code>Layout.render('<strong>id</strong>')</code></div>
+        </div>
+      </div>
+
+      <!-- Embedded fields -->
+      <div id="fields-embedded" style="display:none">
+        <hr class="divider">
+        <div class="form-row">
+          <label class="form-label">URL *</label>
+          <input class="form-input" id="f-embed-url" type="url" placeholder="https://...">
+          <div class="hint">จะเปิดเป็น iframe ภายใน App — บาง site อาจบล็อก embed ด้วย X-Frame-Options</div>
+        </div>
+      </div>
+
+      <!-- External fields -->
+      <div id="fields-external" style="display:none">
+        <hr class="divider">
+        <div class="form-row">
+          <label class="form-label">URL *</label>
+          <input class="form-input" id="f-url" type="url" placeholder="https://...">
+          <div class="hint">จะเปิดใน New Tab เสมอ — ใส่ URL เต็ม</div>
+        </div>
+        <div class="form-row-2">
+          <div>
+            <label class="form-label">Badge Text</label>
+            <input class="form-input" id="f-badge-text" type="text" placeholder="เช่น Jira, Confluence">
+          </div>
+          <div>
+            <label class="form-label">Badge Color</label>
+            <select class="form-select" id="f-badge-type">
+              <option value="gray">Gray</option>
+              <option value="orange">Orange</option>
+              <option value="green">Green</option>
+              <option value="blue">Blue</option>
+              <option value="red">Red</option>
+              <option value="yellow">Yellow</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Order + enabled -->
+      <div class="form-row-2">
+        <div>
+          <label class="form-label">ลำดับ</label>
+          <input class="form-input" id="f-order" type="number" min="1" placeholder="Auto">
+        </div>
+        <div>
+          <label class="form-label">สถานะ</label>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+            <div class="toggle on" id="f-enabled-toggle" onclick="toggleEnabled()"></div>
+            <span id="f-enabled-label" style="font-size:12px">เปิดใช้งาน</span>
+          </div>
+          <input type="hidden" id="f-enabled" value="true">
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-tool')">Cancel</button>
+      <button class="btn btn-primary" id="modal-save-btn" onclick="saveTool()">Save Tool</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Delete Confirm ═══ -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-header">
+      <span class="modal-title" style="color:#dc2626">Delete Tool</span>
+      <button class="modal-close" onclick="closeModal('modal-delete')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text);margin:0">ต้องการลบ <strong id="delete-tool-name"></strong> ใช่ไหม?</p>
+      <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0">Tool จะหายออกจาก Sidebar ทันที</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-delete')">Cancel</button>
+      <button class="btn" style="background:#dc2626;color:#fff" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/tools/tools.js"></script>
+</body>
+</html>

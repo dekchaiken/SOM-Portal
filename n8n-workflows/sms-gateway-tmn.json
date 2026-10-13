@@ -1,0 +1,187 @@
+{
+  "name": "SMS Gateway - TMN Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "tmn-node-01",
+      "name": "Every 5 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://jenkins-ops.private-a-cloud1p.ascendmoney.io/job/acm-config-server-sms-notification/lastBuild/api/json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "tmn-node-02",
+      "name": "Jenkins — Get Last Build",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "jenkins-tmn",
+          "name": "Jenkins TMN"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Read static data to find last processed build number\nconst staticData = $getWorkflowStaticData('global');\nconst lastProcessed = staticData.lastBuildTmn || 0;\nconst latestBuild = $input.first().json.number;\n\nif (!latestBuild || latestBuild <= lastProcessed) {\n  return []; // no new builds — stop workflow\n}\n\n// Generate one item per new build\nconst BASE_URL = 'https://jenkins-ops.private-a-cloud1p.ascendmoney.io/job/acm-config-server-sms-notification';\nconst items = [];\nfor (let n = lastProcessed + 1; n <= latestBuild; n++) {\n  items.push({\n    json: {\n      buildNumber: n,\n      latestBuild,\n      buildUrl: `${BASE_URL}/${n}/api/json`\n    }\n  });\n}\nreturn items;"
+      },
+      "id": "tmn-node-03",
+      "name": "Generate Build Range",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.buildUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "tmn-node-04",
+      "name": "Jenkins — Get Build Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "jenkins-tmn",
+          "name": "Jenkins TMN"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.previousBuild ? $json.previousBuild.url + 'api/json' : 'https://jenkins-ops.private-a-cloud1p.ascendmoney.io/job/acm-config-server-sms-notification/1/api/json' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "tmn-node-05",
+      "name": "Jenkins — Get Previous Build",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "jenkins-tmn",
+          "name": "Jenkins TMN"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const GATEWAY_MAP = {\n  FH:     'Firt-hop',\n  IFB_HK: 'Infobip HK',\n  IFB_SG: 'Infobip SG'\n};\n\nfunction getParam(actions, paramName) {\n  for (const action of (actions || [])) {\n    if (action._class === 'hudson.model.ParametersAction') {\n      for (const p of (action.parameters || [])) {\n        if (p.name === paramName) return p.value;\n      }\n    }\n  }\n  return null;\n}\n\nfunction getTriggeredBy(actions) {\n  for (const action of (actions || [])) {\n    if (action._class === 'hudson.model.CauseAction') {\n      return action.causes?.[0]?.userName || '';\n    }\n  }\n  return '';\n}\n\nfunction toBangkokISO(ms) {\n  const d = new Date(ms + 7 * 3600 * 1000);\n  return d.toISOString().replace('Z', '+07:00');\n}\n\nconst prevBuild    = $input.first().json;\nconst currentBuild = $('Jenkins — Get Build Details').item.json;\n\nconst toVal   = getParam(currentBuild.actions, 'presets');\nconst fromVal = getParam(prevBuild.actions, 'presets') || toVal;\n\nreturn [{\n  json: {\n    project:      'tmn',\n    build_number: currentBuild.number,\n    switch_start: toBangkokISO(currentBuild.timestamp),\n    switch_end:   toBangkokISO(currentBuild.timestamp + currentBuild.duration),\n    from_gateway: GATEWAY_MAP[fromVal] || fromVal || 'Unknown',\n    to_gateway:   GATEWAY_MAP[toVal]   || toVal   || 'Unknown',\n    triggered_by: getTriggeredBy(currentBuild.actions),\n    latestBuild:  currentBuild.number\n  }\n}];"
+      },
+      "id": "tmn-node-06",
+      "name": "Map Gateway Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR-CENTRALIZE-SOM-HOST/api/sms-gateway/index.php",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Key",
+              "value": "smsgw_n8n_change_this_to_a_random_secret"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "tmn-node-07",
+      "name": "POST to Centralize-SOM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Update static data so next run knows where to start\nconst staticData = $getWorkflowStaticData('global');\nconst items = $input.all();\nconst latest = Math.max(...items.map(i => i.json?.latestBuild || 0));\nif (latest > 0) staticData.lastBuildTmn = latest;\nreturn items;"
+      },
+      "id": "tmn-node-08",
+      "name": "Update Last Build Pointer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 300]
+    }
+  ],
+  "connections": {
+    "Every 5 Minutes": {
+      "main": [[{ "node": "Jenkins — Get Last Build", "type": "main", "index": 0 }]]
+    },
+    "Jenkins — Get Last Build": {
+      "main": [[{ "node": "Generate Build Range", "type": "main", "index": 0 }]]
+    },
+    "Generate Build Range": {
+      "main": [[{ "node": "Jenkins — Get Build Details", "type": "main", "index": 0 }]]
+    },
+    "Jenkins — Get Build Details": {
+      "main": [[{ "node": "Jenkins — Get Previous Build", "type": "main", "index": 0 }]]
+    },
+    "Jenkins — Get Previous Build": {
+      "main": [[{ "node": "Map Gateway Data", "type": "main", "index": 0 }]]
+    },
+    "Map Gateway Data": {
+      "main": [[{ "node": "POST to Centralize-SOM", "type": "main", "index": 0 }]]
+    },
+    "POST to Centralize-SOM": {
+      "main": [[{ "node": "Update Last Build Pointer", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": ""
+  }
+}

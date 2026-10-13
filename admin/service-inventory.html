@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Inventory — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/service-inventory/service-inventory.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="folder-open"></i> Service Inventory</div>
+        <div class="page-sub">Upload the canonical Service Inventory CSV — powers the Service Performance dashboard for every team</div>
+      </div>
+      <div class="topbar-actions">
+        <a class="btn btn-ghost btn-sm" id="si-source-sheet" href="#" target="_blank" rel="noopener" style="font-size:11px;display:none">↗ Open source sheet</a>
+        <a class="btn btn-ghost btn-sm" id="si-download-current" href="#" style="font-size:11px">↓ Download current CSV</a>
+      </div>
+    </header>
+
+    <main class="page-content si">
+
+      <!-- Meta strip -->
+      <div class="si-meta-strip">
+        <div class="si-meta">
+          <div class="si-meta-lbl">Services</div>
+          <div class="si-meta-val" id="si-meta-count">–</div>
+          <div class="si-meta-sub">in current inventory</div>
+        </div>
+        <div class="si-meta">
+          <div class="si-meta-lbl">Last updated</div>
+          <div class="si-meta-val" id="si-meta-mtime" style="font-size:15px">–</div>
+          <div class="si-meta-sub" id="si-meta-mtime-abs">–</div>
+        </div>
+        <div class="si-meta">
+          <div class="si-meta-lbl">File size</div>
+          <div class="si-meta-val" id="si-meta-size">–</div>
+          <div class="si-meta-sub" id="si-meta-path">–</div>
+        </div>
+        <div class="si-meta">
+          <div class="si-meta-lbl">Backups kept</div>
+          <div class="si-meta-val" id="si-meta-backups">–</div>
+          <div class="si-meta-sub">most recent 20 auto-archived</div>
+        </div>
+      </div>
+
+      <!-- Workflow help -->
+      <div id="si-help" style="display:none;font-size:12px;color:var(--smut);background:color-mix(in srgb,var(--sblue) 4%,var(--ssub));border:1px solid var(--sbd);border-radius:var(--src);padding:12px 14px;margin-bottom:12px;line-height:1.6">
+        <b style="color:var(--stx)"><i data-icon="lightbulb"></i> Update flow:</b>
+        แก้ข้อมูลใน source sheet → File → Download → Comma-separated values (.csv) → ลากไฟล์มาวางด้านล่าง
+        <a id="si-help-sheet-link" href="#" target="_blank" rel="noopener" style="color:var(--sblue);text-decoration:none;margin-left:4px">เปิด source sheet ↗</a>
+      </div>
+
+      <!-- Upload zone -->
+      <label class="si-drop" id="si-drop" for="si-file">
+        <div class="si-drop-ico">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+        </div>
+        <div class="si-drop-title">ลากไฟล์ CSV มาวางที่นี่ — หรือคลิกเลือก</div>
+        <div class="si-drop-sub">แนะนำ export จาก Service Inventory sheet · ต้องมีคอลัมน์ "Service name" · ขนาดไม่เกิน 8MB</div>
+        <input type="file" id="si-file" accept=".csv,text/csv,application/vnd.ms-excel">
+      </label>
+
+      <!-- Preview / confirm -->
+      <div class="si-preview" id="si-preview">
+        <div class="si-preview-head">
+          <div>
+            <div class="si-preview-title" id="si-preview-title">Preview</div>
+            <div class="si-preview-sub" id="si-preview-file">–</div>
+          </div>
+          <div style="margin-left:auto">
+            <button class="si-btn" onclick="SI.cancelPreview()">ยกเลิก</button>
+          </div>
+        </div>
+        <div class="si-preview-grid">
+          <div class="si-preview-stat"><div class="l">Total rows</div><div class="v" id="si-preview-total">–</div></div>
+          <div class="si-preview-stat"><div class="l">With service name</div><div class="v" id="si-preview-named">–</div></div>
+          <div class="si-preview-stat"><div class="l">File size</div><div class="v" id="si-preview-size">–</div></div>
+        </div>
+        <div class="si-preview-sub" style="margin-bottom:6px">First 5 services:</div>
+        <ul class="si-preview-list" id="si-preview-samples"></ul>
+        <div class="si-preview-actions">
+          <button class="si-btn" onclick="SI.cancelPreview()">ยกเลิก</button>
+          <button class="si-btn primary" id="si-commit" onclick="SI.commit()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            ยืนยัน — แทนที่ inventory ปัจจุบัน
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="si-filter" style="margin-top:18px">
+        <input class="si-search" id="si-q" type="text" placeholder="Search service / BU / team…" />
+        <select class="si-select" id="si-runway">
+          <option value="">All runways</option>
+        </select>
+        <span class="si-count" id="si-count">–</span>
+      </div>
+
+      <!-- Table -->
+      <div class="si-tbl-wrap">
+        <table class="si-tbl" id="si-tbl">
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th style="width:70px">Runway</th>
+              <th style="width:100px">BU</th>
+              <th style="width:110px">Team</th>
+              <th style="width:60px" class="right">SEV</th>
+              <th style="width:70px" class="right">Repl.</th>
+              <th style="width:90px">Language</th>
+              <th>URL Prod</th>
+            </tr>
+          </thead>
+          <tbody id="si-tbody"></tbody>
+        </table>
+        <div class="si-empty" id="si-empty" style="display:none">ไม่พบข้อมูล</div>
+      </div>
+
+      <!-- History -->
+      <div class="si-hist">
+        <div class="si-hist-head">
+          <div class="si-hist-title">Upload history</div>
+          <div style="margin-left:auto;font-size:11px;color:var(--ssoft)" id="si-hist-count">–</div>
+        </div>
+        <div id="si-hist-body"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="si-toast-slot" id="si-toasts"></div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/js/maintenance.js"></script>
+<script src="../assets/pages/admin/service-inventory/service-inventory.js"></script>
+</body>
+</html>

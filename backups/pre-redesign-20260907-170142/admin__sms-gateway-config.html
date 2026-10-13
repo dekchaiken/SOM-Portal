@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMS Gateway Config — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .gw-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:20px; }
+    @media(max-width:900px){ .gw-grid { grid-template-columns:1fr 1fr; } }
+    @media(max-width:600px){ .gw-grid { grid-template-columns:1fr; } }
+
+    .gw-card {
+      background:var(--bg-card); border:1.5px solid var(--border);
+      border-radius:14px; overflow:hidden;
+      transition:border-color .2s;
+    }
+    .gw-card.syncing { border-color:rgba(242,100,25,.35); }
+
+    .gw-hd {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 20px; border-bottom:1px solid var(--border); gap:12px;
+    }
+    .gw-hd-left { display:flex; align-items:center; gap:10px; }
+    .gw-icon {
+      width:38px; height:38px; border-radius:10px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:18px;
+    }
+    .gw-icon.tmn   { background:rgba(242,100,25,.1); }
+    .gw-icon.nano  { background:rgba(99,102,241,.1); }
+    .gw-icon.welth { background:rgba(5,150,105,.1); }
+    .gw-title { font-size:13px; font-weight:700; color:var(--text); }
+    .gw-sub   { font-size:10.5px; color:var(--text-muted); margin-top:1px; }
+
+    .gw-status {
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:9.5px; font-weight:700; padding:3px 8px; border-radius:5px;
+    }
+    .gw-status.ok      { background:rgba(34,197,94,.1);  color:#22c55e; }
+    .gw-status.loading { background:rgba(245,158,11,.1); color:#f59e0b; }
+    .gw-status.error   { background:rgba(239,68,68,.1);  color:#ef4444; }
+    .gw-status-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
+
+    .gw-body { padding:18px 20px; }
+
+    .gw-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px; }
+    .gw-stat  {
+      background:var(--bg); border:1px solid var(--border);
+      border-radius:9px; padding:10px 12px;
+    }
+    .gw-stat-val { font-size:18px; font-weight:800; color:var(--text); line-height:1; }
+    .gw-stat-lbl { font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-top:3px; }
+
+    .gw-latest {
+      background:var(--bg); border:1px solid var(--border);
+      border-radius:9px; padding:12px 14px; margin-bottom:14px; font-size:11px;
+    }
+    .gw-latest-lbl { font-size:9.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+    .gw-switch-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .gw-gw-pill {
+      font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:5px;
+      background:var(--bg-card); border:1px solid var(--border); color:var(--text);
+    }
+    .gw-arrow { color:var(--text-muted); font-size:13px; }
+    .gw-switch-meta { font-size:10px; color:var(--text-muted); margin-top:4px; }
+
+    .gw-sync-row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .gw-sync-msg  { font-size:11px; color:var(--text-muted); }
+    .gw-sync-msg.ok  { color:#22c55e; }
+    .gw-sync-msg.err { color:#ef4444; }
+
+    .history-card {
+      background:var(--bg-card); border:1.5px solid var(--border);
+      border-radius:14px; overflow:hidden;
+    }
+    .history-hd {
+      padding:14px 20px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;
+    }
+    .history-title { font-size:12px; font-weight:700; color:var(--text); }
+    .history-tabs  { display:flex; gap:2px; }
+    .history-tab   {
+      padding:4px 12px; font-size:11px; font-weight:600; border-radius:6px;
+      border:none; background:none; cursor:pointer; font-family:var(--font);
+      color:var(--text-muted); transition:background .12s, color .12s;
+    }
+    .history-tab.active { background:rgba(242,100,25,.12); color:var(--orange); }
+
+    .ht-table { width:100%; border-collapse:collapse; font-size:11px; }
+    .ht-table th {
+      text-align:left; font-size:9.5px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.06em; color:var(--text-muted); padding:8px 16px;
+      border-bottom:1px solid var(--border); background:var(--bg);
+    }
+    .ht-table td { padding:8px 16px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    .ht-table tr:last-child td { border-bottom:none; }
+    .ht-table tr:hover td { background:var(--bg); }
+    .ht-empty { padding:32px; text-align:center; color:var(--text-muted); font-size:11.5px; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="smartphone"></i> SMS Gateway Config</div>
+        <div class="page-sub">จัดการและ sync ข้อมูล SMS Gateway สำหรับ TMN, NANO และ WELTH</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadAll()" style="font-size:11px">↺ Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="smartphone"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>SMS Gateway Config</h1>
+          <p>จัดการและ sync ข้อมูล SMS Gateway สำหรับ TMN · NANO · WELTH · สลับ gateway เมื่อมีปัญหา</p>
+        </div>
+      </section>
+
+      <!-- Project cards -->
+      <div class="gw-grid">
+        <!-- TMN -->
+        <div class="gw-card" id="card-tmn">
+          <div class="gw-hd">
+            <div class="gw-hd-left">
+              <div class="gw-icon tmn"><i data-icon="satellite"></i></div>
+              <div>
+                <div class="gw-title">TMN (TrueMoney)</div>
+                <div class="gw-sub">acm-config-server-sms-notification</div>
+              </div>
+            </div>
+            <span class="gw-status loading" id="status-tmn"><span class="gw-status-dot"></span>Loading</span>
+          </div>
+          <div class="gw-body">
+            <div class="gw-stats" id="stats-tmn">
+              <div class="gw-stat"><div class="gw-stat-val">—</div><div class="gw-stat-lbl">Total Switches</div></div>
+              <div class="gw-stat"><div class="gw-stat-val">—</div><div class="gw-stat-lbl">This Month</div></div>
+              <div class="gw-stat"><div class="gw-stat-val">—</div><div class="gw-stat-lbl">Last Build #</div></div>
+            </div>
+            <div class="gw-latest" id="latest-tmn">
+              <div class="gw-latest-lbl">Latest Switch</div>
+              <div style="color:var(--text-muted);font-size:11px">Loading...</div>
+            </div>
+            <div class="gw-sync-row">
+              <span class="gw-sync-msg" id="sync-msg-tmn">—</span>
+              <button class="btn btn-sm" id="sync-btn-tmn" onclick="syncProject('tmn')">↺ Sync from Jenkins</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- NANO -->
+        <div class="gw-card" id="card-nano">
+          <div class="gw-hd">
+            <div class="gw-hd-left">
+              <div class="gw-icon nano"><i data-icon="satellite"></i></div>
+              <div>
+                <div class="gw-title">NANO (AscendNano)</div>
+                <div class="gw-sub">Change SMS provider</div>
+              </div>
+            </div>
+            <span class="gw-status loading" id="status-nano"><span class="gw-status-dot"></span>Loading</span>
+          </div>
+          <div class="gw-body">
+            <div class="gw-stats" id="stats-nano">
+              <div class="gw-stat"><div class="gw-stat-val">—</div><div class="gw-stat-lbl">Total Switches</div></div>
+              <div class="gw-stat"><div class="gw-stat-val">—</div><div class="gw-stat-lbl">This Month</div></div>
+              <div class="gw-stat"><div class="gw-stat-val">—</div><div class="gw-stat-lbl">Last Build #</div></div>
+            </div>
+            <div class="gw-latest" id="latest-nano">
+              <div class="gw-latest-lbl">Latest Switch</div>
+              <div style="color:var(--text-muted);font-size:11px">Loading...</div>
+            </div>
+            <div class="gw-sync-row">
+              <span class="gw-sync-msg" id="sync-msg-nano">—</span>
+              <button class="btn btn-sm" id="sync-btn-nano" onclick="syncProject('nano')">↺ Sync from Jenkins</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- WELTH -->
+        <div class="gw-card" id="card-welth">
+          <div class="gw-hd">
+            <div class="gw-hd-left">
+              <div class="gw-icon welth"><i data-icon="satellite"></i></div>
+              <div>
+                <div class="gw-title">WELTH (AscendWealth)</div>
+                <div class="gw-sub">Change SMS</div>
+              </div>
+            </div>
+            <span class="gw-status loading" id="status-welth"><span class="gw-status-dot"></span>Loading</span>
+          </div>
+          <div class="gw-body">
+            <div class="gw-stats" id="stats-welth">
+              <div class="gw-stat"><div class="gw-stat-val">—</div><div class="gw-stat-lbl">Total Switches</div></div>
+              <div class="gw-stat"><div class="gw-stat-val">—</div><div class="gw-stat-lbl">This Month</div></div>
+              <div class="gw-stat"><div class="gw-stat-val">—</div><div class="gw-stat-lbl">Last Build #</div></div>
+            </div>
+            <div class="gw-latest" id="latest-welth">
+              <div class="gw-latest-lbl">Latest Switch</div>
+              <div style="color:var(--text-muted);font-size:11px">Loading...</div>
+            </div>
+            <div class="gw-sync-row">
+              <span class="gw-sync-msg" id="sync-msg-welth">—</span>
+              <button class="btn btn-sm" id="sync-btn-welth" onclick="syncProject('welth')">↺ Sync from Jenkins</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent history -->
+      <div class="history-card">
+        <div class="history-hd">
+          <span class="history-title">Recent Switch History</span>
+          <div class="history-tabs">
+            <button class="history-tab active" id="tab-tmn"   onclick="switchTab('tmn')">TMN</button>
+            <button class="history-tab"        id="tab-nano"  onclick="switchTab('nano')">NANO</button>
+            <button class="history-tab"        id="tab-welth" onclick="switchTab('welth')">WELTH</button>
+          </div>
+        </div>
+        <table class="ht-table">
+          <thead>
+            <tr>
+              <th>Build #</th>
+              <th>Date</th>
+              <th>From</th>
+              <th>To</th>
+              <th>Triggered by</th>
+              <th>Remark</th>
+            </tr>
+          </thead>
+          <tbody id="ht-tbody">
+            <tr><td colspan="6" class="ht-empty">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('sms-gateway-config');
+
+const _data = { tmn: [], nano: [], welth: [] };
+let _tab = 'tmn';
+
+async function loadAll() {
+  await Promise.all([loadProject('tmn'), loadProject('nano'), loadProject('welth')]);
+  renderHistory();
+}
+
+async function loadProject(p) {
+  setStatus(p, 'loading', 'Loading');
+  const res = await API.smsGateway.list(p);
+  if (!res?.ok) { setStatus(p, 'error', 'Error'); return; }
+  _data[p] = res.data.data || [];
+  renderCard(p);
+  setStatus(p, 'ok', 'OK');
+}
+
+function renderCard(p) {
+  const records = _data[p];
+  const now     = new Date();
+  const ym      = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const monthCt = records.filter(r => (r.switch_start || '').startsWith(ym)).length;
+  const maxBuild = records.reduce((mx, r) => Math.max(mx, r.build_number || 0), 0);
+
+  document.getElementById(`stats-${p}`).innerHTML = `
+    <div class="gw-stat"><div class="gw-stat-val">${records.length}</div><div class="gw-stat-lbl">Total Switches</div></div>
+    <div class="gw-stat"><div class="gw-stat-val">${monthCt}</div><div class="gw-stat-lbl">This Month</div></div>
+    <div class="gw-stat"><div class="gw-stat-val">${maxBuild || '—'}</div><div class="gw-stat-lbl">Last Build #</div></div>`;
+
+  const latest = records[0];
+  const latestEl = document.getElementById(`latest-${p}`);
+  if (!latest) {
+    latestEl.innerHTML = `<div class="gw-latest-lbl">Latest Switch</div><div style="color:var(--text-muted);font-size:11px">ไม่มีข้อมูล</div>`;
+    return;
+  }
+  latestEl.innerHTML = `
+    <div class="gw-latest-lbl">Latest Switch</div>
+    <div class="gw-switch-row">
+      <span class="gw-gw-pill">${escHtml(latest.from_gateway || '—')}</span>
+      <span class="gw-arrow">→</span>
+      <span class="gw-gw-pill">${escHtml(latest.to_gateway || '—')}</span>
+    </div>
+    <div class="gw-switch-meta">${fmtDt(latest.switch_start)} · Build #${latest.build_number || '?'} · ${escHtml(latest.triggered_by || 'unknown')}</div>`;
+}
+
+async function syncProject(p) {
+  const btn = document.getElementById(`sync-btn-${p}`);
+  const msg = document.getElementById(`sync-msg-${p}`);
+  btn.disabled  = true;
+  btn.textContent = 'Syncing...';
+  document.getElementById(`card-${p}`).classList.add('syncing');
+  msg.className = 'gw-sync-msg';
+  msg.textContent = 'กำลัง sync...';
+
+  const res = await API.smsGateway.sync(p);
+  btn.disabled    = false;
+  btn.textContent = '↺ Sync from Jenkins';
+  document.getElementById(`card-${p}`).classList.remove('syncing');
+
+  if (!res?.ok) {
+    msg.className   = 'gw-sync-msg err';
+    msg.textContent = res?.data?.message || 'Sync ไม่สำเร็จ';
+    return;
+  }
+  msg.className   = 'gw-sync-msg ok';
+  msg.textContent = res.data?.message || 'Sync สำเร็จ';
+  await loadProject(p);
+  renderHistory();
+}
+
+function switchTab(p) {
+  _tab = p;
+  document.getElementById('tab-tmn').classList.toggle('active',   p === 'tmn');
+  document.getElementById('tab-nano').classList.toggle('active',  p === 'nano');
+  document.getElementById('tab-welth').classList.toggle('active', p === 'welth');
+  renderHistory();
+}
+
+function renderHistory() {
+  const records = (_data[_tab] || []).slice(0, 50);
+  const tbody   = document.getElementById('ht-tbody');
+  if (!records.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="ht-empty">ไม่มีข้อมูล</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = records.map(r => `
+    <tr>
+      <td style="font-weight:700">#${r.build_number || '?'}</td>
+      <td style="white-space:nowrap">${fmtDt(r.switch_start)}</td>
+      <td><span style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:10.5px">${escHtml(r.from_gateway || '—')}</span></td>
+      <td><span style="background:rgba(242,100,25,.08);border:1px solid rgba(242,100,25,.2);border-radius:4px;padding:2px 7px;font-size:10.5px;color:var(--orange)">${escHtml(r.to_gateway || '—')}</span></td>
+      <td>${escHtml(r.triggered_by || '—')}</td>
+      <td style="color:var(--text-muted)">${escHtml(r.remark || '—')}</td>
+    </tr>`).join('');
+}
+
+function setStatus(p, cls, label) {
+  const el = document.getElementById(`status-${p}`);
+  el.className = `gw-status ${cls}`;
+  el.innerHTML = `<span class="gw-status-dot"></span>${label}`;
+}
+
+function fmtDt(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('th-TH', { day:'numeric', month:'short', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+loadAll();
+</script>
+
+</body>
+</html>

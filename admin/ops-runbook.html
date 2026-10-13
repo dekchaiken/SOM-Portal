@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ops Runbook Config — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/ops-runbook/ops-runbook.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="book-open"></i> Ops Runbook Config</div>
+        <div class="page-sub">จัดการ Section, Column และ Dropdown Options</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="../ops-runbook.html" class="btn btn-ghost" style="font-size:12px">↗ เปิดหน้าผู้ใช้</a>
+        <button class="btn btn-primary" id="btn-create-section">+ เพิ่ม Section</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="book-open"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Ops Runbook Config</h1>
+          <p>จัดการ Section, Column และ Dropdown Options ของ runbook table — ทีม SM ใช้สำหรับ ops procedure</p>
+        </div>
+      </section>
+
+      <div class="rb-layout">
+
+        <!-- ── Left: Section list ── -->
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><i data-icon="file-text"></i> Sections</span>
+              <span class="badge badge-gray" id="sec-count">—</span>
+            </div>
+            <div class="card-body" style="padding:12px" id="sec-list-wrap">
+              <div class="empty-box">กำลังโหลด...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Right: Column editor ── -->
+        <div id="col-panel">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title" id="col-panel-title">— เลือก Section —</span>
+              <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" id="add-col-btn" disabled>+ เพิ่ม Column</button>
+            </div>
+            <div class="card-body" style="padding:0" id="col-table-wrap">
+              <div class="empty-box">เลือก Section ด้านซ้ายเพื่อจัดการ Columns</div>
+            </div>
+          </div>
+
+          <!-- Section actions -->
+          <div id="sec-action-bar" style="display:none;margin-top:12px">
+            <div class="card">
+              <div class="card-body" style="padding:14px 16px;display:flex;gap:8px;align-items:center">
+                <span style="font-size:12px;color:var(--text-muted);flex:1">จัดการ Section นี้</span>
+                <button class="btn btn-ghost" style="font-size:11px" id="btn-edit-section"><i data-icon="pencil"></i> แก้ไขชื่อ</button>
+                <button class="btn danger-btn" style="font-size:11px" id="btn-delete-section"><i data-icon="trash"></i> ลบ Section</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ═══ Section Modal ═══ -->
+<div class="modal-overlay" id="modal-section">
+  <div class="modal-box" style="width:400px">
+    <div class="modal-header">
+      <span class="modal-title" id="sec-modal-title">เพิ่ม Section</span>
+      <button class="modal-close" id="btn-close-sec-modal"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">ชื่อ Section *</label>
+        <input class="form-input" id="f-sec-name" type="text" placeholder="เช่น Block Biz Rule">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Icon (Emoji)</label>
+        <input class="form-input" id="f-sec-icon" type="text" placeholder="📋" maxlength="4">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-sec">Cancel</button>
+      <button class="btn btn-primary" id="sec-save-btn">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Column Modal ═══ -->
+<div class="modal-overlay" id="modal-column">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="col-modal-title">เพิ่ม Column</span>
+      <button class="modal-close" id="btn-close-col-modal"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div>
+          <label class="form-label">ชื่อ Column *</label>
+          <input class="form-input" id="f-col-label" type="text" placeholder="เช่น Service Name">
+        </div>
+        <div>
+          <label class="form-label">ประเภท</label>
+          <select class="form-select" id="f-col-type">
+            <option value="text">Text</option>
+            <option value="dropdown">Dropdown</option>
+            <option value="url">URL / Link</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="col-options-wrap" style="display:none">
+        <hr class="divider">
+        <div class="form-row">
+          <label class="form-label">Dropdown Options</label>
+          <div class="opt-editor" id="opt-editor"></div>
+          <button class="btn btn-ghost opt-add-btn" id="btn-add-opt">+ เพิ่ม Option</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-col">Cancel</button>
+      <button class="btn btn-primary" id="col-save-btn">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Delete Section Confirm ═══ -->
+<div class="modal-overlay" id="modal-del-section">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-header">
+      <span class="modal-title" style="color:#dc2626">ลบ Section?</span>
+      <button class="modal-close" id="btn-close-del-sec-modal"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;margin:0">ต้องการลบ <strong id="del-sec-name"></strong> ใช่ไหม?</p>
+      <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0">ข้อมูลทุก Row ใน Section นี้จะถูกลบด้วย</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-del-sec">Cancel</button>
+      <button class="btn" style="background:#dc2626;color:#fff" id="btn-confirm-del-sec">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Delete Column Confirm ═══ -->
+<div class="modal-overlay" id="modal-del-col">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-header">
+      <span class="modal-title" style="color:#dc2626">ลบ Column?</span>
+      <button class="modal-close" id="btn-close-del-col-modal"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;margin:0">ต้องการลบ column <strong id="del-col-label"></strong> ใช่ไหม?</p>
+      <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0">ข้อมูลในช่องนี้จากทุก Row จะหายไป</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-del-col">Cancel</button>
+      <button class="btn" style="background:#dc2626;color:#fff" id="btn-confirm-del-col">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/ops-runbook/ops-runbook.js"></script>
+</body>
+</html>

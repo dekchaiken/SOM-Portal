@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MA Configuration — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/ma-config/ma-config.css" data-page-css>
+</head>
+<body>
+  <div class="app-shell">
+    <aside id="sidebar-mount"></aside>
+
+    <main class="main-content">
+      <div class="topbar">
+        <div class="tb-prompt">
+          <span class="tb-path">~/sm/admin</span>
+          <span class="tb-arrow"><i data-icon="play"></i></span>
+        </div>
+        <div class="topbar-title">
+          <span class="page-title">MA Configuration</span>
+          <span class="page-sub">จัดการ Modules และ Sub-types</span>
+        </div>
+        <div class="topbar-actions">
+          <a href="./index.html" class="btn btn-ghost btn-sm" style="gap:6px;">← Back to Admin</a>
+        </div>
+      </div>
+
+      <div class="page-content">
+
+        <section class="page-hero">
+          <div class="page-hero-mark"><i data-icon="settings"></i></div>
+          <div class="page-hero-body">
+            <div class="page-hero-eyebrow">Admin</div>
+            <h1>MA Configuration</h1>
+            <p>จัดการ Modules และ Sub-types ที่ใช้ใน Maintenance Announcement</p>
+          </div>
+        </section>
+
+        <div class="config-container">
+
+          <div class="config-topbar">
+            <div>
+              <div class="config-topbar-title">MA Modules</div>
+              <div class="config-topbar-desc">แต่ละ Module มี Sub-types ของตัวเอง — คลิกที่ Module เพื่อจัดการ</div>
+            </div>
+            <button class="btn btn-primary btn-sm" data-action="add" onclick="openAddModule()">+ Add Module</button>
+          </div>
+
+          <!-- Module accordion list -->
+          <div class="module-list" id="module-list">
+            <div style="padding:40px;text-align:center;color:var(--text-muted);font-size:12px;">Loading...</div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ── Modal: Add/Edit Module ──────────────────── -->
+  <div class="modal-overlay" id="modal-module">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-module-title">Add Module</h3>
+        <button class="btn-close" onclick="closeModal('modal-module')">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="module-edit-id">
+        <div class="form-group">
+          <label class="form-label">Module Name <span style="color:var(--danger)">*</span></label>
+          <input type="text" class="form-control" id="module-name" placeholder="e.g., FundOut Services">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input type="text" class="form-control" id="module-desc" placeholder="Short description">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Icon (2–4 chars)</label>
+          <input type="text" class="form-control" id="module-icon" maxlength="4" placeholder="e.g., FO" style="text-transform:uppercase">
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="margin-bottom:8px">Theme Color</label>
+          <div class="theme-picker" id="theme-picker">
+            <div class="theme-dot selected" data-theme="amber"  onclick="selectTheme('amber')"></div>
+            <div class="theme-dot"          data-theme="blue"   onclick="selectTheme('blue')"></div>
+            <div class="theme-dot"          data-theme="green"  onclick="selectTheme('green')"></div>
+            <div class="theme-dot"          data-theme="red"    onclick="selectTheme('red')"></div>
+            <div class="theme-dot"          data-theme="purple" onclick="selectTheme('purple')"></div>
+            <div class="theme-dot"          data-theme="orange" onclick="selectTheme('orange')"></div>
+            <div class="theme-dot"          data-theme="gray"   onclick="selectTheme('gray')"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-module')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveModule()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal: Add/Edit Type ──────────────────────── -->
+  <div class="modal-overlay" id="modal-type">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-type-title">Add Type</h3>
+        <button class="btn-close" onclick="closeModal('modal-type')">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="type-kind">
+        <input type="hidden" id="type-old-name">
+        <div class="form-group">
+          <label class="form-label">Type Name <span style="color:var(--danger)">*</span></label>
+          <input type="text" class="form-control" id="type-name" placeholder="e.g., TMN, NANO, WEALTH">
+        </div>
+        <div class="form-group" id="type-desc-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" id="type-desc" rows="2" placeholder="Optional description"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="margin-bottom:8px">Badge Color</label>
+          <div class="color-picker" id="type-color-picker">
+            <div class="color-dot selected" data-color="amber"  onclick="selectTypeColor('amber')"></div>
+            <div class="color-dot"          data-color="blue"   onclick="selectTypeColor('blue')"></div>
+            <div class="color-dot"          data-color="green"  onclick="selectTypeColor('green')"></div>
+            <div class="color-dot"          data-color="red"    onclick="selectTypeColor('red')"></div>
+            <div class="color-dot"          data-color="purple" onclick="selectTypeColor('purple')"></div>
+            <div class="color-dot"          data-color="orange" onclick="selectTypeColor('orange')"></div>
+            <div class="color-dot"          data-color="gray"   onclick="selectTypeColor('gray')"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-type')">Cancel</button>
+        <button class="btn btn-primary" id="type-save-btn" onclick="saveType()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/csrf.js"></script>
+  <script src="../assets/js/analytics.js"></script>
+  <script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+  <script src="../assets/js/admin-nav.js"></script>
+  <script src="../assets/pages/admin/ma-config/ma-config.js"></script>
+</body>
+</html>

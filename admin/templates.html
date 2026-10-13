@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Template Management — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="zap"></i> Template Management</div>
+        <div class="page-sub">Manage all Jira templates</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="../jira-templates.html" class="btn btn-ghost btn-sm">Go to Jira Templates →</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="zap"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Template Management</h1>
+          <p>จัดการ Jira issue templates ทั้งหมด — categories, subtypes, custom fields และ default values</p>
+        </div>
+      </section>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">All Templates</span>
+          <div class="search-wrap">
+            <span class="search-icon">⌕</span>
+            <input type="text" id="tpl-search" class="form-control" placeholder="Search..." style="width:220px">
+          </div>
+        </div>
+        <div id="tpl-table" class="card-body" style="padding:0">
+          <div data-skel="table" data-rows="6"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+  if (!Auth.requireAdmin()) {}
+  Layout.render('admin');
+
+  let allTemplates = [];
+
+  async function loadTemplates() {
+    const res = await API.templates.list();
+    if (!res?.ok) { Toast.error('Failed to load'); return; }
+    allTemplates = res.data.data || [];
+    renderTable(allTemplates);
+  }
+
+  function renderTable(list) {
+    const container = document.getElementById('tpl-table');
+    if (!list.length) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon"><i data-icon="zap"></i></div><p>No templates</p></div>';
+      return;
+    }
+
+    container.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr>
+        <th>Name</th><th>Category</th><th>Summary</th><th>Created by</th><th>Date</th>
+        <th style="text-align:right">Actions</th>
+      </tr></thead>
+      <tbody>
+        ${list.map(t => `<tr>
+          <td style="font-weight:600">${escHtml(t.name)}</td>
+          <td><span class="badge badge-gray">${escHtml(t.category || '—')}</span></td>
+          <td style="max-width:260px;color:var(--text-muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(t.summary)}</td>
+          <td style="color:var(--text-muted);font-size:11px">${escHtml(t.author_name || '—')}</td>
+          <td style="color:var(--text-muted);font-size:11px;white-space:nowrap">${DateTime.formatDate(t.created_at)}</td>
+          <td style="text-align:right">
+            <button class="btn btn-danger btn-sm" onclick="deleteTemplate('${t.id}','${escHtml(t.name).replace(/'/g,'\\\'')}')">Delete</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+  }
+
+  async function deleteTemplate(id, name) {
+    const ok = await confirmDialog(`Delete template "${name}"?`, 'Delete Template');
+    if (!ok) return;
+    const res = await API.templates.delete(id);
+    if (res?.ok) { Toast.success('Deleted'); loadTemplates(); }
+    else Toast.error(res?.data?.message || 'Failed');
+  }
+
+  const doSearch = debounce(() => {
+    const q = document.getElementById('tpl-search').value.toLowerCase();
+    renderTable(q ? allTemplates.filter(t => t.name.toLowerCase().includes(q) || t.summary.toLowerCase().includes(q)) : allTemplates);
+  }, 300);
+  document.getElementById('tpl-search').addEventListener('input', doSearch);
+
+  loadTemplates();
+</script>
+
+</body>
+</html>

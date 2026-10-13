@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import MA Services — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <style>
+    .import-container {
+      max-width: 1200px; margin: 40px auto; padding: 20px;
+    }
+    .import-header {
+      margin-bottom: 24px;
+    }
+    .import-header h2 {
+      font-size: 22px; font-weight: 800; color: var(--text);
+      margin: 0 0 8px 0;
+    }
+    .import-header p {
+      font-size: 12px; color: var(--text-muted); margin: 0;
+    }
+    .import-box {
+      background: var(--bg-card); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 24px; margin-bottom: 20px;
+    }
+    .import-label {
+      font-size: 12px; font-weight: 700; color: var(--text);
+      margin-bottom: 8px; display: block;
+    }
+    .import-textarea {
+      width: 100%; min-height: 300px; padding: 12px;
+      font-family: 'Courier New', monospace; font-size: 11px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      background: var(--bg-input); resize: vertical;
+    }
+    .import-actions {
+      display: flex; gap: 12px; align-items: center;
+    }
+    .import-result {
+      background: var(--bg-card); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 24px; margin-top: 20px;
+      display: none;
+    }
+    .import-result.success {
+      border-color: #4ade80; background: #f0fdf4;
+    }
+    .import-result.error {
+      border-color: #f87171; background: #fef2f2;
+    }
+    .result-title {
+      font-size: 14px; font-weight: 700; margin-bottom: 12px;
+    }
+    .result-stats {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px; margin-top: 16px;
+    }
+    .result-stat {
+      padding: 12px; background: var(--bg); border-radius: 8px;
+      text-align: center;
+    }
+    .result-stat-value {
+      font-size: 24px; font-weight: 800; color: var(--orange);
+    }
+    .result-stat-label {
+      font-size: 10px; color: var(--text-muted); margin-top: 4px;
+    }
+    .help-box {
+      background: #fef3c7; border: 1.5px solid #fde68a;
+      border-radius: 8px; padding: 16px; margin-bottom: 20px;
+    }
+    .help-title {
+      font-size: 12px; font-weight: 700; color: #92400e;
+      margin-bottom: 8px;
+    }
+    .help-text {
+      font-size: 11px; color: #78350f; line-height: 1.6;
+    }
+    .help-example {
+      background: #fff; border: 1px solid #fde68a;
+      border-radius: 6px; padding: 8px; margin-top: 8px;
+      font-family: 'Courier New', monospace; font-size: 10px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside id="sidebar-mount"></aside>
+
+    <main class="main-content">
+      <div class="topbar">
+        <div class="tb-prompt">
+          <span class="tb-path">~/sm</span>
+          <span class="tb-arrow"><i data-icon="play"></i></span>
+        </div>
+        <div class="topbar-title">
+          <span class="page-title">Import MA Services</span>
+          <span class="page-sub">นำเข้าข้อมูล MA Services จาก CSV</span>
+        </div>
+      </div>
+
+      <div class="page-content">
+        <div class="import-container">
+          <div class="import-header">
+            <h2>Import MA Services from CSV</h2>
+            <p>Copy ข้อมูลจาก Excel/CSV แล้ว Paste ลงในช่องด้านล่าง</p>
+          </div>
+
+          <div class="help-box">
+            <div class="help-title"><i data-icon="clipboard"></i> วิธีใช้งาน</div>
+            <div class="help-text">
+              1. เปิดไฟล์ Excel/CSV ของคุณ<br>
+              2. เลือกข้อมูลทั้งหมด (รวม header) แล้ว Copy (Ctrl+C)<br>
+              3. Paste ลงในช่องด้านล่าง (Ctrl+V)<br>
+              4. กดปุ่ม "Import Data"<br>
+              <br>
+              <strong>Format ที่รองรับ:</strong><br>
+              Columns: MA Service Name, Service, Tool, เปลื่ยนข้อความ ได้ หรือ ไม่, Link-Manual, Remark
+            </div>
+            <div class="help-example">MA Service Name	Service	Tool	เปลื่ยนข้อความ ได้ หรือ ไม่	Link-Manual	Remark
+Login TrueMoney Wallet	TMN	Jenkins	YES	Link	แบบ MAS + Redis ใช้งานได้</div>
+          </div>
+
+          <div class="import-box">
+            <label class="import-label">Paste CSV Data Here:</label>
+            <textarea class="import-textarea" id="csv-input" placeholder="Paste your CSV data here..."></textarea>
+          </div>
+
+          <div class="import-actions">
+            <button class="btn btn-primary" onclick="importData()">
+              <i><i data-icon="inbox"></i></i> Import Data
+            </button>
+            <button class="btn btn-ghost" onclick="clearData()">
+              <i><i data-icon="trash"></i></i> Clear
+            </button>
+            <button class="btn btn-ghost" onclick="window.location.href='ma-services.html'">
+              <i>←</i> Back to MA Services
+            </button>
+          </div>
+
+          <div class="import-result" id="import-result">
+            <div class="result-title" id="result-title">Import Successful!</div>
+            <div id="result-message"></div>
+            <div class="result-stats" id="result-stats"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="./assets/js/auth.js"></script>
+  <script src="./assets/js/api.js"></script>
+  <script src="./assets/js/utils.js"></script>
+  <script src="./assets/js/csrf.js"></script>
+  <script src="./assets/js/analytics.js"></script>
+  <script src="./assets/js/layout.js"></script>
+  <script src="./assets/js/maintenance.js"></script>
+  <script>
+    if (!Auth.requireAuth()) { /* redirects if not logged in */ }
+    document.addEventListener('DOMContentLoaded', () => {
+      Layout.render('import-ma');
+    });
+
+    function clearData() {
+      document.getElementById('csv-input').value = '';
+      document.getElementById('import-result').style.display = 'none';
+    }
+
+    async function importData() {
+      const csvText = document.getElementById('csv-input').value.trim();
+      
+      if (!csvText) {
+        await SOMDialog.alert('กรุณา Paste ข้อมูล CSV', { title: 'แจ้งเตือน', icon: 'warning' });
+        return;
+      }
+
+      try {
+        // Parse CSV
+        const lines = csvText.split('\n').filter(line => line.trim());
+        if (lines.length < 2) {
+          await SOMDialog.alert('ข้อมูลไม่ถูกต้อง ต้องมีอย่างน้อย 2 บรรทัด (header + data)', { title: 'แจ้งเตือน', icon: 'warning' });
+          return;
+        }
+
+        // Parse header
+        const header = lines[0].split('\t');
+        console.log('Header:', header);
+
+        // Parse data rows
+        const services = [];
+        let id = 1;
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split('\t');
+          
+          if (values.length < 3) continue; // Skip invalid rows
+
+          const service = {
+            id: id++,
+            service_name: values[0] || '',
+            service_type: values[1] || 'TMN',
+            tool_type: values[2] || 'Jenkins',
+            can_change_text: values[3] || '',
+            link_manual: values[4] || '',
+            remark: values[5] || '',
+            direct_link: '',
+            custom_url: '',
+            created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+            updated_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+          };
+
+          services.push(service);
+        }
+
+        if (services.length === 0) {
+          await SOMDialog.alert('ไม่พบข้อมูลที่ถูกต้อง', { title: 'แจ้งเตือน', icon: 'warning' });
+          return;
+        }
+
+        // Send to API
+        const response = await fetch('./api/ma-services/import.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ services })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showResult(true, `Import สำเร็จ! นำเข้าข้อมูล ${services.length} รายการ`, {
+            total: services.length,
+            tmn: services.filter(s => s.service_type === 'TMN').length,
+            nano: services.filter(s => s.service_type === 'NANO').length,
+            wealth: services.filter(s => s.service_type === 'WEALTH').length
+          });
+        } else {
+          showResult(false, 'Import ล้มเหลว: ' + (result.message || 'Unknown error'));
+        }
+
+      } catch (error) {
+        console.error('Import error:', error);
+        showResult(false, 'เกิดข้อผิดพลาด: ' + error.message);
+      }
+    }
+
+    function showResult(success, message, stats = null) {
+      const resultDiv = document.getElementById('import-result');
+      const titleDiv = document.getElementById('result-title');
+      const messageDiv = document.getElementById('result-message');
+      const statsDiv = document.getElementById('result-stats');
+
+      resultDiv.className = 'import-result ' + (success ? 'success' : 'error');
+      resultDiv.style.display = 'block';
+      
+      titleDiv.innerHTML = success ? '<i data-icon="check-circle"></i> Import Successful!' : '<i data-icon="x-circle"></i> Import Failed';
+      messageDiv.textContent = message;
+
+      if (stats) {
+        statsDiv.innerHTML = `
+          <div class="result-stat">
+            <div class="result-stat-value">${stats.total}</div>
+            <div class="result-stat-label">Total Services</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-value">${stats.tmn}</div>
+            <div class="result-stat-label">TMN</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-value">${stats.nano}</div>
+            <div class="result-stat-label">NANO</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-value">${stats.wealth}</div>
+            <div class="result-stat-label">WEALTH</div>
+          </div>
+        `;
+      } else {
+        statsDiv.innerHTML = '';
+      }
+
+      // Scroll to result
+      resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  </script>
+</body>
+</html>

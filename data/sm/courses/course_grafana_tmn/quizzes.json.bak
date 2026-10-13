@@ -1,0 +1,1070 @@
+[
+    {
+        "id": "quiz_tmn_01",
+        "phase_id": "phase_tmn_01",
+        "title": "ทดสอบ — ภาพรวม Dashboard TMN",
+        "description": "ทดสอบความเข้าใจโครงสร้างของ Dashboard Team Service Monitoring Center",
+        "questions": [
+            {
+                "id": "q_tmn_0101",
+                "type": "single",
+                "question": "Dashboard \"Team Service Monitoring Center\" ใช้ datasource ประเภทใดเป็นหลัก?",
+                "options": [
+                    "MySQL",
+                    "Prometheus",
+                    "InfluxDB",
+                    "Loki"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0102",
+                "type": "single",
+                "question": "Row ใน Dashboard TMN หมายถึงอะไร?",
+                "options": [
+                    "ชนิดของ metric (counter, gauge, histogram)",
+                    "การแบ่งกลุ่ม Panel ตาม service หรือ domain",
+                    "ชั้นของ infrastructure (VM, container, pod)",
+                    "ตาราง log ที่จัดเรียงตามเวลา"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0103",
+                "type": "truefalse",
+                "question": "Dashboard TMN มี 444 panels ซึ่งทุก panel ใช้ PromQL query ในรูปแบบเดียวกัน",
+                "answer": false
+            },
+            {
+                "id": "q_tmn_0104",
+                "type": "single",
+                "question": "Label `env_name` ใน TMN ใช้เพื่ออะไร?",
+                "options": [
+                    "ระบุชื่อ Grafana dashboard",
+                    "แยก environment เช่น production, staging, uat",
+                    "ระบุชื่อ Kubernetes namespace",
+                    "กำหนด alert threshold"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0105",
+                "type": "multi",
+                "question": "Label ใดบ้างที่พบบ่อยใน TMN metrics? (เลือกทุกข้อที่ถูก)",
+                "options": [
+                    "app_name",
+                    "status",
+                    "uri",
+                    "jvm_pool"
+                ],
+                "answer": [
+                    0,
+                    1,
+                    2
+                ]
+            },
+            {
+                "id": "q_tmn_0106",
+                "type": "single",
+                "question": "ข้อใดคือ pattern PromQL ที่ใช้นับ RPS (Requests per second) โดยทั่วไป?",
+                "options": [
+                    "sum(http_server_requests_seconds_count)",
+                    "rate(http_server_requests_seconds_count[2m])",
+                    "increase(http_server_requests_seconds_count[1h])",
+                    "avg(http_server_requests_seconds_count)"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0107",
+                "type": "truefalse",
+                "question": "ใน Dashboard TMN แต่ละ Row มักจะมี panel ที่แสดง RPS, Error Rate, และ Latency ของ service นั้นๆ",
+                "answer": true
+            },
+            {
+                "id": "q_tmn_0108",
+                "type": "short",
+                "question": "metric ชื่ออะไรที่ใช้วัด HTTP request ฝั่ง server ใน Spring Boot \/ Micrometer?",
+                "answer": [
+                    "http_server_requests_seconds_count",
+                    "http_server_requests_seconds"
+                ],
+                "match_mode": "contains",
+                "case_sensitive": false
+            }
+        ],
+        "created_at": "2026-05-18T00:00:00+07:00"
+    },
+    {
+        "id": "quiz_tmn_02",
+        "phase_id": "phase_tmn_02",
+        "title": "ทดสอบ — Wallet Service",
+        "description": "ทดสอบความเข้าใจ metric และ query ของ Wallet Service",
+        "questions": [
+            {
+                "id": "q_tmn_0201",
+                "type": "single",
+                "question": "ใน Wallet Service หาก status = 'failure' แสดงถึงอะไร?",
+                "options": [
+                    "HTTP 5xx error จาก server",
+                    "Business-level failure เช่น ยอดไม่พอ หรือ transaction ไม่สำเร็จ",
+                    "Network timeout ระหว่าง pod",
+                    "Database connection error"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0202",
+                "type": "single",
+                "question": "PromQL ใดที่นับเฉพาะ successful wallet transaction?",
+                "options": [
+                    "sum(rate(wallet_transactions_total[2m]))",
+                    "sum(rate(wallet_transactions_total{status=\"success\"}[2m]))",
+                    "count(wallet_transactions_total{status!=\"failure\"})",
+                    "increase(wallet_transactions_total[5m])"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0203",
+                "type": "truefalse",
+                "question": "label `status_code` ใน TMN metric มักจะเป็น HTTP status code เช่น 200, 404, 500",
+                "answer": false
+            },
+            {
+                "id": "q_tmn_0204",
+                "type": "single",
+                "question": "Error Rate คำนวณอย่างไรจาก metric?",
+                "options": [
+                    "sum(errors) \/ sum(total) * 100",
+                    "rate(errors[2m]) \/ rate(total[2m]) * 100",
+                    "increase(errors[1h]) \/ increase(total[1h])",
+                    "avg(errors) \/ avg(total)"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0205",
+                "type": "multi",
+                "question": "สิ่งใดบ้างที่ควร monitor ใน Wallet Service? (เลือกทุกข้อที่ถูก)",
+                "options": [
+                    "Transaction success rate",
+                    "Latency percentile (p95, p99)",
+                    "Number of Grafana users",
+                    "Error rate by uri"
+                ],
+                "answer": [
+                    0,
+                    1,
+                    3
+                ]
+            },
+            {
+                "id": "q_tmn_0206",
+                "type": "single",
+                "question": "histogram_quantile(0.95, sum by(le)(rate(http_server_requests_seconds_bucket[2m]))) คำนวณอะไร?",
+                "options": [
+                    "Average latency",
+                    "95th percentile latency",
+                    "Maximum latency",
+                    "Median latency"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0207",
+                "type": "truefalse",
+                "question": "Histogram metric ใน Prometheus ต้องใช้ _bucket suffix ร่วมกับ histogram_quantile() เพื่อคำนวณ percentile",
+                "answer": true
+            }
+        ],
+        "created_at": "2026-05-18T00:00:00+07:00"
+    },
+    {
+        "id": "quiz_tmn_03",
+        "phase_id": "phase_tmn_03",
+        "title": "ทดสอบ — Payment Service",
+        "description": "ทดสอบความเข้าใจ metric ของ Payment Service และ fund-in flow",
+        "questions": [
+            {
+                "id": "q_tmn_0301",
+                "type": "single",
+                "question": "label `fund_in_type` ใน payment metric ใช้แยกอะไร?",
+                "options": [
+                    "แยก environment (prod\/uat)",
+                    "แยกช่องทางการเติมเงิน เช่น bank_transfer, credit_card",
+                    "แยก HTTP method (GET\/POST)",
+                    "แยก Kubernetes node"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0302",
+                "type": "single",
+                "question": "PromQL ที่ใช้ดู throughput fund-in แยกตาม channel คืออะไร?",
+                "options": [
+                    "sum(payment_fundin_total)",
+                    "sum by(channel)(rate(payment_fundin_total[2m]))",
+                    "count by(fund_in_type)(payment_fundin_total)",
+                    "avg by(uri)(payment_fundin_total)"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0303",
+                "type": "truefalse",
+                "question": "การ monitor HTTP client metrics (outbound calls) ไม่จำเป็น เพราะ server ฝั่งปลายทางมี metrics อยู่แล้ว",
+                "answer": false
+            },
+            {
+                "id": "q_tmn_0304",
+                "type": "single",
+                "question": "metric `http_client_requests_seconds_count` ต่างจาก `http_server_requests_seconds_count` อย่างไร?",
+                "options": [
+                    "http_client นับ inbound requests, http_server นับ outbound",
+                    "http_client นับ outbound calls ที่ service ส่งออก, http_server นับ inbound ที่ service รับ",
+                    "ทั้งคู่เหมือนกัน ต่างแค่ชื่อ library",
+                    "http_client ใช้กับ REST, http_server ใช้กับ gRPC"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0305",
+                "type": "multi",
+                "question": "label ใดบ้างที่มีประโยชน์ใน payment metric? (เลือกทุกข้อที่ถูก)",
+                "options": [
+                    "fund_in_type",
+                    "channel",
+                    "status",
+                    "jvm_memory_pool"
+                ],
+                "answer": [
+                    0,
+                    1,
+                    2
+                ]
+            },
+            {
+                "id": "q_tmn_0306",
+                "type": "single",
+                "question": "ถ้า p99 latency ของ fund-in พุ่งขึ้น แต่ p50 ปกติ แสดงถึงอะไร?",
+                "options": [
+                    "ระบบช้าทั้งหมด",
+                    "มี outlier request ที่ช้ามาก แต่ส่วนใหญ่ยังเร็วปกติ",
+                    "Alert ทุกข้อไม่ถูกต้อง",
+                    "Network timeout ทั้งหมด"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0307",
+                "type": "short",
+                "question": "PromQL function ที่ใช้คำนวณ percentile latency จาก histogram คืออะไร?",
+                "answer": [
+                    "histogram_quantile"
+                ],
+                "match_mode": "contains",
+                "case_sensitive": false
+            }
+        ],
+        "created_at": "2026-05-18T00:00:00+07:00"
+    },
+    {
+        "id": "quiz_tmn_04",
+        "phase_id": "phase_tmn_04",
+        "title": "ทดสอบ — Notification & Campaign Service",
+        "description": "ทดสอบความเข้าใจ metric ของ Notification และ Campaign",
+        "questions": [
+            {
+                "id": "q_tmn_0401",
+                "type": "single",
+                "question": "increase(notifications_sent_total[1h]) แสดงอะไร?",
+                "options": [
+                    "Rate per second",
+                    "จำนวน notification ที่ส่งใน 1 ชั่วโมงที่ผ่านมา",
+                    "Percentage ของ notification ที่สำเร็จ",
+                    "Latency ของการส่ง notification"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0402",
+                "type": "truefalse",
+                "question": "rate() เหมาะสมกว่า increase() เมื่อต้องการดูแนวโน้มต่อเนื่อง (trend) บน time series graph",
+                "answer": true
+            },
+            {
+                "id": "q_tmn_0403",
+                "type": "single",
+                "question": "ทำไม Campaign service ถึงใช้ window ที่ใหญ่กว่า (เช่น [15m]) เมื่อเทียบกับ Wallet service ([2m])?",
+                "options": [
+                    "Campaign service มี hardware ดีกว่า",
+                    "Campaign มี traffic ต่ำกว่า จึงต้องใช้ window ใหญ่เพื่อให้มีข้อมูลพอคำนวณ rate",
+                    "ตั้งค่า Grafana ผิด",
+                    "Campaign ใช้ HTTP\/2 จึงช้ากว่า"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0404",
+                "type": "single",
+                "question": "label `isv` ใน TMN หมายถึงอะไรโดยทั่วไป?",
+                "options": [
+                    "Internal service version",
+                    "Independent Software Vendor หรือ partner\/merchant",
+                    "Infrastructure service variable",
+                    "In-service validation"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0405",
+                "type": "multi",
+                "question": "สิ่งใดที่ควร alert เมื่อ notification service มีปัญหา? (เลือกทุกข้อที่ถูก)",
+                "options": [
+                    "Error rate > 5%",
+                    "Queue depth เพิ่มสูงขึ้นเรื่อยๆ",
+                    "จำนวน Grafana panel เพิ่มขึ้น",
+                    "Delivery latency p99 > threshold"
+                ],
+                "answer": [
+                    0,
+                    1,
+                    3
+                ]
+            },
+            {
+                "id": "q_tmn_0406",
+                "type": "single",
+                "question": "absent(up{job='notification-service'}) จะ return ค่าอะไรเมื่อ service ทำงานปกติ?",
+                "options": [
+                    "1",
+                    "0",
+                    "no data (empty)",
+                    "error"
+                ],
+                "answer": 2
+            },
+            {
+                "id": "q_tmn_0407",
+                "type": "truefalse",
+                "question": "Campaign service ที่มี traffic ต่ำ อาจแสดง rate() = 0 บ่อยๆ แม้จะยังทำงานปกติ",
+                "answer": true
+            }
+        ],
+        "created_at": "2026-05-18T00:00:00+07:00"
+    },
+    {
+        "id": "quiz_tmn_05",
+        "phase_id": "phase_tmn_05",
+        "title": "ทดสอบ — Coupon \/ Loyalty \/ Deal Service",
+        "description": "ทดสอบ metric ของ Coupon, Loyalty Points, และ Deal Service",
+        "questions": [
+            {
+                "id": "q_tmn_0501",
+                "type": "single",
+                "question": "ทำไม Coupon redemption error จึงต้องมี alert ที่ sensitivity สูงกว่า generic HTTP error?",
+                "options": [
+                    "Coupon service ใช้ CPU มากกว่า",
+                    "Coupon error กระทบ user experience โดยตรงและมักเป็น business-critical",
+                    "Coupon metric บันทึกข้อมูลผิด",
+                    "ไม่จำเป็น ใช้ threshold เดียวกันได้"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0502",
+                "type": "single",
+                "question": "PromQL ที่แสดง success rate ของ coupon redemption คืออะไร?",
+                "options": [
+                    "rate(coupon_redemption_total[2m])",
+                    "sum(rate(coupon_redemption_total{status=\"success\"}[2m])) \/ sum(rate(coupon_redemption_total[2m])) * 100",
+                    "increase(coupon_redemption_total{status=\"success\"}[1h])",
+                    "avg(coupon_redemption_total) by (status)"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0503",
+                "type": "truefalse",
+                "question": "Loyalty point expiration ควร monitor ด้วย Gauge metric เพราะค่าสามารถลดลงได้",
+                "answer": true
+            },
+            {
+                "id": "q_tmn_0504",
+                "type": "single",
+                "question": "Deal service มักมี traffic spike ช่วงใด?",
+                "options": [
+                    "ช่วงกลางคืน 2-4am",
+                    "วันหยุดและ promotion event",
+                    "วันจันทร์ช่วงเช้า",
+                    "ทุกๆ ต้นเดือน"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0505",
+                "type": "multi",
+                "question": "metric ใดบ้างที่เหมาะกับการ monitor Loyalty service? (เลือกทุกข้อที่ถูก)",
+                "options": [
+                    "Points earned rate",
+                    "Points redeemed rate",
+                    "Kubernetes node count",
+                    "Balance query latency"
+                ],
+                "answer": [
+                    0,
+                    1,
+                    3
+                ]
+            },
+            {
+                "id": "q_tmn_0506",
+                "type": "single",
+                "question": "ถ้าต้องการดู top 5 coupon ที่มีการใช้งานมากสุด จะใช้ PromQL อย่างไร?",
+                "options": [
+                    "sum(coupon_used_total) limit 5",
+                    "topk(5, sum by(coupon_code)(increase(coupon_used_total[24h])))",
+                    "max(coupon_used_total) by (coupon_code)",
+                    "sort_desc(coupon_used_total)[5]"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0507",
+                "type": "short",
+                "question": "PromQL function ที่ใช้เลือก top N time series ตามค่าสูงสุดคืออะไร?",
+                "answer": [
+                    "topk"
+                ],
+                "match_mode": "exact",
+                "case_sensitive": false
+            }
+        ],
+        "created_at": "2026-05-18T00:00:00+07:00"
+    },
+    {
+        "id": "quiz_tmn_06",
+        "phase_id": "phase_tmn_06",
+        "title": "ทดสอบ — Merchant & QR Service",
+        "description": "ทดสอบความเข้าใจ metric ของ Merchant และ QR Payment",
+        "questions": [
+            {
+                "id": "q_tmn_0601",
+                "type": "single",
+                "question": "label `mcc` ใน merchant metric หมายถึงอะไร?",
+                "options": [
+                    "Merchant Credit Card",
+                    "Merchant Category Code — รหัสประเภทร้านค้า",
+                    "Master Control Center",
+                    "Mobile Commerce Channel"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0602",
+                "type": "single",
+                "question": "QR payment flow ประกอบด้วยขั้นตอนหลักใด?",
+                "options": [
+                    "Generate → Scan → Validate → Confirm",
+                    "Login → Pay → Logout",
+                    "Request → Response → Ack",
+                    "Encode → Decode → Store"
+                ],
+                "answer": 0
+            },
+            {
+                "id": "q_tmn_0603",
+                "type": "truefalse",
+                "question": "Merchant settlement service ที่มี latency สูงจะกระทบ merchant โดยตรง เพราะ settlement ล่าช้า",
+                "answer": true
+            },
+            {
+                "id": "q_tmn_0604",
+                "type": "single",
+                "question": "PromQL ที่ดู QR payment volume แยก merchant คือ?",
+                "options": [
+                    "sum(qr_payment_total)",
+                    "sum by(merchant_id)(rate(qr_payment_total[2m]))",
+                    "count(merchant_id)",
+                    "avg(qr_payment_total) by(mcc)"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0605",
+                "type": "multi",
+                "question": "ปัญหาใดบ้างที่ควร detect จาก QR service metric? (เลือกทุกข้อที่ถูก)",
+                "options": [
+                    "QR generate failure rate สูง",
+                    "QR validate latency p99 > 5s",
+                    "จำนวน Grafana dashboard เพิ่มขึ้น",
+                    "QR expire ก่อนที่ user จะ scan"
+                ],
+                "answer": [
+                    0,
+                    1,
+                    3
+                ]
+            },
+            {
+                "id": "q_tmn_0606",
+                "type": "single",
+                "question": "ถ้า QR payment error rate = 0.5% แต่มี 100,000 tx\/วัน มีกี่ tx ที่ fail?",
+                "options": [
+                    "50",
+                    "500",
+                    "5,000",
+                    "50,000"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0607",
+                "type": "truefalse",
+                "question": "การ monitor outbound call จาก QR service ไป Payment Gateway สำคัญพอๆ กับ inbound monitoring",
+                "answer": true
+            }
+        ],
+        "created_at": "2026-05-18T00:00:00+07:00"
+    },
+    {
+        "id": "quiz_tmn_07",
+        "phase_id": "phase_tmn_07",
+        "title": "ทดสอบ — Authentication & OTP Service",
+        "description": "ทดสอบ metric ของ Auth service, OTP และ security monitoring",
+        "questions": [
+            {
+                "id": "q_tmn_0701",
+                "type": "single",
+                "question": "spike ของ login failure rate อาจบ่งชี้ถึงอะไร?",
+                "options": [
+                    "Network upgrade",
+                    "Credential stuffing หรือ brute force attack",
+                    "Database slow query",
+                    "Memory leak"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0702",
+                "type": "single",
+                "question": "PromQL ที่ alert เมื่อ OTP delivery failure rate สูงกว่า 5% คือ?",
+                "options": [
+                    "otp_sent_total > 1000",
+                    "rate(otp_sent_total[5m]) < 0.1",
+                    "increase(otp_sent_total[1h]) = 0",
+                    "sum(rate(otp_delivery_failure_total[5m])) \/ sum(rate(otp_sent_total[5m])) > 0.05"
+                ],
+                "answer": 3
+            },
+            {
+                "id": "q_tmn_0703",
+                "type": "truefalse",
+                "question": "OTP expiry ที่สั้นเกินไปจะทำให้ user validation failure สูงขึ้นโดยไม่มีปัญหาจริง",
+                "answer": true
+            },
+            {
+                "id": "q_tmn_0704",
+                "type": "single",
+                "question": "metric ใดที่เหมาะสมสำหรับ detect session hijacking?",
+                "options": [
+                    "http_server_requests_seconds_count",
+                    "auth_token_validation_failure_total จำแนกตาม user_id และ ip",
+                    "jvm_memory_used_bytes",
+                    "rabbitmq_queue_messages"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0705",
+                "type": "multi",
+                "question": "สิ่งใดที่ควร monitor ใน Auth service? (เลือกทุกข้อที่ถูก)",
+                "options": [
+                    "Login success\/failure rate",
+                    "Token issuance latency",
+                    "Memory heap size",
+                    "Concurrent active sessions"
+                ],
+                "answer": [
+                    0,
+                    1,
+                    3
+                ]
+            },
+            {
+                "id": "q_tmn_0706",
+                "type": "single",
+                "question": "ถ้า rate(login_failure_total[5m]) พุ่งขึ้น 10x ภายใน 2 นาที ควรทำอะไรก่อน?",
+                "options": [
+                    "Restart service",
+                    "ตรวจสอบ IP ที่ fail และดูว่ามี pattern ซ้ำหรือไม่",
+                    "เพิ่ม replica",
+                    "ลด timeout"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0707",
+                "type": "short",
+                "question": "PromQL function ที่ return 1 เมื่อ metric หายไป (service down) คืออะไร?",
+                "answer": [
+                    "absent"
+                ],
+                "match_mode": "exact",
+                "case_sensitive": false
+            }
+        ],
+        "created_at": "2026-05-18T00:00:00+07:00"
+    },
+    {
+        "id": "quiz_tmn_08",
+        "phase_id": "phase_tmn_08",
+        "title": "ทดสอบ — Transfer & Bill Payment Service",
+        "description": "ทดสอบ metric ของ P2P Transfer และ Bill Payment",
+        "questions": [
+            {
+                "id": "q_tmn_0801",
+                "type": "single",
+                "question": "label `sof_ref` ใน TMN metrics หมายถึงอะไร?",
+                "options": [
+                    "Source of Funds Reference — ระบุแหล่งเงินต้นทาง",
+                    "Service Operation Framework",
+                    "System of Record",
+                    "Soft Reference pointer"
+                ],
+                "answer": 0
+            },
+            {
+                "id": "q_tmn_0802",
+                "type": "single",
+                "question": "Bill payment ที่ fail แต่ customer ถูกหักเงินแล้ว เรียกว่าอะไร?",
+                "options": [
+                    "False negative",
+                    "Partial success",
+                    "Idempotency failure",
+                    "Timeout error"
+                ],
+                "answer": 2
+            },
+            {
+                "id": "q_tmn_0803",
+                "type": "truefalse",
+                "question": "P2P Transfer ควรมี metric แยก inbound และ outbound เพื่อตรวจสอบ double-spend",
+                "answer": true
+            },
+            {
+                "id": "q_tmn_0804",
+                "type": "single",
+                "question": "PromQL ที่นับ transfer volume แยกตาม sof_ref คือ?",
+                "options": [
+                    "count(transfer_total)",
+                    "sum by(sof_ref)(increase(transfer_amount_total[1h]))",
+                    "avg by(sof_ref)(transfer_total)",
+                    "rate(transfer_total{sof_ref='wallet'}[2m])"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0805",
+                "type": "multi",
+                "question": "ปัญหาใดบ้างที่ควร alert ใน transfer service? (เลือกทุกข้อที่ถูก)",
+                "options": [
+                    "Transfer failure rate > 1%",
+                    "P99 latency > 3s",
+                    "Transfer volume เป็น 0 นานกว่า 5 นาที",
+                    "CPU usage > 50%"
+                ],
+                "answer": [
+                    0,
+                    1,
+                    2
+                ]
+            },
+            {
+                "id": "q_tmn_0806",
+                "type": "single",
+                "question": "predict_linear(transfer_queue_size[30m], 3600) ใช้เพื่ออะไร?",
+                "options": [
+                    "ดูค่าปัจจุบันของ queue",
+                    "พยากรณ์ขนาด queue ใน 1 ชั่วโมงข้างหน้า",
+                    "คำนวณ average queue size",
+                    "ลบ queue เก่าออก"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0807",
+                "type": "truefalse",
+                "question": "Bill payment service ที่ผ่าน Biller API ควร monitor outbound call latency ไปยัง biller endpoint ด้วย",
+                "answer": true
+            }
+        ],
+        "created_at": "2026-05-18T00:00:00+07:00"
+    },
+    {
+        "id": "quiz_tmn_09",
+        "phase_id": "phase_tmn_09",
+        "title": "ทดสอบ — Fund-in Channels",
+        "description": "ทดสอบ metric ของ Direct Debit, inAPP Payment และ Game Topup",
+        "questions": [
+            {
+                "id": "q_tmn_0901",
+                "type": "single",
+                "question": "Direct Debit ต่างจาก Credit Card topup อย่างไรในแง่ flow?",
+                "options": [
+                    "Direct Debit ดึงเงินจาก bank account โดยตรง",
+                    "Direct Debit ใช้ token แทนบัตร",
+                    "Direct Debit เร็วกว่าเสมอ",
+                    "Direct Debit ไม่ต้องผ่าน payment gateway"
+                ],
+                "answer": 0
+            },
+            {
+                "id": "q_tmn_0902",
+                "type": "single",
+                "question": "metric `fund_service_transaction_total` แยก channel ด้วย label ใด?",
+                "options": [
+                    "uri",
+                    "sof_ref",
+                    "fund_in_type",
+                    "env_name"
+                ],
+                "answer": 2
+            },
+            {
+                "id": "q_tmn_0903",
+                "type": "truefalse",
+                "question": "Game topup มักมี traffic spike ตามเวลา reset ของเกม หรือ event พิเศษ",
+                "answer": true
+            },
+            {
+                "id": "q_tmn_0904",
+                "type": "single",
+                "question": "inAPP payment หมายถึงอะไร?",
+                "options": [
+                    "การชำระเงินผ่าน in-house application ของ TMN",
+                    "การชำระเงินภายใน app ของ partner\/third-party",
+                    "การชำระผ่าน ATM",
+                    "การชำระผ่าน QR code เท่านั้น"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0905",
+                "type": "multi",
+                "question": "สิ่งใดที่ควร monitor ใน Direct Debit flow? (เลือกทุกข้อที่ถูก)",
+                "options": [
+                    "Bank API response time",
+                    "Debit failure rate by bank",
+                    "Memory heap usage",
+                    "Retry count หลัง debit fail"
+                ],
+                "answer": [
+                    0,
+                    1,
+                    3
+                ]
+            },
+            {
+                "id": "q_tmn_0906",
+                "type": "single",
+                "question": "PromQL ที่ดู fund-in volume แยก fund_in_type ทั้งหมดในช่วง 24 ชม. คือ?",
+                "options": [
+                    "count(fund_service_transaction_total)",
+                    "sum by(fund_in_type)(increase(fund_service_transaction_total[24h]))",
+                    "rate(fund_service_transaction_total[24h])",
+                    "avg(fund_service_transaction_total)"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_0907",
+                "type": "truefalse",
+                "question": "ถ้า Direct Debit retry สูงมาก อาจหมายความว่า bank endpoint มีปัญหา intermittent",
+                "answer": true
+            }
+        ],
+        "created_at": "2026-05-18T00:00:00+07:00"
+    },
+    {
+        "id": "quiz_tmn_10",
+        "phase_id": "phase_tmn_10",
+        "title": "ทดสอบ — RabbitMQ Monitoring",
+        "description": "ทดสอบความเข้าใจ metric ของ RabbitMQ cluster",
+        "questions": [
+            {
+                "id": "q_tmn_1001",
+                "type": "single",
+                "question": "metric `rabbitmq_queue_messages` วัดอะไร?",
+                "options": [
+                    "จำนวน message ที่ publish ต่อวินาที",
+                    "จำนวน message ทั้งหมดใน queue รวม unacked",
+                    "Latency การ deliver message",
+                    "ขนาด message ในหน่วย bytes"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_1002",
+                "type": "single",
+                "question": "ทำไมต้องใช้ group_left() เมื่อ join RabbitMQ metrics?",
+                "options": [
+                    "เพื่อเพิ่ม label จาก metric ที่มี cardinality ต่ำกว่าเข้าไปใน many-side metric",
+                    "เพื่อ aggregate หลาย metric รวมกัน",
+                    "เพื่อกรอง metric ที่ไม่ต้องการ",
+                    "เพื่อเปลี่ยน metric type จาก gauge เป็น counter"
+                ],
+                "answer": 0
+            },
+            {
+                "id": "q_tmn_1003",
+                "type": "truefalse",
+                "question": "Queue depth ที่เพิ่มขึ้นเรื่อยๆ โดยไม่ลดลง บ่งชี้ว่า consumer ไม่สามารถตามทัน producer",
+                "answer": true
+            },
+            {
+                "id": "q_tmn_1004",
+                "type": "single",
+                "question": "metric `rabbitmq_queue_messages_ready` ต่างจาก `rabbitmq_queue_messages` อย่างไร?",
+                "options": [
+                    "ready นับเฉพาะ message ที่พร้อม deliver แต่ยังไม่ถูก consume; messages นับรวม unacked ด้วย",
+                    "ทั้งคู่เหมือนกัน",
+                    "ready นับ message ทั้งหมด; messages นับเฉพาะ delivered",
+                    "ready ใช้กับ exchange; messages ใช้กับ queue"
+                ],
+                "answer": 0
+            },
+            {
+                "id": "q_tmn_1005",
+                "type": "multi",
+                "question": "ปัญหาใดในข้อต่อไปนี้ที่ RabbitMQ metric ช่วย detect ได้? (เลือกทุกข้อที่ถูก)",
+                "options": [
+                    "Consumer หยุดทำงาน (queue depth พุ่ง)",
+                    "Message ใน queue ติด poison pill",
+                    "Kubernetes pod OOMKilled",
+                    "Node disconnect ใน cluster"
+                ],
+                "answer": [
+                    0,
+                    1,
+                    3
+                ]
+            },
+            {
+                "id": "q_tmn_1006",
+                "type": "single",
+                "question": "PromQL ที่ดู queue depth ของ camp-event queue คือ?",
+                "options": [
+                    "rabbitmq_queue_messages{queue=\"camp-event\"}",
+                    "sum(rabbitmq_messages_total)",
+                    "rate(rabbitmq_queue_messages[2m])",
+                    "avg(rabbitmq_queue_messages) by (vhost)"
+                ],
+                "answer": 0
+            },
+            {
+                "id": "q_tmn_1007",
+                "type": "truefalse",
+                "question": "RabbitMQ cluster ที่มีหลาย node ควร monitor แต่ละ node แยกกัน ไม่ใช่ดูแค่ aggregate",
+                "answer": true
+            },
+            {
+                "id": "q_tmn_1008",
+                "type": "short",
+                "question": "PromQL operator ที่ใช้ join (many-to-one) metric โดยเพิ่ม label จาก one-side เข้าไปใน many-side คืออะไร?",
+                "answer": [
+                    "group_left"
+                ],
+                "match_mode": "contains",
+                "case_sensitive": false
+            }
+        ],
+        "created_at": "2026-05-18T00:00:00+07:00"
+    },
+    {
+        "id": "quiz_tmn_11",
+        "phase_id": "phase_tmn_11",
+        "title": "ทดสอบ — Advanced PromQL Patterns",
+        "description": "ทดสอบ PromQL patterns ขั้นสูง: window size, business metric, label operations",
+        "questions": [
+            {
+                "id": "q_tmn_1101",
+                "type": "single",
+                "question": "ทำไม service ที่มี traffic ต่ำต้องใช้ window ใหญ่ขึ้น เช่น [15m] แทน [2m]?",
+                "options": [
+                    "เพราะ server มี RAM ไม่พอ",
+                    "เพราะต้องการข้อมูลเพียงพอในการคำนวณ rate ให้แม่นยำ",
+                    "เพราะ Prometheus scrape interval นานกว่า",
+                    "เพราะ Grafana refresh ช้ากว่า"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_1102",
+                "type": "single",
+                "question": "label_replace(metric, 'new_label', '$1', 'src_label', '(.*)') ทำอะไร?",
+                "options": [
+                    "ลบ label ที่ไม่ต้องการ",
+                    "สร้าง label ใหม่โดย copy ค่าจาก src_label ผ่าน regex capture",
+                    "เปลี่ยนชื่อ metric",
+                    "กรอง time series ตาม label"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_1103",
+                "type": "truefalse",
+                "question": "ใช้ rate() กับ Gauge metric เพื่อดู rate of change ได้เสมอ",
+                "answer": false
+            },
+            {
+                "id": "q_tmn_1104",
+                "type": "single",
+                "question": "Custom business metric เช่น wallet_balance_baht ต่างจาก http_server_requests_seconds_count อย่างไร?",
+                "options": [
+                    "Custom metric มาจาก application logic, standard metric มาจาก framework auto-instrumentation",
+                    "Custom metric เร็วกว่า",
+                    "Standard metric แม่นยำกว่าเสมอ",
+                    "ทั้งคู่มาจากแหล่งเดียวกัน"
+                ],
+                "answer": 0
+            },
+            {
+                "id": "q_tmn_1105",
+                "type": "multi",
+                "question": "ข้อใดบ้างที่เป็น best practice ในการเลือก window size? (เลือกทุกข้อที่ถูก)",
+                "options": [
+                    "Traffic สูง: window เล็ก (1-2m) เพื่อ detect anomaly เร็ว",
+                    "Traffic ต่ำ: window ใหญ่ (10-15m) เพื่อให้มีข้อมูลพอ",
+                    "ใช้ window เดียวกันทุก service เพื่อความสม่ำเสมอ",
+                    "Window ควรอย่างน้อย 4x ของ scrape interval"
+                ],
+                "answer": [
+                    0,
+                    1,
+                    3
+                ]
+            },
+            {
+                "id": "q_tmn_1106",
+                "type": "single",
+                "question": "PromQL ที่คำนวณ SLA burn rate ใช้ concept ใด?",
+                "options": [
+                    "rate() + threshold",
+                    "Multi-window burn rate (MWBR)",
+                    "predict_linear()",
+                    "topk()"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_1107",
+                "type": "short",
+                "question": "PromQL function ที่ใช้พยากรณ์ค่าในอนาคตโดยใช้ linear regression คืออะไร?",
+                "answer": [
+                    "predict_linear"
+                ],
+                "match_mode": "exact",
+                "case_sensitive": false
+            }
+        ],
+        "created_at": "2026-05-18T00:00:00+07:00"
+    },
+    {
+        "id": "quiz_tmn_12",
+        "phase_id": "phase_tmn_12",
+        "title": "ทดสอบ — JVM & Infrastructure Monitoring",
+        "description": "ทดสอบ metric ของ JVM, Container CPU\/Memory และ K8s infrastructure",
+        "questions": [
+            {
+                "id": "q_tmn_1201",
+                "type": "single",
+                "question": "JVM heap memory มี 2 generation หลักคืออะไร?",
+                "options": [
+                    "Stack และ Heap",
+                    "Young Generation และ Old Generation",
+                    "Eden และ Survivor",
+                    "Minor GC และ Major GC"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_1202",
+                "type": "single",
+                "question": "PromQL ที่ดู heap usage ของ JVM service คือ?",
+                "options": [
+                    "jvm_memory_used_bytes{area=\"heap\"}",
+                    "jvm_memory_bytes{type=\"used\"}",
+                    "java_heap_memory_used",
+                    "sum(jvm_memory_pool_bytes_used)"
+                ],
+                "answer": 0
+            },
+            {
+                "id": "q_tmn_1203",
+                "type": "truefalse",
+                "question": "Full GC ที่เกิดบ่อยๆ (หลายครั้งต่อนาที) เป็นสัญญาณของ memory leak หรือ heap ที่เล็กเกินไป",
+                "answer": true
+            },
+            {
+                "id": "q_tmn_1204",
+                "type": "single",
+                "question": "Container CPU throttling คืออะไร?",
+                "options": [
+                    "CPU ร้อนเกิน thermal limit",
+                    "Kubernetes จำกัด CPU ไม่ให้เกิน CPU limit ที่กำหนด",
+                    "Network bandwidth ถูกจำกัด",
+                    "Memory swap ที่ใช้ CPU คำนวณ"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_1205",
+                "type": "multi",
+                "question": "metric ใดบ้างที่ใช้ monitor JVM threads? (เลือกทุกข้อที่ถูก)",
+                "options": [
+                    "jvm_threads_states_threads{state='runnable'}",
+                    "jvm_threads_states_threads{state='blocked'}",
+                    "jvm_threads_states_threads{state='waiting'}",
+                    "jvm_heap_committed_bytes"
+                ],
+                "answer": [
+                    0,
+                    1,
+                    2
+                ]
+            },
+            {
+                "id": "q_tmn_1206",
+                "type": "single",
+                "question": "metric `container_cpu_cfs_throttled_seconds_total` ใช้วัดอะไร?",
+                "options": [
+                    "เวลาที่ container ใช้ CPU ทั้งหมด",
+                    "เวลาที่ container ถูก throttle เพราะเกิน CPU limit",
+                    "จำนวนครั้งที่ container restart",
+                    "Memory ที่ container ใช้"
+                ],
+                "answer": 1
+            },
+            {
+                "id": "q_tmn_1207",
+                "type": "truefalse",
+                "question": "Service ที่ถูก throttle สูงสามารถแก้ได้โดยเพิ่ม CPU limit ใน Kubernetes resource spec",
+                "answer": true
+            },
+            {
+                "id": "q_tmn_1208",
+                "type": "short",
+                "question": "JVM metric prefix ที่ใช้วัด memory usage ของ heap และ non-heap areas คืออะไร?",
+                "answer": [
+                    "jvm_memory_used_bytes",
+                    "jvm_memory"
+                ],
+                "match_mode": "contains",
+                "case_sensitive": false
+            }
+        ],
+        "created_at": "2026-05-18T00:00:00+07:00"
+    }
+]

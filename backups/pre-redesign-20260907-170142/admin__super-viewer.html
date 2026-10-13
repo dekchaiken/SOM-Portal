@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Viewer — Centralize Platform</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .sv-page { --sv-radius: 12px; --sv-gap: 20px; }
+
+    .badge-viewer {
+      background: #6366F1; color: #fff;
+      font-size: 9.5px; font-weight: 800; letter-spacing: .08em;
+      padding: 2px 7px; border-radius: 999px; text-transform: uppercase;
+    }
+
+    /* Stats row */
+    .sv-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+      margin-bottom: 28px;
+    }
+    .sv-stat {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--sv-radius); padding: 14px 16px;
+    }
+    .sv-stat-label {
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px;
+    }
+    .sv-stat-value {
+      font-family: var(--font, 'JetBrains Mono', monospace);
+      font-size: 22px; font-weight: 700; color: var(--text);
+      display: flex; align-items: baseline; gap: 6px;
+    }
+    .sv-stat-hint {
+      font-size: 10.5px; color: var(--text-muted); margin-top: 4px;
+    }
+    @media (max-width: 720px) { .sv-stats { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Section */
+    .sv-section { margin-bottom: 30px; }
+    .sv-section-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      margin-bottom: 12px; gap: 12px; flex-wrap: wrap;
+    }
+    .sv-section-title {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 800; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .09em;
+    }
+    .sv-section-title .cnt {
+      font-family: var(--font, monospace);
+      font-size: 10px; color: var(--text-muted); font-weight: 700;
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 1px 7px; border-radius: 999px; letter-spacing: 0;
+    }
+
+    /* User table */
+    .sv-users-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--sv-radius); overflow: hidden;
+    }
+    .sv-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .sv-table th, .sv-table td {
+      padding: 10px 14px; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .sv-table th {
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .05em;
+      background: color-mix(in srgb, var(--bg) 60%, transparent);
+    }
+    .sv-table tr:last-child td { border-bottom: none; }
+    .sv-table tr:hover td { background: color-mix(in srgb, var(--orange) 4%, transparent); }
+    .sv-user-name { font-weight: 600; color: var(--text); }
+    .sv-user-username { font-family: monospace; font-size: 10.5px; color: var(--text-muted); }
+    .sv-empty {
+      padding: 32px 20px; text-align: center; color: var(--text-muted);
+    }
+    .sv-empty-mark { font-size: 28px; margin-bottom: 8px; opacity: .6; }
+    .sv-actions { display: flex; gap: 6px; }
+    .sv-actions .btn { padding: 3px 9px; font-size: 10.5px; }
+
+    /* Rules grid */
+    .sv-rules-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    }
+    @media (max-width: 720px) { .sv-rules-grid { grid-template-columns: 1fr; } }
+    .sv-rule-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--sv-radius); padding: 14px 16px;
+    }
+    .sv-rule-head {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11.5px; font-weight: 700; color: var(--text); margin-bottom: 10px;
+    }
+    .sv-rule-badge {
+      font-size: 9.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+      letter-spacing: .04em;
+    }
+    .sv-rule-badge.block  { color: #dc2626; background: color-mix(in srgb, #dc2626 12%, transparent); }
+    .sv-rule-badge.allow  { color: #16a34a; background: color-mix(in srgb, #16a34a 12%, transparent); }
+    .sv-rule-badge.info   { color: #6366F1; background: color-mix(in srgb, #6366F1 12%, transparent); }
+    .sv-rule-list {
+      list-style: none; padding: 0; margin: 0;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .sv-rule-item {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+      padding: 6px 8px; border-radius: 6px;
+      background: color-mix(in srgb, var(--bg) 50%, transparent);
+      font-size: 11.5px;
+    }
+    .sv-rule-item .sv-rule-key {
+      font-family: monospace; font-size: 11px; color: var(--text); font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+    .sv-rule-item .sv-rule-reason {
+      font-size: 10.5px; color: var(--text-muted); text-align: right;
+    }
+
+    /* Audit table */
+    .sv-audit-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--sv-radius); overflow: hidden;
+    }
+    .sv-audit-filter {
+      display: flex; gap: 8px; padding: 10px 14px;
+      border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--bg) 40%, transparent);
+      align-items: center; flex-wrap: wrap;
+    }
+    .sv-audit-filter select {
+      font-size: 11px; padding: 4px 8px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-family: inherit;
+    }
+    .sv-audit-filter .filter-label {
+      font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 700;
+    }
+    .sv-event-pill {
+      display: inline-block; font-size: 9.5px; font-weight: 700; letter-spacing: .04em;
+      padding: 2px 7px; border-radius: 999px; text-transform: uppercase;
+    }
+    .sv-event-pill.write  { color: #f97316; background: color-mix(in srgb, #f97316 12%, transparent); }
+    .sv-event-pill.access { color: #dc2626; background: color-mix(in srgb, #dc2626 12%, transparent); }
+    .sv-path { font-family: monospace; font-size: 10.5px; color: var(--text); }
+    .sv-ts { font-family: monospace; font-size: 10.5px; color: var(--text-muted); white-space: nowrap; }
+
+    .sv-loading, .sv-empty-tbl {
+      padding: 26px 20px; text-align: center; color: var(--text-muted); font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content" id="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="eye"></i> Super Viewer <span class="badge-viewer">READ-ONLY</span></div>
+        <div class="page-sub">Oversight role — users, permissions, audit log</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary btn-sm" onclick="openCreate()">+ Create Super Viewer</button>
+        <button class="btn btn-outline btn-sm" onclick="loadAll()"><i data-icon="refresh-cw"></i> Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content sv-page">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="eye"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Super Admin</div>
+          <h1>Super Viewer</h1>
+          <p>Read-only oversight role — เห็นข้อมูลทุกทีมเหมือน super_admin แต่แก้ไม่ได้, เข้า admin panel ไม่ได้ เหมาะสำหรับหัวหน้าที่ดูแลหลายทีม</p>
+        </div>
+      </section>
+
+      <!-- ── Stats ────────────────────────────────────────────────────────── -->
+      <div class="sv-stats">
+        <div class="sv-stat">
+          <div class="sv-stat-label">Total Users</div>
+          <div class="sv-stat-value"><span id="stat-users">·</span></div>
+          <div class="sv-stat-hint">active super_viewer accounts</div>
+        </div>
+        <div class="sv-stat">
+          <div class="sv-stat-label">Last Created</div>
+          <div class="sv-stat-value" style="font-size:14px"><span id="stat-last">·</span></div>
+          <div class="sv-stat-hint">most recent super_viewer user</div>
+        </div>
+        <div class="sv-stat">
+          <div class="sv-stat-label">Writes Blocked (24h)</div>
+          <div class="sv-stat-value"><span id="stat-blocked">·</span></div>
+          <div class="sv-stat-hint">non-GET requests rejected</div>
+        </div>
+        <div class="sv-stat">
+          <div class="sv-stat-label">Access Denied (24h)</div>
+          <div class="sv-stat-value"><span id="stat-denied">·</span></div>
+          <div class="sv-stat-hint">inbox / off-limits endpoints</div>
+        </div>
+      </div>
+
+      <!-- ── Users ────────────────────────────────────────────────────────── -->
+      <section class="sv-section">
+        <div class="sv-section-head">
+          <div class="sv-section-title">Super Viewer Users <span class="cnt" id="users-cnt">·</span></div>
+        </div>
+        <div class="sv-users-card">
+          <div id="users-body">
+            <div class="sv-loading">Loading...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Rules ────────────────────────────────────────────────────────── -->
+      <section class="sv-section">
+        <div class="sv-section-head">
+          <div class="sv-section-title">Behavior Rules <span class="cnt">read-only reference</span></div>
+        </div>
+        <div class="sv-rules-grid" id="rules-grid">
+          <div class="sv-loading">Loading...</div>
+        </div>
+      </section>
+
+      <!-- ── Audit log ────────────────────────────────────────────────────── -->
+      <section class="sv-section">
+        <div class="sv-section-head">
+          <div class="sv-section-title">Recent Denied Attempts <span class="cnt" id="audit-cnt">·</span></div>
+        </div>
+        <div class="sv-audit-card">
+          <div class="sv-audit-filter">
+            <span class="filter-label">Filter:</span>
+            <select id="audit-filter-event" onchange="renderAudit()">
+              <option value="">All events</option>
+              <option value="super_viewer_write_blocked">Writes blocked</option>
+              <option value="super_viewer_access_denied">Access denied</option>
+            </select>
+            <select id="audit-filter-user" onchange="renderAudit()">
+              <option value="">All users</option>
+            </select>
+          </div>
+          <div id="audit-body">
+            <div class="sv-loading">Loading...</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+
+<script>
+// ── Guard: super_admin only ────────────────────────────────────────────────
+if (!Auth.requireAdmin()) { /* redirected */ }
+if (Auth.getUser()?.role !== 'super_admin') {
+  window.location.href = './index.html';
+}
+Layout.render('super-viewer');
+Auth.initUserUI();
+
+let _data = { stats: {}, users: [], audit: [], rules: {} };
+
+document.addEventListener('DOMContentLoaded', loadAll);
+
+async function loadAll() {
+  try {
+    const res = await API.get('/super-viewer/');
+    if (!res?.ok) throw new Error(res?.data?.message || 'Failed to load');
+    _data = res.data?.data || res.data || {};
+    renderStats();
+    renderUsers();
+    renderRules();
+    populateAuditUserFilter();
+    renderAudit();
+  } catch (e) {
+    Toast?.error?.('Failed to load: ' + (e.message || e));
+  }
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────
+function renderStats() {
+  const s = _data.stats || {};
+  document.getElementById('stat-users').textContent   = s.total_users ?? 0;
+  document.getElementById('stat-blocked').textContent = s.blocked_events_24h ?? 0;
+  document.getElementById('stat-denied').textContent  = s.denied_events_24h ?? 0;
+  document.getElementById('stat-last').textContent    = s.last_created_at
+    ? new Date(s.last_created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })
+    : '—';
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────
+function renderUsers() {
+  const users = _data.users || [];
+  document.getElementById('users-cnt').textContent = users.length;
+  const body = document.getElementById('users-body');
+  if (!users.length) {
+    body.innerHTML = `
+      <div class="sv-empty">
+        <div class="sv-empty-mark"><i data-icon="eye"></i></div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">ยังไม่มี Super Viewer</div>
+        <div style="font-size:11.5px">กด "+ Create Super Viewer" ด้านบนเพื่อสร้าง account ให้หัวหน้า</div>
+      </div>`;
+    return;
+  }
+  body.innerHTML = `
+    <table class="sv-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Created</th>
+          <th>Status</th>
+          <th style="text-align:right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${users.map(u => {
+          const created = u.created_at ? new Date(u.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+          const status = u.must_reset_password ? '<span style="color:#dc2626;font-weight:600;font-size:10.5px">Reset required</span>'
+                       : u.first_login          ? '<span style="color:#f97316;font-weight:600;font-size:10.5px">First login pending</span>'
+                       : '<span style="color:#16a34a;font-weight:600;font-size:10.5px">Active</span>';
+          return `
+          <tr>
+            <td>
+              <div class="sv-user-name">${escHtml(u.name || u.username)}</div>
+              <div class="sv-user-username">@${escHtml(u.username)}</div>
+            </td>
+            <td style="font-size:11px;color:var(--text-muted)">${escHtml(u.email || '—')}</td>
+            <td style="font-family:monospace;font-size:10.5px;color:var(--text-muted)">${created}</td>
+            <td>${status}</td>
+            <td>
+              <div class="sv-actions" style="justify-content:flex-end">
+                <button class="btn btn-outline btn-sm" onclick="resetPw('${escHtml(u.id)}','${escHtml(u.name || u.username)}')">Reset PW</button>
+                <button class="btn btn-outline btn-sm" style="color:#dc2626" onclick="deleteUser('${escHtml(u.id)}','${escHtml(u.name || u.username)}')">Delete</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Rules ─────────────────────────────────────────────────────────────────
+function renderRules() {
+  const r = _data.rules || {};
+  const el = document.getElementById('rules-grid');
+
+  const card = (title, badge, badgeCls, items, renderItem) => `
+    <div class="sv-rule-card">
+      <div class="sv-rule-head">
+        ${title}
+        <span class="sv-rule-badge ${badgeCls}">${badge}</span>
+      </div>
+      ${items.length
+        ? `<ul class="sv-rule-list">${items.map(renderItem).join('')}</ul>`
+        : `<div style="font-size:11px;color:var(--text-muted);padding:4px">— none —</div>`}
+    </div>`;
+
+  el.innerHTML = [
+    card('<i data-icon="ban"></i> Sidebar items hidden', 'HIDE', 'block',
+      r.sidebar_hidden || [],
+      i => `<li class="sv-rule-item"><span class="sv-rule-key">${escHtml(i.label)}</span><span class="sv-rule-reason">${escHtml(i.reason || '')}</span></li>`
+    ),
+    card('<i data-icon="lock"></i> Pages bounced (direct URL)', 'REDIRECT', 'block',
+      r.pages_bounced || [],
+      i => `<li class="sv-rule-item"><span class="sv-rule-key">${escHtml(i.path)} → ${escHtml(i.redirect_to)}</span><span class="sv-rule-reason">${escHtml(i.reason || '')}</span></li>`
+    ),
+    card('<i data-icon="ban"></i> API endpoints denied', 'DENY', 'block',
+      r.api_denied || [],
+      i => `<li class="sv-rule-item"><span class="sv-rule-key">${escHtml(i.prefix || i.path)}</span><span class="sv-rule-reason">${escHtml(i.reason || '')}</span></li>`
+    ),
+    card('<i data-icon="check-circle"></i> Writes whitelisted (own state only)', 'ALLOW', 'allow',
+      r.writes_whitelisted || [],
+      i => `<li class="sv-rule-item"><span class="sv-rule-key">${escHtml(i.path)}</span><span class="sv-rule-reason">${escHtml(i.reason || '')}</span></li>`
+    ),
+    card('<i data-icon="sparkles"></i> Special behavior', 'INFO', 'info',
+      r.special_behavior || [],
+      i => `<li class="sv-rule-item" style="flex-direction:column;align-items:flex-start;gap:2px"><span class="sv-rule-key">${escHtml(i.name)}</span><span class="sv-rule-reason" style="text-align:left">${escHtml(i.desc || '')} <em style="color:var(--text-muted);font-size:10px">— ${escHtml(i.where || '')}</em></span></li>`
+    ),
+    card('<i data-icon="bar-chart"></i> Read-only reports (OVERSIGHT sidebar)', 'READ', 'info',
+      r.read_only_reports || [],
+      i => `<li class="sv-rule-item" style="flex-direction:column;align-items:flex-start;gap:2px"><span class="sv-rule-key">${escHtml(i.path)}</span><span class="sv-rule-reason" style="text-align:left">${escHtml(i.reason || '')} <em style="color:var(--text-muted);font-size:10px">— ${escHtml(i.apis || '')}</em></span></li>`
+    ),
+  ].join('');
+}
+
+// ── Audit ─────────────────────────────────────────────────────────────────
+function populateAuditUserFilter() {
+  const audit = _data.audit || [];
+  const users = [...new Set(audit.map(a => a.user_name).filter(Boolean))].sort();
+  const sel = document.getElementById('audit-filter-user');
+  sel.innerHTML = '<option value="">All users</option>'
+    + users.map(u => `<option value="${escHtml(u)}">${escHtml(u)}</option>`).join('');
+}
+
+function renderAudit() {
+  let items = _data.audit || [];
+  const eFilter = document.getElementById('audit-filter-event').value;
+  const uFilter = document.getElementById('audit-filter-user').value;
+  if (eFilter) items = items.filter(a => a.event === eFilter);
+  if (uFilter) items = items.filter(a => a.user_name === uFilter);
+
+  document.getElementById('audit-cnt').textContent = items.length;
+  const body = document.getElementById('audit-body');
+
+  if (!items.length) {
+    body.innerHTML = `<div class="sv-empty-tbl">
+      <div style="font-size:22px;opacity:.5;margin-bottom:6px"><i data-icon="check"></i></div>
+      <div>ยังไม่มี event ที่ตรงกับ filter — super_viewer(s) ยังไม่ได้พยายามทำอะไรที่ถูก block</div>
+    </div>`;
+    return;
+  }
+
+  body.innerHTML = `
+    <table class="sv-table">
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Event</th>
+          <th>User</th>
+          <th>Path</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items.map(a => {
+          const ts = a.ts ? new Date(a.ts).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+          const pill = a.event === 'super_viewer_write_blocked'
+            ? '<span class="sv-event-pill write">WRITE BLOCKED</span>'
+            : '<span class="sv-event-pill access">ACCESS DENIED</span>';
+          const method = a.detail?.method ? `<span style="font-family:monospace;font-size:10px;color:var(--text-muted);margin-right:6px">${escHtml(a.detail.method)}</span>` : '';
+          const resource = a.detail?.resource ? `<span style="font-size:10.5px;color:var(--text-muted)">${escHtml(a.detail.resource)}</span>` : '';
+          return `
+          <tr>
+            <td class="sv-ts">${ts}</td>
+            <td>${pill}</td>
+            <td>
+              <div style="font-weight:600;font-size:11.5px">${escHtml(a.user_name || '—')}</div>
+              <div style="font-size:10px;color:var(--text-muted);font-family:monospace">${escHtml(a.ip || '')}</div>
+            </td>
+            <td>${method}<span class="sv-path">${escHtml(a.path || '')}</span></td>
+            <td>${resource}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────
+function openCreate() {
+  // Delegate to admin/users.html — its Create form already handles super_viewer role
+  window.location.href = './users.html?create=1&role=super_viewer';
+}
+
+async function resetPw(id, name) {
+  if (!confirm(`Reset password for "${name}"? A new temp password will be emailed.`)) return;
+  const res = await API.patch(`/users/?id=${encodeURIComponent(id)}`, {});
+  if (res?.ok) {
+    Toast?.success?.(`Reset link sent to ${name}`);
+    loadAll();
+  } else {
+    Toast?.error?.(res?.data?.message || 'Reset failed');
+  }
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Delete super_viewer "${name}"? This cannot be undone.`)) return;
+  const res = await API.delete(`/users/?id=${encodeURIComponent(id)}`);
+  if (res?.ok) {
+    Toast?.success?.(`Deleted ${name}`);
+    loadAll();
+  } else {
+    Toast?.error?.(res?.data?.message || 'Delete failed');
+  }
+}
+</script>
+</body>
+</html>

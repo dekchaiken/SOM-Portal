@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Achievements — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .ach-stats { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+    .ach-stat  {
+      background:var(--bg-card); border:1.5px solid var(--border);
+      border-radius:10px; padding:10px 18px; flex:1; min-width:100px;
+    }
+    .ach-stat-val { font-size:22px; font-weight:800; color:var(--text); line-height:1; }
+    .ach-stat-val.gold   { color:#f59e0b; }
+    .ach-stat-val.silver { color:#94a3b8; }
+    .ach-stat-val.bronze { color:#c97c4a; }
+    .ach-stat-lbl { font-size:9.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-top:4px; }
+
+    .ach-filters { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:14px; }
+    .ach-filters input, .ach-filters select {
+      font-size:11px; padding:6px 10px; border-radius:7px;
+      border:1.5px solid var(--border); background:var(--bg-input);
+      font-family:var(--font); color:var(--text); outline:none;
+    }
+    .ach-filters input { flex:1; min-width:160px; }
+    .ach-filters input:focus, .ach-filters select:focus { border-color:var(--orange); }
+
+    .ach-table-wrap { border-radius:12px; border:1.5px solid var(--border); overflow:hidden; }
+    .ach-table { width:100%; border-collapse:collapse; font-size:11px; }
+    .ach-table th {
+      text-align:left; font-size:9.5px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.06em; color:var(--text-muted); padding:8px 14px;
+      border-bottom:1px solid var(--border); background:var(--bg); white-space:nowrap;
+    }
+    .ach-table td { padding:9px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    .ach-table tr:last-child td { border-bottom:none; }
+    .ach-table tr:hover td { background:var(--bg); }
+    .ach-table tr.detail-row td { padding:0; }
+    .ach-table tr.detail-row.hidden { display:none; }
+
+    .rank-num {
+      font-size:13px; font-weight:800; color:var(--text-muted);
+      width:28px; text-align:center;
+    }
+    .rank-num.top1 { color:#f59e0b; }
+    .rank-num.top2 { color:#94a3b8; }
+    .rank-num.top3 { color:#c97c4a; }
+
+    .user-cell { display:flex; align-items:center; gap:9px; }
+    .user-av {
+      width:30px; height:30px; border-radius:50%; flex-shrink:0;
+      background:var(--border); display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:700; overflow:hidden;
+    }
+    .user-av img { width:100%; height:100%; object-fit:cover; }
+    .user-name { font-weight:600; color:var(--text); }
+
+    .points-val { font-size:13px; font-weight:800; color:var(--orange); }
+
+    .prog-bar-wrap { display:flex; align-items:center; gap:6px; }
+    .prog-bar { flex:1; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+    .prog-bar-fill { height:100%; background:var(--orange); border-radius:3px; transition:width .3s; }
+    .prog-pct { font-size:10px; color:var(--text-muted); white-space:nowrap; min-width:30px; text-align:right; }
+
+    .badge-row { display:flex; gap:4px; flex-wrap:wrap; }
+    .badge-chip {
+      font-size:9.5px; padding:1px 6px; border-radius:4px; font-weight:700;
+    }
+    .badge-chip.gold   { background:rgba(245,158,11,.15); color:#f59e0b; }
+    .badge-chip.silver { background:rgba(148,163,184,.15); color:#94a3b8; }
+    .badge-chip.bronze { background:rgba(201,124,74,.15);  color:#c97c4a; }
+
+    .ob-done { color:#22c55e; font-weight:700; font-size:11px; }
+    .ob-pend { color:var(--text-muted); font-size:11px; }
+
+    .detail-panel {
+      padding:14px 16px 16px;
+      background:var(--bg);
+      border-top:1px solid var(--border);
+    }
+    .detail-section-lbl {
+      font-size:9.5px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.06em; color:var(--text-muted); margin-bottom:8px;
+    }
+    .detail-items { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+    .detail-item {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:9px; padding:10px 13px; min-width:160px; flex:1;
+      display:flex; align-items:center; gap:9px;
+    }
+    .detail-item-icon { font-size:18px; flex-shrink:0; }
+    .detail-item-title { font-size:11px; font-weight:600; color:var(--text); }
+    .detail-item-meta  { font-size:10px; color:var(--text-muted); margin-top:1px; }
+    .detail-item-badge { margin-left:auto; font-size:15px; }
+
+    .expand-btn {
+      background:none; border:none; cursor:pointer; font-size:12px;
+      color:var(--text-muted); padding:2px 6px; border-radius:4px;
+      font-family:var(--font); transition:color .12s;
+    }
+    .expand-btn:hover { color:var(--orange); }
+
+    .loading-row td { text-align:center; padding:40px; color:var(--text-muted); font-size:11.5px; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="trophy"></i> Achievements</div>
+        <div class="page-sub">Team leaderboard — คะแนนและ badge รวมทุกคน</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadAll()" style="font-size:11px">↺ Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="trophy"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Achievements</h1>
+          <p>Team leaderboard — คะแนน, gold/silver/bronze badge รวมทุกคน จาก courses · exams · onboarding</p>
+        </div>
+      </section>
+
+      <!-- Stats -->
+      <div class="ach-stats">
+        <div class="ach-stat"><div class="ach-stat-val" id="stat-users">—</div><div class="ach-stat-lbl">Members</div></div>
+        <div class="ach-stat"><div class="ach-stat-val" id="stat-pts">—</div><div class="ach-stat-lbl">Total Points</div></div>
+        <div class="ach-stat"><div class="ach-stat-val gold"   id="stat-gold">—</div><div class="ach-stat-lbl"><i data-icon="award"></i> Gold</div></div>
+        <div class="ach-stat"><div class="ach-stat-val silver" id="stat-silver">—</div><div class="ach-stat-lbl"><i data-icon="award"></i> Silver</div></div>
+        <div class="ach-stat"><div class="ach-stat-val bronze" id="stat-bronze">—</div><div class="ach-stat-lbl"><i data-icon="award"></i> Bronze</div></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="ach-filters">
+        <input type="search" id="f-search" placeholder="ค้นหาชื่อ..." oninput="filterTable()">
+        <select id="f-role" onchange="filterTable()">
+          <option value="">All Roles</option>
+          <option value="sm_admin">Admin</option>
+          <option value="sm_lead">Lead</option>
+          <option value="sm_user">User</option>
+          <option value="dev_sm">Dev</option>
+        </select>
+      </div>
+
+      <!-- Table -->
+      <div class="ach-table-wrap">
+        <table class="ach-table">
+          <thead>
+            <tr>
+              <th style="width:40px">Rank</th>
+              <th>Member</th>
+              <th>Points</th>
+              <th>Courses</th>
+              <th>Exams</th>
+              <th>Onboarding</th>
+              <th>Badges</th>
+              <th style="width:36px"></th>
+            </tr>
+          </thead>
+          <tbody id="ach-tbody">
+            <tr class="loading-row"><td colspan="8">กำลังโหลด leaderboard...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('achievements');
+
+let _rows = [];
+
+async function loadAll() {
+  document.getElementById('ach-tbody').innerHTML =
+    `<tr class="loading-row"><td colspan="8">กำลังโหลด leaderboard...</td></tr>`;
+
+  const usersRes = await API.users.list();
+  if (!usersRes?.ok) { Toast.error('โหลด users ไม่ได้'); return; }
+  const users = (usersRes.data.data || []).filter(u => u.status !== 'inactive');
+
+  // Parallel fetch achievements for all users
+  const results = await Promise.allSettled(
+    users.map(u => API.achievements.user(u.id).then(r => ({ user: u, data: r?.data?.data || null })))
+  );
+
+  _rows = results
+    .filter(r => r.status === 'fulfilled' && r.value.data)
+    .map(r => ({ user: r.value.user, ach: r.value.data }))
+    .sort((a, b) => (b.ach.stats.total_points || 0) - (a.ach.stats.total_points || 0));
+
+  updateStats();
+  renderTable(_rows);
+}
+
+function updateStats() {
+  let totalPts = 0, gold = 0, silver = 0, bronze = 0;
+  _rows.forEach(({ ach }) => {
+    totalPts += ach.stats.total_points || 0;
+    [...(ach.courses || []), ...(ach.exams || [])].forEach(item => {
+      if (item.badge === 'gold')   gold++;
+      if (item.badge === 'silver') silver++;
+      if (item.badge === 'bronze') bronze++;
+    });
+  });
+  document.getElementById('stat-users').textContent  = _rows.length;
+  document.getElementById('stat-pts').textContent    = totalPts.toLocaleString();
+  document.getElementById('stat-gold').textContent   = gold;
+  document.getElementById('stat-silver').textContent = silver;
+  document.getElementById('stat-bronze').textContent = bronze;
+}
+
+function filterTable() {
+  const q    = document.getElementById('f-search').value.toLowerCase();
+  const role = document.getElementById('f-role').value;
+  const filtered = _rows.filter(r => {
+    const nameOk = !q    || (r.user.name || '').toLowerCase().includes(q);
+    const roleOk = !role || r.user.role === role;
+    return nameOk && roleOk;
+  });
+  renderTable(filtered);
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById('ach-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr class="loading-row"><td colspan="8">ไม่มีข้อมูล</td></tr>`;
+    return;
+  }
+
+  const maxPts = rows[0]?.ach.stats.total_points || 1;
+
+  tbody.innerHTML = rows.map((r, i) => {
+    const { user, ach } = r;
+    const { stats, courses, exams, onboarding } = ach;
+
+    const rankCls = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
+    const rankLabel = i === 0 ? '<i data-icon="award"></i>' : i === 1 ? '<i data-icon="award"></i>' : i === 2 ? '<i data-icon="award"></i>' : `${i + 1}`;
+
+    const pct = maxPts ? Math.round((stats.total_points / maxPts) * 100) : 0;
+
+    const badgeHtml = buildBadgeSummary(courses || [], exams || []);
+
+    const av = user.avatar_url
+      ? `<img src="${escHtml(user.avatar_url)}" alt="">`
+      : getInitials(user.name || '?');
+
+    return `
+      <tr data-user-id="${escHtml(user.id)}" data-name="${escHtml((user.name||'').toLowerCase())}" data-role="${escHtml(user.role||'')}">
+        <td><div class="rank-num ${rankCls}">${rankLabel}</div></td>
+        <td>
+          <div class="user-cell">
+            <div class="user-av">${av}</div>
+            <div class="user-name">${escHtml(user.name || user.username || '—')}</div>
+          </div>
+        </td>
+        <td>
+          <div class="points-val">${stats.total_points}</div>
+          <div class="prog-bar-wrap" style="margin-top:4px">
+            <div class="prog-bar"><div class="prog-bar-fill" style="width:${pct}%"></div></div>
+          </div>
+        </td>
+        <td>${stats.courses_completed}/${stats.courses_total}</td>
+        <td>${stats.exams_passed}/${stats.exams_taken}</td>
+        <td>${onboarding?.finished ? '<span class="ob-done">✓ Done</span>' : `<span class="ob-pend">${onboarding?.percent || 0}%</span>`}</td>
+        <td><div class="badge-row">${badgeHtml}</div></td>
+        <td>
+          <button class="expand-btn" onclick="toggleDetail('${escHtml(user.id)}')" id="xbtn-${escHtml(user.id)}">▸</button>
+        </td>
+      </tr>
+      <tr class="detail-row hidden" id="detail-${escHtml(user.id)}">
+        <td colspan="8">${buildDetailPanel(ach)}</td>
+      </tr>`;
+  }).join('');
+}
+
+function buildBadgeSummary(courses, exams) {
+  const all = [...courses, ...exams].filter(x => x.badge);
+  const g = all.filter(x => x.badge === 'gold').length;
+  const s = all.filter(x => x.badge === 'silver').length;
+  const b = all.filter(x => x.badge === 'bronze').length;
+  let html = '';
+  if (g) html += `<span class="badge-chip gold"><i data-icon="award"></i> ${g}</span>`;
+  if (s) html += `<span class="badge-chip silver"><i data-icon="award"></i> ${s}</span>`;
+  if (b) html += `<span class="badge-chip bronze"><i data-icon="award"></i> ${b}</span>`;
+  return html || '<span style="color:var(--text-muted);font-size:10px">—</span>';
+}
+
+function buildDetailPanel(ach) {
+  const { courses, exams, onboarding } = ach;
+  const badgeIcon = { gold: '<i data-icon="award"></i>', silver: '<i data-icon="award"></i>', bronze: '<i data-icon="award"></i>' };
+
+  const courseHtml = (courses || []).map(c => `
+    <div class="detail-item">
+      <div class="detail-item-icon">${renderIcon(c.icon)}</div>
+      <div>
+        <div class="detail-item-title">${escHtml(c.title)}</div>
+        <div class="detail-item-meta">${c.phases_passed}/${c.phases_total} phases · ${c.percent}%</div>
+      </div>
+      ${c.badge ? `<div class="detail-item-badge">${badgeIcon[c.badge]}</div>` : ''}
+    </div>`).join('') || '<div style="font-size:11px;color:var(--text-muted)">ไม่มีข้อมูล</div>';
+
+  const examHtml = (exams || []).map(e => `
+    <div class="detail-item">
+      <div class="detail-item-icon">${renderIcon(e.icon, '<i data-icon="edit"></i>')}</div>
+      <div>
+        <div class="detail-item-title">${escHtml(e.title)}</div>
+        <div class="detail-item-meta">Best ${e.best_score}% · pass ${e.pass_score}% · ${e.attempts} attempt${e.attempts !== 1 ? 's' : ''}</div>
+      </div>
+      ${e.badge ? `<div class="detail-item-badge">${badgeIcon[e.badge]}</div>` : ''}
+    </div>`).join('') || '<div style="font-size:11px;color:var(--text-muted)">ยังไม่ได้สอบ</div>';
+
+  return `<div class="detail-panel">
+    <div class="detail-section-lbl"><i data-icon="graduation-cap"></i> Courses</div>
+    <div class="detail-items">${courseHtml}</div>
+    <div class="detail-section-lbl"><i data-icon="edit"></i> Exams</div>
+    <div class="detail-items">${examHtml}</div>
+  </div>`;
+}
+
+function toggleDetail(userId) {
+  const row = document.getElementById(`detail-${userId}`);
+  const btn = document.getElementById(`xbtn-${userId}`);
+  if (!row) return;
+  const open = row.classList.toggle('hidden');
+  btn.textContent = open ? '▸' : '▾';
+}
+
+loadAll();
+</script>
+
+</body>
+</html>

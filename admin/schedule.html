@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Schedule — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/schedule/schedule.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="calendar"></i> จัดการตารางเวร</div>
+        <div class="page-sub">SM Team Monthly Schedule</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="leave-approval.html" class="btn btn-ghost btn-sm" id="leave-btn" style="font-size:11px;text-decoration:none"><i data-icon="clipboard"></i> คำขอลา</a>
+        <button class="btn btn-ghost btn-sm" onclick="loadAll()" style="font-size:11px">↺ รีเฟรช</button>
+      </div>
+    </header>
+    <nav id="admin-nav-mount"></nav>
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="calendar"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Schedule Management</h1>
+          <p>จัดการตารางเวรของทีม SM รายเดือน — Shift, On-call, WFH, TDPK · sync กับ leave + holiday plans</p>
+        </div>
+      </section>
+
+      <div class="sch-page">
+
+        <!-- Month navigator -->
+        <div class="mnav">
+          <div class="mnav-left">
+            <button class="mnav-arrow" onclick="changeMonth(-1)">←</button>
+            <div class="mnav-title" id="month-title">กำลังโหลด...</div>
+            <button class="mnav-arrow" onclick="changeMonth(1)">→</button>
+            <button class="btn btn-ghost btn-sm" onclick="goToday()" style="font-size:11px">วันนี้</button>
+          </div>
+          <div class="mnav-right" id="mnav-chips"></div>
+        </div>
+
+        <!-- Edit hint -->
+        <div class="edit-hint">
+          <span><i data-icon="pencil"></i></span>
+          คลิกช่องในตารางเพื่อแก้ไข &nbsp;·&nbsp; Hover วันที่ในหัวตารางเพื่อล้างทั้งวัน
+        </div>
+
+        <!-- Calendar -->
+        <div class="cal-card">
+          <div class="cal-scroll">
+            <table class="cal-tbl" id="cal-table">
+              <thead id="cal-head"></thead>
+              <tbody id="cal-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-card">
+          <div class="panel-hd">
+            <div class="panel-hd-l"><i data-icon="bar-chart"></i> สถิติรายบุคคล &nbsp;—&nbsp; <strong id="stats-label"></strong></div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="stat-tbl">
+              <thead>
+                <tr>
+                  <th style="min-width:160px">ชื่อ</th>
+                  <th class="c">S1&nbsp;TDPK</th>
+                  <th class="c">S1&nbsp;W@H</th>
+                  <th class="c">S2&nbsp;W@H</th>
+                  <th class="c">รวมเวร</th>
+                  <th class="c">วันลาทั้งหมด</th>
+                  <th class="c">วันลา</th>
+                  <th class="c">ลาป่วย</th>
+                  <th class="c">ลากิจ</th>
+                </tr>
+              </thead>
+              <tbody id="stats-body">
+                <tr><td colspan="9" style="text-align:center;padding:28px;color:var(--text-muted);font-size:12px">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Vacation Quota -->
+        <div class="quota-card">
+          <div class="panel-hd">
+            <div class="panel-hd-l"><i data-icon="calendar"></i> ตั้งค่าวันลาพักร้อน (ประจำปี 2026)</div>
+            <button class="btn btn-primary btn-sm" onclick="saveAllQuotas()" id="quota-save-btn" style="font-size:10px;display:none"><i data-icon="save"></i> บันทึก</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="quota-tbl">
+              <thead>
+                <tr>
+                  <th style="min-width:160px">ชื่อ</th>
+                  <th class="c">โควต้าทั้งหมด</th>
+                  <th class="c">ลาไปแล้ว</th>
+                  <th class="c">คงเหลือ</th>
+                </tr>
+              </thead>
+              <tbody id="quota-body">
+                <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- User Color Settings -->
+        <div class="quota-card">
+          <div class="panel-hd">
+            <div class="panel-hd-l"><i data-icon="palette"></i> สีพื้นหลังชื่อในตาราง</div>
+            <button class="btn btn-primary btn-sm" onclick="saveAllColors()" id="color-save-btn" style="font-size:10px;display:none"><i data-icon="save"></i> บันทึกสี</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="quota-tbl">
+              <thead>
+                <tr>
+                  <th style="min-width:160px">ชื่อ</th>
+                  <th class="c">ตัวอย่าง</th>
+                  <th class="c">เลือกสี</th>
+                  <th class="c">รีเซ็ต</th>
+                </tr>
+              </thead>
+              <tbody id="color-body">
+                <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Holiday Management -->
+        <div class="quota-card" id="holiday-card">
+          <div class="panel-hd">
+            <div class="panel-hd-l"><i data-icon="flag"></i> จัดการวันหยุดนักขัตฤกษ์</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <select id="hol-year-filter" class="f-in" style="width:110px;font-size:11px;padding:5px 8px" onchange="renderHolidays()">
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="openHolModal()" style="font-size:10px">+ เพิ่มวันหยุด</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="quota-tbl">
+              <thead>
+                <tr>
+                  <th style="min-width:130px">วันที่</th>
+                  <th style="min-width:240px;text-align:left;padding-left:12px">ชื่อวันหยุด</th>
+                  <th class="c" style="width:90px">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="holiday-body">
+                <tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ── Holiday modal ─────────────────────────────────────────────────────── -->
+<div class="modal-bg" id="hol-modal">
+  <div class="modal-box" style="max-width:420px">
+    <div class="mhd">
+      <div class="mhd-title" id="hol-modal-title">เพิ่มวันหยุด</div>
+      <button class="modal-close" onclick="closeHolModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="mbody" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="f-lbl">วันที่ <span style="color:#ef4444">*</span></label>
+        <input type="date" id="hol-date" class="f-in" style="width:100%">
+      </div>
+      <div>
+        <label class="f-lbl">ชื่อวันหยุด <span style="color:#ef4444">*</span></label>
+        <input type="text" id="hol-name" class="f-in" style="width:100%" placeholder="เช่น วันขึ้นปีใหม่" maxlength="100">
+      </div>
+    </div>
+    <div class="mfoot" style="padding:12px 20px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid #f0f0f0">
+      <button class="btn btn-ghost btn-sm" onclick="closeHolModal()">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" id="hol-save-btn" onclick="saveHoliday()"><i data-icon="save"></i> บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Cell edit modal ──────────────────────────────────────────────────── -->
+<div class="modal-bg" id="cell-modal">
+  <div class="modal-box">
+    <div class="mhd">
+      <div class="mhd-info">
+        <div class="mhd-title" id="cm-title"></div>
+        <div class="mhd-sub"   id="cm-sub"></div>
+      </div>
+      <button class="mhd-close" onclick="closeCellModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="mbody" id="cm-body"></div>
+    <div class="mfoot">
+      <button class="btn btn-ghost btn-sm" onclick="closeCellModal()" style="font-size:11px">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" id="cm-save" onclick="saveCellModal()" style="font-size:11px;font-weight:700"><i data-icon="save"></i> บันทึก</button>
+    </div>
+  </div>
+</div>
+
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/schedule/schedule.js"></script>
+</body>
+</html>

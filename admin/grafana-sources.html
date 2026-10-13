@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grafana Sources — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/grafana-sources/grafana-sources.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="archive"></i> Grafana Sources</div>
+        <div class="page-sub">org/instance ที่หน้า Paused Alerts ดึงสถานะ · auth ต่อ source</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadSources()" style="font-size:11px">↺ Reload</button>
+        <button class="btn btn-primary" onclick="openModal()">+ เพิ่ม Source</button>
+      </div>
+    </header>
+
+    <main class="page-content gs">
+      <div class="gs-hint" id="gs-hint">
+        แต่ละ source = 1 Grafana org ที่จะถูกสแกนหา alert ที่ <b>paused</b> ·
+        <b>Auth mode</b>: <code>basic</code> ใช้ user/pass กลางจาก <code>.env</code> (เข้าได้ทุก org) หรือ
+        <code>token</code> ใส่ service-account token เฉพาะ org นั้น (ปลอดภัยกว่า — เพิกถอนต่อ org ได้) ·
+        ปิด source ที่ไม่ต้องการชั่วคราวได้ด้วยสวิตช์
+      </div>
+
+      <div class="gs-card">
+        <table class="gs-table">
+          <thead>
+            <tr>
+              <th style="width:44px">On</th>
+              <th>Source</th>
+              <th>Grafana URL</th>
+              <th style="width:60px">Org</th>
+              <th style="width:120px">Auth</th>
+              <th style="width:150px">Test</th>
+              <th style="width:96px"></th>
+            </tr>
+          </thead>
+          <tbody id="gs-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal (standard app component) -->
+<div class="modal-overlay" id="gs-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title" id="gs-modal-title">เพิ่ม Source</span>
+      <button class="btn-close" onclick="closeModal()"><i data-icon="x"></i></button>
+    </div>
+
+    <div class="modal-body">
+      <input type="hidden" id="gs-edit-slug">
+
+      <div class="form-group">
+        <label class="form-label">ชื่อ Source *</label>
+        <input type="text" id="gs-f-name" class="form-control" placeholder="เช่น EKS TMN">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Grafana URL *</label>
+        <input type="text" id="gs-f-url" class="form-control" placeholder="https://grafana-thanos.truemoney.com" style="font-family:ui-monospace,monospace">
+      </div>
+
+      <div style="display:flex;gap:16px">
+        <div class="form-group" style="flex:1;min-width:120px">
+          <label class="form-label">Org ID *</label>
+          <input type="number" id="gs-f-org" class="form-control" min="1" placeholder="3">
+          <div class="gs-hintline">เลข org ใน Grafana (เช่น 2, 3, 4)</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">สี badge</label>
+          <div class="gs-color-row">
+            <input type="color" id="gs-f-color" class="gs-color" value="#3b82f6" oninput="onColorInput(this.value)">
+            <div class="gs-swatches" id="gs-swatches"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Auth mode</label>
+        <div class="gs-authtabs" id="gs-authtabs">
+          <div class="gs-authtab active" data-auth="basic">basic (จาก .env)</div>
+          <div class="gs-authtab" data-auth="token">token (ต่อ org)</div>
+        </div>
+      </div>
+
+      <div class="form-group" id="gs-token-field" style="display:none">
+        <label class="form-label">Service-account token</label>
+        <input type="password" id="gs-f-token" class="form-control" placeholder="glsa_…" autocomplete="off" style="font-family:ui-monospace,monospace">
+        <div class="gs-mask" id="gs-token-mask"></div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:0">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <span class="switch"><input type="checkbox" id="gs-f-enabled" checked><span class="slider"></span></span>
+          <span id="gs-enabled-lbl" style="font-weight:600;font-size:12px">เปิดใช้งาน</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-ghost btn-sm" id="gs-test-btn" onclick="testInModal()"><i data-icon="plug"></i> ทดสอบการเชื่อมต่อ</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="closeModal()">ยกเลิก</button>
+        <button class="btn btn-primary" id="gs-save-btn" onclick="saveSource()">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/grafana-sources/grafana-sources.js"></script>
+</body>
+</html>

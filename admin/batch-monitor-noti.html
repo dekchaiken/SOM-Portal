@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch Monitor Noti — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/batch-monitor-noti/batch-monitor-noti.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="bell"></i> Batch Monitor Noti</div>
+        <div class="page-sub">Google Chat แจ้งเตือน state-transition ของ Jenkins jobs</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="./index.html" class="btn btn-ghost" style="font-size:11px">← Admin Panel</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <div class="bmn-hint">
+        <div class="bmn-hint-icon">i</div>
+        <div>
+          <strong>ตรวจทุก 30 วิ · dedup ต่อ build · ไม่ส่ง SUCCESS ปกติ</strong> ·
+          ทุก user ที่เปิดเว็บอยู่จะช่วยกัน tick — 3 layers ป้องกันซ้ำ
+          (global throttle 25s + per-build log + state diff) ·
+          transitions ที่แจ้ง: <i data-icon="circle"></i> New Failure · <i data-icon="circle"></i> Re-run Still Failing · <i data-icon="circle"></i> Aborted · <i data-icon="circle"></i> Recovered
+        </div>
+      </div>
+
+      <div class="bmn-grid">
+
+        <!-- ── LEFT: Jenkins Servers list ──────────────── -->
+        <div class="bmn-block">
+          <div class="bmn-block-hd">
+            <div>
+              <div class="bmn-block-title">Jenkins Servers</div>
+              <div class="bmn-block-sub" id="srv-count">กำลังโหลด…</div>
+            </div>
+            <a href="./jenkins-servers.html" class="btn-mini" title="จัดการ Jenkins servers"><i data-icon="settings"></i>︎ Manage</a>
+          </div>
+          <div class="srv-list" id="srv-list">
+            <div class="log-empty">กำลังโหลด…</div>
+          </div>
+        </div>
+
+        <!-- ── RIGHT: Activity (tabs + summary + logs + tracked) ── -->
+        <div class="bmn-block">
+          <div class="bmn-block-hd">
+            <div>
+              <div class="bmn-block-title">Activity</div>
+              <div class="bmn-block-sub">Notifications + tracked state</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div id="storage-chip" style="font-size:9.5px;color:var(--bmn-muted);display:flex;gap:5px;align-items:center;font-variant-numeric:tabular-nums"></div>
+              <button class="btn-mini" onclick="loadAll()" title="Refresh data">↻ Refresh</button>
+            </div>
+          </div>
+
+          <div class="act-tabs" id="act-tabs">
+            <div class="act-tab active" data-server="__all__">
+              All <span class="act-tab-count">0</span>
+            </div>
+          </div>
+
+          <div class="sum-strip" id="sum-strip"></div>
+
+          <div class="act-sect-hd">
+            <span>Recent Notifications</span>
+            <span class="small" id="log-count">0 items</span>
+          </div>
+          <div class="log-list" id="log-list">
+            <div class="log-empty">กำลังโหลด…</div>
+          </div>
+
+          <div class="act-sect-hd">
+            <span>Tracked Jobs</span>
+            <span class="small">state ที่ระบบจำไว้เพื่อ diff</span>
+          </div>
+          <div class="track-list" id="track-list">
+            <div class="log-empty">กำลังโหลด…</div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="bmn-modal-wrap" id="modal-wrap">
+  <div class="bmn-modal-box">
+    <div class="md-title"><span><i data-icon="bell"></i></span><span>Edit Webhook</span></div>
+
+    <div class="md-field">
+      <label class="md-label">Jenkins Server</label>
+      <div class="md-server-display" id="md-server-display">—</div>
+    </div>
+
+    <div class="md-toggle-row">
+      <div class="md-toggle-row-l">
+        เปิดใช้งาน
+        <small>ปิด = tick.php ข้าม server นี้</small>
+      </div>
+      <label class="tog"><input type="checkbox" id="md-enabled"><span class="tog-slider"></span></label>
+    </div>
+
+    <div class="md-field">
+      <label class="md-label" for="md-url">Google Chat Webhook URL</label>
+      <input type="url" id="md-url" class="md-input" placeholder="https://chat.googleapis.com/v1/spaces/…/messages?key=…&token=…">
+      <div class="md-hint">Copy จาก Google Chat → Manage webhooks → Copy URL · เว้นว่างเมื่อไม่ต้องเปลี่ยน URL</div>
+    </div>
+
+    <div class="md-actions">
+      <button class="md-btn del" onclick="mdDelete()">Clear</button>
+      <div style="display:flex;gap:6px">
+        <button class="md-btn test" onclick="mdTest()"><i data-icon="test-tube"></i> Test</button>
+        <button class="md-btn" onclick="mdClose()">Cancel</button>
+        <button class="md-btn primary" onclick="mdSave()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/batch-monitor-noti/batch-monitor-noti.js"></script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Viewer Permissions — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  <style>
+    .sv-wrap { max-width: 980px; margin: 0 auto; padding: 24px 24px 90px; }
+
+    /* Info banner */
+    .sv-info {
+      background: var(--bg-card); border: 1.5px solid var(--border);
+      border-radius: 14px; padding: 18px 22px; margin-bottom: 20px;
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 16px;
+    }
+    @media(max-width:700px){ .sv-info { grid-template-columns: 1fr; } }
+    .sv-info-item { display: flex; align-items: flex-start; gap: 10px; }
+    .sv-info-icon {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      background: rgba(242,100,25,.1); color: var(--accent,#f26419);
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .sv-info-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+    .sv-info-desc  { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+
+    /* Counter bar */
+    .sv-counter-bar {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--bg-card); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 12px 18px; margin-bottom: 20px;
+    }
+    .sv-counter-num { font-size: 22px; font-weight: 800; color: var(--accent,#f26419); }
+    .sv-counter-label { font-size: 12px; color: var(--text-muted); }
+    .sv-counter-bar .sv-bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 999px; overflow: hidden; }
+    .sv-counter-bar .sv-bar-fill { height: 100%; background: var(--accent,#f26419); border-radius: 999px; transition: width .3s; }
+
+    /* Section */
+    .sv-section { margin-bottom: 24px; }
+    .sv-section-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--text-muted);
+      margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .sv-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* Page cards */
+    .sv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 10px; }
+
+    .sv-item {
+      background: var(--bg-card); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 12px 14px;
+      display: flex; align-items: flex-start; gap: 12px;
+      transition: border-color .15s;
+    }
+    .sv-item:hover { border-color: var(--accent,#f26419); }
+    .sv-item.is-hidden { opacity: .55; }
+
+    .sv-item-icon {
+      width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+      background: rgba(242,100,25,.1); color: var(--accent,#f26419);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .sv-item-body { flex: 1; min-width: 0; }
+    .sv-item-label { font-size: 13px; font-weight: 700; color: var(--text); }
+    .sv-item-slug  { font-size: 10px; color: var(--text-muted); margin-top: 1px; font-family: monospace; }
+    .sv-item-desc  { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
+
+    /* Toggle */
+    .sv-toggle { position: relative; display: inline-block; width: 40px; height: 24px; flex-shrink: 0; margin-top: 2px; }
+    .sv-toggle input { opacity: 0; width: 0; height: 0; }
+    .sv-slider {
+      position: absolute; inset: 0; background: var(--border);
+      border-radius: 24px; cursor: pointer; transition: background .2s;
+    }
+    .sv-slider::before {
+      content: ''; position: absolute; width: 18px; height: 18px;
+      background: #fff; border-radius: 50%; left: 3px; top: 3px;
+      transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .sv-toggle input:checked + .sv-slider { background: #22c55e; }
+    .sv-toggle input:checked + .sv-slider::before { transform: translateX(16px); }
+
+    /* Save bar */
+    .sv-save-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--bg-card); border-top: 1.5px solid var(--border);
+      padding: 14px 24px; display: flex; align-items: center; gap: 14px; z-index: 100;
+    }
+    .sv-save-btn {
+      background: var(--accent,#f26419); color: #fff; border: none;
+      border-radius: 9px; padding: 10px 28px; font-family: inherit;
+      font-size: 13.5px; font-weight: 700; cursor: pointer; transition: opacity .15s;
+      display: inline-flex; align-items: center; gap: 7px;
+    }
+    .sv-save-btn:hover   { opacity: .88; }
+    .sv-save-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .sv-reset-btn {
+      background: none; border: 1.5px solid var(--border); color: var(--text-muted);
+      border-radius: 9px; padding: 10px 20px; font-family: inherit;
+      font-size: 13px; cursor: pointer; transition: all .15s;
+    }
+    .sv-reset-btn:hover { border-color: var(--text-muted); color: var(--text); }
+    .sv-status { font-size: 12px; }
+    .sv-status.ok  { color: #22c55e; }
+    .sv-status.err { color: #ef4444; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content" style="display:flex;flex-direction:column">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="eye"></i> Super Viewer Permissions</div>
+        <div class="page-sub">กำหนดว่า Super Viewer มองเห็นหน้าไหนได้บ้าง · เฉพาะ super_admin</div>
+      </div>
+    </header>
+
+    <div class="sv-wrap">
+
+      <!-- Info panel -->
+      <div class="sv-info">
+        <div class="sv-info-item">
+          <div class="sv-info-icon"><i data-icon="eye"></i></div>
+          <div>
+            <div class="sv-info-title">Super Viewer คืออะไร</div>
+            <div class="sv-info-desc">Read-only oversight role — เห็นข้อมูลทุก team ได้ แต่แก้ไขไม่ได้เลย มี Team Switcher เหมือน super_admin</div>
+          </div>
+        </div>
+        <div class="sv-info-item">
+          <div class="sv-info-icon"><i data-icon="lock"></i></div>
+          <div>
+            <div class="sv-info-title">หน้าที่ถูกซ่อนเสมอ</div>
+            <div class="sv-info-desc">Admin Panel และ Dev Tools ถูกซ่อนจาก Super Viewer ทุกกรณี — ไม่สามารถ override ได้จากหน้านี้</div>
+          </div>
+        </div>
+        <div class="sv-info-item">
+          <div class="sv-info-icon"><i data-icon="refresh-cw"></i></div>
+          <div>
+            <div class="sv-info-title">เมื่อไหร่มีผล</div>
+            <div class="sv-info-desc">Super Viewer เห็นการเปลี่ยนแปลงใน page refresh ครั้งถัดไป (cache อัปเดตอัตโนมัติ ≤ 15 วิ)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Counter -->
+      <div class="sv-counter-bar">
+        <div>
+          <div class="sv-counter-num" id="sv-visible-count">—</div>
+          <div class="sv-counter-label">หน้าที่มองเห็นได้</div>
+        </div>
+        <div class="sv-bar-wrap">
+          <div class="sv-bar-fill" id="sv-bar" style="width:0%"></div>
+        </div>
+        <div style="text-align:right">
+          <div class="sv-counter-num" id="sv-hidden-count" style="color:var(--text-muted)">—</div>
+          <div class="sv-counter-label">ถูกซ่อน</div>
+        </div>
+      </div>
+
+      <!-- Page sections (rendered by JS) -->
+      <div id="sv-sections"></div>
+
+    </div><!-- /sv-wrap -->
+
+    <div class="sv-save-bar">
+      <button class="sv-save-btn" id="sv-save-btn" onclick="SV.save()" disabled>
+        <i data-icon="save"></i> Save Changes
+      </button>
+      <button class="sv-reset-btn" onclick="SV.reset()">Reset to Default</button>
+      <span class="sv-status" id="sv-status"></span>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/maintenance.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+const SECTIONS = [
+  {
+    id: 'monitor', label: 'Monitor', icon: 'monitor',
+    pages: [
+      { id: 'service-performance', label: 'Service Performance',   desc: 'Command Center: CPU/MEM/Pod live จาก Grafana Thanos + CSV drift' },
+      { id: 'restart-monitor',     label: 'EKS Restart Monitor',   desc: 'ติดตาม pod restart ของ EKS cluster แบบ real-time' },
+      { id: 'restart-analyzer',    label: 'Restart Analyzer',       desc: 'วิเคราะห์อัตโนมัติว่า pod restart เพราะอะไร: OOM / Crash / SIGTERM' },
+      { id: 'log-explorer',        label: 'Log Explorer',           desc: 'Query OpenSearch ด้วย typed DSL · per-user credentials AES-256' },
+      { id: 'alert-monitor',       label: 'Alert Monitor',          desc: 'ดู Grafana alerts ที่ถูก Paused · ป้องกัน alert เงียบยาว' },
+      { id: 'grafana-alerts',      label: 'Grafana Alerts',         desc: 'Paused alert viewer + daily noti เข้าห้อง SMC ทุก 09:00' },
+      { id: 'monitoring',          label: 'Monitoring',             desc: 'หน้า monitoring wall ของทีม · embed Grafana dashboards' },
+      { id: 'uptime',              label: 'Uptime Monitor',         desc: 'ตรวจสอบ uptime ของ services ที่กำหนดไว้' },
+      { id: 'syncup',              label: 'Sync Up',                desc: 'Daily standup sync — status update ของทีม' },
+    ]
+  },
+  {
+    id: 'ma', label: 'MA Tools', icon: 'wrench',
+    pages: [
+      { id: 'ma-services', label: 'MA Services',  desc: 'รายการ MA services + usecase linking + batch endpoints' },
+      { id: 'ma-test',     label: 'MA Test',       desc: 'ผลการทดสอบ MA ประจำเดือน · compare กับ baseline' },
+    ]
+  },
+  {
+    id: 'ops', label: 'Operations', icon: 'zap',
+    pages: [
+      { id: 'board',                label: 'Web Board',          desc: 'Service board posts — incident posting, status, comments' },
+      { id: 'send-email',           label: 'SMC Ticket',         desc: 'ส่ง Jira ticket ผ่าน template โดยตรงจาก portal' },
+      { id: 'jira-templates',       label: 'Jira Templates',     desc: 'Template library สำหรับสร้าง Jira ticket แบบ pre-filled' },
+      { id: 'inbox',                label: 'Team Inbox',         desc: 'Team inbox สำหรับ notification + เอกสารทีม' },
+      { id: 'batch-monitor',        label: 'Batch Monitor',      desc: 'ติดตาม Jenkins batch jobs · dependency-aware + noti' },
+      { id: 'batch-file-search',    label: 'File → Job Lookup',  desc: 'ค้นหา batch job จากชื่อไฟล์ที่ process' },
+      { id: 'jenkins-build',        label: 'Jenkins Build',      desc: 'Trigger Jenkins Build job ผ่าน maker-checker flow' },
+      { id: 'jenkins-portal',       label: 'Jenkins Portal',     desc: 'Trigger Unbind Jenkins job (Google/Huawei/Amazon)' },
+      { id: 'so-jenkins',           label: 'SO Jenkins',         desc: 'Trigger CLT RAG pipeline Jenkins job' },
+      { id: 'migrate-user',         label: 'Migrate User',       desc: 'Trigger Rundeck job "Patch Contact Email" จาก Jenkins PROD' },
+      { id: 'sms-gateway-switches', label: 'SMS Gateway',        desc: 'ดู log การสลับ SMS Gateway ของ TMN และ NANO' },
+      { id: 'test-service',         label: 'Service Test',       desc: 'ทดสอบ service endpoints · reconcile status' },
+      { id: 'analytics',            label: 'Analytics',          desc: 'รายงาน usage analytics ของทีม' },
+      { id: 'weekly-report',        label: 'Weekly Report',      desc: 'ฟอร์มสรุปงานทีมรายสัปดาห์ · auto aggregate' },
+      { id: 'report-center',        label: 'Report Center',      desc: 'ศูนย์รวม reports ทุกประเภทของทีม' },
+    ]
+  },
+  {
+    id: 'automation', label: 'Automation', icon: 'cpu',
+    pages: [
+      { id: 'incident-launcher', label: 'Incident Launcher', desc: '1-click สร้าง War Room · Jira · Meet · Chat · Email ในคราวเดียว' },
+    ]
+  },
+  {
+    id: 'home', label: 'Home & Info', icon: 'home',
+    pages: [
+      { id: 'dashboard',   label: 'Dashboard',       desc: 'หน้าหลัก · ภาพรวมทีม · notification · quick links' },
+      { id: 'my-team',     label: 'My Team',          desc: 'หน้าทีมของตัวเอง · org chart · contacts' },
+      { id: 'about-som',   label: 'About SOM Team',   desc: 'หน้า org chart + landing page ของ SM team' },
+      { id: 'schedule',    label: 'Shift Schedule',   desc: 'ตาราง shift · leave request · PW schedule' },
+      { id: 'pw-schedule', label: 'PW Schedule',      desc: 'ตาราง schedule ของ PW team (Teamup calendar)' },
+      { id: 'onboarding',  label: 'Onboarding',       desc: 'ระบบ onboarding ใหม่ · task checklist + verification' },
+    ]
+  },
+  {
+    id: 'learn', label: 'Learning', icon: 'book-open',
+    pages: [
+      { id: 'learn',        label: 'Learning Center', desc: 'คอร์สเรียน · phase progression · quiz · knowledge base' },
+      { id: 'learn-reports', label: 'Course Reports', desc: 'รายงาน progress การเรียนของทีม · per-user + aggregate' },
+      { id: 'exam-reports',  label: 'Exam Reports',   desc: 'รายงานผลสอบ · grading · open-ended review' },
+    ]
+  },
+];
+
+const DEFAULTS = [
+  'ma-test','inbox','batch-monitor','batch-file-search',
+  'monitoring','syncup','uptime','test-service',
+  'restart-analyzer','log-explorer','incident-launcher','begin-grafana',
+  'genz-hub','genz-notes',
+];
+
+const SV = {
+  denied: new Set(),
+  total: 0,
+
+  async load() {
+    const res = await API.get('/super-viewer-config/index.php');
+    if (!res?.ok) {
+      document.getElementById('sv-sections').textContent = 'โหลดไม่ได้ กรุณา refresh';
+      return;
+    }
+    const data = res.data?.data ?? res.data;
+    this.denied = new Set(data?.denied_pages ?? []);
+    this.render();
+    document.getElementById('sv-save-btn').disabled = false;
+  },
+
+  render() {
+    const cont = document.getElementById('sv-sections');
+    let totalPages = 0;
+    let visiblePages = 0;
+
+    cont.innerHTML = SECTIONS.map(sec => {
+      const items = sec.pages.map(p => {
+        totalPages++;
+        const visible = !this.denied.has(p.id);
+        if (visible) visiblePages++;
+        return `<div class="sv-item ${visible ? '' : 'is-hidden'}" id="item-${p.id}">
+          <div class="sv-item-icon"><i data-icon="${_iconFor(p.id)}"></i></div>
+          <div class="sv-item-body">
+            <div class="sv-item-label">${p.label}</div>
+            <div class="sv-item-slug">${p.id}.html</div>
+            <div class="sv-item-desc">${p.desc}</div>
+          </div>
+          <label class="sv-toggle" title="${visible ? 'เห็นได้ · คลิกเพื่อซ่อน' : 'ซ่อน · คลิกเพื่อแสดง'}">
+            <input type="checkbox" ${visible ? 'checked' : ''} data-id="${p.id}" onchange="SV.toggle(this)">
+            <span class="sv-slider"></span>
+          </label>
+        </div>`;
+      }).join('');
+
+      return `<div class="sv-section">
+        <div class="sv-section-title">
+          <i data-icon="${sec.icon}"></i> ${sec.label}
+        </div>
+        <div class="sv-grid">${items}</div>
+      </div>`;
+    }).join('');
+
+    this.total = totalPages;
+    this._updateCounter(visiblePages);
+
+    if (typeof Icons !== 'undefined') Icons.replaceAll();
+  },
+
+  toggle(el) {
+    const id = el.dataset.id;
+    if (el.checked) {
+      this.denied.delete(id);
+      document.getElementById(`item-${id}`)?.classList.remove('is-hidden');
+    } else {
+      this.denied.add(id);
+      document.getElementById(`item-${id}`)?.classList.add('is-hidden');
+    }
+    const visible = this.total - this.denied.size;
+    this._updateCounter(visible);
+  },
+
+  _updateCounter(visible) {
+    const hidden = this.total - visible;
+    document.getElementById('sv-visible-count').textContent = visible;
+    document.getElementById('sv-hidden-count').textContent  = hidden;
+    document.getElementById('sv-bar').style.width = (this.total ? (visible / this.total * 100) : 0) + '%';
+  },
+
+  async save() {
+    const btn    = document.getElementById('sv-save-btn');
+    const status = document.getElementById('sv-status');
+    btn.disabled = true;
+    status.className = 'sv-status';
+    status.textContent = 'กำลังบันทึก…';
+
+    const res = await API.patch('/super-viewer-config/index.php', { denied_pages: [...this.denied] });
+
+    if (res?.ok) {
+      status.className = 'sv-status ok';
+      status.textContent = 'บันทึกแล้ว — Super Viewer จะเห็นการเปลี่ยนแปลงใน refresh ครั้งถัดไป (≤ 15 วิ)';
+      try { sessionStorage.removeItem('_sm_sv_config'); } catch {}
+      if (typeof Toast !== 'undefined') Toast.show('บันทึกสำเร็จ', 'success');
+    } else {
+      status.className = 'sv-status err';
+      status.textContent = res?.data?.error || 'เกิดข้อผิดพลาด';
+    }
+    btn.disabled = false;
+  },
+
+  reset() {
+    this.denied = new Set(DEFAULTS);
+    this.render();
+    if (typeof Toast !== 'undefined') Toast.show('Reset เป็น default แล้ว — กด Save เพื่อบันทึก', 'info');
+  }
+};
+
+function _iconFor(id) {
+  const map = {
+    'service-performance':'activity', 'restart-monitor':'refresh-cw', 'restart-analyzer':'search',
+    'log-explorer':'file-text', 'alert-monitor':'bell', 'grafana-alerts':'bar-chart-2',
+    'monitoring':'monitor', 'uptime':'clock', 'syncup':'refresh-cw',
+    'ma-services':'wrench', 'ma-test':'clipboard',
+    'board':'layout', 'send-email':'send', 'jira-templates':'file-text',
+    'inbox':'inbox', 'batch-monitor':'grid', 'batch-file-search':'search',
+    'jenkins-build':'zap', 'jenkins-portal':'unlock', 'so-jenkins':'rocket',
+    'migrate-user':'git-merge', 'sms-gateway-switches':'smartphone',
+    'test-service':'terminal', 'analytics':'trending-up',
+    'weekly-report':'edit', 'report-center':'bar-chart',
+    'incident-launcher':'zap',
+    'dashboard':'home', 'my-team':'users', 'about-som':'info',
+    'schedule':'calendar', 'pw-schedule':'clock', 'onboarding':'hand',
+    'learn':'book-open', 'learn-reports':'book-open', 'exam-reports':'clipboard',
+  };
+  return map[id] || 'file';
+}
+
+(function init() {
+  Auth.requireAuth();
+  if (Auth.getUser()?.role !== 'super_admin') {
+    location.href = '../index.html';
+    return;
+  }
+  Layout.render('super-viewer');
+  SV.load();
+})();
+</script>
+</body>
+</html>

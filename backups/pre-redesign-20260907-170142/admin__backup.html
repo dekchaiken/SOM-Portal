@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backup Data — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ── Stat row ── */
+    .bk-stats {
+      display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;
+    }
+    .bk-stat {
+      background:var(--bg-card);border:1px solid var(--border);border-radius:13px;
+      padding:18px 20px;position:relative;overflow:hidden;
+    }
+    .bk-stat::before {
+      content:'';position:absolute;top:0;left:0;right:0;height:3px;
+      background:var(--bk-color,var(--orange));opacity:.8;
+    }
+    .bk-stat-icon {
+      font-size:22px;margin-bottom:8px;line-height:1;
+    }
+    .bk-stat-val  { font-size:22px;font-weight:800;color:var(--text);line-height:1.1; }
+    .bk-stat-lbl  { font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-top:5px; }
+    .bk-stat-sub  { font-size:10px;color:var(--text-muted);margin-top:3px; }
+
+    /* ── Card shell ── */
+    .bk-card {
+      background:var(--bg-card);border:1px solid var(--border);
+      border-radius:14px;overflow:hidden;margin-bottom:16px;
+    }
+    .bk-card-hd {
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 20px;border-bottom:1px solid var(--border);gap:12px;
+      flex-wrap:wrap;
+    }
+    .bk-card-hd-left { display:flex;align-items:center;gap:10px; }
+    .bk-card-icon {
+      width:36px;height:36px;border-radius:9px;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;font-size:17px;
+      background:rgba(34,197,94,.1);color:#22c55e;
+    }
+    .bk-card-title  { font-size:13px;font-weight:700;color:var(--text); }
+    .bk-card-sub    { font-size:10px;color:var(--text-muted);margin-top:1px; }
+
+    /* ── Table ── */
+    .bk-tbl { border-collapse:collapse;font-size:11px;width:100%;table-layout:fixed; }
+    .bk-tbl thead th {
+      background:var(--bg);color:var(--text-muted);padding:9px 16px;
+      text-align:left;font-weight:700;border-bottom:1px solid var(--border);
+      font-size:10px;white-space:nowrap;letter-spacing:.04em;
+    }
+    .bk-tbl tbody td {
+      padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:middle;
+    }
+    .bk-tbl tbody tr:last-child td { border-bottom:none; }
+    .bk-tbl tbody tr:hover td     { background:var(--bg); }
+
+    .col-num    { width:44px;text-align:center; }
+    .col-name   { width:auto; }
+    .col-size   { width:90px; }
+    .col-date   { width:160px; }
+    .col-btns   { width:130px;text-align:right; }
+
+    .bk-num     { font-size:10px;color:var(--text-muted);font-weight:700; }
+    .bk-fname   { font-family:monospace;font-size:11px;color:var(--text);font-weight:600; }
+    .bk-date    { font-size:11px;color:var(--text-muted); }
+    .bk-size-badge {
+      display:inline-block;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;
+      background:rgba(34,197,94,.1);color:#22c55e;
+    }
+
+    /* ── Row buttons ── */
+    .bk-row-btns { display:flex;gap:5px;justify-content:flex-end; }
+    .btn-dl  {
+      padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;
+      border:1px solid rgba(34,197,94,.3);background:transparent;color:#22c55e;
+      cursor:pointer;transition:background .12s;white-space:nowrap;
+    }
+    .btn-dl:hover   { background:rgba(34,197,94,.08); }
+    .btn-del-bk {
+      padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;
+      border:1px solid rgba(220,38,38,.3);background:transparent;color:#dc2626;
+      cursor:pointer;transition:background .12s;
+    }
+    .btn-del-bk:hover { background:rgba(220,38,38,.08); }
+
+    /* ── Empty state ── */
+    .bk-empty {
+      padding:52px 20px;text-align:center;color:var(--text-muted);
+    }
+    .bk-empty-icon { font-size:36px;margin-bottom:12px; }
+    .bk-empty-desc { font-size:11px;margin-top:5px;line-height:1.6; }
+
+    /* ── Confirm dialog ── */
+    .confirm-wrap {
+      display:none;position:fixed;inset:0;z-index:900;
+      background:rgba(0,0,0,.4);backdrop-filter:blur(3px);
+      align-items:center;justify-content:center;padding:16px;
+    }
+    .confirm-wrap.open { display:flex; }
+    .confirm-box {
+      background:var(--bg-card);border-radius:16px;border:1px solid var(--border);
+      box-shadow:0 20px 50px rgba(0,0,0,.18);
+      padding:28px 26px 22px;width:100%;max-width:360px;text-align:center;
+      animation:mdIn .2s cubic-bezier(.22,1,.36,1);
+    }
+    @keyframes mdIn {
+      from { opacity:0;transform:scale(.93) translateY(12px); }
+      to   { opacity:1;transform:scale(1) translateY(0); }
+    }
+    .confirm-icon   { font-size:32px;margin-bottom:10px; }
+    .confirm-title  { font-size:14px;font-weight:800;color:var(--text);margin-bottom:6px; }
+    .confirm-desc   { font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:20px; }
+    .confirm-btns   { display:flex;gap:8px;justify-content:center; }
+    .confirm-cancel { padding:8px 20px;border-radius:9px;font-size:12px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer; }
+    .confirm-cancel:hover { background:var(--bg); }
+    .confirm-ok     { padding:8px 20px;border-radius:9px;font-size:12px;font-weight:700;border:none;background:#ef4444;color:#fff;cursor:pointer; }
+    .confirm-ok:hover { filter:brightness(1.08); }
+
+    /* ── Auto-backup info banner ── */
+    .auto-info {
+      display:flex;align-items:center;gap:12px;
+      background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.22);
+      border-radius:11px;padding:12px 16px;margin-bottom:16px;font-size:11px;
+      color:var(--text-muted);line-height:1.6;
+    }
+    .auto-info-icon { font-size:22px;flex-shrink:0; }
+    .auto-info strong { color:var(--text); }
+    .auto-dot {
+      display:inline-block;width:7px;height:7px;border-radius:50%;
+      background:#22c55e;margin-right:5px;
+      animation:autoPulse 2s ease infinite;
+    }
+    @keyframes autoPulse { 0%,100%{opacity:1}50%{opacity:.25} }
+
+    /* ── Create button spinner ── */
+    .btn-creating { opacity:.7;cursor:not-allowed;pointer-events:none; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="save"></i> Backup Data</div>
+        <div class="page-sub">สำรองข้อมูลระบบอัตโนมัติ · ดาวน์โหลด · จัดการ</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="./index.html" class="btn btn-ghost" style="font-size:11px">← Admin Panel</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="save"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Backup Data</h1>
+          <p>สำรองข้อมูลระบบอัตโนมัติ · ดาวน์โหลด zip ของ <code>/data/</code> · จัดการ retention</p>
+        </div>
+      </section>
+
+      <!-- Stats row -->
+      <div class="bk-stats" id="bk-stats">
+        <div class="bk-stat" style="--bk-color:#22c55e">
+          <div class="bk-stat-icon"><i data-icon="calendar"></i></div>
+          <div class="bk-stat-val" id="st-last">—</div>
+          <div class="bk-stat-lbl">Backup ล่าสุด</div>
+          <div class="bk-stat-sub" id="st-last-ago"></div>
+        </div>
+        <div class="bk-stat" style="--bk-color:#3b82f6">
+          <div class="bk-stat-icon"><i data-icon="package"></i></div>
+          <div class="bk-stat-val" id="st-count">—</div>
+          <div class="bk-stat-lbl">Backup ที่เก็บไว้</div>
+          <div class="bk-stat-sub">เก็บสูงสุด 8 ชุด</div>
+        </div>
+        <div class="bk-stat" style="--bk-color:#8b5cf6">
+          <div class="bk-stat-icon"><i data-icon="bar-chart"></i></div>
+          <div class="bk-stat-val" id="st-size">—</div>
+          <div class="bk-stat-lbl">ขนาดรวมทั้งหมด</div>
+          <div class="bk-stat-sub" id="st-size-sub"></div>
+        </div>
+      </div>
+
+      <!-- Auto-backup info -->
+      <div class="auto-info">
+        <div class="auto-info-icon"><i data-icon="chip"></i></div>
+        <div>
+          <span class="auto-dot"></span>
+          <strong>Auto-Backup ทำงานอยู่</strong> — ระบบสร้าง backup อัตโนมัติทุก
+          <strong>7 วัน</strong> เมื่อ admin เปิดเว็บ<br>
+          เก็บ backup ล่าสุด <strong>8 ชุด</strong> (~2 เดือน) · ไฟล์ backup คือ
+          <code>.zip</code> ของทุกไฟล์ใน <code>data/</code>
+          · กด <strong>ดาวน์โหลด</strong> เก็บไว้บนเครื่องเพิ่มเติมได้เลย
+        </div>
+      </div>
+
+      <!-- Backup list card -->
+      <div class="bk-card">
+        <div class="bk-card-hd">
+          <div class="bk-card-hd-left">
+            <div class="bk-card-icon"><i data-icon="save"></i></div>
+            <div>
+              <div class="bk-card-title">Backup ทั้งหมด</div>
+              <div class="bk-card-sub" id="bk-sub">กำลังโหลด…</div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btn-create" style="font-size:11px">
+            + สร้าง Backup ตอนนี้
+          </button>
+        </div>
+
+        <div id="bk-table-wrap" style="overflow-x:auto">
+          <table class="bk-tbl">
+            <thead>
+              <tr>
+                <th class="col-num">#</th>
+                <th class="col-name">ชื่อไฟล์</th>
+                <th class="col-size">ขนาด</th>
+                <th class="col-date">วันที่สร้าง</th>
+                <th class="col-btns"></th>
+              </tr>
+            </thead>
+            <tbody id="bk-tbody">
+              <tr><td colspan="5" style="padding:32px;text-align:center;color:var(--text-muted)">
+                <div class="spinner" style="display:inline-block;margin-right:8px"></div>กำลังโหลด…
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="bk-empty" id="bk-empty" style="display:none">
+          <div class="bk-empty-icon"><i data-icon="inbox"></i></div>
+          <div>ยังไม่มี Backup</div>
+          <div class="bk-empty-desc">
+            กดปุ่ม <strong>+ สร้าง Backup ตอนนี้</strong> เพื่อสำรองข้อมูลครั้งแรก<br>
+            หรือรอ Auto-Backup ที่จะทำงานอัตโนมัติทุก 7 วัน
+          </div>
+        </div>
+      </div>
+
+      <!-- How-to-restore info -->
+      <div class="bk-card" style="border-color:rgba(251,191,36,.35)">
+        <div class="bk-card-hd" style="border-bottom:none;padding-bottom:0">
+          <div class="bk-card-hd-left">
+            <div class="bk-card-icon" style="background:rgba(251,191,36,.12);color:#f59e0b"><i data-icon="wrench"></i></div>
+            <div>
+              <div class="bk-card-title">วิธี Restore จาก Backup</div>
+              <div class="bk-card-sub">ถ้าเว็บมีปัญหา ทำตามขั้นตอนนี้</div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:0 20px 18px;font-size:11px;color:var(--text-muted);line-height:1.85">
+          <ol style="margin:12px 0 0 16px;padding:0">
+            <li>ดาวน์โหลด backup <code>.zip</code> ล่าสุดจากหน้านี้ไว้ที่เครื่อง</li>
+            <li>Clone หรือ deploy โปรเจ็กต์ใหม่บน server</li>
+            <li>แตกไฟล์ <code>.zip</code> แล้ว copy ทุกไฟล์ไปวางใน <code>data/</code> ทับไฟล์เดิม</li>
+            <li>ระบบจะกลับมาทำงานปกติโดยไม่ต้อง config ใหม่</li>
+          </ol>
+          <div style="margin-top:10px;padding:8px 12px;background:var(--bg);border-radius:7px;font-size:10px">
+            <i data-icon="lightbulb"></i> แนะนำให้ดาวน์โหลด backup เก็บไว้บนเครื่องหรือ Google Drive เป็นประจำเพิ่มเติมด้วย
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Confirm dialog ── -->
+<div class="confirm-wrap" id="confirm-wrap">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon"><i data-icon="trash"></i></div>
+    <div class="confirm-title" id="confirm-title">ยืนยันการลบ</div>
+    <div class="confirm-desc"  id="confirm-desc"></div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" id="confirm-cancel-btn">ยกเลิก</button>
+      <button class="confirm-ok"     id="confirm-ok-btn">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('admin');
+
+// ── State ──────────────────────────────────────────────────────────
+let backups = [];
+
+// ── Helpers ────────────────────────────────────────────────────────
+function fmtSize(bytes) {
+  if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
+  if (bytes >= 1024)    return (bytes / 1024).toFixed(0) + ' KB';
+  return bytes + ' B';
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}  ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function fmtAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m  = Math.floor(diff / 60000);
+  const h  = Math.floor(diff / 3600000);
+  const d  = Math.floor(diff / 86400000);
+  if (m < 2)   return 'เมื่อกี้';
+  if (m < 60)  return `${m} นาทีที่แล้ว`;
+  if (h < 24)  return `${h} ชั่วโมงที่แล้ว`;
+  if (d < 30)  return `${d} วันที่แล้ว`;
+  return `${Math.floor(d/30)} เดือนที่แล้ว`;
+}
+
+// ── Load & render ──────────────────────────────────────────────────
+async function load() {
+  try {
+    const res = await API.backup.list();
+    backups   = res?.ok && Array.isArray(res.data?.data) ? res.data.data : [];
+  } catch { backups = []; }
+  render();
+}
+
+function render() {
+  const tbody   = document.getElementById('bk-tbody');
+  const empty   = document.getElementById('bk-empty');
+  const tblWrap = document.getElementById('bk-table-wrap');
+
+  // Stats
+  const total  = backups.length;
+  const totSz  = backups.reduce((s, b) => s + (b.size || 0), 0);
+  const latest = backups[0];
+
+  document.getElementById('st-count').textContent = total || '0';
+  document.getElementById('st-size').textContent  = total ? fmtSize(totSz) : '—';
+  document.getElementById('st-size-sub').textContent = total
+    ? `${total} ไฟล์ · เฉลี่ย ${fmtSize(Math.round(totSz / total))}`
+    : '';
+
+  if (latest) {
+    document.getElementById('st-last').textContent    = fmtDate(latest.created_at).split('  ')[0];
+    document.getElementById('st-last-ago').textContent = fmtAgo(latest.created_at);
+  } else {
+    document.getElementById('st-last').textContent    = 'ยังไม่เคย';
+    document.getElementById('st-last-ago').textContent = '';
+  }
+
+  document.getElementById('bk-sub').textContent = total
+    ? `${total} ไฟล์ · รวม ${fmtSize(totSz)}` : '0 ไฟล์';
+
+  if (!total) {
+    tblWrap.style.display = 'none';
+    empty.style.display   = '';
+    return;
+  }
+
+  tblWrap.style.display = '';
+  empty.style.display   = 'none';
+
+  tbody.innerHTML = backups.map((b, i) => {
+    const label = i === 0
+      ? `<span style="display:inline-flex;align-items:center;gap:5px">
+           ${escHtml(b.file)}
+           <span style="font-size:9px;background:rgba(34,197,94,.15);color:#22c55e;padding:1px 6px;border-radius:4px;font-weight:700">LATEST</span>
+         </span>`
+      : escHtml(b.file);
+
+    return `<tr>
+      <td class="col-num"><span class="bk-num">${i + 1}</span></td>
+      <td class="col-name"><span class="bk-fname">${label}</span></td>
+      <td class="col-size"><span class="bk-size-badge">${fmtSize(b.size)}</span></td>
+      <td class="col-date"><span class="bk-date">${fmtDate(b.created_at)}</span></td>
+      <td class="col-btns">
+        <div class="bk-row-btns">
+          <button class="btn-dl"     onclick="download('${escHtml(b.file)}')"><i data-icon="arrow-down"></i> ดาวน์โหลด</button>
+          <button class="btn-del-bk" onclick="del('${escHtml(b.file)}')">ลบ</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Create backup ──────────────────────────────────────────────────
+document.getElementById('btn-create').addEventListener('click', async function() {
+  this.disabled    = true;
+  this.textContent = '⏳ กำลังสร้าง…';
+  this.classList.add('btn-creating');
+  try {
+    const res = await API.backup.create();
+    if (res?.ok) {
+      Toast.success(`สร้าง Backup สำเร็จ <i data-icon="sparkles"></i> (${fmtSize(res.data?.data?.size || 0)})`);
+      // Update auto-backup timestamp so auto-trigger resets
+      localStorage.setItem('bk_last_auto', Date.now().toString());
+      await load();
+    } else {
+      Toast.error(res?.data?.message || 'สร้าง Backup ไม่สำเร็จ');
+    }
+  } catch {
+    Toast.error('เกิดข้อผิดพลาด');
+  } finally {
+    this.disabled    = false;
+    this.textContent = '+ สร้าง Backup ตอนนี้';
+    this.classList.remove('btn-creating');
+  }
+});
+
+// ── Download ───────────────────────────────────────────────────────
+async function download(file) {
+  try {
+    const token = Auth.getToken();
+    const res   = await fetch(`${API_BASE}/backup/download.php?file=${encodeURIComponent(file)}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) { Toast.error('ดาวน์โหลดไม่สำเร็จ'); return; }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = file;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    Toast.success('กำลังดาวน์โหลด…');
+  } catch {
+    Toast.error('ดาวน์โหลดไม่สำเร็จ');
+  }
+}
+
+// ── Confirm dialog ─────────────────────────────────────────────────
+let _confirmResolve = null;
+
+function showConfirm({ icon='<i data-icon="trash"></i>', title='ยืนยัน', desc='', okText='ยืนยัน', okColor='#ef4444' } = {}) {
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    document.getElementById('confirm-icon').textContent  = icon;
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-desc').textContent  = desc;
+    const ok = document.getElementById('confirm-ok-btn');
+    ok.textContent      = okText;
+    ok.style.background = okColor;
+    document.getElementById('confirm-wrap').classList.add('open');
+  });
+}
+
+document.getElementById('confirm-ok-btn').addEventListener('click', () => {
+  document.getElementById('confirm-wrap').classList.remove('open');
+  _confirmResolve?.(true);
+});
+document.getElementById('confirm-cancel-btn').addEventListener('click', () => {
+  document.getElementById('confirm-wrap').classList.remove('open');
+  _confirmResolve?.(false);
+});
+document.getElementById('confirm-wrap').addEventListener('click', function(e) {
+  if (e.target === this) { this.classList.remove('open'); _confirmResolve?.(false); }
+});
+
+// ── Delete ─────────────────────────────────────────────────────────
+async function del(file) {
+  const ok = await showConfirm({
+    icon:   '<i data-icon="trash"></i>',
+    title:  'ลบ Backup นี้?',
+    desc:   file,
+    okText: 'ลบ',
+  });
+  if (!ok) return;
+  const res = await API.backup.delete(file);
+  if (res?.ok) {
+    backups = backups.filter(b => b.file !== file);
+    render();
+    Toast.success('ลบแล้ว');
+  } else {
+    Toast.error(res?.data?.message || 'ลบไม่ได้');
+  }
+}
+
+load();
+</script>
+</body>
+</html>

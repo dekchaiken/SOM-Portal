@@ -1,0 +1,755 @@
+// admin/onboarding — page script, extracted from admin/onboarding.html.
+//
+// Wrapped in an IIFE on purpose. When this code lived inline it was run through
+// Layout's indirect eval, which kept const/let/class LOCAL; as a plain external
+// script those would become global lexical bindings and collide with other pages'
+// scripts (both stay loaded across SPA navigation). The IIFE restores that scoping.
+//
+// Top-level function/var declarations DID leak to global under eval, and inline
+// on*="" handlers in the HTML call them, so they are re-published on window below
+// via accessor bridges (get + set, so later reassignment stays in sync).
+(function () {
+'use strict';
+
+if (!Auth.requireAuth()) {}
+  Layout.render('admin');
+
+  const state = {
+    config:    null,
+    progress:  null,
+    pdfs:      [],
+    editing:   { chapterIdx: -1, blockIdx: -1, mode: 'create' }, // mode: create|edit
+  };
+
+  // ─── Tab switching ───────────────────────────────
+  document.querySelectorAll('.ob-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.ob-tab').forEach(x => x.classList.toggle('active', x === t));
+      const id = t.dataset.tab;
+      document.querySelectorAll('.ob-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + id).classList.add('active');
+      if (id === 'progress') loadProgress();
+      if (id === 'pdfs')     loadPdfs();
+      if (id === 'flow')     loadFlow();
+    });
+  });
+
+  // ─── Load config ─────────────────────────────────
+  (async function init() {
+    const res = await API.onboarding.getConfig();
+    if (!res?.ok) { Toast.error('โหลด config ไม่สำเร็จ'); return; }
+    state.config = res.data.data;
+    if (!state.config.chapters) state.config.chapters = [];
+    renderChapters();
+  })();
+
+  // ─── Chapters render ─────────────────────────────
+  function renderChapters() {
+    const list = document.getElementById('ch-list');
+    if (!state.config.chapters.length) {
+      list.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted)">ยังไม่มีบท — <button class="btn btn-primary btn-sm" onclick="addChapter()">+ เพิ่มบทแรก</button></div>';
+      return;
+    }
+
+    list.innerHTML = state.config.chapters.map((ch, i) => `
+      <div class="ch-card">
+        <div class="ch-card-head">
+          <div class="num">${i + 1}</div>
+          <div class="ttl">
+            ${escHtml(ch.label || ('บทที่ ' + (i+1)))} — ${escHtml(ch.title || '')}
+            <div class="meta">${(ch.blocks || []).length} blocks · ${(ch.tasks || []).length} tasks</div>
+          </div>
+          <div style="display:flex; gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="moveChapter(${i}, -1)" ${i === 0 ? 'disabled' : ''}>↑</button>
+            <button class="btn btn-ghost btn-sm" onclick="moveChapter(${i}, 1)" ${i === state.config.chapters.length - 1 ? 'disabled' : ''}>↓</button>
+            <button class="btn btn-ghost btn-sm" onclick="editChapterMeta(${i})">แก้ไข</button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteChapter(${i})">ลบ</button>
+          </div>
+        </div>
+        <div class="ch-card-body">
+          <div style="font-size:13px; color:var(--text-muted); margin-bottom:14px; line-height:1.6">${escHtml(ch.description || '')}</div>
+
+          <div style="font-size:11px; font-weight:700; letter-spacing:.05em; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px">Content Blocks</div>
+          ${(ch.blocks || []).map((b, j) => `
+            <div class="block-row">
+              <div class="type">${escHtml(b.type || '')}</div>
+              <div class="info">
+                <div class="t">${escHtml(b.title || '(ไม่มีหัวข้อ)')}</div>
+                <div class="s">${blockSummary(b)}</div>
+              </div>
+              <div class="actions">
+                <button class="btn btn-ghost btn-sm" onclick="moveBlock(${i}, ${j}, -1)" ${j === 0 ? 'disabled' : ''}>↑</button>
+                <button class="btn btn-ghost btn-sm" onclick="moveBlock(${i}, ${j}, 1)" ${j === ch.blocks.length - 1 ? 'disabled' : ''}>↓</button>
+                <button class="btn btn-ghost btn-sm" onclick="openBlockModal(${i}, ${j})">แก้ไข</button>
+                <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteBlock(${i}, ${j})">ลบ</button>
+              </div>
+            </div>
+          `).join('') || '<div style="font-size:12px; color:var(--text-muted); padding:10px 0">ยังไม่มี block</div>'}
+          <button class="btn btn-ghost btn-sm" onclick="openBlockModal(${i}, -1)" style="margin-top:6px">+ เพิ่ม Block</button>
+
+          <div style="font-size:11px; font-weight:700; letter-spacing:.05em; color:var(--text-muted); text-transform:uppercase; margin:18px 0 8px">Tasks (Checklist ที่ user ต้องทำ)</div>
+          <div id="tasks-${i}">
+            ${(ch.tasks || []).map((t, j) => `
+              <div class="task-row">
+                <span class="id">${escHtml(t.id)}</span>
+                <input type="text" class="form-control" value="${escHtml(t.label || '')}"
+                       onchange="updateTaskLabel(${i}, ${j}, this.value)">
+                <button class="btn btn-ghost btn-sm" onclick="moveTask(${i}, ${j}, -1)" ${j === 0 ? 'disabled' : ''}>↑</button>
+                <button class="btn btn-ghost btn-sm" onclick="moveTask(${i}, ${j}, 1)" ${j === ch.tasks.length - 1 ? 'disabled' : ''}>↓</button>
+                <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteTask(${i}, ${j})">×</button>
+              </div>
+            `).join('')}
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="addTask(${i})" style="margin-top:6px">+ เพิ่ม Task</button>
+        </div>
+      </div>
+    `).join('') + `
+      <button class="btn btn-primary btn-sm" onclick="addChapter()" style="margin-top:8px">+ เพิ่มบทใหม่</button>
+      <button class="btn btn-ghost btn-sm" onclick="saveAllConfig()" style="margin-top:8px; margin-left:8px"><i data-icon="save"></i> บันทึกทั้งหมด</button>
+    `;
+  }
+
+  function blockSummary(b) {
+    const t = b.type || '';
+    if (t === 'checklist' || t === 'link_list') return (b.items || []).length + ' รายการ';
+    if (t === 'system_list') return (b.items || []).length + ' systems';
+    if (t === 'card_list')   return (b.items || []).length + ' cards';
+    if (t === 'pdf_list')    return 'แสดง PDF จาก library';
+    if (t === 'html')        return 'HTML content';
+    if (t === 'freetext')    return (b.text || '').slice(0, 80);
+    if (t === 'quiz')        return (b.questions || []).length + ' คำถาม (Lead verify)';
+    if (t === 'scored_quiz') return (b.questions || []).length + ' ข้อ MCQ · ผ่าน ' + (b.pass_score || 80) + '%';
+    return '';
+  }
+
+  // ─── Chapter actions ─────────────────────────────
+  window.addChapter = function () {
+    const n = state.config.chapters.length + 1;
+    state.config.chapters.push({
+      id: 'ch_' + Date.now(),
+      order: n,
+      label: 'บทที่ ' + n,
+      title: 'บทใหม่',
+      description: '',
+      blocks: [],
+      tasks: [],
+    });
+    saveAllConfig();
+  };
+  window.moveChapter = function (i, dir) {
+    const arr = state.config.chapters;
+    const j = i + dir;
+    if (j < 0 || j >= arr.length) return;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    arr.forEach((c, k) => c.order = k + 1);
+    saveAllConfig();
+  };
+  window.deleteChapter = async function (i) {
+    if (!await confirmDialog('ลบบทนี้?', 'ลบบท')) return;
+    state.config.chapters.splice(i, 1);
+    state.config.chapters.forEach((c, k) => c.order = k + 1);
+    saveAllConfig();
+  };
+  window.editChapterMeta = async function (i) {
+    const ch = state.config.chapters[i];
+    const newLabel = prompt('Label (เช่น "บทที่ 1"):', ch.label || '');
+    if (newLabel === null) return;
+    const newTitle = prompt('หัวข้อบท:', ch.title || '');
+    if (newTitle === null) return;
+    const newDesc = prompt('คำอธิบาย:', ch.description || '');
+    if (newDesc === null) return;
+    ch.label = newLabel; ch.title = newTitle; ch.description = newDesc;
+    saveAllConfig();
+  };
+
+  // ─── Task actions ────────────────────────────────
+  window.addTask = function (i) {
+    const ch = state.config.chapters[i];
+    if (!ch.tasks) ch.tasks = [];
+    ch.tasks.push({ id: 't_' + Date.now(), label: 'Task ใหม่' });
+    saveAllConfig();
+  };
+  window.updateTaskLabel = function (i, j, val) {
+    state.config.chapters[i].tasks[j].label = val;
+    // No re-render — silent save on next batch
+    saveAllConfig(true);
+  };
+  window.deleteTask = async function (i, j) {
+    if (!await confirmDialog('ลบ task นี้?', 'ลบ Task')) return;
+    state.config.chapters[i].tasks.splice(j, 1);
+    saveAllConfig();
+  };
+  window.moveTask = function (i, j, dir) {
+    const arr = state.config.chapters[i].tasks;
+    const k = j + dir;
+    if (k < 0 || k >= arr.length) return;
+    [arr[j], arr[k]] = [arr[k], arr[j]];
+    saveAllConfig();
+  };
+
+  // ─── Block actions ───────────────────────────────
+  window.moveBlock = function (i, j, dir) {
+    const arr = state.config.chapters[i].blocks;
+    const k = j + dir;
+    if (k < 0 || k >= arr.length) return;
+    [arr[j], arr[k]] = [arr[k], arr[j]];
+    saveAllConfig();
+  };
+  window.deleteBlock = async function (i, j) {
+    if (!await confirmDialog('ลบ block นี้?', 'ลบ Block')) return;
+    state.config.chapters[i].blocks.splice(j, 1);
+    saveAllConfig();
+  };
+
+  window.openBlockModal = function (chapterIdx, blockIdx) {
+    state.editing = { chapterIdx, blockIdx, mode: blockIdx < 0 ? 'create' : 'edit' };
+    const ch = state.config.chapters[chapterIdx];
+    const block = blockIdx >= 0 ? ch.blocks[blockIdx] : { type: 'checklist', title: '', items: [] };
+
+    document.getElementById('block-modal-title').textContent =
+      (state.editing.mode === 'create' ? 'เพิ่ม' : 'แก้ไข') + ' Block — ' + (ch.title || '');
+    document.getElementById('bm-type').value = block.type || 'checklist';
+    document.getElementById('bm-title').value = block.title || '';
+
+    state.editing.draft = JSON.parse(JSON.stringify(block));
+    renderBlockEditor();
+
+    document.getElementById('block-modal').classList.add('active');
+  };
+  window.closeBlockModal = function () {
+    document.getElementById('block-modal').classList.remove('active');
+  };
+
+  window.renderBlockEditor = function () {
+    const editor = document.getElementById('bm-editor');
+    const type = document.getElementById('bm-type').value;
+    const draft = state.editing.draft || {};
+
+    if (type === 'checklist' || type === 'link_list' || type === 'system_list' || type === 'card_list') {
+      const items = draft.items || [];
+      editor.innerHTML = `
+        <div style="font-size:11px; font-weight:600; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:.05em">Items</div>
+        <div id="bm-items">${items.map((it, i) => itemEditorRow(type, it, i)).join('')}</div>
+        <button class="btn btn-ghost btn-sm" onclick="addItem('${type}')">+ เพิ่ม item</button>
+      `;
+    } else if (type === 'quiz') {
+      const questions = draft.questions || [];
+      editor.innerHTML = `
+        <div style="font-size:11px; font-weight:600; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:.05em">คำถาม (Lead จะเห็นคำตอบ)</div>
+        <div id="bm-items">${questions.map((q, i) => itemEditorRow('quiz', q, i)).join('')}</div>
+        <button class="btn btn-ghost btn-sm" onclick="addItem('quiz')">+ เพิ่มคำถาม</button>
+      `;
+    } else if (type === 'scored_quiz') {
+      const questions = draft.questions || [];
+      editor.innerHTML = `
+        <div class="form-field">
+          <label>Pass Score (%)</label>
+          <input id="bm-pass-score" type="number" class="form-control" min="1" max="100"
+                 value="${escHtml(String(draft.pass_score ?? 80))}" style="width:120px">
+        </div>
+        <div style="font-size:11px; font-weight:600; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:.05em">
+          ข้อสอบ MCQ — ใส่ตัวเลือก A–D และระบุคำตอบที่ถูก
+        </div>
+        <div id="bm-items">${questions.map((q, i) => itemEditorRow('scored_quiz', q, i)).join('')}</div>
+        <button class="btn btn-ghost btn-sm" onclick="addItem('scored_quiz')">+ เพิ่มข้อ</button>
+      `;
+    } else if (type === 'pdf_list') {
+      editor.innerHTML = `<div style="padding:14px; background:var(--bg); border-radius:6px; font-size:12.5px; color:var(--text-muted)">
+        Block นี้แสดง PDF ทั้งหมดใน library อัตโนมัติ — ไม่มีฟิลด์ให้แก้
+      </div>`;
+    } else if (type === 'html') {
+      editor.innerHTML = `
+        <div class="form-field full">
+          <label>HTML</label>
+          <textarea id="bm-html" class="form-control rich">${escHtml(draft.html || '')}</textarea>
+        </div>`;
+    } else if (type === 'freetext') {
+      editor.innerHTML = `
+        <div class="form-field full">
+          <label>Text</label>
+          <textarea id="bm-text" class="form-control rich">${escHtml(draft.text || '')}</textarea>
+        </div>`;
+    }
+  };
+
+  function itemEditorRow(type, it, i) {
+    if (type === 'checklist') {
+      return `<div class="item-edit-row" data-i="${i}">
+        <input class="form-control bm-it-text" value="${escHtml(it || '')}" placeholder="ข้อความ">
+        <button class="btn btn-ghost btn-sm" onclick="removeItem(${i})">×</button>
+      </div>`;
+    }
+    if (type === 'system_list') {
+      return `<div class="item-edit-row" data-i="${i}" style="flex-direction:column">
+        <input class="form-control bm-it-system" value="${escHtml(it.system || '')}" placeholder="ชื่อระบบ" style="margin-bottom:6px">
+        <input class="form-control bm-it-process" value="${escHtml(it.process || '')}" placeholder="วิธีขอ Access" style="margin-bottom:6px">
+        <input class="form-control bm-it-url" value="${escHtml(it.url || '')}" placeholder="URL (optional)" style="margin-bottom:6px">
+        <div style="display:flex; gap:6px; width:100%">
+          <input class="form-control bm-it-user" value="${escHtml(it.user || '')}" placeholder="Username (ถ้าใช้ user กลาง)" style="flex:1">
+          <input class="form-control bm-it-pass" value="${escHtml(it.pass || '')}" placeholder="Password (ถ้าใช้ user กลาง)" style="flex:1">
+          <button class="btn btn-ghost btn-sm" onclick="removeItem(${i})">×</button>
+        </div>
+      </div>`;
+    }
+    if (type === 'link_list') {
+      return `<div class="item-edit-row" data-i="${i}" style="flex-direction:column">
+        <input class="form-control bm-it-label" value="${escHtml(it.label || '')}" placeholder="Label" style="margin-bottom:6px">
+        <input class="form-control bm-it-url" value="${escHtml(it.url || '')}" placeholder="URL" style="margin-bottom:6px">
+        <div style="display:flex; gap:6px; width:100%">
+          <input class="form-control bm-it-note" value="${escHtml(it.note || '')}" placeholder="Note (optional)" style="flex:1">
+          <button class="btn btn-ghost btn-sm" onclick="removeItem(${i})">×</button>
+        </div>
+      </div>`;
+    }
+    if (type === 'card_list') {
+      return `<div class="item-edit-row" data-i="${i}" style="flex-direction:column">
+        <div style="display:flex; gap:6px; width:100%; margin-bottom:6px">
+          <input class="form-control bm-it-title" value="${escHtml(it.title || '')}" placeholder="Title" style="flex:1">
+          <input class="form-control bm-it-color" value="${escHtml(it.color || '#F26419')}" placeholder="#F26419" style="width:100px">
+        </div>
+        <textarea class="form-control bm-it-body" placeholder="Body text" style="margin-bottom:6px; min-height:60px">${escHtml(it.body || '')}</textarea>
+        <input class="form-control bm-it-image" value="${escHtml(it.image || '')}"
+               placeholder="รูปภาพ (สำหรับ slideshow) — เช่น uploads/onboarding/screen1.jpg"
+               style="margin-bottom:6px; font-size:12px">
+        <button class="btn btn-ghost btn-sm" onclick="removeItem(${i})" style="align-self:flex-start">× ลบ</button>
+      </div>`;
+    }
+    if (type === 'quiz') {
+      return `<div class="item-edit-row" data-i="${i}" style="flex-direction:column">
+        <div style="display:flex; gap:6px; width:100%; align-items:flex-start">
+          <span style="padding:6px 10px; background:var(--orange); color:#fff; border-radius:50%; font-size:11px; font-weight:700; flex-shrink:0; min-width:26px; text-align:center">${i+1}</span>
+          <input class="form-control bm-it-qtext" value="${escHtml(it.text || '')}" placeholder="คำถาม เช่น ทีม SM มีกี่ Tier?" style="flex:1">
+          <input type="hidden" class="bm-it-qid" value="${escHtml(it.id || 'q' + (i+1))}">
+          <button class="btn btn-ghost btn-sm" onclick="removeItem(${i})">×</button>
+        </div>
+      </div>`;
+    }
+    if (type === 'scored_quiz') {
+      const choices = it.choices || [{id:'a',text:''},{id:'b',text:''},{id:'c',text:''},{id:'d',text:''}];
+      const correctId = it.correct_choice_id || '';
+      const choiceRows = choices.map((c, ci) => `
+        <div style="display:flex; gap:6px; align-items:center; margin-bottom:5px">
+          <label style="font-size:11px; font-weight:700; width:20px; color:var(--text-muted); flex-shrink:0">${c.id.toUpperCase()}</label>
+          <input class="form-control bm-sq-choice-text" data-ci="${ci}" value="${escHtml(c.text || '')}" placeholder="ตัวเลือก ${c.id.toUpperCase()}" style="flex:1">
+          <input type="hidden" class="bm-sq-choice-id" value="${escHtml(c.id)}">
+          <label style="font-size:11px; display:flex; gap:4px; align-items:center; flex-shrink:0; color:var(--text-muted)">
+            <input type="radio" name="correct_${i}" class="bm-sq-correct" value="${escHtml(c.id)}" ${correctId === c.id ? 'checked' : ''}> ถูก
+          </label>
+        </div>`).join('');
+      return `<div class="item-edit-row" data-i="${i}" style="flex-direction:column; border-left:3px solid var(--orange)">
+        <div style="display:flex; gap:6px; width:100%; align-items:flex-start; margin-bottom:8px">
+          <span style="padding:5px 9px; background:var(--orange); color:#fff; border-radius:50%; font-size:11px; font-weight:700; flex-shrink:0; min-width:26px; text-align:center">${i+1}</span>
+          <input class="form-control bm-it-qtext" value="${escHtml(it.text || '')}" placeholder="คำถาม" style="flex:1">
+          <input type="hidden" class="bm-it-qid" value="${escHtml(it.id || ('q6_' + String(i+1).padStart(2,'0')))}">
+          <button class="btn btn-ghost btn-sm" onclick="removeItem(${i})">×</button>
+        </div>
+        ${choiceRows}
+        <div style="margin-top:6px">
+          <label style="font-size:10.5px; font-weight:600; color:var(--text-muted)">คำอธิบายเฉลย (แสดงหลัง submit)</label>
+          <input class="form-control bm-sq-explain" value="${escHtml(it.explain || '')}" placeholder="อธิบายว่าทำไมถึงตอบข้อนั้น" style="margin-top:4px">
+        </div>
+      </div>`;
+    }
+    return '';
+  }
+
+  window.addItem = function (type) {
+    if (!state.editing.draft) return;
+    if (!state.editing.draft.items) state.editing.draft.items = [];
+    collectItemsIntoDraft(type);
+    if (type === 'checklist')        state.editing.draft.items.push('');
+    else if (type === 'system_list') state.editing.draft.items.push({ system:'', process:'', url:'' });
+    else if (type === 'link_list')   state.editing.draft.items.push({ label:'', url:'', note:'' });
+    else if (type === 'card_list')   state.editing.draft.items.push({ title:'', color:'#F26419', body:'' });
+    else if (type === 'quiz') {
+      collectQuizIntoDraft();
+      const n = (state.editing.draft.questions || []).length + 1;
+      if (!state.editing.draft.questions) state.editing.draft.questions = [];
+      state.editing.draft.questions.push({ id: 'q' + n, text: '' });
+    } else if (type === 'scored_quiz') {
+      collectScoredQuizIntoDraft();
+      const n = (state.editing.draft.questions || []).length + 1;
+      if (!state.editing.draft.questions) state.editing.draft.questions = [];
+      state.editing.draft.questions.push({
+        id: 'q6_' + String(n).padStart(2, '0'),
+        text: '',
+        choices: [{id:'a',text:''},{id:'b',text:''},{id:'c',text:''},{id:'d',text:''}],
+        correct_choice_id: 'a',
+        explain: '',
+      });
+    }
+    renderBlockEditor();
+  };
+
+  window.removeItem = function (i) {
+    const type = document.getElementById('bm-type').value;
+    if (type === 'quiz') {
+      collectQuizIntoDraft();
+      state.editing.draft.questions.splice(i, 1);
+    } else if (type === 'scored_quiz') {
+      collectScoredQuizIntoDraft();
+      state.editing.draft.questions.splice(i, 1);
+    } else {
+      collectItemsIntoDraft(type);
+      state.editing.draft.items.splice(i, 1);
+    }
+    renderBlockEditor();
+  };
+
+  function collectItemsIntoDraft(type) {
+    if (!state.editing.draft) state.editing.draft = {};
+    const rows = document.querySelectorAll('#bm-items .item-edit-row');
+    const items = [];
+    rows.forEach(r => {
+      if (type === 'checklist') {
+        items.push(r.querySelector('.bm-it-text').value);
+      } else if (type === 'system_list') {
+        const user = r.querySelector('.bm-it-user').value.trim();
+        const pass = r.querySelector('.bm-it-pass').value.trim();
+        const obj = {
+          system:  r.querySelector('.bm-it-system').value,
+          process: r.querySelector('.bm-it-process').value,
+          url:     r.querySelector('.bm-it-url').value,
+        };
+        if (user) obj.user = user;
+        if (pass) obj.pass = pass;
+        items.push(obj);
+      } else if (type === 'link_list') {
+        items.push({
+          label: r.querySelector('.bm-it-label').value,
+          url:   r.querySelector('.bm-it-url').value,
+          note:  r.querySelector('.bm-it-note').value,
+        });
+      } else if (type === 'card_list') {
+        const image = r.querySelector('.bm-it-image').value.trim();
+        const obj = {
+          title: r.querySelector('.bm-it-title').value,
+          color: r.querySelector('.bm-it-color').value,
+          body:  r.querySelector('.bm-it-body').value,
+        };
+        if (image) obj.image = image;
+        items.push(obj);
+      }
+    });
+    state.editing.draft.items = items;
+  }
+
+  function collectQuizIntoDraft() {
+    if (!state.editing.draft) state.editing.draft = {};
+    const rows = document.querySelectorAll('#bm-items .item-edit-row');
+    const questions = [];
+    rows.forEach((r, idx) => {
+      const id   = r.querySelector('.bm-it-qid')?.value  || ('q' + (idx + 1));
+      const text = r.querySelector('.bm-it-qtext')?.value || '';
+      questions.push({ id, text });
+    });
+    state.editing.draft.questions = questions;
+  }
+
+  function collectScoredQuizIntoDraft() {
+    if (!state.editing.draft) state.editing.draft = {};
+    const passEl = document.getElementById('bm-pass-score');
+    if (passEl) state.editing.draft.pass_score = parseInt(passEl.value, 10) || 80;
+    const rows = document.querySelectorAll('#bm-items .item-edit-row');
+    const questions = [];
+    rows.forEach((r, idx) => {
+      const id      = r.querySelector('.bm-it-qid')?.value  || ('q6_' + String(idx + 1).padStart(2,'0'));
+      const text    = r.querySelector('.bm-it-qtext')?.value || '';
+      const explain = r.querySelector('.bm-sq-explain')?.value || '';
+      const correctRadio = r.querySelector('.bm-sq-correct:checked');
+      const correct_choice_id = correctRadio ? correctRadio.value : 'a';
+      const choiceTexts = r.querySelectorAll('.bm-sq-choice-text');
+      const choiceIds   = r.querySelectorAll('.bm-sq-choice-id');
+      const choices = [];
+      choiceTexts.forEach((ct, ci) => {
+        choices.push({ id: choiceIds[ci]?.value || String.fromCharCode(97 + ci), text: ct.value });
+      });
+      questions.push({ id, text, choices, correct_choice_id, explain });
+    });
+    state.editing.draft.questions = questions;
+  }
+
+  window.saveBlock = function () {
+    const type = document.getElementById('bm-type').value;
+    const title = document.getElementById('bm-title').value;
+    const draft = state.editing.draft || {};
+
+    const block = { type, title };
+    if (['checklist','system_list','link_list','card_list'].includes(type)) {
+      collectItemsIntoDraft(type);
+      block.items = state.editing.draft.items || [];
+    } else if (type === 'quiz') {
+      collectQuizIntoDraft();
+      block.questions = state.editing.draft.questions || [];
+    } else if (type === 'scored_quiz') {
+      collectScoredQuizIntoDraft();
+      block.questions  = state.editing.draft.questions || [];
+      block.pass_score = state.editing.draft.pass_score || 80;
+    } else if (type === 'html') {
+      block.html = document.getElementById('bm-html').value;
+    } else if (type === 'freetext') {
+      block.text = document.getElementById('bm-text').value;
+    } else if (type === 'pdf_list') {
+      block.files = [];
+    }
+    block.id = draft.id || ('b_' + Date.now());
+
+    const ch = state.config.chapters[state.editing.chapterIdx];
+    if (state.editing.mode === 'create') {
+      if (!ch.blocks) ch.blocks = [];
+      ch.blocks.push(block);
+    } else {
+      ch.blocks[state.editing.blockIdx] = block;
+    }
+    closeBlockModal();
+    saveAllConfig();
+  };
+
+  // ─── Save config ─────────────────────────────────
+  let saveTimer = null;
+  window.saveAllConfig = async function (silent) {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      const res = await API.onboarding.saveConfig(state.config);
+      if (res?.ok) {
+        if (!silent) Toast.success('บันทึกแล้ว');
+        state.config = res.data.data;
+        renderChapters();
+      } else {
+        Toast.error(res?.data?.message || 'บันทึกไม่สำเร็จ');
+      }
+    }, 200);
+  };
+
+  // ─── Progress tab ────────────────────────────────
+  async function loadProgress() {
+    const res = await API.onboarding.adminList();
+    if (!res?.ok) { Toast.error('โหลด progress ไม่สำเร็จ'); return; }
+    state.progress = res.data.data;
+    const s = state.progress.stats;
+    document.getElementById('stat-total').textContent = s.total_users;
+    document.getElementById('stat-done').textContent  = s.finished;
+    document.getElementById('stat-prog').textContent  = s.in_progress;
+    document.getElementById('stat-not').textContent   = s.not_started;
+
+    const tbody = document.querySelector('#pg-tbl tbody');
+    if (!state.progress.users.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted)">ยังไม่มีผู้ใช้</td></tr>';
+      return;
+    }
+    tbody.innerHTML = state.progress.users.map(u => {
+      const pill = u.status === 'finished'    ? '<span class="pill pill-green">Finished</span>'
+                 : u.status === 'in_progress' ? '<span class="pill pill-orange">In Progress</span>'
+                                              : '<span class="pill pill-gray">Not Started</span>';
+      // Find Ch6 exam result from chapters array
+      const ch6 = (u.chapters || []).find(c => c.id === 'ch6');
+      const er  = ch6?.exam_result || null;
+      let examCell = '<span style="color:var(--text-muted); font-size:11px">—</span>';
+      if (er) {
+        const scoreColor = er.passed ? '#10b981' : 'var(--orange)';
+        examCell = `<span style="font-weight:700; color:${scoreColor}">${er.best_score}%</span>
+          <span style="font-size:10.5px; color:var(--text-muted); margin-left:5px">${er.passed ? '✓ ผ่าน' : 'ไม่ผ่าน'} · ${er.attempts}x</span>`;
+      }
+      return `<tr>
+        <td>
+          <div style="font-weight:600">${escHtml(u.name || u.username)}</div>
+          <div style="font-size:11px; color:var(--text-muted)">${escHtml(u.email || u.username)}</div>
+        </td>
+        <td>${escHtml(u.role || '')}</td>
+        <td>
+          <span class="pbar"><div style="width:${u.percent}%"></div></span>
+          ${u.percent}% <span style="color:var(--text-muted); font-size:11px">(${u.done_tasks}/${u.total_tasks})</span>
+        </td>
+        <td>${examCell}</td>
+        <td>${pill}</td>
+        <td style="font-size:11px; color:var(--text-muted)">${u.updated_at ? new Date(u.updated_at).toLocaleString('th-TH') : '—'}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick='openUserModal(${JSON.stringify(u.user_id)})'>ดู</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  window.openUserModal = async function (userId) {
+    const u = state.progress.users.find(x => x.user_id === userId);
+    if (!u) return;
+    document.getElementById('um-title').textContent = (u.name || u.username) + ' — Onboarding';
+    document.getElementById('um-body').innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted); font-size:13px">กำลังโหลด…</div>`;
+    document.getElementById('user-modal').classList.add('active');
+
+    const detail = await API.onboarding.adminDetail(userId);
+    const chapters = detail?.ok ? (detail.data.data.chapters || []) : [];
+
+    document.getElementById('um-body').innerHTML = `
+      <div style="margin-bottom:16px">
+        <span class="pbar"><div style="width:${u.percent}%"></div></span>
+        ${u.percent}% (${u.done_tasks}/${u.total_tasks} tasks)
+        <div style="font-size:11px; color:var(--text-muted); margin-top:4px">
+          ${u.finished_at ? 'จบเมื่อ ' + new Date(u.finished_at).toLocaleString('th-TH') : 'ยังไม่จบ'}
+        </div>
+      </div>
+
+      ${chapters.map(c => {
+        const hasQ    = c.questions && c.questions.length > 0;
+        const answered = (c.questions || []).filter(q => q.answer && q.answer.trim()).length;
+        const er      = c.exam_result || null;
+
+        // Exam result section for scored_quiz chapters
+        const examSection = er ? (() => {
+          const scoreColor = er.passed ? '#10b981' : 'var(--orange)';
+          const historyRows = (er.history || []).map((h, hi) => `
+            <div style="display:flex; gap:12px; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px">
+              <span style="color:var(--text-muted); width:24px">#${hi+1}</span>
+              <span style="font-weight:700; color:${h.score >= 80 ? '#10b981' : 'var(--orange)'}; width:48px">${h.score}%</span>
+              <span style="color:var(--text-muted)">${h.correct}/${h.total} ข้อ</span>
+              <span style="margin-left:auto; color:var(--text-muted); font-size:11px">${h.at ? new Date(h.at).toLocaleString('th-TH') : ''}</span>
+            </div>`).join('');
+          return `<div style="padding:12px 14px; border-top:1px solid var(--border)">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px">
+              <span style="font-size:22px; font-weight:700; color:${scoreColor}">${er.best_score}%</span>
+              <div>
+                <div style="font-size:12px; font-weight:600; color:${scoreColor}">${er.passed ? '✓ ผ่าน' : 'ยังไม่ผ่าน'}</div>
+                <div style="font-size:11px; color:var(--text-muted)">ทำ ${er.attempts} ครั้ง · Best ${er.best_score}% · Last ${er.last_score}%</div>
+              </div>
+            </div>
+            ${historyRows ? `<div style="border-top:1px solid var(--border); padding-top:8px">${historyRows}</div>` : ''}
+          </div>`;
+        })() : '';
+
+        return `<div style="border:1px solid var(--border); border-radius:8px; margin-bottom:10px; overflow:hidden">
+          <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--bg)">
+            <div style="flex:1; font-size:13px; font-weight:600">${escHtml(c.title || '')}</div>
+            ${c.task_count > 0 ? `<div style="font-size:12px; color:${c.done_count === c.task_count ? '#10b981' : 'var(--text-muted)'}; font-weight:600">
+              Tasks: ${c.done_count}/${c.task_count}${c.done_count === c.task_count ? ' ✓' : ''}
+            </div>` : ''}
+            ${hasQ ? `<div style="font-size:12px; color:${answered === c.questions.length ? '#10b981' : 'var(--orange)'}; font-weight:600">
+              Quiz: ${answered}/${c.questions.length}
+            </div>` : ''}
+            ${er ? `<div style="font-size:12px; color:${er.passed ? '#10b981' : 'var(--orange)'}; font-weight:600">
+              Exam: ${er.best_score}% ${er.passed ? '✓' : ''}
+            </div>` : (c.id === 'ch6' ? '<div style="font-size:12px; color:var(--text-muted)">ยังไม่ได้สอบ</div>' : '')}
+          </div>
+          ${examSection}
+          ${hasQ ? c.questions.map((q, qi) => `
+            <div style="padding:10px 14px; border-top:1px solid var(--border)">
+              <div style="font-size:11.5px; font-weight:600; color:var(--text); margin-bottom:6px">
+                Q${qi+1}. ${escHtml(q.text || '')}
+              </div>
+              <div style="font-size:13px; color:${q.answer?.trim() ? 'var(--text)' : 'var(--text-muted)'}; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; padding:8px 12px; white-space:pre-wrap; line-height:1.6; min-height:36px">
+                ${q.answer?.trim() ? escHtml(q.answer) : '<i>ยังไม่ตอบ</i>'}
+              </div>
+            </div>
+          `).join('') : ''}
+        </div>`;
+      }).join('')}
+
+      <div style="margin-top:10px; padding:9px 14px; background:var(--bg); border-radius:6px; font-size:11.5px; color:var(--text-muted)">
+        <i data-icon="lock"></i> Notebook ส่วนตัวของผู้ใช้ — admin ไม่สามารถดูได้
+      </div>
+    `;
+
+    document.getElementById('um-reset-btn').onclick = async () => {
+      if (!await confirmDialog('รีเซ็ต progress ของ ' + (u.name || u.username) + '?', 'รีเซ็ต Progress')) return;
+      const res = await API.onboarding.adminReset(userId);
+      if (res?.ok) {
+        Toast.success('รีเซ็ตแล้ว');
+        closeUserModal();
+        loadProgress();
+      } else Toast.error('รีเซ็ตไม่สำเร็จ');
+    };
+  };
+  window.closeUserModal = function () {
+    document.getElementById('user-modal').classList.remove('active');
+  };
+
+  // ─── PDF tab ─────────────────────────────────────
+  async function loadPdfs() {
+    const res = await API.onboarding.listPdfs();
+    if (!res?.ok) return;
+    state.pdfs = res.data.data || [];
+    const list = document.getElementById('pdf-list');
+    if (!state.pdfs.length) {
+      list.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted)">ยังไม่มี PDF</div>';
+      return;
+    }
+    list.innerHTML = state.pdfs.map(f => `
+      <div class="pdf-row">
+        <div class="ico"><i data-icon="file"></i></div>
+        <div class="info">
+          <div class="name">${escHtml(f.filename)}</div>
+          <div class="meta">${formatSize(f.size)} · อัปโหลดเมื่อ ${formatDate(f.uploaded_at)}</div>
+        </div>
+        <a href="${escHtml(f.url)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">เปิด</a>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick='deletePdf(${JSON.stringify(f.filename)})'>ลบ</button>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('pdf-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    Toast.info('กำลังอัปโหลด…');
+    const res = await API.onboarding.uploadPdf(fd);
+    if (res?.ok) {
+      Toast.success('อัปโหลดสำเร็จ');
+      e.target.value = '';
+      loadPdfs();
+    } else {
+      Toast.error(res?.data?.message || 'อัปโหลดไม่สำเร็จ');
+    }
+  });
+
+  window.deletePdf = async function (filename) {
+    if (!await confirmDialog('ลบ ' + filename + '?', 'ลบ PDF')) return;
+    const res = await API.onboarding.deletePdf(filename);
+    if (res?.ok) { Toast.success('ลบแล้ว'); loadPdfs(); }
+    else Toast.error('ลบไม่สำเร็จ');
+  };
+
+  // ─── Flow tab ────────────────────────────────────
+  function loadFlow() {
+    const fa = state.config.flow_architecture || {};
+    document.getElementById('flow-json').value = JSON.stringify(fa, null, 2);
+  }
+  window.saveFlow = async function () {
+    let parsed;
+    try { parsed = JSON.parse(document.getElementById('flow-json').value); }
+    catch (e) { Toast.error('JSON ไม่ถูกต้อง: ' + e.message); return; }
+    state.config.flow_architecture = parsed;
+    const res = await API.onboarding.saveConfig(state.config);
+    if (res?.ok) {
+      Toast.success('บันทึก Flow แล้ว');
+      state.config = res.data.data;
+    } else {
+      Toast.error('บันทึกไม่สำเร็จ');
+    }
+  };
+
+  // ─── Helpers ──────────────────────────────────────
+  function formatSize(bytes) {
+    if (!bytes && bytes !== 0) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+  function formatDate(iso) {
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric' }); }
+    catch { return iso; }
+  }
+
+  // ── re-publish what the inline version leaked to global ──
+  try { Object.defineProperty(window, "formatDate", { configurable: true, get: () => formatDate, set: (v) => { formatDate = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "formatSize", { configurable: true, get: () => formatSize, set: (v) => { formatSize = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "loadFlow", { configurable: true, get: () => loadFlow, set: (v) => { loadFlow = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "loadPdfs", { configurable: true, get: () => loadPdfs, set: (v) => { loadPdfs = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "blockSummary", { configurable: true, get: () => blockSummary, set: (v) => { blockSummary = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "collectItemsIntoDraft", { configurable: true, get: () => collectItemsIntoDraft, set: (v) => { collectItemsIntoDraft = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "collectQuizIntoDraft", { configurable: true, get: () => collectQuizIntoDraft, set: (v) => { collectQuizIntoDraft = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "collectScoredQuizIntoDraft", { configurable: true, get: () => collectScoredQuizIntoDraft, set: (v) => { collectScoredQuizIntoDraft = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "itemEditorRow", { configurable: true, get: () => itemEditorRow, set: (v) => { itemEditorRow = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "loadProgress", { configurable: true, get: () => loadProgress, set: (v) => { loadProgress = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "renderChapters", { configurable: true, get: () => renderChapters, set: (v) => { renderChapters = v; } }); } catch (e) {}
+})();

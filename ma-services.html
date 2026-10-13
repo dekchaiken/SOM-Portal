@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MA Services — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/ma-services/ma-services.css" data-page-css>
+</head>
+<body>
+  <div class="app-shell">
+    <aside id="sidebar-mount"></aside>
+
+    <main class="main-content">
+      <div class="topbar">
+        <div class="tb-prompt">
+          <span class="tb-path">~/sm</span>
+          <span class="tb-arrow"><i data-icon="play"></i></span>
+        </div>
+        <div class="topbar-title">
+          <span class="page-title">MA Services</span>
+          <span class="page-sub">จัดการ MA Usecases & Cut-off Services</span>
+        </div>
+        <div class="topbar-actions">
+          <a href="https://docs.google.com/spreadsheets/d/1A5l_5szVskxIEiVnHkG0ThVZ-fpHQOOyRxGcNs50x_Q/edit?gid=0#gid=0" target="_blank" rel="noopener" class="mas-topnav-btn" title="Open MOP Link (Google Sheets)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
+            <span>MOP Link</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="opacity:.6"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>
+          </a>
+          <a id="btn-ma-planwork" href="./ma-planwork.html" class="mas-topnav-btn" style="display:none" title="Kanban board of upcoming MA items (SM admins only)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="10" rx="1"/></svg>
+            <span>MA Planwork</span>
+          </a>
+          <a href="./ma-status.html" class="mas-topnav-btn is-live" title="ดูสถานะ MA สดจาก NANO / TMN / Backoffice">
+            <span class="mas-live-dot" aria-hidden="true"></span>
+            <span>MA Status Board</span>
+          </a>
+          <a id="btn-ma-test" href="./ma-test.html" class="mas-topnav-btn" style="display:none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="8" y="2" rx="1"/></svg>
+            <span>Result Test MA</span>
+          </a>
+          <a id="btn-ma-test-overview" href="./admin/ma-test-overview.html" class="mas-topnav-btn" style="display:none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
+            <span>Monthly Overview</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="page-content">
+
+        <!-- ══════════════════════════════════════
+             LEVEL 1 — LANDING
+        ══════════════════════════════════════ -->
+        <div id="landing-view" class="ma-landing">
+
+          <!-- ── Stats bar — compact horizontal ── -->
+          <div class="mas-stat-bar">
+            <div class="mas-sb-title">
+              <i data-icon="bar-chart"></i> MA Overview
+              <span class="mas-yr-badge" id="ma-stats-year-badge">—</span>
+            </div>
+            <span class="ma-cache-hint" id="ma-cache-hint"></span>
+            <div class="mas-sb-sep"></div>
+            <div class="mas-sb-stats">
+              <div class="mas-sb-stat">
+                <span class="v loading" id="ma-stat-total">—</span>
+                <span class="l">Total Closed</span>
+              </div>
+              <div class="mas-sb-sep"></div>
+              <div class="mas-sb-stat">
+                <span class="v loading" id="ma-stat-tmn" style="color:#F26419">—</span>
+                <span class="l">TrueMoney</span>
+              </div>
+              <div class="mas-sb-stat">
+                <span class="v loading" id="ma-stat-nano" style="color:#6366f1">—</span>
+                <span class="l">Nano</span>
+              </div>
+              <div class="mas-sb-sep"></div>
+              <!-- Distribution mini -->
+              <div class="mas-dist-wrap">
+                <div class="mas-dist-bar">
+                  <div id="ma-dist-tmn" style="flex:1;background:#F26419;border-radius:999px 0 0 999px"></div>
+                  <div id="ma-dist-nano" style="flex:0;background:#6366f1;border-radius:0 999px 999px 0"></div>
+                </div>
+                <div class="mas-dist-legs">
+                  <span class="mas-dist-leg">
+                    <div class="mas-dist-dot" style="background:#F26419"></div>
+                    <span id="ma-dist-tmn-lbl">—%</span>
+                  </span>
+                  <span class="mas-dist-leg">
+                    <div class="mas-dist-dot" style="background:#6366f1"></div>
+                    <span id="ma-dist-nano-lbl">—%</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="mas-sb-actions">
+              <select class="ma-year-picker" id="ma-stats-year"></select>
+              <button class="ma-stats-refresh" id="ma-stats-refresh" title="Refresh from Jira (bypass cache)">
+                <span class="ma-refresh-icon">↻</span><span>Refresh</span>
+              </button>
+            </div>
+            <!-- Hidden elements kept for JS compatibility -->
+            <span id="ma-stat-total-meta" style="display:none">tickets · —</span>
+            <span id="ma-stat-tmn-meta"   style="display:none">—</span>
+            <span id="ma-stat-nano-meta"  style="display:none">—</span>
+          </div>
+          <!-- Hidden stats-grid kept for JS getElementById compatibility -->
+          <div id="ma-stats-grid" style="display:none"></div>
+
+          <!-- ── Active Pipeline strip ── -->
+          <div id="ma-pipeline-card" class="ma-pipeline-card" style="display:none">
+            <button type="button" class="ma-pipeline-head" onclick="MAPipeline.toggle()">
+              <span class="ma-pl-caret" id="ma-pl-caret"><i data-icon="play"></i></span>
+              <span class="ma-pl-emoji"><i data-icon="clipboard"></i></span>
+              <span class="ma-pl-title">Active Pipeline</span>
+              <span class="ma-pl-counts">
+                <span class="ma-pl-count backlog"    title="Backlog / To Do"><span class="dot"></span><b id="ma-pl-todo">0</b> backlog</span>
+                <span class="ma-pl-count inprogress" title="In Progress"><span class="dot"></span><b id="ma-pl-inprog">0</b> in progress</span>
+                <span class="ma-pl-count total">total <b id="ma-pl-total">0</b></span>
+              </span>
+              <span class="ma-pl-hint" id="ma-pl-hint">click to expand ↓</span>
+            </button>
+            <div class="ma-pipeline-body" id="ma-pipeline-body"></div>
+          </div>
+
+          <!-- ── Charts row: domain + monthly side by side ── -->
+          <div class="mas-charts-row">
+            <div class="ma-domain-card" id="ma-domain-card" style="display:none;">
+              <div class="ma-domain-head">
+                <span>By Business Domain</span>
+                <span class="ma-monthly-legend">
+                  <span class="k" style="--_c:#F26419">TrueMoney</span>
+                  <span class="k" style="--_c:#6366f1">Nano</span>
+                </span>
+              </div>
+              <div class="ma-domain-list" id="ma-domain-list"></div>
+            </div>
+            <div class="ma-monthly-card" id="ma-monthly-card" style="display:none;">
+              <div class="ma-monthly-head">
+                <span>Monthly trend</span>
+                <span class="ma-monthly-legend">
+                  <span class="k" style="--_c:#94a3b8">Total tickets</span>
+                </span>
+              </div>
+              <div class="ma-monthly-bars" id="ma-monthly-bars"></div>
+            </div>
+          </div>
+
+          <!-- ── Split Chooser (replaces module grid) ── -->
+          <div id="mas-split-chooser">
+
+            <!-- MA Usecases panel (amber) -->
+            <div class="mas-panel mas-use" onclick="masEnterModule('usecases')">
+              <div class="mas-bigicon">MA</div>
+              <div class="mas-types-col">
+                <div class="mas-type-pill">TMN <b id="landing-tmn">0</b></div>
+                <div class="mas-type-pill">NANO <b id="landing-nano">0</b></div>
+                <div class="mas-type-pill">WEALTH <b id="landing-wealth">0</b></div>
+              </div>
+              <div class="mas-body">
+                <div class="mas-eyebrow">Module 01</div>
+                <div class="mas-title"><em>MA</em> Usecases</div>
+                <div class="mas-sub">Manual Action Services<br>รายการ MA ที่ต้อง execute ตาม process</div>
+                <div class="mas-subtypes">
+                  <span class="mas-subtype">TMN</span>
+                  <span class="mas-subtype">NANO</span>
+                  <span class="mas-subtype">WEALTH</span>
+                </div>
+                <div class="mas-cta-row">
+                  <div>
+                    <div class="mas-total-num" id="landing-total-usecases">0</div>
+                    <div class="mas-total-lbl">Total Services</div>
+                  </div>
+                  <button class="mas-cta" tabindex="-1">
+                    เข้า MA Usecases
+                    <i data-icon="arrow-right" class="mas-arrow"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="mas-divider">หรือ</div>
+
+            <!-- Cut-off panel (blue) -->
+            <div class="mas-panel mas-cut" onclick="masEnterModule('cutoffs')">
+              <div class="mas-bigicon" style="font-size:12px">CO</div>
+              <div class="mas-types-col">
+                <div class="mas-type-pill">TMN <b id="landing-cutoff-tmn">0</b></div>
+                <div class="mas-type-pill">Nano <b id="landing-cutoff-nano">0</b></div>
+                <div class="mas-type-pill">Bank <b id="landing-cutoff-bank">0</b></div>
+              </div>
+              <div class="mas-body">
+                <div class="mas-eyebrow">Module 02</div>
+                <div class="mas-title"><em>Cut-off</em> Services</div>
+                <div class="mas-sub">Cut-off Time Services<br>รายการ Cut-off ที่ต้องจัดการตาม timeline</div>
+                <div class="mas-subtypes">
+                  <span class="mas-subtype">TMN</span>
+                  <span class="mas-subtype">Nano</span>
+                  <span class="mas-subtype">Bank</span>
+                </div>
+                <div class="mas-cta-row">
+                  <div>
+                    <div class="mas-total-num" id="landing-total-cutoffs">0</div>
+                    <div class="mas-total-lbl">Total Services</div>
+                  </div>
+                  <button class="mas-cta" tabindex="-1">
+                    เข้า Cut-off
+                    <i data-icon="arrow-right" class="mas-arrow"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /#mas-split-chooser -->
+
+          <!-- Hidden ma-module-grid kept for JS compatibility -->
+          <div id="ma-module-grid" style="display:none"></div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             LEVEL 2 — CATEGORY VIEW
+        ══════════════════════════════════════ -->
+        <div id="category-view" class="ma-category-view" style="display: none;">
+
+          <!-- Nav bar -->
+          <div class="ma-cat-nav">
+            <button class="ma-cat-back-btn" onclick="showLanding()">← MA Services</button>
+            <div class="ma-cat-nav-sep"></div>
+            <div class="ma-cat-nav-info">
+              <span class="ma-cat-nav-title" id="category-title">เลือก Service Type</span>
+              <span class="ma-cat-nav-sub"   id="category-subtitle">เลือก Service ที่ต้องการดู</span>
+            </div>
+          </div>
+
+          <!-- hidden (IDs kept for JS) -->
+          <div class="category-header" style="display:none;">
+            <h2 id="_category-title-dup"></h2><p id="_category-subtitle-dup"></p>
+          </div>
+
+          <!-- Cards body -->
+          <div class="ma-cat-body">
+
+            <!-- Rendered dynamically by renderCategoryCards() in ma-services.js -->
+            <div id="category-cards-container" class="category-cards" style="display: none;"></div>
+
+          </div><!-- /ma-cat-body -->
+        </div><!-- /category-view -->
+
+        <!-- ══════════════════════════════════════
+             LEVEL 3 — DATA VIEW
+        ══════════════════════════════════════ -->
+        <div class="ma-container" id="data-view" style="display: none;">
+
+          <!-- Navigation bar + inline stats -->
+          <div class="ma-nav-bar">
+            <button class="ma-back-btn" onclick="showCategoryView(currentType)">← Back</button>
+
+            <div class="ma-breadcrumb">
+              <span onclick="showLanding()">Home</span>
+              <span class="breadcrumb-sep">›</span>
+              <span id="breadcrumb-type" onclick="showCategoryView(currentType)">MA Usecases</span>
+              <span class="breadcrumb-sep">›</span>
+              <span id="breadcrumb-category">TMN</span>
+            </div>
+
+            <!-- Stats: usecases -->
+            <div class="ma-nav-stats" id="nav-stats-usecases">
+              <div class="ma-nav-stat">
+                <span class="ma-nav-stat-val" id="stat-filtered-usecases">0</span>
+                <span class="ma-nav-stat-label">Showing</span>
+              </div>
+              <div class="ma-nav-stat-div"></div>
+              <div class="ma-nav-stat">
+                <span class="ma-nav-stat-val" id="stat-total-usecases">0</span>
+                <span class="ma-nav-stat-label">Total</span>
+              </div>
+            </div>
+
+            <!-- Stats: cutoffs -->
+            <div class="ma-nav-stats" id="nav-stats-cutoffs" style="display:none;">
+              <div class="ma-nav-stat">
+                <span class="ma-nav-stat-val" id="stat-filtered-cutoffs">0</span>
+                <span class="ma-nav-stat-label">Showing</span>
+              </div>
+              <div class="ma-nav-stat-div"></div>
+              <div class="ma-nav-stat">
+                <span class="ma-nav-stat-val" id="stat-total-cutoffs">0</span>
+                <span class="ma-nav-stat-label">Total</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Tab: MA Usecases ── -->
+          <div class="ma-tab-content active" id="tab-usecases">
+
+            <!-- Stats (hidden — shown in nav bar above) -->
+            <div class="ma-stats">
+              <div></div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="ma-toolbar">
+              <div class="ma-search">
+                <i>⌕</i>
+                <input type="text" id="search-usecases" placeholder="ค้นหา Service name, Tool, Remark...">
+              </div>
+              <div class="ma-filter">
+                <label>Tool</label>
+                <select id="filter-tool-type">
+                  <option value="">All</option>
+                  <option value="Jenkins">Jenkins</option>
+                  <option value="Admin Portal">Admin Portal</option>
+                  <option value="3rd Party">3rd Party</option>
+                  <option value="Rundeck">Rundeck</option>
+                  <option value="Kims Portal">Kims Portal</option>
+                </select>
+              </div>
+              <button class="ma-add-btn" data-action="add" onclick="openAddUsecase()">+ Add Usecase</button>
+            </div>
+
+            <!-- Table -->
+            <div class="ma-table-wrap">
+              <table class="ma-table">
+                <thead>
+                  <tr>
+                    <th style="width:48px;">ID</th>
+                    <th>Service Name</th>
+                    <th style="width:90px;">Type</th>
+                    <th style="width:110px;">Tool</th>
+                    <th style="width:110px;">Change Message</th>
+                    <th>Remark</th>
+                    <th style="width:140px;">Links</th>
+                    <th style="width:72px;">Images</th>
+                    <th style="width:180px;">MA Control</th>
+                    <th style="width:90px;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="usecases-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ── Tab: Cut-off Services ── -->
+          <div class="ma-tab-content" id="tab-cutoffs">
+
+            <!-- Stats (hidden — shown in nav bar above) -->
+            <div class="ma-stats">
+              <div></div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="ma-toolbar">
+              <div class="ma-search">
+                <i>⌕</i>
+                <input type="text" id="search-cutoffs" placeholder="ค้นหา Service name, Bank, Comcode...">
+              </div>
+              <div class="ma-filter">
+                <label>Bank</label>
+                <select id="filter-bank">
+                  <option value="">All</option>
+                  <option value="SCB">SCB</option>
+                  <option value="BBL">BBL</option>
+                  <option value="KBANK">KBANK</option>
+                  <option value="KTB">KTB</option>
+                  <option value="GSB">GSB</option>
+                  <option value="TTB">TTB</option>
+                  <option value="BAY">BAY</option>
+                </select>
+              </div>
+              <button class="ma-add-btn" data-action="add" onclick="openAddCutoff()">+ Add Cut-off</button>
+            </div>
+
+            <!-- Table -->
+            <div class="ma-table-wrap">
+              <table class="ma-table">
+                <thead>
+                  <tr>
+                    <th style="width:48px;">ID</th>
+                    <th style="width:90px;">Site Type</th>
+                    <th>Service Name</th>
+                    <th style="width:90px;">Bank</th>
+                    <th style="width:140px;">Comcode</th>
+                    <th style="width:110px;">Cut-off Time</th>
+                    <th style="width:110px;">Day</th>
+                    <th style="width:72px;">Images</th>
+                    <th style="width:90px;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="cutoffs-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div><!-- /data-view -->
+      </div><!-- /page-content -->
+    </main>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       MODAL: Add / Edit Usecase
+  ══════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-usecase">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-usecase-title">Add MA Usecase</h3>
+        <button class="btn-close" onclick="closeModal('modal-usecase')">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-usecase">
+          <input type="hidden" id="usecase-id">
+          <div class="form-group">
+            <label class="form-label">Service Name <span style="color:var(--danger)">*</span></label>
+            <input type="text" class="form-control" id="usecase-service-name" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Service Type <span style="color:var(--danger)">*</span></label>
+              <select class="form-control" id="usecase-service-type" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tool Type <span style="color:var(--danger)">*</span></label>
+              <select class="form-control" id="usecase-tool-type" required>
+                <option value="">Select...</option>
+                <option value="Jenkins">Jenkins</option>
+                <option value="Admin Portal">Admin Portal</option>
+                <option value="3rd Party">3rd Party</option>
+                <option value="Rundeck">Rundeck</option>
+                <option value="Kims Portal">Kims Portal</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Can Change Text</label>
+            <select class="form-control" id="usecase-can-change">
+              <option value="">Select...</option>
+              <option value="YES">YES</option>
+              <option value="NO">NO</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Remark</label>
+            <textarea class="form-control" id="usecase-remark" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Link Manual</label>
+            <input type="url" class="form-control" id="usecase-link-manual" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Direct Link</label>
+            <input type="url" class="form-control" id="usecase-direct-link" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Custom URL</label>
+            <input type="url" class="form-control" id="usecase-custom-url" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Grafana Panel URL</label>
+            <input type="url" class="form-control" id="usecase-grafana-link" placeholder="https://grafana-thanos.truemoney.com/d-solo/...?panelId=N">
+            <small style="color:var(--text-muted);display:block;margin-top:4px;font-size:11px">
+              ใช้ URL แบบ Share → Embed (path เป็น <code>d-solo</code>) เพื่อแสดงเฉพาะกราฟใน popup
+            </small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">OpenSearch URL</label>
+            <input type="url" class="form-control" id="usecase-opensearch-link" placeholder="https://opensearch.private-a-cloud1p.ascendmoney.io/app/discover#/...">
+          </div>
+          <div class="form-group" id="usecase-jenkins-group" style="display:none">
+            <label class="form-label" style="display:flex;justify-content:space-between;align-items:center">
+              <span>Jenkins Server</span>
+              <span style="font-weight:400;font-size:10.5px">
+                <a href="./admin/jenkins-servers.html" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:underline">+ Add new server</a>
+                <button type="button" onclick="_jenkinsServers=null; loadJenkinsServers()" title="Reload server list"
+                        style="margin-left:8px;padding:2px 8px;background:transparent;border:1px solid var(--border);border-radius:4px;font-size:10px;cursor:pointer">↻ reload</button>
+              </span>
+            </label>
+            <select class="form-control" id="usecase-jenkins-server">
+              <option value="">Select server...</option>
+            </select>
+            <small style="color:var(--text-muted);display:block;margin-top:4px;font-size:11px">
+              ไม่มี server ที่ต้องการ? เพิ่มที่ <a href="./admin/jenkins-servers.html" target="_blank" rel="noopener" style="color:var(--primary)">admin/jenkins-servers</a> ก่อน (ต้องกรอก URL + auth token) แล้วกด ↻ reload
+            </small>
+            <label class="form-label" style="margin-top:10px">Job Path</label>
+            <input type="text" class="form-control" id="usecase-jenkins-job" placeholder="/job/foo/job/bar หรือ /view/…/job/bar">
+            <small style="color:var(--text-muted);display:block;margin-top:4px;font-size:11px">
+              path หลัง base_url — copy จาก URL Jenkins ของ job แล้วตัด hostname ทิ้ง (params ดึงสดตอนกด Build)
+            </small>
+          </div>
+
+          <div class="form-group" id="usecase-backoffice-group">
+            <label class="form-label">Admin Portal Use Case</label>
+            <input type="hidden" id="usecase-backoffice-id">
+            <div class="bo-picker" style="position:relative">
+              <div style="display:flex;gap:6px;align-items:center">
+                <input type="text" class="form-control" id="bo-picker-search" autocomplete="off"
+                       placeholder="พิมพ์ค้นหาชื่อ use case หรือ id..."
+                       onfocus="openBoPicker()" oninput="renderBoPickerOptions(this.value)">
+                <button type="button" class="btn btn-ghost" id="bo-picker-clear"
+                        onclick="clearBoPicker()" title="ล้างการเชื่อม"
+                        style="padding:6px 10px;font-size:11px">clear</button>
+              </div>
+              <div id="bo-picker-selected" style="margin-top:6px;font-size:11.5px;color:var(--text-muted)"></div>
+              <div id="bo-picker-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:50;
+                   margin-top:4px;max-height:260px;overflow-y:auto;
+                   background:var(--bg-card);border:1px solid var(--border);border-radius:6px;
+                   box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
+            </div>
+            <small style="color:var(--text-muted);display:block;margin-top:6px;font-size:11px">
+              จำเป็นถ้าต้องการปุ่ม MA On/Off — โหลดรายชื่อจาก Admin Portal อัตโนมัติ (แสดงเฉพาะ type <code>use_case</code>)
+            </small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Images (หลายรูป)</label>
+            <div class="ma-image-upload" id="usecase-upload-zone" onclick="document.getElementById('usecase-images').click()">
+              <input type="file" id="usecase-images" accept="image/*" multiple onchange="handleUsecaseImageUpload(event)">
+              <div class="ma-image-upload-icon">↑</div>
+              <div class="ma-image-upload-text">วางรูป (⌘V / Ctrl+V), ลากมาวาง, หรือคลิกเพื่อเลือกไฟล์</div>
+            </div>
+            <div id="usecase-image-preview" class="ma-image-preview-grid"></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-usecase')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveUsecase()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       MODAL: Confirm MA Toggle (Admin Portal)
+  ══════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-ma-toggle">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="ma-toggle-title">Confirm MA action</h3>
+        <button class="btn-close" onclick="closeModal('modal-ma-toggle')">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="ma-toggle-warn" style="padding:10px 12px;border-radius:8px;background:rgba(220,53,69,.08);border:1px solid rgba(220,53,69,.3);color:var(--danger);font-size:13px;line-height:1.5;margin-bottom:14px">
+          จะเปลี่ยนสถานะ MA บน Admin Portal จริง — action นี้ถูก log ทั้งบน SOM และ Admin Portal
+        </div>
+        <div id="ma-toggle-summary" style="margin-bottom:14px;font-size:14px;line-height:1.6"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-ma-toggle')">Cancel</button>
+        <button class="btn btn-danger" id="ma-toggle-confirm-btn" onclick="confirmMaToggle()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       MODAL: Edit Use Case (full — clone of Admin Portal Edit)
+  ══════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-bo-edit">
+    <div class="modal modal-lg" style="max-width:900px">
+      <div class="modal-header">
+        <h3 class="modal-title" id="bo-edit-title">Edit Use Case</h3>
+        <button class="btn-close" onclick="closeBoEditModal()">×</button>
+      </div>
+      <div class="modal-body" id="bo-edit-body" style="max-height:70vh;overflow-y:auto">
+        <div id="bo-edit-loading" style="padding:40px;text-align:center;color:var(--text-muted);font-size:13px">
+          กำลังโหลด...
+        </div>
+        <div id="bo-edit-form" style="display:none">
+          <!-- Use Case Name -->
+          <div class="form-group">
+            <label class="form-label"><strong>Use Case Name</strong></label>
+            <input type="text" class="form-control" id="bo-edit-name">
+          </div>
+
+          <!-- MA Status Property -->
+          <div class="bo-panel">
+            <div class="bo-panel-head">
+              <span><strong>MA Status Property</strong></span>
+              <div class="bo-toggle">
+                <button type="button" class="bo-toggle-btn is-available" id="bo-status-available"
+                        onclick="setBoMaEnable(false)">AVAILABLE</button>
+                <button type="button" class="bo-toggle-btn is-maintenance" id="bo-status-maintenance"
+                        onclick="setBoMaEnable(true)">MAINTENANCE</button>
+              </div>
+            </div>
+            <table class="bo-prop-tbl" id="bo-enable-tbl">
+              <thead>
+                <tr><th>application name</th><th>key</th><th style="width:120px">value</th><th style="width:36px"></th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <div style="text-align:center;margin-top:8px">
+              <button type="button" class="bo-add-btn" onclick="openBoPropPicker('enable')">＋ MA Status Property</button>
+            </div>
+          </div>
+
+          <!-- MA Message Property -->
+          <div class="bo-panel">
+            <div class="bo-panel-head"><strong>MA Message Property</strong></div>
+            <div class="bo-msg-grid">
+              <div>
+                <label class="form-label" style="font-weight:600">Message (TH)</label>
+                <textarea class="form-control" id="bo-edit-msg-th" rows="3"></textarea>
+                <table class="bo-prop-tbl" id="bo-msg-th-tbl" style="margin-top:8px">
+                  <thead>
+                    <tr><th style="width:35%">application name</th><th>key</th><th style="width:110px">value</th><th style="width:32px"></th></tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+                <div style="text-align:center;margin-top:6px">
+                  <button type="button" class="bo-add-btn" onclick="openBoPropPicker('msg_th')">＋ MA Message Property (TH)</button>
+                </div>
+              </div>
+              <div>
+                <label class="form-label" style="font-weight:600">Message (EN)</label>
+                <textarea class="form-control" id="bo-edit-msg-en" rows="3"></textarea>
+                <table class="bo-prop-tbl" id="bo-msg-en-tbl" style="margin-top:8px">
+                  <thead>
+                    <tr><th style="width:35%">application name</th><th>key</th><th style="width:110px">value</th><th style="width:32px"></th></tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+                <div style="text-align:center;margin-top:6px">
+                  <button type="button" class="bo-add-btn" onclick="openBoPropPicker('msg_en')">＋ MA Message Property (EN)</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="bo-edit-meta" style="font-size:11px;color:var(--text-muted);margin-top:10px"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeBoEditModal()">Cancel</button>
+        <button class="btn btn-primary" id="bo-edit-save-btn" onclick="saveBoEdit()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sub-modal: Property picker (nested inside Edit modal flow) -->
+  <div class="modal-overlay" id="modal-bo-prop-picker">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Property</h3>
+        <button class="btn-close" onclick="closeBoPropPicker()">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="form-control" id="bo-prop-search" placeholder="พิมพ์ค้นหา application หรือ key..."
+               oninput="renderBoPropPickerList()" autocomplete="off">
+        <div id="bo-prop-picker-list" style="max-height:400px;overflow-y:auto;margin-top:10px;
+             border:1px solid var(--border);border-radius:6px"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeBoPropPicker()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       MODAL: Jenkins Build (dynamic params + live progress)
+  ══════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-jenkins-build">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="jb-title">Build Jenkins Job</h3>
+        <button class="btn-close" onclick="closeJenkinsModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="jb-summary" style="margin-bottom:14px"></div>
+        <div id="jb-params-view">
+          <div id="jb-params" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+        <div id="jb-progress-view" style="display:none">
+          <div id="jb-phase-label" style="font-weight:700;font-size:13px;margin-bottom:8px"></div>
+          <div class="jb-progress-bar">
+            <div id="jb-progress-fill" class="jb-progress-fill"></div>
+          </div>
+          <div id="jb-progress-meta" style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--text-muted)">
+            <span id="jb-elapsed">—</span>
+            <span id="jb-percent">0%</span>
+          </div>
+          <div id="jb-detail" style="margin-top:14px;font-size:12px;line-height:1.6"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="jb-cancel-btn" onclick="closeJenkinsModal()">Cancel</button>
+        <button class="btn btn-primary" id="jb-run-btn" onclick="runJenkinsBuild()">▶ Run Build</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       MODAL: Add / Edit Cut-off
+  ══════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-cutoff">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-cutoff-title">Add Cut-off Service</h3>
+        <button class="btn-close" onclick="closeModal('modal-cutoff')">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-cutoff">
+          <input type="hidden" id="cutoff-id">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Site Type <span style="color:var(--danger)">*</span></label>
+              <select class="form-control" id="cutoff-site-type" required onchange="toggleBankFields()">
+                <option value="">Select...</option>
+              </select>
+            </div>
+            <div class="form-group" id="cutoff-bank-group" style="display:none;">
+              <label class="form-label">Bank Name <span style="color:var(--danger)">*</span></label>
+              <select class="form-control" id="cutoff-bank-name">
+                <option value="">Select...</option>
+                <option value="SCB">SCB - ธนาคารไทยพาณิชย์</option>
+                <option value="BBL">BBL - ธนาคารกรุงเทพ</option>
+                <option value="KBANK">KBANK - ธนาคารกสิกรไทย</option>
+                <option value="KTB">KTB - ธนาคารกรุงไทย</option>
+                <option value="GSB">GSB - ธนาคารออมสิน</option>
+                <option value="TTB">TTB - ธนาคารทหารไทยธนชาต</option>
+                <option value="BAY">BAY - ธนาคารกรุงศรี</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Service Name <span style="color:var(--danger)">*</span></label>
+            <input type="text" class="form-control" id="cutoff-service-name" required>
+          </div>
+          <div class="form-group" id="cutoff-comcode-group" style="display:none;">
+            <label class="form-label">Comcode</label>
+            <input type="text" class="form-control" id="cutoff-comcode" placeholder="e.g., 010-554-614-953-1">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Cut-off Time <span style="color:var(--danger)">*</span></label>
+              <input type="text" class="form-control" id="cutoff-time" required placeholder="e.g., 23:30 - 00:00">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cut-off Day <span style="color:var(--danger)">*</span></label>
+              <input type="text" class="form-control" id="cutoff-day" required placeholder="e.g., ทุกวัน">
+            </div>
+          </div>
+          <div id="cutoff-bank-fields" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">Service Group</label>
+              <input type="text" class="form-control" id="cutoff-service-group">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Channel</label>
+              <input type="text" class="form-control" id="cutoff-channel">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">MA Page</label>
+                <select class="form-control" id="cutoff-ma-page">
+                  <option value="">Select...</option>
+                  <option value="TRUE">TRUE</option>
+                  <option value="FALSE">FALSE</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">TMN Certificate</label>
+                <select class="form-control" id="cutoff-tmn-cert">
+                  <option value="">Select...</option>
+                  <option value="TRUE">TRUE</option>
+                  <option value="FALSE">FALSE</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bank Certificate</label>
+              <select class="form-control" id="cutoff-bank-cert">
+                <option value="">Select...</option>
+                <option value="TRUE">TRUE</option>
+                <option value="FALSE">FALSE</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Remark</label>
+            <textarea class="form-control" id="cutoff-remark" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Images (หลายรูป)</label>
+            <div class="ma-image-upload" id="cutoff-upload-zone" onclick="document.getElementById('cutoff-images').click()">
+              <input type="file" id="cutoff-images" accept="image/*" multiple onchange="handleCutoffImageUpload(event)">
+              <div class="ma-image-upload-icon">↑</div>
+              <div class="ma-image-upload-text">วางรูป (⌘V / Ctrl+V), ลากมาวาง, หรือคลิกเพื่อเลือกไฟล์</div>
+            </div>
+            <div id="cutoff-image-preview" class="ma-image-preview-grid"></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-cutoff')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveCutoff()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Gallery Modal -->
+  <div class="ma-gallery-modal" id="gallery-modal">
+    <div class="ma-gallery-content">
+      <div class="ma-gallery-header">
+        <h3 id="gallery-title">Images</h3>
+        <button class="ma-gallery-close" onclick="closeGallery()">×</button>
+      </div>
+      <div class="ma-gallery-grid" id="gallery-grid"></div>
+    </div>
+  </div>
+
+  <!-- Image Lightbox -->
+  <div class="ma-lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="ma-lightbox-close">×</button>
+    <img id="lightbox-image" src="" alt="">
+  </div>
+
+  <!-- Grafana Popup -->
+  <div class="ma-grafana-modal" id="grafana-modal" onclick="if(event.target===this)closeGrafanaPopup()">
+    <div class="ma-grafana-content">
+      <div class="ma-grafana-header">
+        <h3 class="ma-grafana-title" id="grafana-title">Grafana</h3>
+        <div class="ma-grafana-actions">
+          <a id="grafana-open-tab" class="ma-grafana-open" href="#" target="_blank" rel="noopener">Open in new tab ↗</a>
+          <button class="ma-grafana-close" onclick="closeGrafanaPopup()" title="Close">×</button>
+        </div>
+      </div>
+      <div class="ma-grafana-body">
+        <iframe id="grafana-frame" src="about:blank" allowfullscreen
+          allow="fullscreen" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script src="./assets/js/auth.js"></script>
+  <script src="./assets/js/api.js"></script>
+  <script src="./assets/js/utils.js"></script>
+  <script src="./assets/js/loading-overlay.js"></script>
+  <script src="./assets/js/csrf.js"></script>
+  <script src="./assets/js/analytics.js"></script>
+  <script src="./assets/js/analytics-features.js"></script>
+  <script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+  <script src="./assets/js/maintenance.js"></script>
+  <script src="./assets/pages/ma-services/ma-services.js"></script>
+  <script src="./assets/pages/ma-services/ma-services-stats.js"></script>
+  <script src="./assets/pages/ma-services/ma-services-page.js"></script>
+  
+
+  <!-- Split-chooser entry point — inline so it's guaranteed in global scope -->
+  
+</body>
+</html>

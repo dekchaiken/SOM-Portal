@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Admin — Centralize Platform</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ── blocks.so-inspired minimal design tokens (page-scoped) ────────────── */
+    .sa-page { --sa-radius: 12px; --sa-radius-lg: 16px; --sa-gap: 20px; }
+
+    /* ── Badge / chips ────────────────────────────────────────────────────── */
+    .badge-super {
+      background: var(--orange, #F26419); color: #fff;
+      font-size: 9.5px; font-weight: 800; letter-spacing: .08em;
+      padding: 2px 7px; border-radius: 999px; text-transform: uppercase;
+    }
+
+    /* ── Section headers ──────────────────────────────────────────────────── */
+    .sa-section { margin-bottom: 32px; }
+    .sa-section-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      margin-bottom: 14px; gap: 12px; flex-wrap: wrap;
+    }
+    .sa-section-title {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 10.5px; font-weight: 800; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .09em;
+    }
+    .sa-section-title .cnt {
+      font-family: var(--font, 'JetBrains Mono', monospace);
+      font-size: 10px; color: var(--text-muted); font-weight: 700;
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 1px 7px; border-radius: 999px; letter-spacing: 0;
+    }
+
+    /* ── Create-team compact bar (collapsed by default) ───────────────────── */
+    .create-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--sa-radius);
+      cursor: pointer; transition: border-color .15s, background .15s;
+    }
+    .create-bar:hover { border-color: var(--orange); }
+    .create-bar-icon {
+      width: 28px; height: 28px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; color: var(--orange);
+      background: color-mix(in srgb, var(--orange, #F26419) 12%, transparent);
+    }
+    .create-bar-text { flex: 1; font-size: 12.5px; font-weight: 600; color: var(--text); }
+    .create-bar-sub  { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+    .create-bar-caret {
+      font-size: 12px; color: var(--text-muted);
+      transition: transform .2s ease;
+    }
+    .create-panel.open ~ .create-bar .create-bar-caret,
+    .create-bar.open .create-bar-caret { transform: rotate(180deg); }
+
+    .create-panel {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height .28s ease, margin-top .18s ease, opacity .18s ease;
+      opacity: 0;
+    }
+    .create-panel.open {
+      max-height: 520px;
+      margin-top: 10px;
+      opacity: 1;
+    }
+    .create-inner {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--sa-radius); padding: 20px;
+    }
+    .create-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;
+    }
+    @media (max-width: 720px) { .create-grid { grid-template-columns: 1fr; } }
+
+    .create-actions {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin-top: 16px; padding-top: 14px;
+      border-top: 1px dashed var(--border);
+    }
+    .create-hint { font-size: 10.5px; color: var(--text-muted); line-height: 1.5; }
+    .create-color-row { display: flex; align-items: center; gap: 8px; }
+    .color-preview {
+      width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
+      border: 1px solid var(--border);
+      box-shadow: inset 0 0 0 2px var(--bg-card);
+    }
+
+    /* ── Teams grid ───────────────────────────────────────────────────────── */
+    .teams-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: var(--sa-gap);
+    }
+    .team-card {
+      position: relative; overflow: hidden;
+      display: flex; flex-direction: column;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--sa-radius-lg);
+      padding: 18px 18px 14px;
+      transition: border-color .16s, transform .16s;
+    }
+    .team-card:hover { border-color: color-mix(in srgb, var(--text) 20%, var(--border)); }
+    .team-card.inactive { opacity: .55; }
+
+    .team-card-top {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+      margin-bottom: 12px;
+    }
+    .team-ident {
+      display: flex; align-items: flex-start; gap: 10px; min-width: 0;
+    }
+    .team-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      margin-top: 5px; flex-shrink: 0;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--team-color, #6366F1) 12%, transparent);
+    }
+    .team-ident-body { min-width: 0; }
+    .team-name {
+      font-size: 14.5px; font-weight: 800; color: var(--text);
+      line-height: 1.2; letter-spacing: -.005em;
+    }
+    .team-slug {
+      font-family: var(--font, 'JetBrains Mono', monospace);
+      font-size: 10.5px; color: var(--text-muted); margin-top: 3px;
+    }
+
+    .team-status {
+      font-size: 9.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 999px; white-space: nowrap; flex-shrink: 0;
+    }
+    .team-status.on  { background: rgba(16,185,129,.1);  color: #10b981; }
+    .team-status.off { background: rgba(148,163,184,.12); color: #94a3b8; }
+
+    .team-desc {
+      font-size: 11.5px; color: var(--text-muted); line-height: 1.5;
+      margin-bottom: 14px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .team-stats-row {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 6px; margin-bottom: 14px;
+      border: 1px dashed var(--border); border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .team-stat {
+      display: flex; align-items: baseline; gap: 6px;
+    }
+    .team-stat-v { font-size: 15px; font-weight: 800; color: var(--text); line-height: 1; letter-spacing: -.02em; }
+    .team-stat-l {
+      font-size: 9.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 700;
+    }
+
+    .team-features {
+      font-family: var(--font, 'JetBrains Mono', monospace);
+      font-size: 10px; color: var(--text-muted); line-height: 1.6;
+      margin-bottom: 14px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .team-actions {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      padding-top: 10px; border-top: 1px solid var(--border);
+    }
+    .team-btn {
+      appearance: none;
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 5px 10px; border-radius: 8px;
+      font-family: var(--font); font-size: 11px; font-weight: 700;
+      border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+      text-decoration: none; cursor: pointer;
+      transition: color .12s, background .12s, border-color .12s;
+    }
+    .team-btn:hover { color: var(--text); border-color: var(--text-muted); }
+    .team-btn.primary {
+      background: var(--text); color: var(--bg-card); border-color: var(--text);
+    }
+    .team-btn.primary:hover { opacity: .88; }
+    .team-btn.warn:hover { color: #ef4444; border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.05); }
+    .team-btn.danger:hover { color: #ef4444; border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.05); }
+
+    /* ── Empty state ──────────────────────────────────────────────────────── */
+    .sa-empty {
+      grid-column: 1/-1;
+      padding: 40px 20px; text-align: center;
+      color: var(--text-muted); font-size: 12px;
+      border: 1px dashed var(--border); border-radius: var(--sa-radius);
+    }
+
+    /* ── Modal (blocks.so-style: minimal shadow, tight radius) ────────────── */
+    .sa-modal-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(15,15,15,.5);
+      display: none; align-items: center; justify-content: center;
+      backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    }
+    .sa-modal-overlay.open { display: flex; }
+    .sa-modal {
+      width: 92%; max-width: 440px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--sa-radius-lg);
+      box-shadow: 0 24px 60px rgba(0,0,0,.28), 0 4px 16px rgba(0,0,0,.08);
+      padding: 24px;
+    }
+    .sa-modal h3 {
+      font-size: 14px; font-weight: 800; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .sa-modal-actions {
+      display: flex; gap: 8px; justify-content: flex-end;
+      margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content" id="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="zap"></i> Super Admin <span class="badge-super">PLATFORM</span></div>
+        <div class="page-sub">Team registry · feature approvals · super-admin only</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm" onclick="loadAll()"><i data-icon="refresh-cw"></i> Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content sa-page">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="zap"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Super Admin</div>
+          <h1>All Teams</h1>
+          <p>สร้าง / แก้ไข / ปิด team ทั้งหมด และอนุมัติคำขอ feature จาก team admin — เฉพาะ super_admin เท่านั้น</p>
+        </div>
+      </section>
+
+      <!-- ── Create Team (collapsed by default) ──────────────────────────── -->
+      <div class="sa-section" id="create-team-section">
+        <div class="create-bar" id="create-toggle" onclick="toggleCreatePanel()">
+          <div class="create-bar-icon">＋</div>
+          <div>
+            <div class="create-bar-text">Create new team</div>
+            <div class="create-bar-sub">Slug + name + description · default features included</div>
+          </div>
+          <div style="flex:1"></div>
+          <div class="create-bar-caret">▾</div>
+        </div>
+
+        <div class="create-panel" id="create-panel">
+          <div class="create-inner">
+            <div class="create-grid">
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Slug <span style="color:var(--orange)">*</span></label>
+                <input type="text" id="new-slug" class="form-control" placeholder="ops, infra, devops…" maxlength="32">
+                <small style="font-size:10px;color:var(--text-muted);">lowercase, no spaces</small>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Team Name <span style="color:var(--orange)">*</span></label>
+                <input type="text" id="new-name" class="form-control" placeholder="Operations Team">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Description</label>
+                <input type="text" id="new-desc" class="form-control" placeholder="optional">
+              </div>
+            </div>
+
+            <div class="create-actions">
+              <div style="display:flex;align-items:center;gap:14px;">
+                <div class="create-color-row">
+                  <div id="color-preview" class="color-preview" style="background:#6366F1;"></div>
+                  <input type="color" id="new-color" value="#6366F1"
+                         style="border:none;background:transparent;cursor:pointer;width:32px;height:32px;padding:0;"
+                         onchange="document.getElementById('color-preview').style.background=this.value">
+                </div>
+                <div class="create-hint">
+                  Includes <span style="color:var(--text);font-weight:600;">6 default features</span> · Dashboard, Board, Team Docs, SABai, Schedule, Learning
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="createTeam()" id="create-btn">Create team</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Teams grid ──────────────────────────────────────────────────── -->
+      <div class="sa-section">
+        <div class="sa-section-head">
+          <div class="sa-section-title">
+            All Teams
+            <span class="cnt" id="teams-count">—</span>
+          </div>
+        </div>
+        <div class="teams-grid" id="teams-grid">
+          <div class="sa-empty">Loading teams…</div>
+        </div>
+      </div>
+
+    </main><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<!-- ── Edit team modal ─────────────────────────────────────────────────── -->
+<div class="sa-modal-overlay" id="edit-modal">
+  <div class="sa-modal" id="edit-modal-inner" style="max-width:480px">
+    <h3 id="edit-modal-title"><i data-icon="pencil"></i> Edit Team</h3>
+    <input type="hidden" id="edit-team-id">
+    <input type="hidden" id="edit-team-slug">
+    <div class="form-group" style="margin-bottom:14px;">
+      <label class="form-label">Team Name</label>
+      <input type="text" id="edit-name" class="form-control">
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label class="form-label">Description</label>
+      <input type="text" id="edit-desc" class="form-control">
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label">Color</label>
+      <input type="color" id="edit-color" style="width:44px;height:32px;border:1px solid var(--border);border-radius:8px;padding:0;cursor:pointer;background:transparent;">
+    </div>
+
+    <!-- Dev sub-teams section — only visible when editing the dev team -->
+    <div id="edit-subteams-section" style="display:none;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap">
+        <div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#7c3aed;display:flex;align-items:center;gap:6px">
+          <i data-icon="code"></i> Dev Sub-teams
+          <span id="edit-subteams-count" style="font-family:monospace;font-size:10px;background:var(--bg);border:1px solid var(--border);padding:1px 7px;border-radius:999px;color:var(--text-muted)">—</span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="edit-new-subteam" class="form-control" placeholder="ชื่อทีมใหม่…"
+                 style="width:150px;font-size:12px;padding:5px 9px"
+                 onkeydown="if(event.key==='Enter')editAddSubteam()">
+          <button class="btn btn-primary btn-sm" onclick="editAddSubteam()">+ Add</button>
+        </div>
+      </div>
+      <div id="edit-subteams-chips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:32px">
+        <span style="color:var(--text-muted);font-size:12px">Loading…</span>
+      </div>
+    </div>
+
+    <div class="sa-modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveEdit()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+
+<script>
+// ── Guard + Layout (synchronous — same pattern as all other admin pages) ──────
+if (!Auth.requireAdmin()) { /* redirected if not admin/super_admin */ }
+if (Auth.getUser()?.role !== 'super_admin') {
+  window.location.href = './index.html';
+}
+Layout.render('super-admin');
+Auth.initUserUI();
+
+let _teams = [];
+
+// Load on page start
+document.addEventListener('DOMContentLoaded', () => loadAll());
+
+async function loadAll() {
+  await loadTeams();
+}
+
+// ── Dev Sub-teams (inside Edit modal, dev team only) ───────────────────────
+let _subteams = [];
+
+async function _fetchSubteams() {
+  const res = await API.devSubteams.list();
+  _subteams = (res?.ok && Array.isArray(res.data?.data)) ? res.data.data : [];
+}
+
+function _renderSubteamChips() {
+  const chips = document.getElementById('edit-subteams-chips');
+  const cnt   = document.getElementById('edit-subteams-count');
+  if (cnt) cnt.textContent = _subteams.length;
+  if (!chips) return;
+  if (_subteams.length === 0) {
+    chips.innerHTML = '<span style="color:var(--text-muted);font-size:12px">ยังไม่มี sub-team</span>';
+    return;
+  }
+  chips.innerHTML = _subteams.map(s => `
+    <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 12px;
+                 background:color-mix(in srgb,#8b5cf6 8%,transparent);
+                 border:1px solid color-mix(in srgb,#8b5cf6 22%,transparent);
+                 border-radius:999px;font-size:12px;font-weight:600;color:#7c3aed;white-space:nowrap">
+      ${escHtml(s)}
+      <button onclick="editRemoveSubteam('${escHtml(s).replace(/'/g,"\\'")}') " title="ลบ"
+              style="background:none;border:none;cursor:pointer;color:#a78bfa;font-size:14px;line-height:1;padding:0;margin-left:1px"
+              onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#a78bfa'">×</button>
+    </span>`).join('');
+  if (typeof window.Icons !== 'undefined') window.Icons.replace?.();
+}
+
+async function editAddSubteam() {
+  const inp  = document.getElementById('edit-new-subteam');
+  const name = inp.value.trim();
+  if (!name) { inp.focus(); return; }
+  const res = await API.devSubteams.add(name);
+  if (res?.ok) {
+    inp.value = '';
+    _subteams = res.data?.data || _subteams;
+    _renderSubteamChips();
+    Toast.success(`เพิ่ม "${name}" แล้ว`);
+  } else {
+    Toast.error(res?.data?.message || 'ไม่สามารถเพิ่มได้');
+  }
+}
+
+async function editRemoveSubteam(name) {
+  const ok = await SOMDialog.confirm(`ลบ sub-team "${name}" ออก?`, { title: 'ยืนยัน', okLabel: 'ลบ', icon: 'warning', okColor: 'danger' });
+  if (!ok) return;
+  const res = await API.devSubteams.remove(name);
+  if (res?.ok) {
+    _subteams = res.data?.data || _subteams;
+    _renderSubteamChips();
+    Toast.success(`ลบ "${name}" แล้ว`);
+  } else {
+    Toast.error(res?.data?.message || 'ไม่สามารถลบได้');
+  }
+}
+
+// ── Load teams from API ────────────────────────────────────────────────────
+async function loadTeams() {
+  const grid = document.getElementById('teams-grid');
+  grid.innerHTML = '<div style="color:var(--text-muted);padding:20px;">Loading...</div>';
+  const res = await API.teams.list();
+  if (!res?.ok) { Toast.error('Failed to load teams'); return; }
+  _teams = res.data?.data || res.data || [];
+  renderTeams();
+}
+
+// ── Count users per team ───────────────────────────────────────────────────
+async function getTeamUserCounts() {
+  const res = await API.users.list(); // super_admin gets all users
+  if (!res?.ok) return {};
+  const users = res.data?.data || [];
+  const counts = {};
+  users.forEach(u => { counts[u.team] = (counts[u.team] || 0) + 1; });
+  return counts;
+}
+
+// ── Render teams grid ──────────────────────────────────────────────────────
+async function renderTeams() {
+  const grid   = document.getElementById('teams-grid');
+  const cntEl  = document.getElementById('teams-count');
+  const counts = await getTeamUserCounts();
+
+  if (cntEl) cntEl.textContent = _teams.length;
+
+  if (!_teams.length) {
+    grid.innerHTML = '<div class="sa-empty">No teams yet — create one above to get started.</div>';
+    return;
+  }
+
+  grid.innerHTML = _teams.map(t => {
+    const userCount = counts[t.slug] || 0;
+    const featCount = (t.features || []).length;
+    const isActive  = t.active !== false;
+    const color     = t.color || '#6366F1';
+    const featList  = (t.features || []).slice(0, 8).join(' · ') || 'none';
+    return `
+      <div class="team-card ${isActive ? '' : 'inactive'}" style="--team-color:${color}">
+        <div class="team-card-top">
+          <div class="team-ident">
+            <span class="team-dot" style="background:${color}"></span>
+            <div class="team-ident-body">
+              <div class="team-name">${escHtml(t.name)}</div>
+              <div class="team-slug">/${escHtml(t.slug)}</div>
+            </div>
+          </div>
+          <span class="team-status ${isActive ? 'on' : 'off'}">${isActive ? 'Active' : 'Paused'}</span>
+        </div>
+
+        ${t.description ? `<div class="team-desc">${escHtml(t.description)}</div>` : ''}
+
+        <div class="team-stats-row">
+          <div class="team-stat"><span class="team-stat-v">${userCount}</span><span class="team-stat-l">Users</span></div>
+          <div class="team-stat"><span class="team-stat-v">${featCount}</span><span class="team-stat-l">Features</span></div>
+        </div>
+
+        <div class="team-features" title="${escHtml((t.features||[]).join(', '))}">${escHtml(featList)}</div>
+
+        <div class="team-actions">
+          <a href="users.html?team=${escHtml(t.slug)}" class="team-btn primary">Manage users →</a>
+          <button class="team-btn" onclick="openEditModal('${t.id}')">Edit</button>
+          ${isActive
+            ? `<button class="team-btn warn" onclick="deactivateTeam('${t.id}','${escHtml(t.name)}')">Pause</button>`
+            : `<button class="team-btn" onclick="reactivateTeam('${t.id}')">Reactivate</button>`
+          }
+          <button class="team-btn danger" onclick="deleteTeam('${t.id}','${escHtml(t.name)}','${escHtml(t.slug)}')">Delete</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Create-team collapsible panel ─────────────────────────────────────────
+function toggleCreatePanel() {
+  const bar = document.getElementById('create-toggle');
+  const pan = document.getElementById('create-panel');
+  const open = pan.classList.toggle('open');
+  bar.classList.toggle('open', open);
+  if (open) setTimeout(() => document.getElementById('new-slug')?.focus(), 200);
+}
+
+// ── Create team ────────────────────────────────────────────────────────────
+async function createTeam() {
+  const slug  = document.getElementById('new-slug').value.trim().toLowerCase();
+  const name  = document.getElementById('new-name').value.trim();
+  const desc  = document.getElementById('new-desc').value.trim();
+  const color = document.getElementById('new-color').value;
+
+  if (!slug) { Toast.error('Slug is required'); return; }
+  if (!name) { Toast.error('Name is required'); return; }
+  if (!/^[a-z0-9_-]+$/.test(slug)) { Toast.error('Slug must be lowercase alphanumeric, dashes, or underscores only'); return; }
+
+  const btn = document.getElementById('create-btn');
+  btn.disabled = true; btn.textContent = 'Creating...';
+
+  const res = await API.teams.create({ slug, name, description: desc, color });
+  btn.disabled = false; btn.innerHTML = '<i data-icon="plus"></i> Create Team';
+
+  if (res?.ok) {
+    Toast.success(`Team "${name}" created!`);
+    document.getElementById('new-slug').value = '';
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-desc').value = '';
+    await loadTeams();
+  } else {
+    Toast.error(res?.data?.message || 'Failed to create team');
+  }
+}
+
+// ── Edit modal ─────────────────────────────────────────────────────────────
+async function openEditModal(teamId) {
+  const t = _teams.find(x => x.id === teamId);
+  if (!t) return;
+  document.getElementById('edit-team-id').value   = t.id;
+  document.getElementById('edit-team-slug').value = t.slug || '';
+  document.getElementById('edit-name').value      = t.name;
+  document.getElementById('edit-desc').value      = t.description || '';
+  document.getElementById('edit-color').value     = t.color || '#6366F1';
+
+  const isDevTeam = t.slug === 'dev';
+  const subSection = document.getElementById('edit-subteams-section');
+  const modalInner = document.getElementById('edit-modal-inner');
+  const modalTitle = document.getElementById('edit-modal-title');
+
+  if (isDevTeam) {
+    subSection.style.display = 'block';
+    modalInner.style.maxWidth = '560px';
+    modalTitle.innerHTML = '<i data-icon="pencil"></i> Edit Team — <span style="color:#7c3aed">Dev</span>';
+    // Load sub-teams fresh each time
+    _renderSubteamChips(); // show loading state immediately
+    await _fetchSubteams();
+    _renderSubteamChips();
+  } else {
+    subSection.style.display = 'none';
+    modalInner.style.maxWidth = '480px';
+    modalTitle.innerHTML = '<i data-icon="pencil"></i> Edit Team';
+  }
+
+  document.getElementById('edit-modal').classList.add('open');
+  if (typeof window.Icons !== 'undefined') window.Icons.replace?.();
+}
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+}
+// Close modal on overlay click
+document.getElementById('edit-modal')?.addEventListener('click', e => {
+  if (e.target.id === 'edit-modal') closeEditModal();
+});
+async function saveEdit() {
+  const id    = document.getElementById('edit-team-id').value;
+  const name  = document.getElementById('edit-name').value.trim();
+  const desc  = document.getElementById('edit-desc').value.trim();
+  const color = document.getElementById('edit-color').value;
+  if (!name) { Toast.error('Name required'); return; }
+  const res = await API.teams.update(id, { name, description: desc, color });
+  if (res?.ok) { Toast.success('Team updated'); closeEditModal(); loadTeams(); }
+  else Toast.error(res?.data?.message || 'Failed');
+}
+
+// ── Deactivate ─────────────────────────────────────────────────────────────
+async function deactivateTeam(id, name) {
+  if (!await SOMDialog.confirm(`Pause team "${name}"? Users can still log in but team will be marked inactive.`, { title: 'ยืนยัน', okLabel: 'Pause', icon: 'warning', okColor: 'warning' })) return;
+  const res = await API.teams.deactivate(id);
+  if (res?.ok) { Toast.success('Team paused', 'success'); loadTeams(); }
+  else Toast.error(res?.data?.message || 'Failed');
+}
+async function deleteTeam(id, name, slug) {
+  if (slug === 'sm') { Toast.error('Cannot delete the primary SM team'); return; }
+  if (!await SOMDialog.confirm(`PERMANENTLY DELETE team "${name}" (${slug})?\n\nThis removes the team from the registry. Data files in data/${slug}/ are NOT deleted.`, { title: 'ลบทีมถาวร', okLabel: 'ลบถาวร', icon: 'danger', okColor: 'danger' })) return;
+  const res = await API.teams.hardDelete(id);
+  if (res?.ok) { Toast.success(`Team "${name}" deleted`); loadTeams(); }
+  else Toast.error(res?.data?.message || 'Failed');
+}
+async function reactivateTeam(id) {
+  const res = await API.teams.update(id, { active: true });
+  if (res?.ok) { Toast.success('Team reactivated'); loadTeams(); }
+  else Toast.error(res?.data?.message || 'Failed');
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

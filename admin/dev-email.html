@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Tester — Dev Tools</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/dev-badge.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/dev-email/dev-email.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="mail"></i> Email Tester</div>
+        <div class="page-sub">ทดสอบ SMTP connection + ส่ง mock email พร้อม branded template — เฉพาะ Dev SM</div>
+      </div>
+      <div class="topbar-actions"></div>
+    </header>
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="mail"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Dev Tools</div>
+          <h1>Email Tester</h1>
+          <p>ทดสอบ SMTP connection + ส่ง mock email พร้อม branded template — เฉพาะ Dev SM</p>
+        </div>
+      </section>
+
+      <!-- SMTP Config + Connection Test -->
+      <div class="dc">
+        <div class="dc-hd">
+          <div class="dc-icon" style="background:rgba(59,130,246,.12);color:#3b82f6"><i data-icon="plug"></i></div>
+          <div>
+            <div class="dc-title">SMTP Connection Test</div>
+            <div class="dc-sub">ทดสอบ TCP → EHLO → STARTTLS → AUTH โดยไม่ส่ง email จริง</div>
+          </div>
+        </div>
+        <div class="dc-body">
+          <dl class="smtp-info" id="smtp-config-info">
+            <dt>Host</dt><dd id="si-host">Loading…</dd>
+            <dt>Port</dt><dd id="si-port">—</dd>
+            <dt>Encryption</dt><dd id="si-enc">—</dd>
+            <dt>Username</dt><dd id="si-user">—</dd>
+            <dt>From Name</dt><dd id="si-from">—</dd>
+          </dl>
+          <div id="smtp-result" style="font-size:11px;color:var(--text-muted)">กดปุ่มด้านล่างเพื่อทดสอบ</div>
+        </div>
+        <div class="dc-foot">
+          <button class="d-btn primary" onclick="testSmtp()" id="btn-smtp"><i data-icon="search"></i> Test Connection</button>
+        </div>
+      </div>
+
+      <!-- Email Composer -->
+      <div class="dc">
+        <div class="dc-hd">
+          <div class="dc-icon" style="background:rgba(242,100,25,.12);color:var(--orange)"><i data-icon="mail"></i></div>
+          <div>
+            <div class="dc-title">Send Test Email</div>
+            <div class="dc-sub">ส่ง email ทดสอบโดยไม่สร้าง Jira ticket — ทดสอบ branded template ครบ header + body + footer</div>
+          </div>
+        </div>
+        <div class="dc-body">
+          <div class="d-row-2">
+            <div>
+              <div class="d-label">Mock Issue Key</div>
+              <input type="text" class="d-input" id="mail-issue" value="DEV-TEST-001">
+            </div>
+            <div>
+              <div class="d-label">Service Subtype (CC auto-load)</div>
+              <select class="d-select" id="mail-subtype">
+                <option value="">— ไม่เลือก —</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="d-row">
+            <div class="d-label">Mock Summary</div>
+            <input type="text" class="d-input" id="mail-summary" value="Test ticket from Dev Tools — please ignore">
+          </div>
+
+          <div class="d-row-2">
+            <div>
+              <div class="d-label">To (comma-separated)</div>
+              <input type="text" class="d-input" id="mail-to" placeholder="me@example.com">
+            </div>
+            <div>
+              <div class="d-label">CC (comma-separated)</div>
+              <input type="text" class="d-input" id="mail-cc" placeholder="auto-loaded from subtype">
+            </div>
+          </div>
+
+          <div class="d-row">
+            <div class="d-label">Body <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted)">(วางรูปด้วย Ctrl+V)</span></div>
+            <div class="d-editor">
+              <div class="d-editor-toolbar">
+                <button type="button" class="d-editor-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+                <button type="button" class="d-editor-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+                <button type="button" class="d-editor-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+                <span class="d-editor-sep"></span>
+                <button type="button" class="d-editor-btn" data-cmd="insertUnorderedList" title="Bullet list"><i data-icon="circle"></i></button>
+                <button type="button" class="d-editor-btn" data-cmd="insertOrderedList" title="Numbered list">1.</button>
+                <span class="d-editor-sep"></span>
+                <button type="button" class="d-editor-btn" id="mail-img-btn" title="แทรกรูป"><i data-icon="image"></i></button>
+                <input type="file" id="mail-img-input" accept="image/*" style="display:none">
+                <span class="d-editor-sep"></span>
+                <button type="button" class="d-editor-btn" data-cmd="removeFormat" title="Clear formatting"><i data-icon="x"></i></button>
+              </div>
+              <div class="d-editor-content" id="mail-body" contenteditable="true" spellcheck="true"
+                   data-placeholder="พิมพ์เนื้อหา email ที่นี่…">
+                <p>นี่คือ email ทดสอบจาก Dev Tools</p>
+                <p>สำหรับทดสอบรูปแบบ <b>branded template</b> ที่ระบบส่งออกไป</p>
+                <p>หากเห็น email ฉบับนี้ แปลว่า SMTP config + template ทำงานปกติ <i data-icon="check"></i></p>
+              </div>
+            </div>
+          </div>
+
+          <div id="mail-result" class="d-output"></div>
+        </div>
+        <div class="dc-foot">
+          <button class="d-btn primary" onclick="sendMockEmail()" id="btn-mail"><i data-icon="mail"></i> ส่ง Test Email</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)">
+            <input type="checkbox" id="mail-branded" checked> ใช้ Branded Template
+          </label>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/dev-email/dev-email.js"></script>
+</body>
+</html>

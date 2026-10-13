@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Result Test MA Pages — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <style>
+    /* Stat tiles row */
+    .mt-stats {
+      display:grid; gap:12px;
+      grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+      margin-bottom:16px;
+    }
+    .mt-stat {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--radius-lg); padding:14px 18px;
+    }
+    .mt-stat .l {
+      font-size:10.5px; font-weight:600; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.06em;
+    }
+    .mt-stat .n {
+      font-size:26px; font-weight:800; margin-top:6px; line-height:1;
+      color:var(--text); letter-spacing:-.02em;
+    }
+    .mt-stat.success .n { color:var(--success); }
+    .mt-stat.danger  .n { color:var(--danger); }
+    .mt-stat.warning .n { color:var(--warning); }
+    .mt-stat.info    .n { color:var(--info); }
+
+    /* Filter row above list */
+    .mt-list-head {
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; flex-wrap:wrap; margin-bottom:12px;
+    }
+    .mt-list-head h3 { font-size:14px; font-weight:700; margin:0; color:var(--text); }
+    .mt-list-head .sub { font-size:11px; color:var(--text-muted); margin-top:2px; }
+    .mt-list-filters { display:flex; gap:8px; }
+    .mt-list-filters .form-control { width:auto; }
+
+    /* Plan item row (card-like) */
+    .mt-item {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--radius-lg); padding:14px 16px;
+      margin-bottom:10px; transition:border-color var(--transition), box-shadow var(--transition);
+    }
+    .mt-item:hover { border-color:var(--text-muted); box-shadow:var(--shadow-sm); }
+    .mt-item-top {
+      display:grid; grid-template-columns:1fr auto auto auto auto;
+      gap:12px; align-items:center;
+    }
+    @media (max-width:720px) {
+      .mt-item-top { grid-template-columns:1fr; gap:6px; }
+    }
+    .mt-item .name { font-weight:700; color:var(--text); font-size:13px; }
+    .mt-item .remark { font-size:11px; color:var(--text-muted); margin-top:2px; line-height:1.5; }
+
+    /* Individual result row inside item */
+    .mt-result {
+      display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:flex-start;
+      padding:10px 12px; margin-top:8px;
+      background:var(--bg); border-radius:var(--radius); border:1px dashed var(--border);
+      font-size:11.5px;
+    }
+    .mt-result .who { font-weight:700; color:var(--text); font-size:12px; }
+    .mt-result .meta { color:var(--text-muted); font-size:10.5px; margin-top:2px; }
+
+    /* Screenshot thumbnails */
+    .mt-thumbs { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+    .mt-thumb {
+      position:relative; width:64px; height:64px; border-radius:6px; overflow:hidden;
+      border:1px solid var(--border); background:var(--bg);
+    }
+    .mt-thumb img { width:100%; height:100%; object-fit:cover; display:block; cursor:pointer; }
+    .mt-thumb .rm {
+      position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%;
+      background:rgba(0,0,0,.65); color:#fff; border:none; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; font-size:12px; line-height:1;
+    }
+
+    /* Paste zone for screenshots */
+    .mt-paste-zone {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:4px; padding:18px 14px; text-align:center; cursor:pointer;
+      border:1.5px dashed var(--border); border-radius:var(--radius);
+      background:var(--bg); color:var(--text-muted); font-size:12px;
+      transition:border-color var(--transition), background var(--transition), color var(--transition);
+    }
+    .mt-paste-zone:hover,
+    .mt-paste-zone:focus-visible { border-color:var(--orange); color:var(--text); outline:none; }
+    .mt-paste-zone.is-drag { border-color:var(--orange); background:rgba(255,140,0,.06); color:var(--text); }
+    .mt-paste-zone .pz-title { font-weight:600; font-size:12.5px; color:var(--text); }
+    .mt-paste-zone .pz-hint { font-size:10.5px; }
+    .mt-paste-zone.is-busy { opacity:.7; pointer-events:none; }
+    .mt-paste-zone .pz-spin {
+      display:inline-block; width:12px; height:12px; margin-right:6px; vertical-align:-2px;
+      border:2px solid var(--border); border-top-color:var(--orange);
+      border-radius:50%; animation:pz-spin .8s linear infinite;
+    }
+    @keyframes pz-spin { to { transform:rotate(360deg); } }
+
+    /* Segmented (Yes/No/-) */
+    .mt-segmented {
+      display:inline-flex; padding:3px; gap:2px;
+      background:var(--bg-input); border:1px solid var(--border);
+      border-radius:var(--radius-sm);
+    }
+    .mt-segmented input { display:none; }
+    .mt-segmented label {
+      padding:6px 12px; font-size:11px; font-weight:600; cursor:pointer;
+      border-radius:4px; color:var(--text-muted); font-family:var(--font);
+      transition:background var(--transition), color var(--transition);
+    }
+    .mt-segmented input:checked + label {
+      background:var(--white); color:var(--orange); box-shadow:var(--shadow-sm);
+    }
+
+    .mt-empty {
+      text-align:center; padding:52px 24px;
+      background:var(--bg-card); border:1px dashed var(--border);
+      border-radius:var(--radius-lg); color:var(--text-muted); font-size:12px;
+    }
+    .mt-empty h4 { color:var(--text); font-size:14px; font-weight:700; margin:0 0 6px; }
+
+    /* Two-column split (To do / Completed) — matches ma-test-plans layout */
+    .mt-split {
+      display:grid; grid-template-columns:1fr 1fr; gap:16px;
+    }
+    @media (max-width:1100px) { .mt-split { grid-template-columns:1fr; } }
+    .mt-split .card-body {
+      padding:12px;
+      /* Keep each column inside a fixed viewport slice so long Completed
+         lists (50-60 items) scroll internally instead of pushing the page. */
+      max-height:calc(100vh - 320px);
+      min-height:320px;
+      overflow-y:auto;
+    }
+    .mt-split .mt-item:last-child { margin-bottom:0; }
+    .mt-split-empty {
+      text-align:center; padding:36px 20px; color:var(--text-muted); font-size:12px;
+      background:var(--bg); border:1px dashed var(--border); border-radius:var(--radius);
+    }
+    .mt-split-empty h4 { color:var(--text); font-size:13px; font-weight:700; margin:0 0 4px; }
+    /* Fade the completed column subtly */
+    #done-list .mt-item { opacity:.92; }
+
+    .modal.mt-lg { width:820px; max-width:96vw; }
+    .modal.mt-xl { width:1080px; max-width:98vw; }
+
+    .month-picker {
+      padding:7px 12px; border:1px solid var(--border);
+      border-radius:var(--radius-sm); font-family:var(--font);
+      font-size:12px; background:var(--bg-input); color:var(--text);
+    }
+    .month-picker:focus { outline:none; border-color:var(--orange); }
+
+    .lb-img { max-width:100%; max-height:75vh; border-radius:var(--radius); }
+
+    /* ── Catalog resource pills (Manual / Graph) ────────── */
+    .mt-res-links { display:inline-flex; gap:4px; flex-wrap:wrap; }
+    .mt-res-pill {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:3px 8px; font-size:10.5px; font-weight:600;
+      border-radius:12px; text-decoration:none;
+      border:1px solid var(--border); background:var(--bg);
+      color:var(--text-muted); font-family:var(--font);
+      cursor:pointer; transition:all .12s;
+    }
+    .mt-res-pill:hover { border-color:var(--orange); color:var(--orange); }
+    .mt-res-pill.graph:hover { border-color:var(--success,#10b981); color:var(--success,#10b981); }
+
+    /* ── Grafana iframe popup ───────────────────────────── */
+    .mt-grafana-modal {
+      position:fixed; inset:0; background:rgba(0,0,0,.7);
+      display:none; align-items:center; justify-content:center;
+      z-index:9999; padding:20px;
+    }
+    .mt-grafana-modal.active { display:flex; }
+    .mt-grafana-content {
+      width:90vw; height:80vh; background:var(--card,#fff);
+      border-radius:8px; display:flex; flex-direction:column;
+      box-shadow:0 20px 60px rgba(0,0,0,.4); overflow:hidden;
+    }
+    .mt-grafana-head {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:10px 16px; border-bottom:1px solid var(--border);
+      background:var(--bg);
+    }
+    .mt-grafana-title { font-size:13px; font-weight:700; color:var(--text); margin:0; }
+    .mt-grafana-actions { display:flex; align-items:center; gap:8px; }
+    .mt-grafana-open {
+      font-size:11px; color:var(--text-muted); text-decoration:none;
+      padding:4px 8px; border:1px solid var(--border); border-radius:4px;
+    }
+    .mt-grafana-open:hover { color:var(--orange); border-color:var(--orange); }
+    .mt-grafana-close {
+      background:transparent; border:none; font-size:22px; cursor:pointer;
+      color:var(--text-muted); line-height:1; padding:0 4px;
+    }
+    .mt-grafana-close:hover { color:var(--danger); }
+    .mt-grafana-body { flex:1; background:#000; }
+    .mt-grafana-body iframe { width:100%; height:100%; border:0; display:block; }
+
+    /* ── Process guide (collapsible) ────────────────────── */
+    .mt-guide {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--radius-lg); margin-bottom:16px; overflow:hidden;
+    }
+    .mt-guide summary {
+      padding:12px 16px; cursor:pointer; user-select:none;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      font-weight:700; color:var(--text); font-size:13px; list-style:none;
+    }
+    .mt-guide summary::-webkit-details-marker { display:none; }
+    .mt-guide summary .r { display:inline-flex; align-items:center; gap:10px; font-size:10.5px; color:var(--text-muted); font-weight:600; }
+    .mt-guide summary .r .tgl { transition:transform .18s; display:inline-block; }
+    .mt-guide[open] summary .r .tgl { transform:rotate(90deg); }
+    .mt-guide .g-body { padding:14px 16px 16px; border-top:1px solid var(--border); }
+
+    .mt-phase { margin-bottom:20px; }
+    .mt-phase:last-child { margin-bottom:0; }
+    .mt-phase-title {
+      font-size:10.5px; font-weight:700; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.09em; margin-bottom:10px;
+      display:flex; align-items:center; gap:8px; padding-left:2px;
+    }
+    .mt-phase-num {
+      display:inline-flex; align-items:center; justify-content:center;
+      min-width:20px; height:18px; padding:0 6px;
+      border-radius:4px; background:var(--bg-input); color:var(--text-muted);
+      font-size:9.5px; font-weight:700; letter-spacing:.03em;
+      font-variant-numeric:tabular-nums;
+    }
+
+    .mt-steps { display:grid; gap:6px; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); }
+    .mt-step {
+      padding:10px 12px; background:transparent; border:1px solid var(--border);
+      border-radius:var(--radius-sm); font-size:12px; color:var(--text);
+      display:flex; gap:10px; align-items:flex-start; line-height:1.55;
+      transition:border-color .15s, background .15s;
+    }
+    .mt-step:hover { border-color:var(--text-muted); background:var(--bg); }
+    .mt-step .n {
+      flex-shrink:0; width:18px; height:18px; border-radius:50%;
+      background:transparent; color:var(--text-muted);
+      font-size:10px; font-weight:700;
+      display:flex; align-items:center; justify-content:center;
+      border:1px solid var(--border);
+    }
+    .mt-step b { color:var(--text); font-weight:700; }
+    .mt-step-warn {
+      padding:10px 12px; margin-top:8px;
+      background:transparent; border:1px dashed var(--border);
+      color:var(--text-muted); border-radius:var(--radius-sm); font-size:11.5px;
+      display:flex; gap:8px; align-items:flex-start; line-height:1.55;
+    }
+    .mt-step-warn b { color:var(--text); }
+
+    .mt-step-tpl-btn {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:2px 8px; margin-left:6px;
+      background:var(--orange-bg); color:var(--orange);
+      border:1px solid transparent; border-radius:12px;
+      font-size:10.5px; font-weight:700; cursor:pointer;
+      font-family:var(--font); vertical-align:middle;
+    }
+    .mt-step-tpl-btn:hover { background:var(--orange); color:#fff; }
+
+    /* Template modal */
+    .mt-tpl-body { padding:0 !important; }
+    .mt-tpl-hdr {
+      padding:10px 20px; background:var(--bg); border-bottom:1px solid var(--border);
+      font-size:11px; color:var(--text-muted);
+    }
+    .mt-tpl-txt {
+      width:100%; min-height:320px; padding:14px 16px; border:none; outline:none;
+      background:var(--bg-card); color:var(--text); font-size:12.5px;
+      font-family:'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+      line-height:1.65; resize:vertical; box-sizing:border-box; display:block;
+    }
+
+    /* Hero loading state (first fetch only). Mirrors ma-status's pattern —
+       spinner + primary label + sub-line — so the page doesn't render an empty
+       list-view during the initial fetch. Hidden after the first success. */
+    .mt-loading {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:14px; padding:80px 20px;
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--radius-lg); box-shadow:var(--shadow-sm);
+      margin-bottom:16px;
+    }
+    .mt-loading .spin {
+      width:42px; height:42px; border-radius:50%;
+      border:3px solid var(--border); border-top-color:var(--orange);
+      animation:mt-spinner .9s linear infinite;
+    }
+    @keyframes mt-spinner { to { transform:rotate(360deg); } }
+    .mt-loading .txt  { font-size:13px; color:var(--text-muted); font-weight:600; text-align:center; }
+    .mt-loading .dots { font-size:11px; color:var(--text-muted); text-align:center; }
+
+    /* Hero error banner — sibling of .mt-loading, used when the fetch keeps
+       failing after one silent auto-retry. Larger + friendlier than a toast. */
+    .mt-error {
+      display:flex; align-items:flex-start; gap:14px;
+      padding:18px 22px;
+      background:rgba(239,68,68,.10);
+      border:1.5px solid rgba(239,68,68,.35);
+      border-left:4px solid var(--danger,#dc2626);
+      border-radius:var(--radius-lg); box-shadow:var(--shadow-sm);
+      margin-bottom:16px;
+    }
+    .mt-error .ico { font-size:24px; line-height:1; flex-shrink:0; margin-top:2px; }
+    .mt-error-body { flex:1; min-width:0; }
+    .mt-error-title { font-size:14px; font-weight:800; color:var(--danger,#dc2626); margin-bottom:4px; }
+    .mt-error-msg   { font-size:12px; color:var(--text); word-break:break-word; margin-bottom:10px; line-height:1.5; }
+    .mt-error-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .mt-error-actions button {
+      padding:7px 14px; border-radius:8px;
+      border:1px solid var(--danger,#dc2626);
+      background:var(--bg-card); color:var(--danger,#dc2626);
+      font-size:12px; font-weight:700; cursor:pointer;
+      transition:all .14s; font-family:inherit;
+    }
+    .mt-error-actions button:hover { background:var(--danger,#dc2626); color:#fff; }
+    .mt-error-actions button.secondary { border-color:var(--border); color:var(--text-muted); }
+    .mt-error-actions button.secondary:hover { background:var(--bg); color:var(--text); }
+
+    /* When the hero loader/error is showing, hide the real content underneath
+       so we don't render an empty stats row + empty split columns behind it.
+       Need explicit [hidden] overrides for .mt-loading and .mt-error because
+       their `display:flex` rules above beat the user-agent [hidden] default. */
+    .mt-loading[hidden],
+    .mt-error[hidden],
+    .mt-content[hidden] { display:none; }
+
+    /* ── "Done" marker (shown in place of + Record on Completed items) ────
+       Purpose-built for this page rather than reusing .badge-green — softer,
+       more minimal, feels like a subtle stamp instead of a chip. */
+    .mt-done-mark {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px 3px 7px;
+      background: rgba(16,185,129,.07);
+      border: 1px solid rgba(16,185,129,.24);
+      border-radius: 20px;
+      color: #059669;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      font-family: inherit; cursor: default;
+      transition: background .2s, border-color .2s, transform .2s;
+    }
+    .mt-done-mark svg {
+      width: 11px; height: 11px; stroke-width: 2.6;
+      color: #10b981;
+      transition: transform .2s;
+    }
+    .mt-done-mark:hover {
+      background: rgba(16,185,129,.13);
+      border-color: rgba(16,185,129,.42);
+    }
+    .mt-done-mark:hover svg { transform: scale(1.18) rotate(-4deg); }
+    html[data-theme="dark"] .mt-done-mark {
+      color: #34d399;
+      background: rgba(16,185,129,.10);
+      border-color: rgba(52,211,153,.28);
+    }
+    html[data-theme="dark"] .mt-done-mark svg { color: #34d399; }
+    html[data-theme="dark"] .mt-done-mark:hover {
+      background: rgba(52,211,153,.18);
+      border-color: rgba(52,211,153,.5);
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="test-tube"></i> Result Test MA Pages</div>
+        <div class="page-sub">บันทึกผลการเทส MA ตามแผนของเดือนนี้</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="./ma-services.html" class="mas-topnav-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          <span>MA Services</span>
+        </a>
+        <button type="button" class="mas-topnav-btn" data-tpl="start" title="Template แจ้งเริ่ม Test MA">
+          <span><i data-icon="megaphone"></i></span><span>แจ้งเริ่ม</span>
+        </button>
+        <button type="button" class="mas-topnav-btn" data-tpl="end" title="Template แจ้งเสร็จ Test MA">
+          <span><i data-icon="check-circle"></i></span><span>แจ้งเสร็จ</span>
+        </button>
+        <input type="month" id="month" class="month-picker">
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="test-tube"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">SM Team</div>
+          <h1>Result Test MA Pages</h1>
+          <p>รายการ Service ที่ต้องเทสในเดือนนี้ กดปุ่ม "Record" เพื่อบันทึกผลเทส · ใช้เวลาขึ้น MA จริง</p>
+        </div>
+      </section>
+
+      <details class="mt-guide" open>
+        <summary>
+          <span><i data-icon="book-open"></i> ขั้นตอนการทดสอบ Test MA</span>
+          <span class="r"><span>Process guide</span><span class="tgl">▸</span></span>
+        </summary>
+        <div class="g-body">
+          <div class="mt-phase">
+            <div class="mt-phase-title"><span class="mt-phase-num">01</span>Pre-Test Preparation</div>
+            <div class="mt-steps">
+              <div class="mt-step"><div class="n">1</div><div>สร้าง <b>Ticket</b> ขอทำการ Test MA แต่ละเดือน</div></div>
+              <div class="mt-step"><div class="n">2</div><div>ช่วงเวลา: <b>วันที่ 5–25</b> ของทุกเดือน · เวลา <b>01:00 – 05:00</b></div></div>
+              <div class="mt-step"><div class="n">3</div><div>แจ้งห้อง <b>Service-Management-Center [SMC]</b>: มี Test MA วันนี้<button type="button" class="mt-step-tpl-btn" data-tpl="start">ใช้ Template</button></div></div>
+            </div>
+          </div>
+
+          <div class="mt-phase">
+            <div class="mt-phase-title"><span class="mt-phase-num">02</span>Execution</div>
+            <div class="mt-steps">
+              <div class="mt-step"><div class="n">1</div><div><b>ก่อน Test:</b> ตรวจสอบก่อนว่า Service หรือกราฟเป็นปกติ</div></div>
+              <div class="mt-step"><div class="n">2</div><div><b>ระหว่าง Test:</b> ตรวจสอบว่า Service หรือกราฟที่ Test ไปใช้งานได้เปล่า</div></div>
+              <div class="mt-step"><div class="n">3</div><div><b>หลัง Test:</b> ตรวจสอบว่า Service หรือกราฟ กลับมาปกติ · <b>แคปรูปเก็บไว้</b></div></div>
+            </div>
+            <div class="mt-step-warn"><span>กรณีพบปัญหา — แจ้งทีมทันที (<b>ซุม / บูล</b>) จะได้หาทางแก้ไข</span></div>
+          </div>
+
+          <div class="mt-phase">
+            <div class="mt-phase-title"><span class="mt-phase-num">03</span>Post-Test Summary</div>
+            <div class="mt-steps">
+              <div class="mt-step"><div class="n">1</div><div>เมื่อ Test เสร็จ — สรุปผลและแจ้งห้อง <b>Service-Management-Center</b> ว่าวันนี้มี Test MA อะไรบ้าง<button type="button" class="mt-step-tpl-btn" data-tpl="end">ใช้ Template</button></div></div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Hero loader (first fetch only). Hidden after the first successful
+           load; error state below takes its place if the fetch keeps failing. -->
+      <div id="mt-loading" class="mt-loading">
+        <div class="spin"></div>
+        <div class="txt">Fetching MA test schedule…</div>
+        <div class="dots">Loading plan + results for this month</div>
+      </div>
+
+      <div id="mt-error" class="mt-error" hidden>
+        <div class="ico"><i data-icon="alert-triangle"></i></div>
+        <div class="mt-error-body">
+          <div class="mt-error-title">Failed to load MA test data</div>
+          <div class="mt-error-msg" id="mt-error-msg">Network error</div>
+          <div class="mt-error-actions">
+            <button type="button" onclick="_reloadMaTest()">↻ Retry</button>
+            <button type="button" class="secondary" onclick="location.reload()">Reload page</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-content" id="mt-content" hidden>
+        <div class="mt-stats" id="stats"></div>
+
+        <div class="mt-list-head">
+          <div>
+            <h3 id="plan-header">This month's tests</h3>
+            <div class="sub" id="plan-sub">—</div>
+          </div>
+          <div class="mt-list-filters">
+            <select id="f-service" class="form-control"><option value="">All Services</option></select>
+            <select id="f-status" class="form-control">
+              <option value="">All Status</option>
+              <option value="untested">Not tested yet</option>
+              <option value="tested">Has results</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-split">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><i data-icon="clipboard"></i> To do</span>
+              <span class="badge badge-orange" id="todo-count">0</span>
+            </div>
+            <div class="card-body" id="todo-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><i data-icon="check"></i> Completed</span>
+              <span class="badge badge-green" id="done-count">0</span>
+            </div>
+            <div class="card-body" id="done-list"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ═════ Record Result Modal ═════ -->
+<div class="modal-overlay" id="modal-test">
+  <div class="modal mt-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="test-title">Record test result</div>
+      <button class="btn-close" data-close>×</button>
+    </div>
+    <div class="modal-body">
+      <div style="padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:14px" id="test-sub">—</div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
+        <div class="form-group">
+          <label class="form-label">Type *</label>
+          <select id="t-type" class="form-control">
+            <option value="">—</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Test Date *</label>
+          <input type="date" id="t-date" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Before Test</label>
+          <div class="mt-segmented" id="seg-before">
+            <input type="radio" name="t-before" id="bef-yes" value="Yes"><label for="bef-yes">Yes</label>
+            <input type="radio" name="t-before" id="bef-no"  value="No"><label for="bef-no">No</label>
+            <input type="radio" name="t-before" id="bef-na"  value="-" checked><label for="bef-na">—</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">During Test</label>
+          <div class="mt-segmented" id="seg-during">
+            <input type="radio" name="t-during" id="dur-yes" value="Yes"><label for="dur-yes">Yes</label>
+            <input type="radio" name="t-during" id="dur-no"  value="No"><label for="dur-no">No</label>
+            <input type="radio" name="t-during" id="dur-na"  value="-" checked><label for="dur-na">—</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Start Time</label>
+          <input type="time" id="t-start" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Time</label>
+          <input type="time" id="t-end" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Result *</label>
+          <select id="t-result" class="form-control"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Refer: Ticket</label>
+          <input type="text" id="t-ticket" class="form-control" placeholder="SMC-XXXX">
+        </div>
+      </div>
+
+      <!-- Jenkins-only fields (required when tool = Jenkins) -->
+      <div class="form-group jenkins-only" style="display:none">
+        <label class="form-label">Jenkins Build URL — MA Up *</label>
+        <input type="url" id="t-jup" class="form-control" placeholder="URL ของ build ที่ขึ้น MA">
+      </div>
+      <div class="form-group jenkins-only" style="display:none">
+        <label class="form-label">Jenkins Build URL — MA Down *</label>
+        <input type="url" id="t-jdn" class="form-control" placeholder="URL ของ build ที่เอา MA ลง">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">After Test (Screenshots) *</label>
+        <div class="mt-paste-zone" id="t-paste-zone" tabindex="0" role="button" aria-label="Paste, drop, or click to upload screenshots">
+          <div class="pz-title">วางรูป (⌘V / Ctrl+V), ลากมาวาง, หรือคลิกเพื่อเลือกไฟล์</div>
+          <div class="pz-hint">แนบได้ทั้ง graph และผลเทส หลายรูปได้ · จำเป็นต้องมีอย่างน้อย 1 รูป</div>
+        </div>
+        <input type="file" id="t-files" accept="image/*" multiple style="display:none">
+        <div class="mt-thumbs" id="t-thumbs"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span style="margin-right:auto; font-size:11px; color:var(--text-muted)">
+        Test by <b id="t-owner" style="color:var(--text)">—</b>
+      </span>
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-primary" id="t-save">Save result</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════ Lightbox ═════ -->
+<div class="modal-overlay" id="modal-lightbox">
+  <div class="modal mt-xl">
+    <div class="modal-header">
+      <div class="modal-title">Screenshot</div>
+      <button class="btn-close" data-close>×</button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <img id="lb-img" class="lb-img" alt="">
+    </div>
+  </div>
+</div>
+
+<!-- ═════ Grafana Popup ═════ -->
+<div class="mt-grafana-modal" id="mt-grafana-modal" onclick="if(event.target===this)closeGrafanaPopup()">
+  <div class="mt-grafana-content">
+    <div class="mt-grafana-head">
+      <h3 class="mt-grafana-title" id="mt-grafana-title">Grafana</h3>
+      <div class="mt-grafana-actions">
+        <a id="mt-grafana-tab" class="mt-grafana-open" href="#" target="_blank" rel="noopener">Open in new tab ↗</a>
+        <button class="mt-grafana-close" onclick="closeGrafanaPopup()" title="Close">×</button>
+      </div>
+    </div>
+    <div class="mt-grafana-body">
+      <iframe id="mt-grafana-frame" src="about:blank" allowfullscreen
+        allow="fullscreen" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- ═════ Template Modal (แจ้งเริ่ม / แจ้งเสร็จ) ═════ -->
+<div class="modal-overlay" id="modal-tpl">
+  <div class="modal mt-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="tpl-title">Template</div>
+      <button class="btn-close" data-close>×</button>
+    </div>
+    <div class="modal-body mt-tpl-body">
+      <div class="mt-tpl-hdr">เลือก service ที่จะเทสรอบนี้ → template จะสร้างให้อัตโนมัติ · แก้ไขได้ก่อน copy/send</div>
+      <div id="tpl-picker" style="max-height:180px; overflow:auto; border:1px solid var(--border); border-radius:6px; padding:8px; margin-bottom:8px; background:var(--bg-card)">
+        <div style="display:flex; gap:8px; margin-bottom:6px; padding-bottom:6px; border-bottom:1px solid var(--border)">
+          <button type="button" class="btn btn-outline" id="tpl-pick-all" style="font-size:11px; padding:2px 8px">Select all</button>
+          <button type="button" class="btn btn-ghost"   id="tpl-pick-none" style="font-size:11px; padding:2px 8px">Clear</button>
+          <span id="tpl-pick-count" style="margin-left:auto; font-size:11px; color:var(--text-muted); align-self:center">0 selected</span>
+        </div>
+        <div id="tpl-pick-list"></div>
+      </div>
+      <textarea id="tpl-txt" class="mt-tpl-txt" spellcheck="false"></textarea>
+    </div>
+    <div class="modal-footer" style="flex-wrap:wrap; gap:8px">
+      <span style="margin-right:auto; font-size:11px; color:var(--text-muted)" id="tpl-info">—</span>
+      <select id="tpl-webhook" class="form-control" style="width:auto; min-width:180px; font-size:12px">
+        <option value="">— pick Google Chat room —</option>
+      </select>
+      <button class="btn btn-ghost" data-close>Close</button>
+      <button class="btn btn-outline" id="tpl-copy"><i data-icon="clipboard"></i> Copy</button>
+      <button class="btn btn-primary" id="tpl-send" disabled title="เลือกห้อง Google Chat ก่อน"><i data-icon="rocket"></i> Send to Google Chat</button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/ma-test.js"></script>
+<script>
+if (!Auth.requireAuth()) {}
+const _u = Auth.getUser();
+if (_u && _u.team && _u.team !== 'sm' && !['super_admin','super_viewer'].includes(_u.role)) {
+  Toast?.error?.('SM team only');
+  setTimeout(() => location.replace('./dashboard.html'), 800);
+}
+Layout.render('ma-test');
+
+const isAdmin = ['super_admin','sm_admin','sm_lead','dev_sm'].includes(_u?.role);
+
+MaTest.SERVICES.forEach(s => document.getElementById('f-service').insertAdjacentHTML('beforeend', `<option value="${s}">${s}</option>`));
+MaTest.TYPES  .forEach(t => document.getElementById('t-type').insertAdjacentHTML('beforeend', `<option value="${t}">${t}</option>`));
+MaTest.RESULTS.forEach(r => document.getElementById('t-result').insertAdjacentHTML('beforeend', `<option value="${r}">${r}</option>`));
+document.getElementById('t-result').value = 'Pending';
+document.getElementById('t-owner').textContent = _u?.name || _u?.id || '';
+document.getElementById('month').value = MaTest.currentMonth();
+
+let plan = [];
+let results = [];
+let editing = { planItem: null, resultId: null, screenshots: [] };
+let _hasLoadedOnce = false;
+let _loadSeq = 0;  // guards against out-of-order responses when month changes fast
+
+// Toggle the hero spinner / error banner / real content. Only used before the
+// first successful load — after that, reloads keep the content visible and
+// surface errors via a toast so the page doesn't flash.
+function _mtShowState(state, msg) {
+  const load = document.getElementById('mt-loading');
+  const err  = document.getElementById('mt-error');
+  const body = document.getElementById('mt-content');
+  load.hidden = (state !== 'loading');
+  err.hidden  = (state !== 'error');
+  body.hidden = (state !== 'ready');
+  if (state === 'error') {
+    document.getElementById('mt-error-msg').textContent = msg || 'Network error';
+  }
+}
+
+async function _fetchMonthOnce(month) {
+  const [planRes, resRes] = await Promise.all([
+    MaTest.api.listPlan(month),
+    MaTest.api.listResults(month),
+  ]);
+  const ok = !!(planRes?.success && resRes?.success);
+  const error = ok ? '' : (
+    (!planRes?.success ? planRes?.message : resRes?.message) || 'Failed to load'
+  );
+  return { planRes, resRes, ok, error };
+}
+
+async function load() {
+  const month = document.getElementById('month').value;
+  const seq = ++_loadSeq;
+
+  // First load → show hero spinner so the page doesn't render an empty stats
+  // row + empty split columns while waiting. Subsequent reloads (after saving
+  // a result, or month change) keep the current content visible so the UI
+  // doesn't flash. Errors are surfaced via toast in that case.
+  if (!_hasLoadedOnce) {
+    _mtShowState('loading');
+  } else {
+    document.getElementById('plan-sub').textContent = `${month} · กำลังโหลด…`;
+  }
+
+  let attempt = await _fetchMonthOnce(month);
+  if (seq !== _loadSeq) return;  // month changed mid-fetch — abandon this run
+  if (!attempt.ok) {
+    // One silent retry — covers transient network hiccups without user action.
+    await new Promise(r => setTimeout(r, 500));
+    if (seq !== _loadSeq) return;
+    attempt = await _fetchMonthOnce(month);
+    if (seq !== _loadSeq) return;
+  }
+
+  if (!attempt.ok) {
+    // Persistent failure: preserve old data if we already had a successful
+    // load, so an accidental reload after save doesn't blank the page. First
+    // load ever → show the hero-error banner instead of empty content.
+    if (!_hasLoadedOnce) {
+      _mtShowState('error', attempt.error);
+    } else {
+      Toast?.error?.(`โหลดข้อมูลไม่สำเร็จ: ${attempt.error}`);
+      document.getElementById('plan-sub').textContent =
+        `${month} · ${plan.length} planned · ${results.length} recorded · <i data-icon="alert-triangle"></i> ข้อมูลอาจไม่ใช่ล่าสุด`;
+    }
+    return;
+  }
+
+  plan = attempt.planRes.data.items || [];
+  // Drop orphan records — those whose catalog_id is no longer in this month's
+  // plan (e.g. admin removed the plan item after a Failed record was saved).
+  // They'd otherwise skew "Recorded"/Successed/Failed/Pending counts without
+  // being visible in any card, so users can't reconcile the numbers.
+  const _allResults = attempt.resRes.data.items || [];
+  const _planCatIds = new Set(plan.map(p => p.catalog_id));
+  results = _allResults.filter(r => _planCatIds.has(r.catalog_id));
+  _hasLoadedOnce = true;
+  _mtShowState('ready');
+  document.getElementById('plan-sub').textContent =
+    `${month} · ${plan.length} planned · ${results.length} recorded`;
+  renderStats();
+  renderPlan();
+}
+// Expose for the inline Retry button in the error state.
+window._reloadMaTest = load;
+
+function renderStats() {
+  const total = plan.length;
+  const succ  = results.filter(r => r.result === 'Successed').length;
+  const fail  = results.filter(r => r.result === 'Failed').length;
+  const pend  = results.filter(r => r.result === 'Pending').length;
+  document.getElementById('stats').innerHTML = `
+    <div class="mt-stat info"><div class="l">Planned</div><div class="n">${total}</div></div>
+    <div class="mt-stat"><div class="l">Recorded</div><div class="n">${results.length}</div></div>
+    <div class="mt-stat success"><div class="l">Successed</div><div class="n">${succ}</div></div>
+    <div class="mt-stat danger"><div class="l">Failed</div><div class="n">${fail}</div></div>
+    <div class="mt-stat warning"><div class="l">Pending</div><div class="n">${pend}</div></div>`;
+}
+
+function resultsForCatalog(catalogId) {
+  return results.filter(r => r.catalog_id === catalogId);
+}
+
+function renderPlan() {
+  const todoWrap = document.getElementById('todo-list');
+  const doneWrap = document.getElementById('done-list');
+  const fs  = document.getElementById('f-service').value;
+  const fst = document.getElementById('f-status').value;
+  const esc = MaTest.escapeHtml;
+
+  const filtered = plan.filter(p => {
+    const c = p.catalog || {};
+    if (fs && c.service !== fs) return false;
+    const has = resultsForCatalog(p.catalog_id).length > 0;
+    if (fst === 'untested' && has) return false;
+    if (fst === 'tested'   && !has) return false;
+    return true;
+  });
+
+  // Split by "has any Successed result" — Success → right, everything else → left.
+  const isDone = (p) => resultsForCatalog(p.catalog_id).some(r => r.result === 'Successed');
+  const todo = filtered.filter(p => !isDone(p));
+  const done = filtered.filter(p =>  isDone(p));
+
+  document.getElementById('todo-count').textContent = todo.length;
+  document.getElementById('done-count').textContent = done.length;
+
+  const renderItem = (p) => {
+    const c = p.catalog || {};
+    const rs = resultsForCatalog(p.catalog_id);
+    const rowDone = rs.some(r => r.result === 'Successed');
+    const rsHtml = rs.map(r => {
+      const contribs = r.contributors?.length
+        ? r.contributors
+        : [{id: r.tested_by, name: r.tested_by_name || r.tested_by}];
+      const whoHtml = contribs.map(c => {
+        const initials = (c.name || c.id || '?').trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+        return `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:6px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--orange-bg,rgba(255,140,0,.12));color:var(--orange);font-size:9px;font-weight:800;flex-shrink:0">${esc(initials)}</span>
+          <span style="font-weight:700;color:var(--text);font-size:12px">${esc(c.name || c.id || 'unknown')}</span>
+        </span>`;
+      }).join('');
+      return `
+      <div class="mt-result">
+        <div>${MaTest.resultBadge(r.result)}</div>
+        <div>
+          <div class="who" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;margin-bottom:3px">
+            <span style="font-size:10px;color:var(--text-muted);margin-right:4px">by</span>
+            ${whoHtml}
+          </div>
+          <div class="meta">
+            ${esc(r.type || '—')} · ${esc(r.test_date || '—')}
+            ${r.start_time || r.end_time ? ' · ' + esc(r.start_time || '') + '–' + esc(r.end_time || '') : ''}
+            ${r.refer_ticket ? ' · ' + esc(r.refer_ticket) : ''}
+          </div>
+          ${r.screenshots?.length ? `<div class="mt-thumbs">${
+            r.screenshots.map(url => `<div class="mt-thumb"><img src="${esc(url)}" onclick="openLightbox('${esc(url)}')" alt=""></div>`).join('')
+          }</div>` : ''}
+        </div>
+        <div style="display:flex;gap:4px;align-items:center">
+          <button class="btn btn-ghost btn-sm" data-edit-r="${esc(r.id)}">Edit</button>
+          ${(isAdmin || (r.tested_by === (_u?.sub || _u?.id)) || (r.contributors || []).some(c => c.id === (_u?.sub || _u?.id)))
+            ? `<button class="btn btn-ghost btn-sm" data-del-r="${esc(r.id)}" style="color:var(--danger,#dc2626)" title="ลบ result นี้">Delete</button>`
+            : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    const isUrl = v => typeof v === 'string' && /^https?:\/\//i.test(v.trim());
+    const resPills = [
+      isUrl(c.link_manual)
+        ? `<a href="${esc(c.link_manual)}" target="_blank" rel="noopener" class="mt-res-pill" title="เปิดคู่มือในแท็บใหม่"><i data-icon="book-open"></i> Manual</a>`
+        : '',
+      isUrl(c.graph_url)
+        ? `<button type="button" class="mt-res-pill graph" title="เปิด Grafana graph ใน popup" data-graph="${esc(c.graph_url)}" data-graph-name="${esc(c.name || '')}"><i data-icon="bar-chart"></i> Graph</button>`
+        : '',
+    ].filter(Boolean).join('');
+
+    return `
+      <div class="mt-item">
+        <div class="mt-item-top">
+          <div>
+            <div class="name">${esc(c.name || '(missing catalog)')}</div>
+            ${c.remark ? `<div class="remark">${esc(c.remark)}</div>` : ''}
+            ${resPills ? `<div class="mt-res-links" style="margin-top:6px">${resPills}</div>` : ''}
+          </div>
+          <div>${MaTest.serviceBadge(c.service)}</div>
+          <div>${MaTest.priorityBadge(c.priority)}</div>
+          <div>${MaTest.toolBadge(c.tool)}</div>
+          <div>${rowDone
+            ? `<span class="mt-done-mark" title="Test succeeded — use Edit on the record below to change">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                 Done
+               </span>`
+            : `<button class="btn btn-primary btn-sm" data-test="${esc(p.id)}">+ Record</button>`
+          }</div>
+        </div>
+        ${rsHtml}
+      </div>`;
+  };
+
+  const emptyTodo = `
+    <div class="mt-split-empty">
+      <h4><i data-icon="sparkles"></i> ไม่มีอะไรค้างในคอลัมน์นี้</h4>
+      <p>${plan.length ? 'ทุกอันเทสสำเร็จหมดแล้ว หรือ filter ไม่ตรง' : 'Admin ยังไม่ได้ add plan ของเดือนนี้'}</p>
+    </div>`;
+  const emptyDone = `
+    <div class="mt-split-empty">
+      <h4>ยังไม่มีอันไหน Success</h4>
+      <p>เมื่อบันทึกผลเป็น "Successed" แล้ว จะย้ายมาที่นี่</p>
+    </div>`;
+
+  todoWrap.innerHTML = todo.length ? todo.map(renderItem).join('') : emptyTodo;
+  doneWrap.innerHTML = done.length ? done.map(renderItem).join('') : emptyDone;
+
+  document.querySelectorAll('#todo-list [data-test], #done-list [data-test]').forEach(b => b.onclick = () => openTest(b.dataset.test, null));
+  document.querySelectorAll('#todo-list [data-edit-r], #done-list [data-edit-r]').forEach(b => b.onclick = () => openTest(null, b.dataset.editR));
+  document.querySelectorAll('#todo-list [data-graph], #done-list [data-graph]').forEach(b => b.onclick = () => openGrafanaPopup(b.dataset.graph, b.dataset.graphName));
+  document.querySelectorAll('#todo-list [data-del-r], #done-list [data-del-r]').forEach(b => b.onclick = () => deleteResult(b.dataset.delR));
+}
+
+// ── Test modal ───────────────────────────────────────────────
+function openTest(planId, resultId) {
+  const item = planId ? plan.find(p => p.id === planId) : null;
+  const existing = resultId ? results.find(r => r.id === resultId) : null;
+  const cat = item?.catalog || existing?.catalog || null;
+  if (!cat) { Toast?.error?.('Catalog reference missing'); return; }
+  editing = {
+    planItem: item || (existing ? { id: existing.plan_id, catalog_id: existing.catalog_id, catalog: existing.catalog } : null),
+    resultId: resultId || null,
+    screenshots: existing?.screenshots ? [...existing.screenshots] : [],
+  };
+
+  document.getElementById('test-title').textContent = existing ? 'Edit result' : 'Record test result';
+  const esc = MaTest.escapeHtml;
+  document.getElementById('test-sub').innerHTML = `
+    <b style="color:var(--text); font-size:13px">${esc(cat.name)}</b>
+    <span style="margin-left:8px">${MaTest.serviceBadge(cat.service)}</span>
+    <span style="margin-left:4px">${MaTest.toolBadge(cat.tool)}</span>
+    ${cat.remark ? '<div style="font-size:11px; color:var(--text-muted); margin-top:6px">' + esc(cat.remark) + '</div>' : ''}
+  `;
+
+  document.getElementById('t-type').value   = existing?.type || 'Test';
+  document.getElementById('t-date').value   = existing?.test_date || MaTest.today();
+  document.getElementById('t-start').value  = existing?.start_time || '';
+  document.getElementById('t-end').value    = existing?.end_time || '';
+  document.getElementById('t-result').value = existing?.result || 'Pending';
+  document.getElementById('t-ticket').value = existing?.refer_ticket || '';
+
+  const bef = existing?.before_test || '-';
+  const dur = existing?.during_test || '-';
+  document.querySelectorAll('input[name="t-before"]').forEach(r => r.checked = (r.value === bef));
+  document.querySelectorAll('input[name="t-during"]').forEach(r => r.checked = (r.value === dur));
+
+  const isJenkins = (cat.tool || '').toLowerCase() === 'jenkins';
+  document.querySelectorAll('.jenkins-only').forEach(el => el.style.display = isJenkins ? 'block' : 'none');
+  document.getElementById('t-jup').value = isJenkins ? (existing?.jenkins_build_up_url || '') : '';
+  document.getElementById('t-jdn').value = isJenkins ? (existing?.jenkins_build_down_url || '') : '';
+
+  if (existing) {
+    const contribs = existing.contributors?.length
+      ? existing.contributors
+      : [{id: existing.tested_by, name: existing.tested_by_name}];
+    const alreadyIn = contribs.some(c => c.id === _u?.sub || c.id === _u?.id);
+    const preview = alreadyIn ? contribs : [...contribs, {id: _u?.sub, name: _u?.name}];
+    document.getElementById('t-owner').textContent = preview.map(c => c.name || c.id || '').filter(Boolean).join(', ');
+  } else {
+    document.getElementById('t-owner').textContent = _u?.name || '';
+  }
+  renderThumbs();
+  document.getElementById('t-files').value = '';
+  document.getElementById('modal-test').classList.add('active');
+}
+
+function renderThumbs() {
+  const box = document.getElementById('t-thumbs');
+  const esc = MaTest.escapeHtml;
+  box.innerHTML = editing.screenshots.map((url, i) => `
+    <div class="mt-thumb">
+      <img src="${esc(url)}" alt="">
+      <button class="rm" data-rm-thumb="${i}" title="Remove">×</button>
+    </div>`).join('');
+  box.querySelectorAll('[data-rm-thumb]').forEach(b => b.onclick = () => {
+    editing.screenshots.splice(parseInt(b.dataset.rmThumb, 10), 1);
+    renderThumbs();
+  });
+}
+
+async function uploadScreenshotFiles(files) {
+  const list = Array.from(files || []).filter(f => f && f.type && f.type.startsWith('image/'));
+  if (!list.length) return 0;
+  const month = document.getElementById('month').value;
+  const zone = document.getElementById('t-paste-zone');
+  const title = zone?.querySelector('.pz-title');
+  const origHtml = title?.innerHTML;
+  zone?.classList.add('is-busy');
+  if (title) title.innerHTML = `<span class="pz-spin"></span>กำลังอัพโหลด ${list.length} รูป…`;
+  let ok = 0;
+  for (const f of list) {
+    const r = await MaTest.api.uploadScreenshot(f, month);
+    if (r?.success && r.data?.url) { editing.screenshots.push(r.data.url); ok++; }
+    else Toast?.error?.(r?.message || 'Upload failed');
+  }
+  zone?.classList.remove('is-busy');
+  if (title && origHtml != null) title.innerHTML = origHtml;
+  renderThumbs();
+  return ok;
+}
+
+async function onFilesChange(ev) {
+  await uploadScreenshotFiles(ev.target.files);
+  ev.target.value = '';
+}
+
+function onPasteScreenshots(ev) {
+  const modal = document.getElementById('modal-test');
+  if (!modal.classList.contains('active')) return;
+  const t = ev.target;
+  const tag = t && t.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || (t && t.isContentEditable)) return;
+  const items = ev.clipboardData?.items;
+  if (!items) return;
+  const files = [];
+  for (const it of items) {
+    if (it.kind === 'file' && it.type && it.type.startsWith('image/')) {
+      const f = it.getAsFile();
+      if (f) files.push(f);
+    }
+  }
+  if (!files.length) return;
+  ev.preventDefault();
+  uploadScreenshotFiles(files);
+}
+
+async function saveTest() {
+  const month = document.getElementById('month').value;
+  const cat = editing.planItem?.catalog || null;
+  const isJenkins = (cat?.tool || '').toLowerCase() === 'jenkins';
+  const jup = document.getElementById('t-jup').value.trim();
+  const jdn = document.getElementById('t-jdn').value.trim();
+
+  if (!editing.screenshots.length) {
+    Toast?.error?.('กรุณาแนบรูป Screenshot อย่างน้อย 1 รูป');
+    document.getElementById('t-paste-zone')?.focus();
+    return;
+  }
+
+  if (isJenkins) {
+    if (!jup) {
+      Toast?.error?.('Jenkins Build URL — MA Up is required');
+      document.getElementById('t-jup').focus();
+      return;
+    }
+    if (!jdn) {
+      Toast?.error?.('Jenkins Build URL — MA Down is required');
+      document.getElementById('t-jdn').focus();
+      return;
+    }
+    const urlRe = /^https?:\/\//i;
+    if (!urlRe.test(jup)) { Toast?.error?.('MA Up URL ต้องเริ่มด้วย http:// หรือ https://'); document.getElementById('t-jup').focus(); return; }
+    if (!urlRe.test(jdn)) { Toast?.error?.('MA Down URL ต้องเริ่มด้วย http:// หรือ https://'); document.getElementById('t-jdn').focus(); return; }
+  }
+
+  const payload = {
+    plan_id:     editing.planItem?.id || '',
+    catalog_id:  editing.planItem?.catalog_id || editing.planItem?.catalog?.id || '',
+    type:        document.getElementById('t-type').value,
+    test_date:   document.getElementById('t-date').value,
+    before_test: document.querySelector('input[name="t-before"]:checked')?.value || '-',
+    during_test: document.querySelector('input[name="t-during"]:checked')?.value || '-',
+    screenshots: editing.screenshots,
+    start_time:  document.getElementById('t-start').value,
+    end_time:    document.getElementById('t-end').value,
+    result:      document.getElementById('t-result').value,
+    refer_ticket:document.getElementById('t-ticket').value.trim(),
+    jenkins_build_up_url:   jup,
+    jenkins_build_down_url: jdn,
+  };
+  if (!payload.catalog_id) { Toast?.error?.('Missing catalog reference'); return; }
+  const res = editing.resultId
+    ? await MaTest.api.updateResult(month, editing.resultId, payload)
+    : await MaTest.api.createResult(month, payload);
+  if (!res?.success) { Toast?.error?.(res?.message || 'Save failed'); return; }
+  Toast?.success?.(editing.resultId ? 'Updated' : 'Saved');
+  closeAll();
+  await load();
+}
+
+window.openLightbox = function(url) {
+  document.getElementById('lb-img').src = url;
+  document.getElementById('modal-lightbox').classList.add('active');
+};
+
+// ── Grafana popup (same pattern as monitoring.html / ma-services.html) ──
+// Rewrites grafana-thanos URLs through the same-origin reverse proxy and
+// attaches the JWT so the iframe doesn't bounce to Grafana login.
+const _GRAFANA_UPSTREAM = 'https://grafana-thanos.truemoney.com';
+function _rewriteGrafanaUrl(url) {
+  if (!url || !url.startsWith(_GRAFANA_UPSTREAM)) return url;
+  const tail = url.slice(_GRAFANA_UPSTREAM.length);
+  const token = (typeof Auth !== 'undefined' && Auth.getToken) ? Auth.getToken() : null;
+  const sep = tail.includes('?') ? '&' : '?';
+  return tail + (token ? `${sep}token=${encodeURIComponent(token)}` : '');
+}
+window.openGrafanaPopup = function(url, title) {
+  if (!url) return;
+  const modal = document.getElementById('mt-grafana-modal');
+  const frame = document.getElementById('mt-grafana-frame');
+  document.getElementById('mt-grafana-title').textContent = title ? `Grafana — ${title}` : 'Grafana';
+  document.getElementById('mt-grafana-tab').href = url;
+  frame.src = _rewriteGrafanaUrl(url);
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+};
+window.closeGrafanaPopup = function() {
+  const modal = document.getElementById('mt-grafana-modal');
+  const frame = document.getElementById('mt-grafana-frame');
+  modal.classList.remove('active');
+  if (frame) frame.src = 'about:blank';
+  document.body.style.overflow = '';
+};
+
+async function deleteResult(resultId) {
+  const r = results.find(x => x.id === resultId);
+  const cat = r?.catalog || {};
+  const contribs = r?.contributors?.length
+    ? r.contributors
+    : [{name: r?.tested_by_name || r?.tested_by}];
+  const whoStr = contribs.map(c => c.name || c.id || '?').join(', ');
+  const ok = await confirmDialog(
+    `ลบ result ของ "${cat.name || resultId}"\nบันทึกโดย ${whoStr} · วันที่ ${r?.test_date || '—'}`,
+    'ยืนยันการลบ Result',
+    { confirmText: 'ลบ', cancelText: 'ยกเลิก', variant: 'danger' }
+  );
+  if (!ok) return;
+  const month = document.getElementById('month').value;
+  const res = await MaTest.api.deleteResult(month, resultId);
+  if (!res?.success) { Toast?.error?.(res?.message || 'ลบไม่สำเร็จ'); return; }
+  Toast?.success?.('ลบ result แล้ว');
+  await load();
+}
+
+function closeAll() {
+  document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+}
+document.addEventListener('click', e => {
+  if (e.target.matches('[data-close]') || e.target.classList.contains('modal-overlay')) closeAll();
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const gm = document.getElementById('mt-grafana-modal');
+  if (gm && gm.classList.contains('active')) { closeGrafanaPopup(); return; }
+  closeAll();
+});
+
+document.getElementById('t-save').onclick   = saveTest;
+document.getElementById('t-files').onchange = onFilesChange;
+document.getElementById('month').onchange   = load;
+document.getElementById('f-service').onchange = renderPlan;
+document.getElementById('f-status').onchange  = renderPlan;
+
+(function bindPasteZone() {
+  const zone = document.getElementById('t-paste-zone');
+  const input = document.getElementById('t-files');
+  if (!zone || !input) return;
+  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+  });
+  ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => {
+    e.preventDefault(); e.stopPropagation(); zone.classList.add('is-drag');
+  }));
+  ['dragleave', 'dragend', 'drop'].forEach(ev => zone.addEventListener(ev, e => {
+    e.preventDefault(); e.stopPropagation(); zone.classList.remove('is-drag');
+  }));
+  zone.addEventListener('drop', e => {
+    const files = e.dataTransfer?.files;
+    if (files && files.length) uploadScreenshotFiles(files);
+  });
+  document.addEventListener('paste', onPasteScreenshots);
+})();
+
+// ── Templates: แจ้งเริ่ม / แจ้งเสร็จ ────────────────────────
+// Selected service names — set by the picker inside the template modal.
+let _tplSelected = new Set();
+
+function planUniqueNames() {
+  const names = [];
+  const seen = new Set();
+  for (const p of plan) {
+    const n = (p.catalog?.name || '').trim();
+    if (!n || seen.has(n)) continue;
+    seen.add(n);
+    names.push(n);
+  }
+  return names;
+}
+
+// "To do" = plan items with no Successed result yet — same rule as the
+// left column in renderPlan().
+function planTodoNames() {
+  const names = [];
+  const seen = new Set();
+  for (const p of plan) {
+    const done = resultsForCatalog(p.catalog_id).some(r => r.result === 'Successed');
+    if (done) continue;
+    const n = (p.catalog?.name || '').trim();
+    if (!n || seen.has(n)) continue;
+    seen.add(n);
+    names.push(n);
+  }
+  return names;
+}
+
+function planServiceLines() {
+  const picked = planUniqueNames().filter(n => _tplSelected.has(n));
+  return picked.length
+    ? picked.map(n => '- ' + n).join('\n')
+    : '- (ยังไม่ได้เลือก service — ติ๊กจากรายการด้านบน)';
+}
+
+function responsibleLine() {
+  const name = (_u?.name || _u?.username || '').trim();
+  return name ? `👤 ผู้รับผิดชอบ: ${name}\n` : '';
+}
+
+function buildStartTemplate() {
+  return `📢 **[แจ้งให้ทราบการทดสอบ Test MA Pages]**
+
+เรียนทีมงานทุกท่าน
+ขณะนี้กำลังดำเนินการ **Test MA Pages** เพื่อทดสอบการทำงานของระบบภายใน
+
+⏱️ ช่วงเวลา: [01:00 – 05:00]
+${responsibleLine()}🔧 รายละเอียด: เป็นการทดสอบระบบ อาจมีผลกระทบต่อการใช้งานบางส่วน ช่วงเวลาสั้นๆ
+Service ที่ทดสอบ ตามนี้
+${planServiceLines()}
+
+ขอบคุณครับ`;
+}
+
+function buildEndTemplate() {
+  return `✅ **[สิ้นสุดการทดสอบ Test MA Pages]**
+
+ขณะนี้การทดสอบ Test MA Pages เสร็จสิ้นเรียบร้อยแล้ว
+ระบบกลับมาใช้งานได้ตามปกติ
+${responsibleLine()}Service ที่ทดสอบ ตามนี้
+${planServiceLines()}
+
+ขอบคุณครับ 🙏`;
+}
+
+// Webhook list is loaded once per page-open of the template modal; cached so
+// switching between แจ้งเริ่ม/แจ้งเสร็จ doesn't re-fetch.
+let _tplWebhooks = null;
+let _tplKind = '';  // 'start' | 'end' — remembered so Send can thread the reply
+async function ensureWebhooks() {
+  if (_tplWebhooks) return _tplWebhooks;
+  const r = await MaTest.api.listWebhooks();
+  _tplWebhooks = r?.success ? (r.data?.webhooks || []) : [];
+  return _tplWebhooks;
+}
+
+function renderWebhookOptions(hooks) {
+  const sel = document.getElementById('tpl-webhook');
+  const esc = MaTest.escapeHtml;
+  sel.innerHTML = hooks.length
+    ? '<option value="">— pick Google Chat room —</option>' +
+      hooks.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('')
+    : '<option value="">— ยังไม่มี webhook (ให้ admin ตั้งที่ MA Test Plan) —</option>';
+  // Auto-select if there's exactly one — most common case.
+  if (hooks.length === 1) sel.value = hooks[0].id;
+  document.getElementById('tpl-send').disabled = !sel.value;
+}
+
+function renderTplPicker() {
+  // Show only the "To do" services — the whole-month list was too noisy.
+  const names = planTodoNames();
+  const esc = MaTest.escapeHtml;
+  const list = document.getElementById('tpl-pick-list');
+  if (!names.length) {
+    list.innerHTML = '<div style="font-size:12px; color:var(--text-muted); padding:4px">ไม่มี service ในรายการ To do — ทุกอันของเดือนนี้เทสสำเร็จหมดแล้ว</div>';
+  } else {
+    list.innerHTML = names.map(n => {
+      const checked = _tplSelected.has(n) ? 'checked' : '';
+      return `<label style="display:flex; align-items:center; gap:6px; padding:3px 4px; font-size:12px; cursor:pointer">
+        <input type="checkbox" class="tpl-pick-item" value="${esc(n)}" ${checked}>
+        <span>${esc(n)}</span>
+      </label>`;
+    }).join('');
+    list.querySelectorAll('.tpl-pick-item').forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (cb.checked) _tplSelected.add(cb.value);
+        else _tplSelected.delete(cb.value);
+        refreshTplText();
+      });
+    });
+  }
+  document.getElementById('tpl-pick-count').textContent = `${_tplSelected.size} selected`;
+}
+
+function refreshTplText() {
+  const isEnd = _tplKind === 'end';
+  document.getElementById('tpl-txt').value = isEnd ? buildEndTemplate() : buildStartTemplate();
+  document.getElementById('tpl-pick-count').textContent = `${_tplSelected.size} selected`;
+}
+
+async function openTemplate(kind) {
+  const isEnd = kind === 'end';
+  _tplKind = isEnd ? 'end' : 'start';
+  // Pre-select every service still in the "To do" column — that's what this
+  // session is about to test. User can uncheck any they don't want in the
+  // announcement.
+  _tplSelected = new Set(planTodoNames());
+  document.getElementById('tpl-title').textContent = isEnd
+    ? '✅ Template — แจ้งเสร็จ Test MA'
+    : '📢 Template — แจ้งเริ่ม Test MA';
+  renderTplPicker();
+  refreshTplText();
+  document.getElementById('tpl-info').textContent = isEnd
+    ? `Auto จากรายการ To do (${_tplSelected.size} services) · uncheck ที่ไม่ต้องการได้`
+    : `Auto จากรายการ To do (${_tplSelected.size} services) · แก้ไข [01:00 – 05:00] ตามจริง`;
+  document.getElementById('modal-tpl').classList.add('active');
+  renderWebhookOptions(await ensureWebhooks());
+}
+
+async function copyTemplate() {
+  const txt = document.getElementById('tpl-txt').value;
+  try {
+    await navigator.clipboard.writeText(txt);
+    Toast?.success?.('Copied to clipboard');
+  } catch {
+    const el = document.getElementById('tpl-txt');
+    el.select();
+    try { document.execCommand('copy'); Toast?.success?.('Copied'); }
+    catch { Toast?.error?.('Copy failed — กรุณาเลือกและ copy ด้วยตัวเอง'); }
+  }
+}
+
+async function sendTemplate() {
+  const btn = document.getElementById('tpl-send');
+  const webhookId = document.getElementById('tpl-webhook').value;
+  const msg = document.getElementById('tpl-txt').value.trim();
+  if (!webhookId) { Toast?.error?.('เลือกห้อง Google Chat ก่อน'); return; }
+  if (!msg) { Toast?.error?.('ข้อความว่าง'); return; }
+  const roomName = document.getElementById('tpl-webhook').selectedOptions[0]?.textContent || '';
+  const ok = await confirmDialog(
+    `ส่งข้อความนี้ไปที่ห้อง "${roomName}" ?`,
+    'ยืนยันการส่งข้อความ',
+    { confirmText: '<i data-icon="rocket"></i> Send', cancelText: 'Cancel', variant: 'primary' }
+  );
+  if (!ok) return;
+  btn.disabled = true;
+  const origLabel = btn.textContent;
+  btn.textContent = 'Sending…';
+  const r = await MaTest.api.notify(webhookId, msg, _tplKind);
+  btn.textContent = origLabel;
+  btn.disabled = false;
+  if (!r?.success) { Toast?.error?.(r?.message || 'Send failed'); return; }
+  const suffix = r.data?.threaded
+    ? (_tplKind === 'end' ? ' (thread ต่อจากแจ้งเริ่ม)' : ' (เปิด thread ใหม่)')
+    : '';
+  Toast?.success?.(`ส่งไปที่ "${r.data?.webhook_name || roomName}" แล้ว${suffix}`);
+  closeAll();
+}
+
+document.querySelectorAll('[data-tpl]').forEach(b => b.onclick = () => openTemplate(b.dataset.tpl));
+document.getElementById('tpl-copy').onclick   = copyTemplate;
+document.getElementById('tpl-send').onclick   = sendTemplate;
+document.getElementById('tpl-pick-all').onclick  = () => {
+  _tplSelected = new Set(planTodoNames());
+  renderTplPicker();
+  refreshTplText();
+};
+document.getElementById('tpl-pick-none').onclick = () => {
+  _tplSelected = new Set();
+  renderTplPicker();
+  refreshTplText();
+};
+document.getElementById('tpl-webhook').onchange = (e) => {
+  document.getElementById('tpl-send').disabled = !e.target.value;
+};
+
+load();
+</script>
+</body>
+</html>

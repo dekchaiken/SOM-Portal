@@ -1,0 +1,21 @@
+Options -Indexes
+Header set X-Content-Type-Options "nosniff"
+Header set X-Frame-Options "DENY"
+
+# ── Preserve Authorization header ───────────────────────────────────────────
+# Apache strips the Authorization header before it reaches PHP under CGI /
+# FastCGI unless we forward it explicitly. Without this, every requireAuth()
+# call returns 401 on deploys (localhost php -S works fine because the built-in
+# server always passes headers through).
+#
+# Two mechanisms — one works even if mod_rewrite is off:
+
+<IfModule mod_setenvif.c>
+    SetEnvIf Authorization "(.+)" HTTP_AUTHORIZATION=$1
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} .+
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>

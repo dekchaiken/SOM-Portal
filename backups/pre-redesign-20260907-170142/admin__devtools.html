@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dev Tools — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ── Card ─────────────────────────────────── */
+    .dt-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .dt-card-hd {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(90deg, rgba(242,100,25,.07), transparent 60%);
+    }
+    .dt-card-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0;
+      background: rgba(242,100,25,.12); color: var(--orange);
+    }
+    .dt-card-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .dt-card-sub   { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+    .dt-card-body  { padding: 16px 18px; }
+    .dt-card-foot  {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 10px 18px;
+      border-top: 1px solid var(--border);
+      background: rgba(0,0,0,.12);
+    }
+
+    /* ── Form ─────────────────────────────────── */
+    .dt-row    { margin-bottom: 12px; }
+    .dt-row-2  { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .dt-label  { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px; }
+    .dt-input,
+    .dt-select,
+    .dt-textarea {
+      width: 100%; padding: 8px 11px; border-radius: 8px;
+      border: 1.5px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 12px; font-family: inherit; box-sizing: border-box;
+    }
+    .dt-input:focus, .dt-select:focus, .dt-textarea:focus { outline: none; border-color: var(--orange); }
+    .dt-textarea { resize: vertical; min-height: 90px; line-height: 1.55; font-family: 'JetBrains Mono', Consolas, monospace; }
+
+    /* ── Output panel ─────────────────────────── */
+    .dt-output {
+      background: #0a0a0f;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #e2e8f0;
+      max-height: 400px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-top: 10px;
+    }
+    .dt-output:empty { display: none; }
+    .dt-output.ok    { border-left: 3px solid #22c55e; }
+    .dt-output.err   { border-left: 3px solid #ef4444; }
+    .dt-output.info  { border-left: 3px solid #3b82f6; }
+
+    /* ── Step result (SMTP test) ──────────────── */
+    .dt-steps { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+    .dt-step {
+      display: grid;
+      grid-template-columns: 22px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      transition: border-color .15s;
+    }
+    .dt-step:hover { border-color: rgba(242,100,25,.4); }
+    .dt-step-num {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800;
+      color: #fff; flex-shrink: 0;
+    }
+    .dt-step.ok  .dt-step-num { background: #22c55e; }
+    .dt-step.err .dt-step-num { background: #ef4444; }
+    .dt-step-tx  { min-width: 0; overflow: hidden; }
+    .dt-step-tx .name {
+      display: block;
+      color: var(--text); font-weight: 600; font-size: 12px;
+      letter-spacing: -.005em;
+    }
+    .dt-step-tx .detail {
+      display: block;
+      color: var(--text-muted); font-size: 10.5px;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      margin-top: 2px;
+      overflow-wrap: anywhere;
+      line-height: 1.45;
+    }
+    .dt-step-badge {
+      font-size: 9px; font-weight: 800; letter-spacing: .05em;
+      padding: 3px 8px; border-radius: 5px;
+      flex-shrink: 0;
+    }
+    .dt-step.ok  .dt-step-badge { background: rgba(34,197,94,.15);  color: #22c55e; }
+    .dt-step.err .dt-step-badge { background: rgba(239,68,68,.15);  color: #ef4444; }
+    .dt-step-summary {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px; border-radius: 9px;
+      margin-bottom: 10px; font-size: 12px; font-weight: 700;
+    }
+    .dt-step-summary.ok  { background: rgba(34,197,94,.10); color: #22c55e; border: 1px solid rgba(34,197,94,.3); }
+    .dt-step-summary.err { background: rgba(239,68,68,.10); color: #ef4444; border: 1px solid rgba(239,68,68,.3); }
+
+    /* ── Health rows ──────────────────────────── */
+    .dt-health-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 8px;
+      background: rgba(255,255,255,.03);
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+    .dt-health-dot {
+      width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+    }
+    .dt-health-dot.ok  { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,.5); }
+    .dt-health-dot.err { background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,.5); }
+    .dt-health-dot.warn{ background: #f59e0b; box-shadow: 0 0 8px rgba(245,158,11,.5); }
+    .dt-health-dot.nc  { background: #64748b; }
+    .dt-health-name    { font-weight: 600; color: var(--text); flex: 1; }
+    .dt-health-status  { color: var(--text-muted); font-size: 11px; }
+    .dt-health-ms      { color: var(--text-muted); font-size: 10px; min-width: 40px; text-align: right; }
+
+    /* ── Buttons ───────────────────────────── */
+    .dt-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; font-size: 11px; font-weight: 600;
+      border-radius: 7px; cursor: pointer; font-family: inherit;
+      border: 1.5px solid var(--border); background: var(--bg);
+      color: var(--text); transition: all .15s;
+    }
+    .dt-btn:hover  { border-color: var(--orange); color: var(--orange); }
+    .dt-btn.primary {
+      background: var(--orange); color: #fff; border-color: var(--orange);
+    }
+    .dt-btn.primary:hover { background: #d04e0e; color: #fff; }
+    .dt-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Banner ────────────────────────────── */
+    .dt-banner {
+      padding: 10px 14px; border-radius: 10px;
+      background: linear-gradient(135deg, rgba(242,100,25,.15), rgba(242,100,25,.05));
+      border: 1px solid rgba(242,100,25,.3);
+      font-size: 11px; color: var(--text);
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .dt-banner-tag {
+      font-size: 9px; font-weight: 800; padding: 3px 7px;
+      border-radius: 5px; background: var(--orange); color: #fff;
+      letter-spacing: .06em;
+    }
+
+    /* ── KV table ───────────────────────────── */
+    .dt-kv { display: grid; grid-template-columns: 140px 1fr; gap: 6px 14px; font-size: 12px; }
+    .dt-kv dt { color: var(--text-muted); font-weight: 600; }
+    .dt-kv dd { color: var(--text); margin: 0; word-break: break-all; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; }
+
+    /* ── Method pill ──────────────────────────── */
+    .dt-method {
+      display: inline-block; padding: 2px 6px; border-radius: 4px;
+      font-size: 9px; font-weight: 800; letter-spacing: .04em;
+      margin-right: 6px;
+    }
+    .dt-method.GET    { background: rgba(34,197,94,.2); color: #22c55e; }
+    .dt-method.POST   { background: rgba(59,130,246,.2); color: #3b82f6; }
+    .dt-method.PUT    { background: rgba(245,158,11,.2); color: #f59e0b; }
+    .dt-method.DELETE { background: rgba(239,68,68,.2); color: #ef4444; }
+    .dt-method.PATCH  { background: rgba(242,100,25,.2); color: var(--orange); }
+
+    /* ── Log row ─────────────────────────────── */
+    .dt-log-row {
+      display: grid; grid-template-columns: 90px 110px 1fr;
+      gap: 10px; padding: 6px 10px; border-radius: 6px;
+      font-size: 11px; font-family: 'JetBrains Mono', Consolas, monospace;
+      background: rgba(255,255,255,.02);
+      margin-bottom: 3px; align-items: start;
+    }
+    .dt-log-row .ts { color: var(--text-muted); }
+    .dt-log-row .ac { color: var(--orange); font-weight: 700; }
+    .dt-log-row .dt { color: var(--text); word-break: break-word; }
+    .dt-log-row.sec { background: rgba(239,68,68,.06); }
+    .dt-log-row.sec .ac { color: #f87171; }
+
+    .dt-tabs {
+      display: flex; gap: 2px; margin-bottom: 12px;
+      border-bottom: 1px solid var(--border); padding-bottom: 0;
+    }
+    .dt-tab {
+      padding: 7px 12px; font-size: 11px; font-weight: 600;
+      cursor: pointer; color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+    }
+    .dt-tab.active { color: var(--orange); border-color: var(--orange); }
+    .dt-tab:hover  { color: var(--text); }
+
+    /* ── Rich text editor ─────────────────────────── */
+    .dt-editor {
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      overflow: hidden;
+    }
+    .dt-editor:focus-within { border-color: var(--orange); }
+    .dt-editor-toolbar {
+      display: flex; align-items: center; gap: 4px;
+      padding: 6px 8px;
+      background: var(--bg-input);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .dt-editor-btn {
+      width: 26px; height: 26px;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: 1px solid transparent;
+      border-radius: 5px; cursor: pointer;
+      font-size: 12px; font-weight: 700;
+      color: var(--text-muted); font-family: inherit;
+    }
+    .dt-editor-btn:hover { background: rgba(242,100,25,.1); color: var(--orange); border-color: rgba(242,100,25,.3); }
+    .dt-editor-sep { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
+    .dt-editor-content {
+      min-height: 140px; max-height: 320px;
+      padding: 12px 14px; overflow-y: auto;
+      font-size: 13px; line-height: 1.6;
+      color: var(--text); outline: none;
+    }
+    .dt-editor-content p { margin: 0 0 8px 0; }
+    .dt-editor-content p:last-child { margin-bottom: 0; }
+    .dt-editor-content img { max-width: 100%; height: auto; border-radius: 4px; margin: 6px 0; display: block; }
+    .dt-editor-content:empty::before {
+      content: attr(data-placeholder);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="wrench"></i> Dev Tools</div>
+        <div class="page-sub">เครื่องมือ debug ระบบภายใน — เฉพาะ Role: Dev SM</div>
+      </div>
+      <div class="topbar-actions"></div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="wrench"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Dev Tools</div>
+          <h1>Dev Tools</h1>
+          <p>เครื่องมือ debug ระบบภายใน — เฉพาะ Role: <code>dev_sm</code> · API explorer, data inspector, logs, email tester</p>
+        </div>
+      </section>
+
+      <div class="dt-banner">
+        <span class="dt-banner-tag">DEV SM</span>
+        <span>เครื่องมือ debug นี้แสดงเฉพาะ role <code style="color:var(--orange)">dev_sm</code> — สำหรับทดสอบและตรวจสอบระบบโดยไม่กระทบข้อมูลจริง</span>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════
+           1. SESSION / JWT INSPECTOR
+           ════════════════════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon"><i data-icon="lock"></i></div>
+          <div>
+            <div class="dt-card-title">Session &amp; JWT Inspector</div>
+            <div class="dt-card-sub">Decode JWT ปัจจุบัน · ดู role, expiry, claims ทั้งหมด</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <dl class="dt-kv" id="sess-kv"></dl>
+          <div class="dt-output info" id="sess-payload" style="margin-top:12px"></div>
+        </div>
+        <div class="dt-card-foot">
+          <button class="dt-btn" onclick="loadSession()">↺ Refresh</button>
+          <button class="dt-btn" onclick="copyToken()"><i data-icon="clipboard"></i> Copy Token</button>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════
+           2. HEALTH CHECK
+           ════════════════════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(34,197,94,.12);color:#22c55e"><i data-icon="building"></i></div>
+          <div>
+            <div class="dt-card-title">System Health Check</div>
+            <div class="dt-card-sub">ตรวจสอบสถานะ Jira · SMTP · Jenkins ทุก server แบบละเอียด</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div id="health-list" style="font-size:11px;color:var(--text-muted)">Loading…</div>
+        </div>
+        <div class="dt-card-foot">
+          <button class="dt-btn primary" onclick="loadHealth(true)" id="btn-health">↻ ตรวจสอบ (force fresh)</button>
+          <button class="dt-btn" onclick="loadHealth(false)"><i data-icon="zap"></i> ใช้ cache</button>
+          <span style="font-size:10px;color:var(--text-muted)" id="health-meta"></span>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════
+           3. SMTP CONNECTION TEST
+           ════════════════════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(59,130,246,.12);color:#3b82f6"><i data-icon="plug"></i></div>
+          <div>
+            <div class="dt-card-title">SMTP Connection Test</div>
+            <div class="dt-card-sub">ทดสอบ TCP → EHLO → STARTTLS → AUTH โดยไม่ส่ง email จริง</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div id="smtp-result" style="font-size:11px;color:var(--text-muted)">กดปุ่มด้านล่างเพื่อทดสอบ</div>
+        </div>
+        <div class="dt-card-foot">
+          <button class="dt-btn primary" onclick="testSmtp()" id="btn-smtp"><i data-icon="search"></i> Test Connection</button>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════
+           4. EMAIL TESTER (mock ticket — no Jira create)
+           ════════════════════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(242,100,25,.12);color:var(--orange)"><i data-icon="mail"></i></div>
+          <div>
+            <div class="dt-card-title">Email Tester (Mock Ticket)</div>
+            <div class="dt-card-sub">ส่ง email ทดสอบโดยไม่สร้าง Jira ticket — ทดสอบ template ครบทั้ง header + body + footer</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div class="dt-row-2">
+            <div>
+              <div class="dt-label">Mock Issue Key</div>
+              <input type="text" class="dt-input" id="mail-issue" value="DEV-TEST-001">
+            </div>
+            <div>
+              <div class="dt-label">Service Subtype (CC auto-load)</div>
+              <select class="dt-select" id="mail-subtype">
+                <option value="">— ไม่เลือก (ใช้ Global CC อย่างเดียว) —</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="dt-row">
+            <div class="dt-label">Mock Summary</div>
+            <input type="text" class="dt-input" id="mail-summary" value="Test ticket from Dev Tools — please ignore">
+          </div>
+
+          <div class="dt-row-2">
+            <div>
+              <div class="dt-label">To (comma-separated)</div>
+              <input type="text" class="dt-input" id="mail-to" placeholder="me@example.com">
+            </div>
+            <div>
+              <div class="dt-label">CC (comma-separated)</div>
+              <input type="text" class="dt-input" id="mail-cc" placeholder="auto-loaded from subtype">
+            </div>
+          </div>
+
+          <div class="dt-row">
+            <div class="dt-label">Body <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(กด Enter ขึ้นบรรทัดใหม่ได้ · วางรูปด้วย Cmd+V / Ctrl+V)</span></div>
+            <div class="dt-editor">
+              <div class="dt-editor-toolbar">
+                <button type="button" class="dt-editor-btn" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+                <button type="button" class="dt-editor-btn" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+                <button type="button" class="dt-editor-btn" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+                <span class="dt-editor-sep"></span>
+                <button type="button" class="dt-editor-btn" data-cmd="insertUnorderedList" title="Bullet list"><i data-icon="circle"></i></button>
+                <button type="button" class="dt-editor-btn" data-cmd="insertOrderedList" title="Numbered list">1.</button>
+                <span class="dt-editor-sep"></span>
+                <button type="button" class="dt-editor-btn" id="mail-img-btn" title="แทรกรูป"><i data-icon="image"></i></button>
+                <input type="file" id="mail-img-input" accept="image/*" style="display:none">
+                <span class="dt-editor-sep"></span>
+                <button type="button" class="dt-editor-btn" data-cmd="removeFormat" title="Clear formatting"><i data-icon="x"></i></button>
+              </div>
+              <div class="dt-editor-content" id="mail-body" contenteditable="true" spellcheck="true"
+                   data-placeholder="พิมพ์เนื้อหา email ที่นี่… กด Enter ขึ้นบรรทัดใหม่ · วางรูป Cmd+V"><p>นี่คือ email ทดสอบจาก Dev Tools</p><p>สำหรับทดสอบรูปแบบ <b>branded template</b> ที่ระบบส่งออกไป</p><p>หากเห็น email ฉบับนี้ แปลว่า SMTP config + template ทำงานปกติ</p></div>
+            </div>
+          </div>
+
+          <div id="mail-result" class="dt-output"></div>
+        </div>
+        <div class="dt-card-foot">
+          <button class="dt-btn primary" onclick="sendMockEmail()" id="btn-mail"><i data-icon="mail"></i> ส่ง Test Email</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)">
+            <input type="checkbox" id="mail-branded" checked> ใช้ Branded Template
+          </label>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════
+           5. API ENDPOINT TESTER
+           ════════════════════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(245,158,11,.12);color:#f59e0b"><i data-icon="wrench"></i></div>
+          <div>
+            <div class="dt-card-title">API Endpoint Tester</div>
+            <div class="dt-card-sub">ยิง request ไป API endpoint ใดๆ ก็ได้ใน <code>/api/</code> — token แนบให้อัตโนมัติ</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:10px;margin-bottom:12px">
+            <select class="dt-select" id="api-method">
+              <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
+            </select>
+            <input type="text" class="dt-input" id="api-path" value="/health/index.php" placeholder="/users/index.php">
+          </div>
+          <div class="dt-row">
+            <div class="dt-label">Body (JSON, สำหรับ POST/PUT/PATCH)</div>
+            <textarea class="dt-textarea" id="api-body" placeholder='{"key":"value"}'></textarea>
+          </div>
+          <div id="api-result" class="dt-output"></div>
+        </div>
+        <div class="dt-card-foot">
+          <button class="dt-btn primary" onclick="callApi()" id="btn-api"><i data-icon="play"></i> Send Request</button>
+          <button class="dt-btn" onclick="document.getElementById('api-result').innerHTML=''"><i data-icon="trash"></i> Clear</button>
+          <span style="font-size:10px;color:var(--text-muted)" id="api-meta"></span>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════
+           6. RECENT LOGS (activity + security)
+           ════════════════════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(239,68,68,.12);color:#ef4444"><i data-icon="file-text"></i></div>
+          <div>
+            <div class="dt-card-title">Recent Logs</div>
+            <div class="dt-card-sub">Activity &amp; Security audit logs — แสดง 50 entry ล่าสุด</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div class="dt-tabs">
+            <div class="dt-tab active" data-log="activity" onclick="switchLogTab('activity')"><i data-icon="clipboard"></i> Activity</div>
+            <div class="dt-tab" data-log="security" onclick="switchLogTab('security')"><i data-icon="lock"></i> Security</div>
+          </div>
+          <div id="logs-list" style="font-size:11px;color:var(--text-muted)">Loading…</div>
+        </div>
+        <div class="dt-card-foot">
+          <button class="dt-btn" onclick="loadLogs()">↺ Refresh</button>
+          <span style="font-size:10px;color:var(--text-muted)" id="logs-meta"></span>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+// ── Role gate: Dev SM only ─────────────────────────────────
+if (!Auth.requireAuth()) { /* redirected */ }
+const _user = Auth.getUser?.();
+if (_user && _user.role !== 'dev_sm') {
+  // Other roles → redirect to admin overview
+  window.location.replace('./index.html');
+}
+
+Layout.render('devtools');
+
+// ══════════════════════════════════════════════════════════
+//   1. SESSION INSPECTOR
+// ══════════════════════════════════════════════════════════
+function decodeJwt(token) {
+  try {
+    const [, payloadB64] = token.split('.');
+    const json = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(decodeURIComponent(escape(json)));
+  } catch { return null; }
+}
+
+function loadSession() {
+  const token  = Auth.getToken();
+  const user   = Auth.getUser() || {};
+  const decoded = token ? decodeJwt(token) : null;
+  const exp    = decoded?.exp ? new Date(decoded.exp * 1000) : null;
+  const iat    = decoded?.iat ? new Date(decoded.iat * 1000) : null;
+  const remain = exp ? Math.max(0, Math.round((exp - Date.now()) / 60000)) : null;
+
+  const kv = document.getElementById('sess-kv');
+  kv.innerHTML = `
+    <dt>User ID</dt><dd>${escHtml(user.id || decoded?.sub || '—')}</dd>
+    <dt>Username</dt><dd>${escHtml(user.username || decoded?.username || '—')}</dd>
+    <dt>Display Name</dt><dd>${escHtml(user.name || decoded?.name || '—')}</dd>
+    <dt>Role</dt><dd><span style="color:var(--orange);font-weight:700">${escHtml(user.role || decoded?.role || '—')}</span></dd>
+    <dt>Token Issued</dt><dd>${iat ? iat.toLocaleString('th-TH') : '—'}</dd>
+    <dt>Token Expires</dt><dd>${exp ? exp.toLocaleString('th-TH') + ' (' + remain + ' min remaining)' : '—'}</dd>
+    <dt>Browser</dt><dd>${escHtml(navigator.userAgent.slice(0, 80))}</dd>
+    <dt>API Base</dt><dd>${escHtml(window.location.origin)} + /api</dd>
+  `;
+  document.getElementById('sess-payload').textContent =
+    decoded ? JSON.stringify(decoded, null, 2) : '(ไม่มี token)';
+}
+async function copyToken() {
+  const token = Auth.getToken();
+  if (!token) { Toast.warning('ไม่มี token'); return; }
+  await navigator.clipboard.writeText(token);
+  Toast.success('Copied JWT token');
+}
+
+// ══════════════════════════════════════════════════════════
+//   2. HEALTH CHECK
+// ══════════════════════════════════════════════════════════
+async function loadHealth(fresh = true) {
+  const btn = document.getElementById('btn-health');
+  btn.disabled = true; btn.textContent = '⏳ ตรวจสอบ…';
+  const t0  = performance.now();
+  const res = await API.health.check(fresh);
+  const ms  = Math.round(performance.now() - t0);
+  btn.disabled = false; btn.textContent = '↻ ตรวจสอบ (force fresh)';
+
+  const list = document.getElementById('health-list');
+  if (!res?.ok) {
+    list.innerHTML = `<div class="dt-output err">Error ${res?.status}: ${escHtml(res?.data?.message || 'unknown')}</div>`;
+    return;
+  }
+
+  const svcs = res.data.data?.services || {};
+  const checked = res.data.data?.checked_at || '';
+  document.getElementById('health-meta').textContent = `Round-trip: ${ms}ms · Checked: ${checked}`;
+
+  const rows = [];
+  // Jira
+  const j = svcs.jira || {};
+  rows.push(makeHealthRow('Jira', j.status, j.detail || j.status, j.latency_ms));
+  // SMTP
+  const s = svcs.smtp || {};
+  rows.push(makeHealthRow('SMTP', s.status, s.detail || s.status, null));
+  // Jenkins servers
+  const jks = Array.isArray(svcs.jenkins) ? svcs.jenkins : [];
+  if (!jks.length) {
+    rows.push(makeHealthRow('Jenkins', 'not_configured', 'No servers configured', null));
+  } else {
+    jks.forEach(jk => {
+      rows.push(makeHealthRow('Jenkins · ' + (jk.display || jk.id), jk.status, jk.detail || jk.status, jk.latency_ms));
+    });
+  }
+  list.innerHTML = rows.join('');
+}
+function makeHealthRow(name, status, detail, ms) {
+  const dotCls = status === 'ok' ? 'ok'
+               : status === 'timeout' ? 'warn'
+               : status === 'not_configured' ? 'nc' : 'err';
+  return `<div class="dt-health-row">
+    <span class="dt-health-dot ${dotCls}"></span>
+    <span class="dt-health-name">${escHtml(name)}</span>
+    <span class="dt-health-status">${escHtml(detail || status || '')}</span>
+    <span class="dt-health-ms">${ms != null ? ms + 'ms' : ''}</span>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+//   3. SMTP TEST
+// ══════════════════════════════════════════════════════════
+async function testSmtp() {
+  const btn = document.getElementById('btn-smtp');
+  const out = document.getElementById('smtp-result');
+  btn.disabled = true; btn.textContent = '⏳ Testing…';
+  out.innerHTML = '<span style="color:var(--text-muted)">กำลังเชื่อมต่อ SMTP…</span>';
+
+  const res = await API.mail.testConnection();
+  btn.disabled = false; btn.innerHTML = '<i data-icon="search"></i> Test Connection';
+
+  if (!res?.ok) {
+    out.innerHTML = `<div class="dt-output err">Error: ${escHtml(res?.data?.message || 'unknown')}</div>`;
+    return;
+  }
+  const steps = res.data.data?.steps || [];
+  const overall = res.data.data?.ok;
+  const summary = overall
+    ? `<div class="dt-step-summary ok"><i data-icon="check"></i> All ${steps.length} steps passed — SMTP server พร้อมใช้งาน</div>`
+    : `<div class="dt-step-summary err"><i data-icon="x"></i> Test failed at step ${steps.findIndex(s => !s.ok) + 1} of ${steps.length}</div>`;
+
+  // Render detail safely without auto-linkify (use textContent on cloned nodes)
+  const list = document.createElement('div');
+  list.className = 'dt-steps';
+  steps.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'dt-step ' + (s.ok ? 'ok' : 'err');
+    row.innerHTML = `
+      <span class="dt-step-num">${i + 1}</span>
+      <span class="dt-step-tx">
+        <span class="name"></span>
+        <span class="detail"></span>
+      </span>
+      <span class="dt-step-badge">${s.ok ? 'OK' : 'FAIL'}</span>`;
+    row.querySelector('.name').textContent   = s.label || '';
+    row.querySelector('.detail').textContent = s.detail || '';
+    list.appendChild(row);
+  });
+  out.innerHTML = summary;
+  out.appendChild(list);
+}
+
+// ══════════════════════════════════════════════════════════
+//   4. EMAIL TESTER
+// ══════════════════════════════════════════════════════════
+let _serviceTypes = [];
+async function loadServiceSubtypes() {
+  const r = await API.serviceTypes.list();
+  if (!r?.ok) return;
+  _serviceTypes = r.data.data || [];
+  const sel = document.getElementById('mail-subtype');
+  _serviceTypes.forEach(t => {
+    (t.subtypes || []).forEach(st => {
+      const o = document.createElement('option');
+      o.value = st.id;
+      o.textContent = `${t.name} → ${st.name}` + (st.emails?.length ? ` (${st.emails.length} CC)` : '');
+      sel.appendChild(o);
+    });
+  });
+}
+document.getElementById('mail-subtype').addEventListener('change', e => {
+  const id = e.target.value;
+  if (!id) { document.getElementById('mail-cc').value = ''; return; }
+  for (const t of _serviceTypes) {
+    const st = (t.subtypes || []).find(s => s.id === id);
+    if (st) {
+      document.getElementById('mail-cc').value = (st.emails || []).join(', ');
+      return;
+    }
+  }
+});
+
+// ── Rich editor: toolbar, paste-image, keyboard shortcuts ──
+const _mailEditor = document.getElementById('mail-body');
+
+document.querySelectorAll('.dt-editor-btn[data-cmd]').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.preventDefault();
+    document.execCommand(btn.dataset.cmd, false, null);
+    _mailEditor.focus();
+  });
+});
+
+// Image picker (toolbar button)
+document.getElementById('mail-img-btn').addEventListener('click', () => {
+  document.getElementById('mail-img-input').click();
+});
+document.getElementById('mail-img-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    document.execCommand('insertHTML', false,
+      `<img src="${ev.target.result}" style="max-width:100%;height:auto;border-radius:4px;margin:6px 0">`);
+    _mailEditor.focus();
+  };
+  r.readAsDataURL(file);
+  e.target.value = '';
+});
+
+// Paste handler — convert clipboard images to inline base64 img
+_mailEditor.addEventListener('paste', e => {
+  const items = e.clipboardData?.items || [];
+  for (const item of items) {
+    if (item.type?.startsWith('image/')) {
+      e.preventDefault();
+      const file = item.getAsFile();
+      if (!file) continue;
+      const r = new FileReader();
+      r.onload = ev => {
+        document.execCommand('insertHTML', false,
+          `<img src="${ev.target.result}" style="max-width:100%;height:auto;border-radius:4px;margin:6px 0">`);
+      };
+      r.readAsDataURL(file);
+      return;
+    }
+  }
+  // Plain text: strip rich formatting from external sources
+  const text = e.clipboardData?.getData('text/plain');
+  if (text && !e.clipboardData.types.includes('text/html')) {
+    e.preventDefault();
+    document.execCommand('insertText', false, text);
+  }
+});
+
+// Make Enter create <p> instead of <div> (cleaner HTML output)
+document.addEventListener('DOMContentLoaded', () => {
+  try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch {}
+});
+
+// Enable click-to-resize for any image inserted into the editor
+setupImageResize(_mailEditor);
+
+async function sendMockEmail() {
+  const issue   = document.getElementById('mail-issue').value.trim() || 'DEV-TEST-000';
+  const summary = document.getElementById('mail-summary').value.trim() || 'Test';
+  const toRaw   = document.getElementById('mail-to').value.trim();
+  const ccRaw   = document.getElementById('mail-cc').value.trim();
+  const body    = _mailEditor.innerHTML.trim();
+  const branded = document.getElementById('mail-branded').checked;
+
+  if (!toRaw) { Toast.warning('กรอก To อย่างน้อย 1 อีเมล'); return; }
+
+  const to = toRaw.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+  const cc = ccRaw.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+
+  const btn = document.getElementById('btn-mail');
+  const out = document.getElementById('mail-result');
+  btn.disabled = true; btn.textContent = '⏳ ส่ง…';
+  out.className = 'dt-output info';
+  out.textContent = 'กำลังส่ง email…';
+
+  const t0 = performance.now();
+  const res = await API.mail.send({
+    to, cc,
+    subject: `[${issue}] ${summary}`,
+    body,
+    isHtml: true,
+    useBranding: branded,
+  });
+  const ms = Math.round(performance.now() - t0);
+  btn.disabled = false; btn.innerHTML = '<i data-icon="mail"></i> ส่ง Test Email';
+
+  if (res?.ok) {
+    out.className = 'dt-output ok';
+    out.innerHTML = `<i data-icon="check"></i> ส่งสำเร็จ (${ms}ms)\nTo: ${to.join(', ')}\nCC: ${cc.join(', ') || '(none)'}\nSubject: [${issue}] ${summary}`;
+    Toast.success('ส่ง test email สำเร็จ');
+  } else {
+    out.className = 'dt-output err';
+    out.innerHTML = `<i data-icon="x"></i> ส่งไม่สำเร็จ (${ms}ms)\nStatus: ${res?.status}\nMessage: ${res?.data?.message || 'unknown'}`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//   5. API TESTER
+// ══════════════════════════════════════════════════════════
+async function callApi() {
+  const method = document.getElementById('api-method').value;
+  const path   = document.getElementById('api-path').value.trim();
+  const bodyRaw= document.getElementById('api-body').value.trim();
+  const out    = document.getElementById('api-result');
+  const btn    = document.getElementById('btn-api');
+
+  if (!path) { Toast.warning('กรอก path'); return; }
+
+  let body = null;
+  if (bodyRaw && ['POST','PUT','PATCH'].includes(method)) {
+    try { body = JSON.parse(bodyRaw); }
+    catch (e) { out.className = 'dt-output err'; out.textContent = 'JSON parse error: ' + e.message; return; }
+  }
+
+  btn.disabled = true; btn.textContent = '⏳…';
+  out.className = 'dt-output info';
+  out.textContent = `<span class="dt-method ${method}">${method}</span> ${path}\n\nกำลังส่ง…`;
+
+  const t0 = performance.now();
+  const res = await API.request(method, path, body);
+  const ms  = Math.round(performance.now() - t0);
+  btn.disabled = false; btn.innerHTML = '<i data-icon="play"></i> Send Request';
+
+  document.getElementById('api-meta').textContent = `${ms}ms · HTTP ${res?.status}`;
+
+  out.className = 'dt-output ' + (res?.ok ? 'ok' : 'err');
+  out.innerHTML = `<span class="dt-method ${method}">${method}</span> <b>${escHtml(path)}</b>\n` +
+    `<span style="color:var(--text-muted)">HTTP ${res?.status} · ${ms}ms</span>\n\n` +
+    escHtml(JSON.stringify(res?.data, null, 2));
+}
+
+// ══════════════════════════════════════════════════════════
+//   6. LOGS
+// ══════════════════════════════════════════════════════════
+let _logTab = 'activity';
+function switchLogTab(tab) {
+  _logTab = tab;
+  document.querySelectorAll('.dt-tab').forEach(t => t.classList.toggle('active', t.dataset.log === tab));
+  loadLogs();
+}
+async function loadLogs() {
+  const list = document.getElementById('logs-list');
+  list.innerHTML = '<span style="color:var(--text-muted)">Loading…</span>';
+
+  const t0 = performance.now();
+  const res = await API.logs.query({ type: _logTab, limit: 50 });
+  const ms = Math.round(performance.now() - t0);
+
+  if (!res?.ok) {
+    list.innerHTML = `<div class="dt-output err">Error: ${escHtml(res?.data?.message || 'unknown')}</div>`;
+    return;
+  }
+
+  const items = res.data.data?.items || [];
+  document.getElementById('logs-meta').textContent = `${items.length} entries · ${ms}ms`;
+
+  if (!items.length) {
+    list.innerHTML = '<div style="color:var(--text-muted);font-size:11px">ไม่มี log</div>';
+    return;
+  }
+
+  list.innerHTML = items.map(e => {
+    const ts = e.ts ? new Date(e.ts).toLocaleString('th-TH', {hour12:false}) : '';
+    const detail = e.detail ? JSON.stringify(e.detail) : '';
+    const cls = _logTab === 'security' ? ' sec' : '';
+    return `<div class="dt-log-row${cls}">
+      <span class="ts">${escHtml(ts.slice(11))}</span>
+      <span class="ac">${escHtml(e.action || e.event || '')}</span>
+      <span class="dt">${escHtml(e.user_name || '')} · ${escHtml(detail)}</span>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+//   INIT
+// ══════════════════════════════════════════════════════════
+loadSession();
+loadHealth(false);
+loadServiceSubtypes();
+loadLogs();
+</script>
+</body>
+</html>

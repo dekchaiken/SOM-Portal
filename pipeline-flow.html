@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pipeline Flow — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/pipeline-flow/pipeline-flow.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Pipeline Flow</div>
+        <div class="page-sub">
+          รวมทุก pipeline ของทุก Org — เห็น flow / jobs / build status ในที่เดียว
+          <a href="batch-monitor-v2.html" style="margin-left:10px; font-size:10px; color:var(--text-muted); text-decoration:none; border-bottom:1px dashed var(--text-muted); padding-bottom:1px">← กลับไป Batch Monitor</a>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" id="pf-btn-reset" type="button" title="ล้าง selection" style="font-size:11px">↺ Reset</button>
+        <button class="btn btn-primary" id="pf-btn-add-edge" type="button" style="display:none; font-size:11px">+ Chain</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="pf">
+
+        <div class="pf-hero">
+          <div class="pf-hero-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          </div>
+          <div class="pf-hero-body">
+            <div class="pf-hero-title" id="pf-h-title">Pipeline Registry</div>
+            <div class="pf-hero-sub" id="pf-h-sub">
+              <span><b id="pf-h-orgs">–</b> orgs</span>
+              <span><b id="pf-h-flows">–</b> flows</span>
+              <span><b id="pf-h-jobs">–</b> total jobs</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2-level nav -->
+        <div class="pf-nav">
+          <div class="pf-nav-row">
+            <span class="pf-nav-lbl">Org</span>
+            <div id="pf-orgs" style="display:flex; gap:6px; flex-wrap:wrap; flex:1"></div>
+          </div>
+          <div class="pf-nav-row" id="pf-flows-row">
+            <span class="pf-nav-lbl">Flow</span>
+            <div id="pf-flows" style="display:flex; gap:6px; flex-wrap:wrap; flex:1"></div>
+          </div>
+        </div>
+
+        <!-- Main content — either flow view or landing -->
+        <div id="pf-main">
+          <div class="pf-card">
+            <div class="pf-flow"><div class="pf-skel" style="height:520px"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create-flow modal -->
+      <div class="pf-mo" id="pf-mo-create">
+        <div class="pf-mo-card">
+          <div class="pf-mo-title">สร้าง Pipeline Flow ใหม่</div>
+          <div class="pf-mo-sub">ตั้งชื่อ flow แล้วเลือก Org — หลังสร้างเสร็จเพิ่ม job ได้ทีละตัว หรือ import CSV</div>
+          <div class="pf-mo-row2">
+            <div>
+              <label for="pf-c-org">Org</label>
+              <select id="pf-c-org"></select>
+            </div>
+            <div>
+              <label for="pf-c-neworg">หรือสร้าง Org ใหม่</label>
+              <input id="pf-c-neworg" type="text" placeholder="เช่น NANO, TMN, WEALTH">
+            </div>
+          </div>
+          <label for="pf-c-name">Flow name</label>
+          <input id="pf-c-name" type="text" placeholder="เช่น Collection Lead, TCRB Debt Sale">
+          <div class="pf-mo-actions">
+            <button type="button" class="btn btn-ghost" onclick="PF.closeCreate()">ยกเลิก</button>
+            <button type="button" class="btn btn-primary" onclick="PF.saveCreate()">สร้าง</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add-job modal (rich fields matching seeded data) -->
+      <div class="pf-mo" id="pf-mo-job">
+        <div class="pf-mo-card" style="max-width:720px">
+          <div class="pf-mo-title" id="pf-j-title">เพิ่ม Job</div>
+          <div class="pf-mo-sub">กรอกได้ทุก field เหมือน CSV ต้นฉบับ — บังคับแค่ Jenkins Job Name</div>
+
+          <!-- Tabs -->
+          <div class="pf-jtabs">
+            <button type="button" class="pf-jtab on" data-jtab="basic">Basic</button>
+            <button type="button" class="pf-jtab"    data-jtab="sched">Schedule</button>
+            <button type="button" class="pf-jtab"    data-jtab="owner">Ownership</button>
+            <button type="button" class="pf-jtab"    data-jtab="files">Files / DB</button>
+            <button type="button" class="pf-jtab"    data-jtab="extra">Extras</button>
+          </div>
+
+          <div class="pf-jpane on" data-pane="basic">
+            <label for="pf-j-pattern">Jenkins Job Name (required)</label>
+            <input id="pf-j-pattern" type="text" placeholder="เช่น acm-nano-prod-collection-lead-get-risk-data">
+            <div class="pf-mo-row2">
+              <div>
+                <label for="pf-j-category">Sub-category (folder label)</label>
+                <input id="pf-j-category" type="text" placeholder="Collection Lead">
+              </div>
+              <div>
+                <label for="pf-j-label">Display label (optional)</label>
+                <input id="pf-j-label" type="text" placeholder="get-risk-data">
+              </div>
+            </div>
+            <label for="pf-j-purpose">Purpose</label>
+            <textarea id="pf-j-purpose" placeholder="อธิบายว่า job นี้ทำอะไร" style="font-family:inherit; font-size:12.5px"></textarea>
+          </div>
+
+          <div class="pf-jpane" data-pane="sched">
+            <div class="pf-mo-row2">
+              <div>
+                <label for="pf-j-time">Schedule Time</label>
+                <input id="pf-j-time" type="text" placeholder="8:15:00 PM">
+              </div>
+              <div>
+                <label for="pf-j-freq">Frequency</label>
+                <input id="pf-j-freq" type="text" placeholder="Daily / Monthly / Specific">
+              </div>
+            </div>
+            <div class="pf-mo-row2">
+              <div>
+                <label for="pf-j-date">Schedule Date</label>
+                <input id="pf-j-date" type="text" placeholder="- / วันที่ 1 / Every 2 hours">
+              </div>
+              <div>
+                <label for="pf-j-sort">Sort key (order in lane)</label>
+                <input id="pf-j-sort" type="number" placeholder="0 = first, 9999 = last" value="9999">
+              </div>
+            </div>
+            <div class="pf-mo-row2">
+              <div>
+                <label for="pf-j-critical">Critical?</label>
+                <select id="pf-j-critical"><option value="">—</option><option value="Yes">Yes</option><option value="No">No</option></select>
+              </div>
+              <div>
+                <label for="pf-j-monitor">Monitor?</label>
+                <select id="pf-j-monitor"><option value="">—</option><option value="Yes">Yes</option><option value="No">No</option></select>
+              </div>
+            </div>
+            <label for="pf-j-rerun">Rerun Policy</label>
+            <input id="pf-j-rerun" type="text" placeholder="Yes / No / Yes : ทันที / No : ทันที">
+          </div>
+
+          <div class="pf-jpane" data-pane="owner">
+            <label for="pf-j-owner">Dev Owner</label>
+            <input id="pf-j-owner" type="text" placeholder="เช่น IC & DP">
+            <label for="pf-j-owner-detail">Dev Owner Detail (multi-line)</label>
+            <textarea id="pf-j-owner-detail" placeholder="IC : Oncall&#10;DP : Apilada H.&#10;    Karin T." style="font-family:inherit; font-size:12.5px"></textarea>
+            <div class="pf-mo-row2">
+              <div>
+                <label for="pf-j-userowner">User Owner</label>
+                <input id="pf-j-userowner" type="text" placeholder="Surasavadee K. Wasan P.">
+              </div>
+              <div>
+                <label for="pf-j-usergroup">User Group</label>
+                <input id="pf-j-usergroup" type="text" placeholder="Collection">
+              </div>
+            </div>
+          </div>
+
+          <div class="pf-jpane" data-pane="files">
+            <label>Source Files (IN) — 1 ต่อบรรทัด รูปแบบ <code>filename | s3_path</code></label>
+            <textarea id="pf-j-files-in" placeholder="cms_mobile_priority_YYYYMMDD.csv | s3://prod-ascendnano-collection-service/cms_mobile_priority/&#10;cms_welcome_call_YYYYMMDD.csv | s3://prod-ascendnano-collection-service/cms_welcome_call/" style="font-family:ui-monospace,Menlo,monospace; font-size:11px; min-height:80px"></textarea>
+            <label>Output Files (OUT) — 1 ต่อบรรทัด รูปแบบ <code>filename | s3_or_sftp_path</code></label>
+            <textarea id="pf-j-files-out" placeholder="yyyymmdd_customer_information-01.csv.enc | sftp://..." style="font-family:ui-monospace,Menlo,monospace; font-size:11px; min-height:70px"></textarea>
+            <label>Databases (comma-separated หรือ 1 ต่อบรรทัด)</label>
+            <textarea id="pf-j-dbs" placeholder="colld.collection_telephone_priority&#10;colld.collection_welcome_call" style="font-family:ui-monospace,Menlo,monospace; font-size:11px; min-height:60px"></textarea>
+          </div>
+
+          <div class="pf-jpane" data-pane="extra">
+            <label for="pf-j-params">Params</label>
+            <textarea id="pf-j-params" placeholder="Jenkins Job Parameter&#10;API - Get telephone priority&#10;Lead telephone priority file" style="font-family:inherit; font-size:12.5px"></textarea>
+            <label for="pf-j-confluence">Confluence URL</label>
+            <input id="pf-j-confluence" type="text" placeholder="https://truemoney.atlassian.net/wiki/...">
+          </div>
+
+          <div class="pf-mo-actions">
+            <button type="button" class="btn btn-ghost" onclick="PF.closeJob()">ยกเลิก</button>
+            <button type="button" class="btn btn-primary" onclick="PF.saveJob()">บันทึก</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add-edge modal -->
+      <div class="pf-mo" id="pf-mo-edge">
+        <div class="pf-mo-card">
+          <div class="pf-mo-title">Add Chain Dependency</div>
+          <div class="pf-mo-sub">ประกาศว่า job A ต้องรันเสร็จก่อน job B</div>
+          <label for="pf-e-from">Upstream (from)</label>
+          <select id="pf-e-from"></select>
+          <label for="pf-e-to">Downstream (to)</label>
+          <select id="pf-e-to"></select>
+          <label for="pf-e-note">Note (optional)</label>
+          <textarea id="pf-e-note" placeholder="เช่น: rerun A ก่อน B ทุกครั้งถ้าไฟล์ .enc พัง" style="font-family:inherit; font-size:12.5px"></textarea>
+          <div class="pf-mo-actions">
+            <button type="button" class="btn btn-ghost" onclick="PF.closeEdge()">ยกเลิก</button>
+            <button type="button" class="btn btn-primary" onclick="PF.saveEdge()">บันทึก</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/pages/pipeline-flow/pipeline-flow.js"></script>
+
+</body>
+</html>

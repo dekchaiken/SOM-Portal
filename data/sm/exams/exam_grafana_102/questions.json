@@ -1,0 +1,408 @@
+[
+    {
+        "id": "q_g102_cfg_01",
+        "category": "Alert Config Fields",
+        "type": "single",
+        "prompt": "Alert config มี field `query: params: [\"A\", \"1m\", \"now\"]` แปลว่าอะไร?",
+        "choices": [
+            "ใช้ query A ย้อน 1 นาทีถึงตอนนี้",
+            "ใช้ query A รอ 1 นาทีก่อนยิง",
+            "ยิงทุก 1 นาที",
+            "Silence 1 นาที"
+        ],
+        "answer": 0,
+        "explain": "ตำแหน่ง 1 = ใช้ query ชื่อ A ของ panel, ตำแหน่ง 2 = ย้อน 1 นาที, ตำแหน่ง 3 = ถึง 'now'"
+    },
+    {
+        "id": "q_g102_cfg_02",
+        "category": "Alert Config Fields",
+        "type": "single",
+        "prompt": "Alert ตั้ง `for: 3m` `frequency: 1m` — Grafana ทำอะไร?",
+        "choices": [
+            "Evaluate ทุก 3 นาที แล้วยิงทันที",
+            "Evaluate ทุก 1 นาที; ถ้าเงื่อนไขเป็นจริงต่อเนื่อง 3 นาที ค่อยเข้าสถานะ Alerting",
+            "ยิง alert 3 ครั้งใน 1 นาที",
+            "Silence 3 นาที ระหว่างที่ evaluate"
+        ],
+        "answer": 1,
+        "explain": "frequency = จังหวะ evaluate, for = ระยะ 'ยืนยัน' ก่อนเปลี่ยนสถานะเป็น Alerting (กัน false alert จาก spike)"
+    },
+    {
+        "id": "q_g102_cfg_03",
+        "category": "Alert Config Fields",
+        "type": "single",
+        "prompt": "`noDataState: ok` แปลว่าอะไร?",
+        "choices": [
+            "ทุกอย่างปกติ ไม่ต้องดู",
+            "ถ้า query คืนข้อมูลว่าง (empty) — ถือเป็นสถานะปกติ (ไม่ยิง alert)",
+            "Grafana OK ให้ส่ง alert",
+            "Rule ยัง draft"
+        ],
+        "answer": 1,
+        "explain": "noDataState = สถานะที่ตั้งให้ alert เข้าเมื่อ query คืน empty. ทีมนิยม ok เพราะ metric ที่นับ fail ปกติควรเป็น 0 → empty = ไม่มี fail"
+    },
+    {
+        "id": "q_g102_cfg_04",
+        "category": "Alert Config Fields",
+        "type": "single",
+        "prompt": "`executionErrorState: keep_state` ใช้ตอนไหน?",
+        "choices": [
+            "เมื่อ SM กด keep",
+            "เมื่อ datasource ล่มหรือ query error — คงสถานะเดิมไว้ ไม่ยิง alert เพิ่ม",
+            "เก็บ state ไว้ 1 ชั่วโมง",
+            "Backup config"
+        ],
+        "answer": 1,
+        "explain": "keep_state = ถ้า evaluate ผิดพลาด (datasource down \/ syntax error) ให้คงสถานะเดิม ไม่ยิงใหม่ → กัน alert storm ตอน infra glitch"
+    },
+    {
+        "id": "q_g102_cfg_05",
+        "category": "Alert Config Fields",
+        "type": "single",
+        "prompt": "Alert `[SMC] 7-Eleven SOF Credit Card Charge Fail > 3` มี `evaluator: gt, params: [3]` — หมายความว่าอะไร?",
+        "choices": [
+            "ค่ามากกว่า 3 → alert",
+            "ยิงทุก 3 นาที",
+            "หยิบ 3 point มา evaluate",
+            "Threshold ยืนยัน 3 ครั้ง"
+        ],
+        "answer": 0,
+        "explain": "gt = greater than, params[3] = threshold. รวมกันคือ 'ค่า > 3 → เข้าเงื่อนไข'"
+    },
+    {
+        "id": "q_g102_red_01",
+        "category": "Reducer & Multi-Condition",
+        "type": "single",
+        "prompt": "Alert ใช้ `reducer: avg` ทำงานยังไง?",
+        "choices": [
+            "หาค่าเฉลี่ยของ point ทุกอันในช่วง query range ก่อนเทียบ threshold",
+            "หาค่า max",
+            "หา sum",
+            "เอา point ล่าสุด"
+        ],
+        "answer": 0,
+        "explain": "reducer ยุบ series ที่ได้จาก query ตามเวลาให้เป็นค่าเดียว. avg = ค่าเฉลี่ยของทุก point ในช่วง"
+    },
+    {
+        "id": "q_g102_red_02",
+        "category": "Reducer & Multi-Condition",
+        "type": "single",
+        "prompt": "อยากตั้ง alert Response time ที่ 'spike ขึ้นเพียง 1 point ก็ต้องรู้' ควรใช้ reducer อะไร?",
+        "choices": [
+            "avg",
+            "count",
+            "max",
+            "sum"
+        ],
+        "answer": 2,
+        "explain": "max = หยิบค่าสูงสุด — spike สั้น ๆ ที่ avg smooth ทิ้ง ยังจับได้"
+    },
+    {
+        "id": "q_g102_red_03",
+        "category": "Reducer & Multi-Condition",
+        "type": "single",
+        "prompt": "Alert 2 conditions เชื่อมด้วย `operator: and` — เมื่อไหร่จะเข้าเงื่อนไข?",
+        "choices": [
+            "เมื่อ condition ใด condition หนึ่งเป็นจริง",
+            "เมื่อทั้ง 2 condition เป็นจริงพร้อมกัน",
+            "เมื่อ condition แรกเป็นจริง",
+            "เมื่อทั้ง 2 condition เป็นเท็จ"
+        ],
+        "answer": 1,
+        "explain": "AND = ทั้งคู่ต้องจริง. ทีมใช้ AND เพื่อกัน false alert เช่น alert เมื่อ 'fail สูง AND traffic เยอะ' (ไม่ยิงตอนกลางดึกที่ traffic น้อย)"
+    },
+    {
+        "id": "q_g102_red_04",
+        "category": "Reducer & Multi-Condition",
+        "type": "single",
+        "prompt": "PromQL `sum by(bank) (increase(metric[1m]))` ต่างจาก `reducer: sum` ในกล่อง Alert ยังไง?",
+        "choices": [
+            "เหมือนกัน 100%",
+            "PromQL sum ยุบข้าม series (แนวนอน, ตาม label), reducer sum ยุบตามเวลา (แนวตั้ง) — คนละแกน",
+            "PromQL ทำงานเร็วกว่า",
+            "reducer sum ใช้ไม่ได้"
+        ],
+        "answer": 1,
+        "explain": "sum ใน PromQL คือ aggregation ข้าม series. reducer ใน alert คือ aggregation ตามเวลาของ series แต่ละเส้น. คนละแกน"
+    },
+    {
+        "id": "q_g102_red_05",
+        "category": "Reducer & Multi-Condition",
+        "type": "single",
+        "prompt": "Alert `[SMC] Payment Charge Via 7-Eleven Success = 0` ควรใช้ evaluator แบบไหน?",
+        "choices": [
+            "gt 0 (มากกว่า 0)",
+            "lt 1 (น้อยกว่า 1) → success ตกลงเป็น 0 ก็ยิง",
+            "eq 0",
+            "gt 100"
+        ],
+        "answer": 1,
+        "explain": "success = 0 หมายถึง service ตาย. ใช้ lt 1 (< 1) เพื่อจับกรณีที่ success ตกจากเลขปกติเป็น 0"
+    },
+    {
+        "id": "q_g102_var_01",
+        "category": "Variables & Interval",
+        "type": "single",
+        "prompt": "Dashboard TSM Center มี dropdown `$env` — เก็บค่าอะไร?",
+        "choices": [
+            "ชื่อทีม (sm, im, cmt)",
+            "ชื่อ environment: prd, uat, staging",
+            "region ของ AWS",
+            "รหัส severity"
+        ],
+        "answer": 1,
+        "explain": "$env = environment (prd\/uat\/staging) — SM ต้องเลือกให้ตรงกับ env ที่ alert ยิงมา"
+    },
+    {
+        "id": "q_g102_var_02",
+        "category": "Variables & Interval",
+        "type": "single",
+        "prompt": "$Interval ของ TMN dashboard เก็บค่าอะไร?",
+        "choices": [
+            "ช่วงเวลาที่ scrape metric",
+            "ช่วง window ของ increase(): 1m, 10m, 30m, 1h, ..., 30d",
+            "ระยะห่างของ 2 alert",
+            "Timezone"
+        ],
+        "answer": 1,
+        "explain": "$Interval คือ dropdown เลือก window ของ increase()\/rate() ที่ใช้บนหน้า dashboard. ตอน incident ต้อง 1m-10m"
+    },
+    {
+        "id": "q_g102_var_03",
+        "category": "Variables & Interval",
+        "type": "single",
+        "prompt": "ตอน incident SM ควรตั้ง $Interval เท่าไหร่?",
+        "choices": [
+            "30d",
+            "1d",
+            "1m-10m",
+            "ปล่อยตาม default"
+        ],
+        "answer": 2,
+        "explain": "Incident ต้องละเอียด. Interval สั้น ๆ เห็น spike; Interval ยาว 30d เห็นแค่ค่าเฉลี่ยที่ smooth spike ทิ้ง"
+    },
+    {
+        "id": "q_g102_var_04",
+        "category": "Variables & Interval",
+        "type": "single",
+        "prompt": "Variable `$cluster` ของ Kafka เป็น chained variable — แปลว่าอะไร?",
+        "choices": [
+            "ผูกกับ Slack channel",
+            "Query ของ $cluster ใช้ค่าของ $region เป็น input → เปลี่ยน region cluster list เปลี่ยนตาม",
+            "ต้องเลือกหลายค่าเสมอ",
+            "อัตโนมัติทุก dashboard"
+        ],
+        "answer": 1,
+        "explain": "Chained = variable ที่ query อ้าง variable ตัวก่อนหน้า. TMN ใช้เพราะ cluster Kafka ในแต่ละ region ต่างกัน"
+    },
+    {
+        "id": "q_g102_msg_01",
+        "category": "Alert Message (Step Check\/Escalate\/CLT)",
+        "type": "single",
+        "prompt": "โครง Alert Message ของทีม TMN ประกอบด้วย 3 ส่วนหลักคืออะไร?",
+        "choices": [
+            "Title, Body, Footer",
+            "Subject, Message, Signature",
+            "Step Check, การ Escalate, ข้อความแจ้ง CLT",
+            "P0, P1, P2"
+        ],
+        "answer": 2,
+        "explain": "ทุก alert message ในทีมมีโครงเดียวกัน 3 ส่วน — ทำให้ SM ใหม่ทำตามได้ทันทีและ handoff กะได้"
+    },
+    {
+        "id": "q_g102_msg_02",
+        "category": "Alert Message (Step Check\/Escalate\/CLT)",
+        "type": "single",
+        "prompt": "Step Check ใน alert message มักมี link ไปที่ระบบไหน?",
+        "choices": [
+            "Google Docs",
+            "OpenSearch (opensearch.private-a-cloud1p...) พร้อม saved search เช่น TS_711_SOF_Credit_Card_Fail",
+            "Jira",
+            "Confluence"
+        ],
+        "answer": 1,
+        "explain": "ทีมใช้ OpenSearch เก็บ log. saved search แต่ละอันมี \/goto\/{hash} short URL ที่ pre-set filter"
+    },
+    {
+        "id": "q_g102_msg_03",
+        "category": "Alert Message (Step Check\/Escalate\/CLT)",
+        "type": "single",
+        "prompt": "Alert 'SOF Credit Card 7-11 fail' — ต้อง Escalate ไปที่ไหน?",
+        "choices": [
+            "CMT",
+            "OMISE-KTC ผ่าน LINE",
+            "IMPB",
+            "SRE"
+        ],
+        "answer": 1,
+        "explain": "SOF Credit Card ที่ 7-11 ใช้ OMISE gateway + KTC ธนาคารรับบัตร. Escalate ไป OMISE-KTC ผ่าน LINE ตาม alert message"
+    },
+    {
+        "id": "q_g102_msg_04",
+        "category": "Alert Message (Step Check\/Escalate\/CLT)",
+        "type": "single",
+        "prompt": "'ข้อความแจ้ง CLT' ใน alert message ทำหน้าที่อะไร?",
+        "choices": [
+            "Log สำหรับ audit",
+            "Template ข้อความสำหรับ SM copy ไปแจ้ง Customer Life Team (พร้อมใช้ ไม่ต้องคิดสด)",
+            "URL ไป CLT dashboard",
+            "รหัส severity"
+        ],
+        "answer": 1,
+        "explain": "CLT = Customer Life Team. Template นี้ให้ SM copy ไปแจ้งทันทีตอน incident เกิด — ไม่ต้องคิดสดตอนกำลังมึน"
+    },
+    {
+        "id": "q_g102_msg_05",
+        "category": "Alert Message (Step Check\/Escalate\/CLT)",
+        "type": "single",
+        "prompt": "ข้อไหน 'ห้าม' ใส่ในข้อความแจ้ง CLT?",
+        "choices": [
+            "'แจ้งเพื่อทราบ'",
+            "'ทีมกำลังประสานงานตรวจสอบเพิ่มเติม'",
+            "จำนวน user ที่กระทบ, TPS, ชื่อ bank เฉพาะเจาะจง — เพราะอาจถูก forward ออกนอกทีม",
+            "'ปัจจุบันพบปัญหา...'"
+        ],
+        "answer": 2,
+        "explain": "ข้อมูล internal อย่าง TPS จริง \/ bank \/ จำนวน user ห้าม expose ในข้อความที่ CLT อาจ forward ออกไป"
+    },
+    {
+        "id": "q_g102_ntf_01",
+        "category": "Contact Points & Silence",
+        "type": "single",
+        "prompt": "Alert config มี `notifications: [uid1, uid2, uid3]` — uid หมายถึงอะไร?",
+        "choices": [
+            "user id ของคน on-call",
+            "unique id ของ Contact Point \/ Notification channel (เช่น LINE, Slack, Email) ที่ตั้งไว้",
+            "รหัส alert",
+            "session id"
+        ],
+        "answer": 1,
+        "explain": "แต่ละ contact point มี uid ที่ Grafana generate. Rule แค่อ้าง uid = alert นี้ส่งไปช่องทางเหล่านี้"
+    },
+    {
+        "id": "q_g102_ntf_02",
+        "category": "Contact Points & Silence",
+        "type": "single",
+        "prompt": "Grafana legacy alert 'Silence' rule ตอน CMT deploy — ทีมใช้วิธีไหนบ่อยที่สุด?",
+        "choices": [
+            "ลบ rule ทิ้ง",
+            "Pause rule ชั่วคราว (Alert rules → 3 จุด → Pause)",
+            "ปิด Grafana",
+            "Unsubscribe LINE"
+        ],
+        "answer": 1,
+        "explain": "Grafana legacy ไม่มี native silence ต้อง Pause rule + ต้องมี CMT ticket + 2 คนยืนยัน + ตั้ง reminder resume เอง"
+    },
+    {
+        "id": "q_g102_ntf_03",
+        "category": "Contact Points & Silence",
+        "type": "single",
+        "prompt": "ทำไม LINE รับ alert เดิม ๆ ทุก 1 นาทีจนสแปม?",
+        "choices": [
+            "LINE bug",
+            "Grafana frequency = 1m + rule ยัง Alerting ต่อ + ไม่ตั้ง 'Send reminder' ให้ห่าง — ควรตั้ง reminder = 15-30m",
+            "SM สแปมเอง",
+            "Alert rule ยิงซ้ำ"
+        ],
+        "answer": 1,
+        "explain": "Legacy alert ส่ง notification ตาม frequency ทุกครั้งที่ยัง Alerting. ต้องปรับ 'Send reminders' ของ notification channel"
+    },
+    {
+        "id": "q_g102_ntf_04",
+        "category": "Contact Points & Silence",
+        "type": "single",
+        "prompt": "SM Pause rule ตอน CMT deploy เสร็จแล้ว ลืม Resume — ผลเสียคืออะไร?",
+        "choices": [
+            "ไม่มีอะไรเกิดขึ้น",
+            "Rule เงียบสนิท — ถ้า incident จริงเกิด ไม่มี notification, SM ไม่รู้",
+            "Grafana crash",
+            "License หมดอายุ"
+        ],
+        "answer": 1,
+        "explain": "Pause ทำให้ rule ไม่ evaluate เลย. ถ้าลืม Resume = สูญเสีย safety net → ต้องมี process บันทึก + reminder"
+    },
+    {
+        "id": "q_g102_dbg_01",
+        "category": "Debug Playbook",
+        "type": "single",
+        "prompt": "SM สังเกตเห็น fail แต่ alert ไม่ยิง — ข้อไหน 'ไม่ใช่' สาเหตุที่ต้องเช็ค?",
+        "choices": [
+            "Rule ถูก Pause อยู่",
+            "noDataState: ok + query คืน empty",
+            "Threshold สูงกว่าค่าจริง",
+            "SM ใช้ browser ผิด version"
+        ],
+        "answer": 3,
+        "explain": "Browser version ไม่กระทบ evaluation — Grafana evaluate ที่ server. อีก 3 ข้อคือสาเหตุจริงที่ต้องไล่ตาม"
+    },
+    {
+        "id": "q_g102_dbg_02",
+        "category": "Debug Playbook",
+        "type": "single",
+        "prompt": "Panel โชว์ 'No data' — สิ่งแรกที่ต้องเช็คคืออะไร?",
+        "choices": [
+            "รีสตาร์ท Grafana",
+            "Time range + $env (dropdown ด้านบน) → บ่อยครั้ง env ค้างที่ uat หรือ time range สั้นเกิน",
+            "ลบ panel",
+            "เปิด Chrome DevTools"
+        ],
+        "answer": 1,
+        "explain": "80% ของ 'No data' มาจาก variable ค้างที่ค่าผิด หรือ time range แคบเกิน. เช็คก่อนอย่างอื่นเสมอ"
+    },
+    {
+        "id": "q_g102_dbg_03",
+        "category": "Debug Playbook",
+        "type": "single",
+        "prompt": "Query Inspector → Stats โชว์ 'Series: 0' — แปลว่าอะไร?",
+        "choices": [
+            "Query ทำงานปกติ",
+            "PromQL ไม่ match series ใด ๆ — filter อาจแคบเกิน หรือ metric เปลี่ยนชื่อ",
+            "Datasource ล่ม",
+            "Panel เก่าเกินไป"
+        ],
+        "answer": 1,
+        "explain": "Series count = 0 → PromQL คืน vector ว่าง. ต้องดูว่า label filter แคบเกินหรือ metric ยังส่งอยู่ไหม"
+    },
+    {
+        "id": "q_g102_dbg_04",
+        "category": "Debug Playbook",
+        "type": "single",
+        "prompt": "SM แก้ query ใน panel แล้ว result ไม่เปลี่ยน — ต้องทำอะไร?",
+        "choices": [
+            "Restart PC",
+            "กด Refresh (⟳) หรือ hard refresh Shift+⟳ เพื่อ bypass cache 30s ของ Grafana",
+            "รอ 1 ชั่วโมง",
+            "เขียน query ใหม่"
+        ],
+        "answer": 1,
+        "explain": "Grafana cache result 30s. Hard refresh bypass cache — ผลใหม่ทันที"
+    },
+    {
+        "id": "q_g102_dbg_05",
+        "category": "Debug Playbook",
+        "type": "single",
+        "prompt": "ก่อนแจ้ง lead ว่า 'panel พัง' ควรเตรียมอะไรไปด้วย?",
+        "choices": [
+            "รีบไปหาโดยไม่ต้องเตรียม",
+            "Screenshot Query Inspector → Stats (Series count, Request time) + panel screenshot + time range",
+            "ตัด panel ทิ้ง",
+            "Screenshot email"
+        ],
+        "answer": 1,
+        "explain": "Data จาก Query Inspector ทำให้ lead debug ได้เร็วขึ้นมาก — เห็นตัวเลขที่ Grafana เห็น ไม่ใช่แค่กราฟ"
+    },
+    {
+        "id": "q_g102_dbg_06",
+        "category": "Debug Playbook",
+        "type": "single",
+        "prompt": "ตอน incident: alert ยิง → SM ยืนยันปัญหาแล้ว → กำลังประสานงานกับ 2nd tier → LINE ยัง reminder ทุก 15 นาที — SM ควรทำยังไง?",
+        "choices": [
+            "ปิด LINE",
+            "Pause rule ชั่วคราวระหว่างประสานงาน (บันทึกลง board + ตั้ง reminder resume ตอนแก้เสร็จ)",
+            "รีสตาร์ท Grafana",
+            "โพสต์ในกลุ่ม ignore"
+        ],
+        "answer": 1,
+        "explain": "Pause rule ให้ LINE เงียบระหว่างแก้ แต่ต้อง log ไว้ + ตั้ง reminder resume — ห้ามลืมกลับ"
+    }
+]

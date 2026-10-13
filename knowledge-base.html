@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Base — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/knowledge-base/knowledge-base.css" data-page-css>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sidebar (rendered by layout.js) -->
+    <aside id="sidebar-mount"></aside>
+
+    <!-- Main -->
+    <main class="main-content">
+      <div class="topbar">
+        <div class="tb-prompt">
+          <span class="tb-path">~/sm</span>
+          <span class="tb-arrow"><i data-icon="play"></i></span>
+        </div>
+        <div class="topbar-title">
+          <span class="page-title">Knowledge Base</span>
+          <span class="page-sub">จัดการข้อมูล Tools & Services</span>
+        </div>
+      </div>
+
+      <div class="page-content">
+        <div class="kb-container">
+          <!-- Tabs -->
+          <div class="kb-tabs" id="kb-tabs">
+            <!-- Dynamic tabs -->
+          </div>
+
+          <!-- Categories -->
+          <div id="kb-categories">
+            <!-- Dynamic category content -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal-overlay" id="modal-add-entry">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-entry-title">Add Entry</h3>
+        <button class="btn-close" onclick="closeModal('modal-add-entry')">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-entry">
+          <div id="entry-fields"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-add-entry')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEntry()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-add-category">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Category</h3>
+        <button class="btn-close" onclick="closeModal('modal-add-category')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Category Name</label>
+          <input type="text" class="form-control" id="new-category-name" placeholder="e.g., Database Management">
+        </div>
+        <div class="field-manager">
+          <label class="form-label">Fields</label>
+          <div class="field-list" id="category-fields"></div>
+          <button type="button" class="btn btn-sm btn-outline" onclick="addCategoryField()">
+            <i>+</i> Add Field
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-add-category')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveCategory()">Save Category</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-manage-fields">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Manage Fields</h3>
+        <button class="btn-close" onclick="closeModal('modal-manage-fields')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-manager">
+          <div class="field-list" id="manage-fields-list"></div>
+          <button type="button" class="btn btn-sm btn-outline" onclick="addFieldToCategory()">
+            <i>+</i> Add Field
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-manage-fields')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveFieldChanges()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-add-field">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Field</h3>
+        <button class="btn-close" onclick="closeModal('modal-add-field')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Field Name</label>
+          <input type="text" class="form-control" id="field-name" placeholder="e.g., Priority">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Field Type</label>
+          <select class="form-control" id="field-type" onchange="toggleFieldOptions()">
+            <option value="text">Text</option>
+            <option value="url">URL</option>
+            <option value="dropdown">Dropdown</option>
+          </select>
+        </div>
+        <div class="form-group" id="field-options-group" style="display:none">
+          <label class="form-label">Dropdown Options (comma-separated)</label>
+          <input type="text" class="form-control" id="field-options" placeholder="Option 1, Option 2, Option 3">
+        </div>
+        <div class="form-group">
+          <label class="form-label">
+            <input type="checkbox" id="field-required"> Required field
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-add-field')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveField()">Add Field</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./assets/js/auth.js"></script>
+  <script src="./assets/js/api.js"></script>
+  <script src="./assets/js/utils.js"></script>
+  <script src="./assets/js/csrf.js"></script>
+  <script src="./assets/js/analytics.js"></script>
+  <script src="./assets/js/analytics-features.js"></script>
+  <script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+  <script src="./assets/js/maintenance.js"></script>
+  <script src="./assets/pages/knowledge-base/knowledge-base.js"></script>
+</body>
+</html>

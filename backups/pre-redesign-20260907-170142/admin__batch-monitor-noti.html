@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch Monitor Noti — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ═══════════════════════════════════════════════════
+       Batch Monitor Noti — blocks.so-inspired minimal UI
+       ═══════════════════════════════════════════════════ */
+    :root {
+      --bmn-radius: 12px;
+      --bmn-radius-sm: 8px;
+      --bmn-border: var(--border);
+      --bmn-muted: var(--text-muted);
+      --bmn-accent: var(--orange);
+      --bmn-ok: #16a34a;
+      --bmn-fail: #dc2626;
+      --bmn-warn: #d97706;
+      --bmn-abort: #6b7280;
+      --bmn-info: #6366f1;
+    }
+
+    /* ── 2-column shell ─────────────────────────── */
+    .bmn-grid {
+      display:grid;
+      grid-template-columns: minmax(300px, 380px) 1fr;
+      gap:14px;
+      /* Fit both columns to viewport height (leave room for topbar + admin-nav + hint) */
+      height: calc(100vh - 230px);
+      min-height: 540px;
+    }
+    @media (max-width: 960px) {
+      .bmn-grid { grid-template-columns: 1fr; height:auto; }
+    }
+
+    .bmn-block {
+      background:var(--bg-card);
+      border:1px solid var(--bmn-border);
+      border-radius:var(--bmn-radius);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:0;   /* let flex children shrink below content size */
+    }
+    /* header stays pinned */
+    .bmn-block-hd { flex-shrink:0; }
+    .bmn-block-hd {
+      padding:14px 16px 12px;
+      border-bottom:1px solid var(--bmn-border);
+      display:flex;align-items:center;justify-content:space-between;gap:8px;
+    }
+    .bmn-block-title {
+      font-size:12px;font-weight:700;color:var(--text);
+      letter-spacing:-.01em;line-height:1.2;
+    }
+    .bmn-block-sub {
+      font-size:10px;font-weight:500;color:var(--bmn-muted);
+      margin-top:3px;letter-spacing:.02em;
+    }
+    .bmn-eyebrow {
+      font-size:9.5px;font-weight:700;color:var(--bmn-muted);
+      letter-spacing:.08em;text-transform:uppercase;
+    }
+
+    /* ── Info banner (top of page) ────────────── */
+    .bmn-hint {
+      display:flex;gap:10px;align-items:flex-start;
+      padding:12px 14px;margin-bottom:14px;
+      background:rgba(99,102,241,.05);
+      border:1px solid rgba(99,102,241,.2);
+      border-radius:var(--bmn-radius);
+      font-size:11px;line-height:1.55;color:var(--bmn-muted);
+    }
+    .bmn-hint strong { color:var(--text);font-weight:700; }
+    .bmn-hint-icon {
+      flex-shrink:0;width:20px;height:20px;border-radius:6px;
+      background:rgba(99,102,241,.12);color:var(--bmn-info);
+      display:flex;align-items:center;justify-content:center;font-size:11px;
+    }
+
+    /* ═══════════════════════════════════════════
+       LEFT — Jenkins Servers list
+       ═══════════════════════════════════════════ */
+    .srv-list { padding:6px; flex:1 1 auto; overflow-y:auto; min-height:0; }
+    .srv-item {
+      padding:12px 12px 10px;
+      border:1px solid transparent;
+      border-radius:var(--bmn-radius-sm);
+      margin-bottom:4px;
+      transition:background .12s, border-color .12s;
+    }
+    .srv-item:last-child { margin-bottom:0; }
+    .srv-item:hover { background:rgba(0,0,0,.02); }
+    .srv-item.selected {
+      background:rgba(242,100,25,.05);
+      border-color:rgba(242,100,25,.25);
+    }
+    :root.dark .srv-item:hover { background:rgba(255,255,255,.03); }
+
+    .srv-item-top {
+      display:flex;align-items:center;gap:8px;margin-bottom:6px;
+    }
+    .srv-item-name {
+      font-size:12px;font-weight:700;color:var(--text);
+      flex:1;letter-spacing:-.005em;
+    }
+    .srv-item-id  { font-size:9.5px;color:var(--bmn-muted);font-weight:500; }
+
+    /* Status pill */
+    .srv-status {
+      display:inline-flex;align-items:center;gap:4px;
+      padding:2px 7px;border-radius:5px;font-size:9px;font-weight:700;
+      letter-spacing:.04em;
+    }
+    .st-on       { background:rgba(22,163,74,.11);color:var(--bmn-ok); }
+    .st-paused   { background:rgba(107,114,128,.13);color:var(--bmn-muted); }
+    .st-nourl    { background:rgba(220,38,38,.1);color:var(--bmn-fail); }
+    .st-disabled { background:rgba(107,114,128,.11);color:var(--bmn-muted);opacity:.75; }
+    .srv-status-dot {
+      width:5px;height:5px;border-radius:50%;background:currentColor;
+    }
+
+    .srv-item-meta {
+      display:flex;align-items:center;gap:10px;
+      font-size:10px;color:var(--bmn-muted);margin-bottom:8px;
+    }
+    .srv-item-meta .dot { width:3px;height:3px;border-radius:50%;background:var(--bmn-muted);opacity:.5; }
+    .srv-item-url {
+      font-family:'JetBrains Mono','SF Mono',monospace;font-size:10px;
+      color:var(--bmn-muted);word-break:break-all;line-height:1.4;
+      padding:6px 8px;background:rgba(0,0,0,.02);border-radius:5px;
+      margin-bottom:8px;
+    }
+    :root.dark .srv-item-url { background:rgba(255,255,255,.03); }
+    .srv-item-url.empty { font-style:italic;opacity:.5;font-family:inherit; }
+
+    /* Row actions */
+    .srv-item-actions { display:flex;gap:4px;flex-wrap:wrap; }
+    .btn-mini {
+      padding:4px 9px;border-radius:5px;font-size:10px;font-weight:600;
+      border:1px solid var(--bmn-border);background:transparent;color:var(--bmn-muted);
+      cursor:pointer;transition:all .1s;line-height:1.3;
+    }
+    .btn-mini:hover { background:var(--bmn-border);color:var(--text); }
+    .btn-mini.primary { border-color:rgba(242,100,25,.35);color:var(--bmn-accent); }
+    .btn-mini.primary:hover { background:rgba(242,100,25,.08); }
+    .btn-mini.test { border-color:rgba(99,102,241,.32);color:var(--bmn-info); }
+    .btn-mini.test:hover { background:rgba(99,102,241,.08); }
+
+    /* Toggle */
+    .tog { position:relative;width:30px;height:17px;flex-shrink:0;display:inline-block; }
+    .tog input { opacity:0;width:0;height:0;position:absolute; }
+    .tog-slider {
+      position:absolute;inset:0;border-radius:17px;cursor:pointer;
+      background:var(--bmn-border);transition:background .16s;
+    }
+    .tog-slider:before {
+      content:'';position:absolute;left:2.5px;top:2.5px;
+      width:12px;height:12px;border-radius:50%;background:#fff;
+      transition:transform .16s;box-shadow:0 1px 2px rgba(0,0,0,.15);
+    }
+    .tog input:checked + .tog-slider { background:var(--bmn-accent); }
+    .tog input:checked + .tog-slider:before { transform:translateX(13px); }
+
+    /* ═══════════════════════════════════════════
+       RIGHT — Activity (tabs, summary, log, tracked)
+       ═══════════════════════════════════════════ */
+
+    /* Tabs */
+    .act-tabs {
+      display:flex;gap:2px;padding:8px 12px 0;
+      border-bottom:1px solid var(--bmn-border);
+      overflow-x:auto;
+      flex-shrink:0;
+    }
+    .act-tab {
+      padding:8px 12px 9px;font-size:10.5px;font-weight:600;
+      color:var(--bmn-muted);cursor:pointer;white-space:nowrap;
+      border-bottom:2px solid transparent;transition:all .12s;
+      display:flex;align-items:center;gap:6px;letter-spacing:.005em;
+    }
+    .act-tab:hover { color:var(--text); }
+    .act-tab.active { color:var(--text);border-bottom-color:var(--bmn-accent); }
+    .act-tab-count {
+      font-variant-numeric:tabular-nums;font-size:9px;
+      padding:1px 5px;border-radius:4px;font-weight:700;
+      background:rgba(107,114,128,.14);color:var(--bmn-muted);
+      min-width:14px;text-align:center;
+    }
+    .act-tab.active .act-tab-count { background:rgba(242,100,25,.16);color:var(--bmn-accent); }
+
+    /* Summary chips row */
+    .sum-strip {
+      display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+      padding:14px 16px;border-bottom:1px solid var(--bmn-border);
+      flex-shrink:0;
+    }
+    .sum-chip {
+      display:inline-flex;align-items:center;gap:6px;
+      padding:5px 9px;border-radius:6px;font-size:10.5px;font-weight:700;
+      border:1px solid var(--bmn-border);background:var(--bg);
+      font-variant-numeric:tabular-nums;
+    }
+    .sum-chip .num { font-size:12px;font-weight:800; }
+    .sum-total   .num { color:var(--text); }
+    .sum-success .num { color:var(--bmn-ok); }
+    .sum-fail    .num { color:var(--bmn-fail); }
+    .sum-abort   .num { color:var(--bmn-abort); }
+    .sum-time    {
+      margin-left:auto;font-size:10px;color:var(--bmn-muted);
+      font-variant-numeric:tabular-nums;
+    }
+
+    /* Section header inside right column */
+    .act-sect-hd {
+      padding:14px 16px 6px;
+      font-size:9.5px;font-weight:700;color:var(--bmn-muted);
+      letter-spacing:.08em;text-transform:uppercase;
+      display:flex;align-items:center;justify-content:space-between;gap:6px;
+      flex-shrink:0;
+    }
+    .act-sect-hd span.small {
+      font-weight:500;text-transform:none;letter-spacing:0;font-size:10px;opacity:.7;
+    }
+
+    /* Log rows — capped so tracked jobs list has room; both scroll independently */
+    .log-list {
+      padding:0 4px 8px;
+      overflow-y:auto;
+      /* 35% of the block's flex-content area, with sensible bounds */
+      flex: 0 1 auto;
+      min-height:60px;
+      max-height: clamp(140px, 28vh, 260px);
+    }
+    .log-empty {
+      padding:32px 16px;text-align:center;color:var(--bmn-muted);
+      font-size:11px;font-style:italic;
+    }
+    .log-row {
+      display:grid;
+      grid-template-columns: auto 90px minmax(0,1fr) auto;
+      gap:10px;align-items:center;
+      padding:8px 12px;margin:1px 0;border-radius:6px;
+      font-size:11px;transition:background .1s;
+    }
+    .log-row:hover { background:rgba(0,0,0,.02); }
+    :root.dark .log-row:hover { background:rgba(255,255,255,.02); }
+    .log-dot { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+    .dot-sent    { background:var(--bmn-ok); }
+    .dot-failed  { background:var(--bmn-fail); }
+    .dot-pending { background:var(--bmn-warn); }
+    .log-trans {
+      font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;
+      display:inline-block;padding:2px 6px;border-radius:4px;background:rgba(0,0,0,.03);
+    }
+    :root.dark .log-trans { background:rgba(255,255,255,.05); }
+    .trans-new_fail      { color:var(--bmn-fail); }
+    .trans-rerun_fail    { color:var(--bmn-warn); }
+    .trans-aborted       { color:var(--bmn-abort); }
+    .trans-recovered     { color:var(--bmn-ok); }
+    .trans-rerun_started { color:var(--bmn-info); }
+    .trans-slow_resolved_success { color:var(--bmn-ok); }
+    .trans-slow_resolved_failure { color:var(--bmn-fail); }
+    .trans-slow_resolved_aborted { color:var(--bmn-abort); }
+    .log-job {
+      color:var(--text);font-weight:600;font-size:11px;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    }
+    .log-job .server-tag {
+      color:var(--bmn-muted);font-weight:500;font-size:10px;margin-right:6px;
+    }
+    .log-time { color:var(--bmn-muted);font-size:10px;font-variant-numeric:tabular-nums; }
+
+    /* Tracked jobs list — takes all remaining space in the block */
+    .track-list {
+      padding:0 4px 12px;
+      overflow-y:auto;
+      flex:1 1 auto;
+      min-height:120px;
+    }
+    .track-row {
+      display:grid;
+      grid-template-columns: 76px minmax(0,1fr) auto auto;
+      gap:10px;align-items:center;
+      padding:7px 12px;margin:1px 0;border-radius:6px;
+      font-size:11px;transition:background .1s;
+    }
+    .track-row:hover { background:rgba(0,0,0,.02); }
+    :root.dark .track-row:hover { background:rgba(255,255,255,.02); }
+    .track-status {
+      display:inline-block;padding:2px 6px;border-radius:4px;
+      font-size:9px;font-weight:700;text-align:center;letter-spacing:.05em;
+    }
+    .ts-SUCCESS  { background:rgba(22,163,74,.11);color:var(--bmn-ok); }
+    .ts-FAILURE  { background:rgba(220,38,38,.12);color:var(--bmn-fail); }
+    .ts-UNSTABLE { background:rgba(217,119,6,.12);color:var(--bmn-warn); }
+    .ts-ABORTED  { background:rgba(107,114,128,.13);color:var(--bmn-abort); }
+    .track-job {
+      color:var(--text);font-family:'JetBrains Mono','SF Mono',monospace;font-size:10px;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    }
+    .track-job .srv-prefix { color:var(--bmn-muted); }
+    .track-build   { color:var(--bmn-muted);font-size:10px;font-variant-numeric:tabular-nums; }
+    .track-updated { color:var(--bmn-muted);font-size:10px;font-variant-numeric:tabular-nums; }
+
+    /* ═══════════════════════════════════════════
+       Modal (unchanged behavior, restyled)
+       ═══════════════════════════════════════════ */
+    .bmn-modal-wrap {
+      display:none;position:fixed;inset:0;z-index:800;
+      background:rgba(0,0,0,.4);backdrop-filter:blur(4px);
+      align-items:center;justify-content:center;padding:16px;
+    }
+    .bmn-modal-wrap.open { display:flex; }
+    .bmn-modal-box {
+      background:var(--bg-card);border-radius:14px;border:1px solid var(--bmn-border);
+      box-shadow:0 24px 60px rgba(0,0,0,.24);padding:22px 22px 18px;
+      width:100%;max-width:480px;
+    }
+    .md-title {
+      font-size:13px;font-weight:700;color:var(--text);
+      margin-bottom:16px;display:flex;align-items:center;gap:8px;
+    }
+    .md-field { margin-bottom:12px; }
+    .md-label {
+      font-size:10px;font-weight:700;color:var(--bmn-muted);
+      text-transform:uppercase;letter-spacing:.06em;
+      margin-bottom:5px;display:block;
+    }
+    .md-input, .md-server-display {
+      width:100%;padding:8px 11px;font-size:12px;border:1px solid var(--bmn-border);
+      border-radius:7px;background:var(--bg);color:var(--text);
+      font-family:inherit;box-sizing:border-box;
+    }
+    .md-input:focus { outline:none;border-color:var(--bmn-accent); }
+    .md-server-display { font-weight:700; }
+    .md-hint { font-size:10px;color:var(--bmn-muted);margin-top:4px;line-height:1.5; }
+
+    .md-toggle-row {
+      display:flex;align-items:center;justify-content:space-between;
+      padding:10px 12px;border:1px solid var(--bmn-border);border-radius:8px;
+      background:var(--bg);margin-bottom:12px;
+    }
+    .md-toggle-row-l { font-size:11px;color:var(--text);font-weight:700; }
+    .md-toggle-row-l small { display:block;font-size:9.5px;color:var(--bmn-muted);font-weight:500;margin-top:1px; }
+
+    .md-actions {
+      display:flex;justify-content:space-between;gap:8px;margin-top:16px;flex-wrap:wrap;
+    }
+    .md-btn {
+      padding:7px 15px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;
+      transition:all .12s;border:1px solid var(--bmn-border);background:transparent;
+      color:var(--bmn-muted);
+    }
+    .md-btn.primary { background:var(--bmn-accent);color:#fff;border-color:var(--bmn-accent); }
+    .md-btn.primary:hover { filter:brightness(1.08); }
+    .md-btn.test { border-color:rgba(99,102,241,.4);color:var(--bmn-info); }
+    .md-btn.test:hover { background:rgba(99,102,241,.08); }
+    .md-btn.del  { border-color:rgba(220,38,38,.4);color:var(--bmn-fail); }
+    .md-btn.del:hover { background:rgba(220,38,38,.08); }
+    .md-btn:hover:not(.primary):not(.test):not(.del) { background:var(--bmn-border);color:var(--text); }
+
+    /* Custom scrollbar (webkit) */
+    .track-list::-webkit-scrollbar,
+    .log-list::-webkit-scrollbar   { width:6px; }
+    .track-list::-webkit-scrollbar-thumb,
+    .log-list::-webkit-scrollbar-thumb {
+      background:var(--bmn-border);border-radius:3px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="bell"></i> Batch Monitor Noti</div>
+        <div class="page-sub">Google Chat แจ้งเตือน state-transition ของ Jenkins jobs</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="./index.html" class="btn btn-ghost" style="font-size:11px">← Admin Panel</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <div class="bmn-hint">
+        <div class="bmn-hint-icon">i</div>
+        <div>
+          <strong>ตรวจทุก 30 วิ · dedup ต่อ build · ไม่ส่ง SUCCESS ปกติ</strong> ·
+          ทุก user ที่เปิดเว็บอยู่จะช่วยกัน tick — 3 layers ป้องกันซ้ำ
+          (global throttle 25s + per-build log + state diff) ·
+          transitions ที่แจ้ง: <i data-icon="circle"></i> New Failure · <i data-icon="circle"></i> Re-run Still Failing · <i data-icon="circle"></i> Aborted · <i data-icon="circle"></i> Recovered
+        </div>
+      </div>
+
+      <div class="bmn-grid">
+
+        <!-- ── LEFT: Jenkins Servers list ──────────────── -->
+        <div class="bmn-block">
+          <div class="bmn-block-hd">
+            <div>
+              <div class="bmn-block-title">Jenkins Servers</div>
+              <div class="bmn-block-sub" id="srv-count">กำลังโหลด…</div>
+            </div>
+            <a href="./jenkins-servers.html" class="btn-mini" title="จัดการ Jenkins servers"><i data-icon="settings"></i>︎ Manage</a>
+          </div>
+          <div class="srv-list" id="srv-list">
+            <div class="log-empty">กำลังโหลด…</div>
+          </div>
+        </div>
+
+        <!-- ── RIGHT: Activity (tabs + summary + logs + tracked) ── -->
+        <div class="bmn-block">
+          <div class="bmn-block-hd">
+            <div>
+              <div class="bmn-block-title">Activity</div>
+              <div class="bmn-block-sub">Notifications + tracked state</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div id="storage-chip" style="font-size:9.5px;color:var(--bmn-muted);display:flex;gap:5px;align-items:center;font-variant-numeric:tabular-nums"></div>
+              <button class="btn-mini" onclick="loadAll()" title="Refresh data">↻ Refresh</button>
+            </div>
+          </div>
+
+          <div class="act-tabs" id="act-tabs">
+            <div class="act-tab active" data-server="__all__">
+              All <span class="act-tab-count">0</span>
+            </div>
+          </div>
+
+          <div class="sum-strip" id="sum-strip"></div>
+
+          <div class="act-sect-hd">
+            <span>Recent Notifications</span>
+            <span class="small" id="log-count">0 items</span>
+          </div>
+          <div class="log-list" id="log-list">
+            <div class="log-empty">กำลังโหลด…</div>
+          </div>
+
+          <div class="act-sect-hd">
+            <span>Tracked Jobs</span>
+            <span class="small">state ที่ระบบจำไว้เพื่อ diff</span>
+          </div>
+          <div class="track-list" id="track-list">
+            <div class="log-empty">กำลังโหลด…</div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="bmn-modal-wrap" id="modal-wrap">
+  <div class="bmn-modal-box">
+    <div class="md-title"><span><i data-icon="bell"></i></span><span>Edit Webhook</span></div>
+
+    <div class="md-field">
+      <label class="md-label">Jenkins Server</label>
+      <div class="md-server-display" id="md-server-display">—</div>
+    </div>
+
+    <div class="md-toggle-row">
+      <div class="md-toggle-row-l">
+        เปิดใช้งาน
+        <small>ปิด = tick.php ข้าม server นี้</small>
+      </div>
+      <label class="tog"><input type="checkbox" id="md-enabled"><span class="tog-slider"></span></label>
+    </div>
+
+    <div class="md-field">
+      <label class="md-label" for="md-url">Google Chat Webhook URL</label>
+      <input type="url" id="md-url" class="md-input" placeholder="https://chat.googleapis.com/v1/spaces/…/messages?key=…&token=…">
+      <div class="md-hint">Copy จาก Google Chat → Manage webhooks → Copy URL · เว้นว่างเมื่อไม่ต้องเปลี่ยน URL</div>
+    </div>
+
+    <div class="md-actions">
+      <button class="md-btn del" onclick="mdDelete()">Clear</button>
+      <div style="display:flex;gap:6px">
+        <button class="md-btn test" onclick="mdTest()"><i data-icon="test-tube"></i> Test</button>
+        <button class="md-btn" onclick="mdClose()">Cancel</button>
+        <button class="md-btn primary" onclick="mdSave()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('admin');
+
+let servers     = [];
+let recent      = [];
+let tracked     = {};
+let selectedTab = '__all__';
+let mdServerId  = '';
+
+let storage = {};
+
+async function loadAll() {
+  const res = await API.batchMonitorNoti.list();
+  if (!res?.ok) return toast('โหลดข้อมูลไม่สำเร็จ', 'error');
+  servers = res.data.data?.servers         || [];
+  recent  = res.data.data?.recent          || [];
+  tracked = res.data.data?.trackedByServer || {};
+  storage = res.data.data?.storage         || {};
+  renderServers();
+  renderTabs();
+  renderActivity();
+  renderStorage();
+}
+
+function fmtBytes(n) {
+  if (!n) return '0 B';
+  if (n < 1024) return n + ' B';
+  if (n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+  return (n/1024/1024).toFixed(2) + ' MB';
+}
+
+function renderStorage() {
+  const el = document.getElementById('storage-chip');
+  if (!el) return;
+  const s = storage;
+  el.innerHTML = `
+    <span title="state.json — 1 entry per Jenkins job, auto-prune deleted jobs">
+      state <b>${s.stateEntries ?? 0}</b> · ${fmtBytes(s.stateBytes)}
+    </span>
+    <span style="opacity:.4">·</span>
+    <span title="log.json — capped at ${s.logCap ?? 500} entries (oldest pruned)">
+      log <b>${s.logEntries ?? 0}</b>/${s.logCap ?? 500} · ${fmtBytes(s.logBytes)}
+    </span>`;
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fmtTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  return d.toLocaleString('th-TH', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+
+// ═══════════════════════════════════════════════════
+// LEFT — Jenkins Servers list
+// ═══════════════════════════════════════════════════
+function renderServers() {
+  const list = document.getElementById('srv-list');
+  const activeCount = servers.filter(s => s.srvEnabled && s.hasWebhook && s.enabled).length;
+  document.getElementById('srv-count').textContent =
+    `${servers.length} servers · ${activeCount} active`;
+
+  if (!servers.length) {
+    list.innerHTML = `<div class="log-empty">
+      ยังไม่มี Jenkins server — เพิ่มก่อนที่ <a href="./jenkins-servers.html" style="color:var(--bmn-accent)">Admin → Jenkins</a>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = servers.map(s => {
+    let statusHtml;
+    if (!s.srvEnabled) {
+      statusHtml = `<span class="srv-status st-disabled"><span class="srv-status-dot"></span>disabled</span>`;
+    } else if (!s.hasWebhook) {
+      statusHtml = `<span class="srv-status st-nourl"><span class="srv-status-dot"></span>no url</span>`;
+    } else if (s.enabled) {
+      statusHtml = `<span class="srv-status st-on"><span class="srv-status-dot"></span>on</span>`;
+    } else {
+      statusHtml = `<span class="srv-status st-paused"><span class="srv-status-dot"></span>paused</span>`;
+    }
+
+    const toggleHtml = (s.srvEnabled && s.hasWebhook)
+      ? `<label class="tog" title="${s.enabled ? 'ปิด' : 'เปิด'}" onclick="event.stopPropagation()">
+           <input type="checkbox" ${s.enabled ? 'checked' : ''}
+                  onchange="quickToggle('${esc(s.id)}', this.checked)">
+           <span class="tog-slider"></span>
+         </label>`
+      : '';
+
+    const urlHtml = s.hasWebhook
+      ? `<div class="srv-item-url">${esc(s.webhookMasked)}</div>`
+      : `<div class="srv-item-url empty">— ยังไม่ได้ตั้ง webhook URL —</div>`;
+
+    const cnts = s.trackedCounts || {};
+    const fail = (cnts.FAILURE||0) + (cnts.UNSTABLE||0);
+    const track = s.trackedTotal || 0;
+
+    const isSelected = selectedTab === s.id;
+
+    return `
+      <div class="srv-item ${isSelected ? 'selected' : ''}" onclick="selectTab('${esc(s.id)}')">
+        <div class="srv-item-top">
+          <div class="srv-item-name">${esc(s.display)}</div>
+          ${toggleHtml}
+          ${statusHtml}
+        </div>
+        <div class="srv-item-meta">
+          <span>${s.ignoreRules} rules</span>
+          <span class="dot"></span>
+          <span>${track} tracked</span>
+          ${fail > 0 ? `<span class="dot"></span><span style="color:var(--bmn-fail);font-weight:700">${fail} fail</span>` : ''}
+        </div>
+        ${urlHtml}
+        <div class="srv-item-actions">
+          <button class="btn-mini primary" onclick="event.stopPropagation();mdOpen('${esc(s.id)}')">${s.hasWebhook ? '<i data-icon=\"pencil\"></i> Edit' : '+ Add Webhook'}</button>
+          ${s.hasWebhook ? `<button class="btn-mini test" onclick="event.stopPropagation();quickTest('${esc(s.id)}')"><i data-icon=\"test-tube\"></i> Test</button>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════
+// RIGHT — Tabs + Summary + Logs + Tracked
+// ═══════════════════════════════════════════════════
+function renderTabs() {
+  const el = document.getElementById('act-tabs');
+  const tabs = [
+    `<div class="act-tab ${selectedTab==='__all__'?'active':''}" onclick="selectTab('__all__')">
+       All <span class="act-tab-count">${recent.length}</span>
+     </div>`
+  ];
+  for (const s of servers) {
+    if (!s.hasWebhook && !tracked[s.id]?.length) continue;
+    const cR = recent.filter(r => r.server === s.id).length;
+    const cT = (tracked[s.id] || []).length;
+    tabs.push(
+      `<div class="act-tab ${selectedTab===s.id?'active':''}" onclick="selectTab('${esc(s.id)}')">
+         ${esc(s.display)}
+         <span class="act-tab-count">${cR}/${cT}</span>
+       </div>`
+    );
+  }
+  el.innerHTML = tabs.join('');
+}
+
+function selectTab(serverId) {
+  selectedTab = serverId;
+  renderTabs();
+  renderServers();  // to update .selected highlight
+  renderActivity();
+}
+
+function renderActivity() {
+  renderSummary();
+  renderLog();
+  renderTracked();
+}
+
+function renderSummary() {
+  const el = document.getElementById('sum-strip');
+  let counts = { SUCCESS:0, FAILURE:0, ABORTED:0, UNSTABLE:0 };
+  let total = 0;
+  let lastUpd = null;
+
+  if (selectedTab === '__all__') {
+    for (const s of servers) {
+      total += s.trackedTotal || 0;
+      for (const k of Object.keys(counts)) counts[k] += s.trackedCounts?.[k] || 0;
+      if (s.trackedUpdated && (!lastUpd || s.trackedUpdated > lastUpd)) lastUpd = s.trackedUpdated;
+    }
+  } else {
+    const s = servers.find(x => x.id === selectedTab);
+    if (s) {
+      total = s.trackedTotal || 0;
+      counts = { ...counts, ...(s.trackedCounts || {}) };
+      lastUpd = s.trackedUpdated;
+    }
+  }
+
+  const fail = counts.FAILURE + counts.UNSTABLE;
+  el.innerHTML = `
+    <div class="sum-chip sum-total"><span class="num">${total}</span> tracked</div>
+    <div class="sum-chip sum-success"><span class="num">${counts.SUCCESS}</span> success</div>
+    <div class="sum-chip sum-fail"><span class="num">${fail}</span> fail</div>
+    <div class="sum-chip sum-abort"><span class="num">${counts.ABORTED}</span> aborted</div>
+    <span class="sum-time">${lastUpd ? '↻ ' + fmtTime(lastUpd) : 'ยังไม่ได้ tick'}</span>`;
+}
+
+function renderLog() {
+  const el   = document.getElementById('log-list');
+  const list = selectedTab === '__all__' ? recent : recent.filter(r => r.server === selectedTab);
+  document.getElementById('log-count').textContent = `${list.length} items`;
+
+  if (!list.length) {
+    el.innerHTML = `<div class="log-empty">
+      ยังไม่มีการแจ้งเตือน — รอเมื่อ job เปลี่ยน state ครั้งแรก
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(r => {
+    const dotCls = r.status === 'sent' ? 'dot-sent'
+                 : r.status === 'failed' ? 'dot-failed' : 'dot-pending';
+    return `
+      <div class="log-row">
+        <span class="log-dot ${dotCls}"></span>
+        <span class="log-trans trans-${esc(r.transition)}">${esc((r.transition||'').replace('_',' '))}</span>
+        <span class="log-job">
+          ${selectedTab === '__all__' ? `<span class="server-tag">${esc(r.server)}</span>` : ''}
+          ${esc(r.job)} <span style="color:var(--bmn-muted);font-weight:500">#${esc(r.buildNumber ?? '')}</span>
+        </span>
+        <span class="log-time">${esc(fmtTime(r.sent_at))}</span>
+      </div>`;
+  }).join('');
+}
+
+function renderTracked() {
+  const el = document.getElementById('track-list');
+  let rows = [];
+  if (selectedTab === '__all__') {
+    for (const [sid, jobs] of Object.entries(tracked)) {
+      for (const j of jobs) rows.push({ ...j, server: sid });
+    }
+    const rank = { FAILURE:0, UNSTABLE:1, ABORTED:2, SUCCESS:3 };
+    rows.sort((a,b) => (rank[a.result]??9)-(rank[b.result]??9)
+                   || String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+    rows = rows.slice(0, 250);
+  } else {
+    rows = (tracked[selectedTab] || []).map(j => ({ ...j, server: selectedTab }));
+  }
+  if (!rows.length) {
+    el.innerHTML = `<div class="log-empty">
+      ยังไม่มี state — รอ tick แรก scan Jenkins เสร็จ · หรือ server ยัง PAUSED
+    </div>`;
+    return;
+  }
+  el.innerHTML = rows.map(j => {
+    const nice = String(j.jobPath || '').replace(/\/job\//g, ' / ').replace(/^ \/ /, '').replace(/%20/g,' ');
+    return `
+      <div class="track-row">
+        <span class="track-status ts-${esc(j.result)}">${esc(j.result)}</span>
+        <span class="track-job" title="${esc(j.jobPath)}">${
+          selectedTab === '__all__' ? `<span class="srv-prefix">${esc(j.server)} · </span>` : ''
+        }${esc(nice)}</span>
+        <span class="track-build">#${esc(j.buildNumber ?? '?')}</span>
+        <span class="track-updated">${esc(fmtTime(j.updatedAt))}</span>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════
+// Actions
+// ═══════════════════════════════════════════════════
+async function quickToggle(serverId, on) {
+  const res = await API.batchMonitorNoti.save(serverId, { enabled: on });
+  if (!res?.ok) { toast(res?.data?.message || 'บันทึกไม่สำเร็จ', 'error'); loadAll(); return; }
+  toast(on ? `${serverId} → ON` : `${serverId} → PAUSED`, 'ok');
+  const s = servers.find(x => x.id === serverId);
+  if (s) s.enabled = on;
+  renderServers();
+}
+
+function mdOpen(serverId) {
+  const s = servers.find(x => x.id === serverId);
+  if (!s) return;
+  mdServerId = serverId;
+  document.getElementById('md-server-display').textContent = `${s.display}  ·  ${s.id}`;
+  document.getElementById('md-enabled').checked = s.hasWebhook ? s.enabled : true;
+  document.getElementById('md-url').value = '';
+  document.getElementById('md-url').placeholder = s.hasWebhook
+    ? `เดิม: ${s.webhookMasked}  (เว้นว่างเพื่อไม่เปลี่ยน)`
+    : 'https://chat.googleapis.com/v1/spaces/…/messages?key=…&token=…';
+  document.getElementById('modal-wrap').classList.add('open');
+}
+function mdClose() { document.getElementById('modal-wrap').classList.remove('open'); mdServerId = ''; }
+
+async function mdSave() {
+  if (!mdServerId) return;
+  const enabled = document.getElementById('md-enabled').checked;
+  const url = document.getElementById('md-url').value.trim();
+  const s = servers.find(x => x.id === mdServerId);
+  const body = { enabled };
+  if (url) body.webhook_url = url;
+  else if (!s?.hasWebhook && enabled) return toast('เปิดใช้งานต้องกรอก Webhook URL', 'warn');
+
+  const res = await API.batchMonitorNoti.save(mdServerId, body);
+  if (!res?.ok) return toast(res?.data?.message || 'บันทึกไม่สำเร็จ', 'error');
+  toast('บันทึกแล้ว', 'ok');
+  mdClose();
+  loadAll();
+}
+
+async function mdTest() {
+  if (!mdServerId) return;
+  const url = document.getElementById('md-url').value.trim();
+  const res = await API.batchMonitorNoti.test(mdServerId, url);
+  if (res?.ok) toast('ส่ง test card สำเร็จ <i data-icon=\"check\"></i>', 'ok');
+  else toast(res?.data?.message || 'ส่ง test ไม่สำเร็จ', 'error');
+}
+
+async function quickTest(serverId) {
+  const res = await API.batchMonitorNoti.test(serverId, '');
+  if (res?.ok) toast(`Test → ${serverId} <i data-icon=\"check\"></i>`, 'ok');
+  else toast(res?.data?.message || 'ส่ง test ไม่สำเร็จ', 'error');
+}
+
+async function mdDelete() {
+  if (!mdServerId) return;
+  if (!confirm(`ลบ webhook config ของ ${mdServerId}?`)) return;
+  const res = await API.batchMonitorNoti.delete(mdServerId);
+  if (!res?.ok) return toast(res?.data?.message || 'ลบไม่สำเร็จ', 'error');
+  toast('ลบแล้ว', 'ok');
+  mdClose();
+  loadAll();
+}
+
+function toast(msg, type = 'info') {
+  const T = (typeof Toast !== 'undefined') ? Toast : null;
+  if (!T) return console.log(`[${type}]`, msg);
+  if (type === 'ok' || type === 'success') return T.success(msg);
+  if (type === 'error' || type === 'err')  return T.error(msg);
+  if (type === 'warn' || type === 'warning') return T.warning(msg);
+  return T.info(msg);
+}
+
+loadAll();
+</script>
+</body>
+</html>

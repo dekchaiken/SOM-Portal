@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Report Form — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <style>
+    /* ── Form Layout ── */
+    .form-wrapper {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 16px;
+      height: calc(100vh - 120px);
+    }
+
+    /* ── Side Navigation ──
+       blocks.so: flat card, 1px border, calm shadow-sm, generous radius. */
+    .side-nav {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 8px;
+      overflow-y: auto;
+      box-shadow: var(--shadow-sm);
+    }
+    .side-nav ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .side-nav li {
+      margin-bottom: 4px;
+    }
+    .side-nav button {
+      width: 100%;
+      padding: 9px 11px;
+      background: transparent;
+      border: none;
+      border-radius: var(--radius);
+      text-align: left;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      font-family: var(--font);
+    }
+    .side-nav button:hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+    /* blocks.so active: soft tint fill + accent text (not a solid brand block) */
+    .side-nav button.active {
+      background: var(--orange-dim);
+      color: var(--orange);
+      font-weight: 700;
+    }
+    .week-info {
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .week-status {
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 9px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .status-indicator.current {
+      background: rgba(34,197,94,.1);
+      color: #16a34a;
+    }
+    .status-indicator.past {
+      background: rgba(59,130,246,.1);
+      color: #2563eb;
+    }
+    .status-indicator.future {
+      background: rgba(245,158,11,.1);
+      color: #d97706;
+    }
+
+    /* ── Forms Container ── */
+    .forms {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      overflow-y: auto;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ── Panel (Form) ── */
+    .panel {
+      display: none;
+    }
+    .panel.active {
+      display: block;
+    }
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-head h2 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -.01em;
+      color: var(--text);
+      margin: 0;
+    }
+    .panel-tools {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* ── Segmented tabs — blocks.so / shadcn style ──
+       Muted inset track; the active segment is a raised "pill" (card bg +
+       soft shadow) with foreground text, instead of a solid brand fill. */
+    .tabs-mini {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 18px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 4px;
+      border-radius: var(--radius);
+    }
+    .tabs-mini button {
+      flex: 1;
+      padding: 8px 16px;
+      background: transparent;
+      border: none;
+      border-radius: calc(var(--radius) - 3px);
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background .15s, color .15s, box-shadow .15s;
+      font-family: var(--font);
+    }
+    .tabs-mini button:hover:not(.active) {
+      color: var(--text);
+    }
+    .tabs-mini button.active {
+      background: var(--bg-card);
+      color: var(--text);
+      font-weight: 700;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ── Field Grid ── */
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px 16px;
+      margin-bottom: 18px;
+    }
+    .field-grid label {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .field-grid input,
+    .field-grid select,
+    .field-grid textarea {
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-input);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 12.5px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .field-grid input::placeholder,
+    .field-grid textarea::placeholder { color: var(--text-muted); opacity: .7; }
+    .field-grid input:focus,
+    .field-grid select:focus,
+    .field-grid textarea:focus {
+      outline: none;
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px var(--orange-dim);
+    }
+    .field-grid textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    /* ── Form Actions ── */
+    .form-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    /* ── List (Items Display) ── */
+    .list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .list.editable li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 13px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      font-size: 11.5px;
+      transition: border-color .15s, background .15s, box-shadow .15s;
+    }
+
+    /* ── Skeleton Loading ── */
+    @keyframes sk-shimmer {
+      0%   { background-position:-200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .sk-bar {
+      display:inline-block;
+      background:linear-gradient(90deg, var(--bg) 25%, var(--border) 50%, var(--bg) 75%);
+      background-size:200% 100%;
+      animation:sk-shimmer 1.5s ease-in-out infinite;
+      border-radius:4px;
+      height:13px;
+      flex-shrink:0;
+    }
+    .sk-li {
+      display:flex !important;
+      align-items:center !important;
+      gap:10px !important;
+      pointer-events:none;
+    }
+    .list.editable li:hover {
+      border-color: var(--text-muted);
+      box-shadow: var(--shadow-sm);
+    }
+    .item-content {
+      flex: 1;
+      min-width: 0;
+    }
+    .item-text {
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .item-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .item-actions button {
+      width: 26px;
+      height: 26px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font);
+    }
+    .item-actions button.edit:hover {
+      background: rgba(59,130,246,.1);
+      color: #2563eb;
+    }
+    .item-actions button.remove:hover {
+      background: rgba(239,68,68,.1);
+      color: #dc2626;
+    }
+    .empty-state {
+      padding: 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-style: italic;
+    }
+
+    /* ── Section Header ── */
+    .section-header {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    /* ── Split Layout ── */
+    .split {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .split.tri {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    /* ── Badge — blocks.so: soft tinted pill, not a solid fill ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 9.5px;
+      font-weight: 700;
+      background: var(--orange-dim);
+      color: var(--orange);
+      border: 1px solid transparent;
+    }
+    .badge.info {
+      background: rgba(59,130,246,.1);
+      color: #2563eb;
+    }
+
+    /* ── Tag (in list items) ── */
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .tag.sev1 {
+      background: rgba(239,68,68,.1);
+      color: #dc2626;
+    }
+    .tag.sev2 {
+      background: rgba(245,158,11,.1);
+      color: #d97706;
+    }
+    .tag.sev3 {
+      background: rgba(59,130,246,.1);
+      color: #2563eb;
+    }
+    .tag.detected-yes {
+      background: rgba(34,197,94,.1);
+      color: #16a34a;
+    }
+    .tag.detected-no {
+      background: rgba(239,68,68,.1);
+      color: #dc2626;
+    }
+    .tag.status-inprogress {
+      background: rgba(245,158,11,.1);
+      color: #d97706;
+    }
+    .tag.status-done {
+      background: rgba(34,197,94,.1);
+      color: #16a34a;
+    }
+
+    /* ── Ticket Link ── */
+    .ticket-link {
+      color: var(--orange);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .ticket-link:hover {
+      text-decoration: underline;
+    }
+
+    /* ── Help Text ── */
+    .help-text {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    /* ── Announcement Editor ── */
+    .announcement-editor {
+      padding: 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .announcement-list-container {
+      margin-top: 16px;
+    }
+
+    @media (max-width: 1200px) {
+      .form-wrapper {
+        grid-template-columns: 1fr;
+      }
+      .side-nav {
+        display: none;
+      }
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+      .split {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="edit"></i> Weekly Report Form</div>
+        <div class="page-sub">Add & Edit Data</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="week-switcher">
+          <button class="week-arrow" id="prevWeekForm"><i data-icon="chevron-left"></i></button>
+          <select class="week-select" id="weekSelectForm">
+            <option value="">Loading weeks...</option>
+          </select>
+          <button class="week-arrow" id="nextWeekForm"><i data-icon="play"></i></button>
+        </div>
+        <a href="./weekly-report.html" class="btn btn-ghost btn-sm">
+          <span><i data-icon="bar-chart"></i></span>
+          <span>View Dashboard</span>
+        </a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="form-wrapper">
+        <!-- Side Navigation -->
+        <aside class="side-nav">
+          <ul>
+            <li><button data-section="announcement" class="active"><i data-icon="megaphone"></i> Announcement</button></li>
+            <li><button data-section="incidents"><i data-icon="alert-triangle"></i> Incidents</button></li>
+            <li><button data-section="batch"><i data-icon="package"></i> Batch</button></li>
+            <li><button data-section="support"><i data-icon="users"></i> Support</button></li>
+            <li><button data-section="updates"><i data-icon="bell"></i> Updates</button></li>
+            <li><button data-section="improvements"><i data-icon="rocket"></i> Improvements</button></li>
+          </ul>
+          <div class="week-info" id="currentWeekLabel"></div>
+          <div class="week-status">
+            <span class="status-indicator current" id="weekStatus"><i data-icon="edit"></i> Current Week</span>
+          </div>
+        </aside>
+
+        <!-- Forms Container -->
+        <section class="forms" id="formsContainer">
+          
+          <!-- Announcement Panel -->
+          <div class="panel active" data-panel="announcement">
+            <div class="panel-head">
+              <h2><i data-icon="megaphone"></i> Weekly Announcement</h2>
+              <div class="panel-tools">
+                <span class="badge info">Available for All Weeks</span>
+              </div>
+            </div>
+            <div class="announcement-editor">
+              <p class="help-text">
+                ประกาศเหล่านี้จะแสดงบน Dashboard โดยจะกรองเอาเฉพาะประกาศที่ยังไม่หมดอายุมาแสดง
+              </p>
+
+              <div class="field-grid">
+                <div style="grid-column: 1 / -1;">
+                  <label>
+                    ข้อความประกาศ
+                    <textarea id="announcementText" rows="2" maxlength="500" placeholder="กรอกข้อความประกาศที่นี่..."></textarea>
+                  </label>
+                </div>
+                <label>
+                  วันหมดอายุ (Optional)
+                  <input type="date" id="announcementExpiry">
+                </label>
+              </div>
+
+              <div class="form-actions">
+                <button class="btn btn-primary btn-sm" type="button" id="addAnnouncement"><i data-icon="plus"></i> เพิ่มประกาศ</button>
+                <button class="btn btn-ghost btn-sm" type="button" id="clearAnnouncementForm"><i data-icon="trash"></i> ล้างฟอร์ม</button>
+              </div>
+
+              <div class="announcement-list-container">
+                <h3 class="section-header">รายการประกาศสำหรับสัปดาห์นี้</h3>
+                <ul class="list editable" id="announcementList">
+                  <li class="empty-state">ไม่มีประกาศในสัปดาห์นี้</li>
+                </ul>
+              </div>
+
+              <div class="form-actions" style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 16px;">
+                <button class="btn btn-primary" type="button" id="saveAllAnnouncements"><i data-icon="save"></i> บันทึกประกาศทั้งหมด</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Incident Form -->
+          <form class="panel" data-panel="incidents">
+            <div class="panel-head">
+              <h2><i data-icon="alert-triangle"></i> Number of Incident Detected by SM</h2>
+              <div class="panel-tools">
+                <button type="button" class="btn btn-ghost btn-sm" id="testJiraConnection" title="Test Jira Connection">
+                  <span><i data-icon="search"></i></span>
+                  <span>Test Connection</span>
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm" id="syncJiraIncidents" title="Sync from Jira">
+                  <span><i data-icon="refresh-cw"></i></span>
+                  <span>Sync from Jira</span>
+                </button>
+                <span class="badge" id="countIncidents">0</span>
+              </div>
+            </div>
+            <div class="field-grid">
+              <label>Ticket ID <input name="ticketId" required placeholder="INC-123" /></label>
+              <label>Ticket URL <input name="ticketUrl" type="url" required placeholder="https://" /></label>
+              <label style="grid-column: 1 / -1;">Title <input name="title" required placeholder="Incident title" /></label>
+              <label>
+                Severity
+                <select name="severity" required>
+                  <option value="1">1 - Critical</option>
+                  <option value="2">2 - High</option>
+                  <option value="3">3 - Medium</option>
+                </select>
+              </label>
+              <label>
+                Detected by SM?
+                <select name="detected">
+                  <option value="Y">Yes</option>
+                  <option value="N">No</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Add Incident</button>
+              <button class="btn btn-ghost cancel-edit" type="button" style="display:none;">Cancel</button>
+            </div>
+            <div style="margin-top: 20px;">
+              <h3 class="section-header">Incidents List</h3>
+              <ul class="list editable" id="incidentItems">
+                <li class="empty-state">No incidents yet</li>
+              </ul>
+            </div>
+          </form>
+
+          <!-- Batch Form -->
+          <form class="panel" data-panel="batch">
+            <div class="panel-head">
+              <h2><i data-icon="package"></i> Batch - Issue</h2>
+              <div class="panel-tools">
+                <span class="badge" id="countBatchEvent">0</span>
+                <span class="badge" id="countBatchPending">0</span>
+              </div>
+            </div>
+            <div class="tabs-mini">
+              <button type="button" data-sub="event" class="active">Batch & Event</button>
+              <button type="button" data-sub="pending">Pending Issue</button>
+            </div>
+            <div class="field-grid">
+              <label>Name <input name="name" required /></label>
+              <label>Date <input name="date" type="date" required /></label>
+              <label style="grid-column: 1 / -1;">Description <input name="desc" required /></label>
+              <label>URL (Optional) <input name="url" type="url" placeholder="https://" /></label>
+              <label>
+                Status
+                <select name="status">
+                  <option>Inprogress</option>
+                  <option>Done</option>
+                </select>
+              </label>
+            </div>
+            <input type="hidden" name="subType" value="event" />
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Add Batch Item</button>
+              <button class="btn btn-ghost cancel-edit" type="button" style="display:none;">Cancel</button>
+            </div>
+            <div class="split">
+              <div>
+                <h3 class="section-header">Batch & Event</h3>
+                <ul class="list editable" id="batchEventItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+              <div>
+                <h3 class="section-header">Pending Issue</h3>
+                <ul class="list editable" id="batchPendingItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+            </div>
+          </form>
+
+          <!-- Support Form -->
+          <form class="panel" data-panel="support">
+            <div class="panel-head">
+              <h2><i data-icon="users"></i> Part SM Support</h2>
+              <div class="panel-tools">
+                <button type="button" class="btn btn-ghost btn-sm" id="syncJiraMA" title="Sync closed MA tickets from Jira">
+                  <span><i data-icon="refresh-cw"></i></span>
+                  <span>Sync MA from Jira</span>
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm" id="syncJiraDev" title="Sync closed Support Dev tickets from Jira">
+                  <span><i data-icon="refresh-cw"></i></span>
+                  <span>Sync Dev from Jira</span>
+                </button>
+                <span class="badge" id="countSupportMA">0</span>
+                <span class="badge" id="countSupportDev">0</span>
+              </div>
+            </div>
+            <div class="tabs-mini">
+              <button type="button" data-sub="ma" class="active">MA</button>
+              <button type="button" data-sub="dev">Support Dev</button>
+            </div>
+            <div class="field-grid">
+              <label style="grid-column: 1 / -1;">Summary <input name="summary" required /></label>
+              <label>Ticket ID <input name="ticketId" required placeholder="SMC-1234" /></label>
+              <label>Ticket URL <input name="ticketUrl" type="url" required placeholder="https://" /></label>
+              <label>Owner/Name <input name="owner" required placeholder="Name" /></label>
+              <label>
+                Status
+                <select name="status">
+                  <option>Inprogress</option>
+                  <option>Done</option>
+                </select>
+              </label>
+            </div>
+            <input type="hidden" name="subType" value="ma" />
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Add Support Item</button>
+              <button class="btn btn-ghost cancel-edit" type="button" style="display:none;">Cancel</button>
+            </div>
+            <div class="split">
+              <div>
+                <h3 class="section-header">MA Support</h3>
+                <ul class="list editable" id="supportMAItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+              <div>
+                <h3 class="section-header">Support Dev</h3>
+                <ul class="list editable" id="supportDevItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+            </div>
+          </form>
+
+          <!-- Updates Form -->
+          <form class="panel" data-panel="updates">
+            <div class="panel-head">
+              <h2><i data-icon="bell"></i> Update Alert Grafana / Handover / Others</h2>
+              <div class="panel-tools">
+                <span class="badge" id="countUpdateAlert">0</span>
+                <span class="badge" id="countUpdateHandover">0</span>
+                <span class="badge" id="countUpdateOther">0</span>
+              </div>
+            </div>
+            <div class="tabs-mini">
+              <button type="button" data-sub="alert" class="active">Update Alert & Grafana</button>
+              <button type="button" data-sub="handover">Handover</button>
+              <button type="button" data-sub="other">Other</button>
+            </div>
+            <div class="field-grid">
+              <label>Name <input name="name" required /></label>
+              <label>Date <input name="date" type="date" required /></label>
+              <label style="grid-column: 1 / -1;">Description <input name="desc" required /></label>
+              <label>Ticket (Optional) <input name="ticketId" placeholder="OPTIONAL" /></label>
+              <label>URL (Optional) <input name="url" type="url" placeholder="https://" /></label>
+              <label>
+                Status
+                <select name="status">
+                  <option>Inprogress</option>
+                  <option>Done</option>
+                </select>
+              </label>
+            </div>
+            <input type="hidden" name="subType" value="alert" />
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Add Update Item</button>
+              <button class="btn btn-ghost cancel-edit" type="button" style="display:none;">Cancel</button>
+            </div>
+            <div class="split tri">
+              <div>
+                <h3 class="section-header">Update Alert & Grafana</h3>
+                <ul class="list editable" id="updateAlertItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+              <div>
+                <h3 class="section-header">Handover</h3>
+                <ul class="list editable" id="handoverItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+              <div>
+                <h3 class="section-header">Others</h3>
+                <ul class="list editable" id="otherItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+            </div>
+          </form>
+
+          <!-- Improvements Form -->
+          <form class="panel" data-panel="improvements">
+            <div class="panel-head">
+              <h2><i data-icon="rocket"></i> Improvement / Project update</h2>
+              <div class="panel-tools">
+                <span class="badge" id="countImprove">0</span>
+                <span class="badge" id="countProject">0</span>
+              </div>
+            </div>
+            <div class="tabs-mini">
+              <button type="button" data-sub="improve" class="active">Improvement</button>
+              <button type="button" data-sub="project">Project update</button>
+            </div>
+            <div class="field-grid">
+              <label>Name <input name="name" required /></label>
+              <label style="grid-column: 1 / -1;">Description <input name="desc" required /></label>
+              <label>Ticket (Optional) <input name="ticketId" /></label>
+              <label>URL (Optional) <input name="url" type="url" placeholder="https://" /></label>
+              <label>
+                Status
+                <select name="status">
+                  <option>Inprogress</option>
+                  <option>Done</option>
+                </select>
+              </label>
+            </div>
+            <input type="hidden" name="subType" value="improve" />
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Add Item</button>
+              <button class="btn btn-ghost cancel-edit" type="button" style="display:none;">Cancel</button>
+            </div>
+            <div class="split">
+              <div>
+                <h3 class="section-header">Improvement</h3>
+                <ul class="list editable" id="improvementItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+              <div>
+                <h3 class="section-header">Project Update</h3>
+                <ul class="list editable" id="projectUpdateItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+            </div>
+          </form>
+
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script src="./assets/js/weekly-report/date-utils.js"></script>
+<script src="./assets/js/weekly-report/api.js"></script>
+<script src="./assets/js/weekly-report/form.js"></script>
+<script>
+  if (!Auth.requireAuth()) {}
+  // super_viewer cannot add/edit weekly report data — bounce back silently.
+  if (Auth.getUser?.()?.role === 'super_viewer') {
+    window.location.replace('./weekly-report.html');
+    throw new Error('super_viewer blocked from weekly-report-form');
+  }
+  Layout.render('weekly-report');
+</script>
+
+</body>
+</html>

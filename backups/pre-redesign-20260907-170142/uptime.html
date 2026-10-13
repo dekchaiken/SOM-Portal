@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uptime Monitor — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <style>
+    /* ── Grid ─────────────────────────────────────────────────── */
+    .uptime-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 860px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ── Monitor Card ─────────────────────────────────────────── */
+    .uptime-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 22px 16px;
+      transition: border-color .15s;
+    }
+    .uptime-card.is-down { border-color: rgba(239,68,68,.4); }
+
+    /* header row */
+    .uc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 2px;
+    }
+    .uc-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .uc-dot {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--border);
+      box-shadow: 0 0 0 3px transparent;
+      transition: background .3s, box-shadow .3s;
+    }
+    .uc-dot.up   { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.2); }
+    .uc-dot.down { background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.2); animation: dot-pulse 1.4s ease infinite; }
+    @keyframes dot-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .uc-status-txt {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+    .uc-status-txt.down { color: #ef4444; }
+    .uc-updated {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      opacity: .7;
+    }
+
+    /* stats row */
+    .uc-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+    .uc-stat {
+      background: var(--bg);
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .uc-stat-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+    .uc-stat-val {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+    }
+    .uc-stat-val.good  { color: #22c55e; }
+    .uc-stat-val.warn  { color: #f59e0b; }
+    .uc-stat-val.bad   { color: #ef4444; }
+
+    /* bar chart */
+    .uc-bars-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 7px;
+    }
+    .uc-bars-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .uc-bars-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-left: 5px;
+      font-weight: 400;
+    }
+    .uc-legend {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 9.5px;
+      color: var(--text-muted);
+    }
+    .uc-legend span { display: flex; align-items: center; gap: 3px; }
+    .uc-legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 2px;
+    }
+
+    .uc-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 36px;
+      margin-bottom: 5px;
+      overflow: visible;
+    }
+    .uc-bar {
+      flex: 1;
+      height: 100%;
+      border-radius: 2px;
+      cursor: default;
+      position: relative;
+      transition: opacity .1s;
+    }
+    .uc-bar:hover { opacity: .8; }
+    .uc-bar.up    { background: #22c55e; }
+    .uc-bar.slow  { background: #f59e0b; }
+    .uc-bar.down  { background: #ef4444; }
+    .uc-bar.none  { background: var(--border); opacity: .5; }
+
+    /* tooltip on hover — ใช้ data-bar-tip แทน data-tip เพื่อไม่ชนกับ global tooltip */
+    .uc-bar[data-bar-tip]:hover::after {
+      content: attr(data-bar-tip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 10px;
+      color: var(--text);
+      white-space: pre;
+      pointer-events: none;
+      z-index: 200;
+      min-width: 120px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,.4);
+    }
+    .uc-bar:nth-child(-n+6)[data-bar-tip]:hover::after {
+      left: 0; transform: translateX(0);
+    }
+    .uc-bar:nth-last-child(-n+6)[data-bar-tip]:hover::after {
+      left: auto; right: 0; transform: translateX(0);
+    }
+
+    .uc-bars-axis {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9.5px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      opacity: .7;
+    }
+
+    /* footer */
+    .uc-footer {
+      font-size: 9.5px;
+      color: var(--text-muted);
+      text-align: center;
+      opacity: .6;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+      margin-top: 2px;
+    }
+
+    /* ── Modal ─────────────────────────────────────────────────── */
+    .uptime-modal-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,.6);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .uptime-modal {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 28px 22px;
+      width: 420px; max-width: 95vw;
+    }
+    .uptime-modal h3 { font-size: 15px; font-weight: 800; margin-bottom: 18px; }
+    .uptime-modal label {
+      display: block;
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      margin-bottom: 4px; margin-top: 12px;
+    }
+    .uptime-modal input {
+      width: 100%; padding: 9px 12px;
+      background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 12px;
+      color: var(--text); font-family: var(--font);
+      outline: none; box-sizing: border-box;
+    }
+    .uptime-modal input:focus { border-color: var(--orange); }
+    .uptime-modal-actions {
+      display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px;
+    }
+
+    /* ── Skeleton / Empty ─────────────────────────────────────── */
+    .uptime-empty {
+      text-align: center; padding: 60px 20px;
+      color: var(--text-muted); font-size: 13px;
+    }
+    .uptime-empty .big { font-size: 36px; margin-bottom: 10px; }
+
+    /* ── Delete btn ───────────────────────────────────────────── */
+    .uc-delete {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 14px;
+      padding: 2px 4px; border-radius: 5px;
+      transition: color .12s, background .12s;
+      display: none;
+    }
+    .uc-delete:hover { color: #ef4444; background: rgba(239,68,68,.1); }
+    .is-admin .uc-delete { display: inline-flex; }
+
+    /* live indicator */
+    .live-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #22c55e;
+      display: inline-block; margin-right: 5px;
+      animation: rfPulse 2s ease infinite;
+    }
+    @keyframes rfPulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">◈ Uptime Monitor</div>
+        <div class="page-sub">ตรวจสอบสถานะ URL แบบ Real-time</div>
+      </div>
+      <div class="topbar-actions">
+        <span id="live-badge" style="font-size:11px;color:var(--text-muted);display:none">
+          <span class="live-dot"></span>Live
+        </span>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="forceRefresh()">↺ Refresh</button>
+        <button id="n8n-config-btn" class="btn btn-ghost" style="font-size:11px;display:none" onclick="openN8nConfig()"><i data-icon="settings"></i> n8n</button>
+        <button id="add-monitor-btn" class="btn btn-primary btn-sm" onclick="openModal()" style="display:none">+ Monitor</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div id="uptime-grid" class="uptime-grid">
+        <!-- cards rendered here -->
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<!-- n8n Config modal -->
+<div id="n8n-modal" class="uptime-modal-overlay" style="display:none" onclick="if(event.target===this)closeN8nModal()">
+  <div class="uptime-modal" style="width:500px">
+    <h3><i data-icon="settings"></i> n8n Push Config</h3>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;line-height:1.6">
+      n8n จะดึง monitor list และส่งผลการเช็คมาที่ endpoint นี้<br>
+      นำ <b>Push URL</b> และ <b>Push Key</b> ไปวางใน n8n workflow
+    </p>
+    <label>Push URL</label>
+    <div style="display:flex;gap:6px">
+      <input id="cfg-push-url" type="text" readonly style="flex:1;cursor:text">
+      <button class="btn btn-ghost btn-sm" onclick="copyVal('cfg-push-url')">Copy</button>
+    </div>
+    <label style="margin-top:12px">Push Key (X-Uptime-Key)</label>
+    <div style="display:flex;gap:6px">
+      <input id="cfg-push-key" type="text" readonly style="flex:1;font-family:monospace;cursor:text">
+      <button class="btn btn-ghost btn-sm" onclick="copyVal('cfg-push-key')">Copy</button>
+      <button class="btn btn-ghost btn-sm" onclick="regenKey()" title="Regenerate key">↺</button>
+    </div>
+    <div style="margin-top:16px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:11px;color:var(--text-muted);line-height:1.8">
+      <b style="color:var(--text)">n8n workflow ควรทำ:</b><br>
+      1. Schedule Trigger ทุก <b>1 นาที</b><br>
+      2. GET Push URL พร้อม header <code>X-Uptime-Key</code> → ได้ monitor list<br>
+      3. เช็ค URL แต่ละตัว (HEAD request)<br>
+      4. POST ผลลัพธ์กลับมาที่ Push URL<br>
+      5. ถ้า state เปลี่ยน → ยิง Google Chat
+    </div>
+    <div class="uptime-modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeN8nModal()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add monitor modal -->
+<div id="add-modal" class="uptime-modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="uptime-modal">
+    <h3><i data-icon="plus"></i> เพิ่ม Monitor</h3>
+    <label>ชื่อ Service</label>
+    <input id="add-name" type="text" placeholder="เช่น SOM-Portal, Jira" maxlength="60">
+    <label>URL</label>
+    <input id="add-url" type="url" placeholder="https://example.com">
+    <div class="uptime-modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" onclick="addMonitor()">เพิ่ม</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script>
+  Auth.requireAuth();
+  Layout.render('uptime');
+
+  const user    = Auth.getUser();
+  const isAdmin = ['super_admin', 'sm_admin', 'dev_sm'].includes(user?.role);
+
+  let checkTimer   = null;
+  let refreshTimer = null;
+  let lastData     = [];
+
+  // ── Formatting helpers ───────────────────────────────────────────────────────
+
+  function fmtTime(unixTs) {
+    if (!unixTs) return '—';
+    return new Date(unixTs * 1000).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+
+  function fmtDateTime(iso) {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString('th-TH', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    } catch { return iso; }
+  }
+
+  function fmtPct(val) {
+    if (val === null || val === undefined) return '—';
+    const n = parseFloat(val);
+    const cls = n >= 99 ? 'good' : n >= 95 ? '' : n >= 80 ? 'warn' : 'bad';
+    return `<span class="uc-stat-val ${cls}">${n.toFixed(2)}%</span>`;
+  }
+
+  function fmtLatency(ms) {
+    if (ms === null || ms === undefined) return '<span class="uc-stat-val">—</span>';
+    const cls = ms < 1000 ? 'good' : ms < 3000 ? 'warn' : 'bad';
+    return `<span class="uc-stat-val ${cls}">${ms.toLocaleString()} ms</span>`;
+  }
+
+  // ── Build bar chart ──────────────────────────────────────────────────────────
+
+  function buildBars(history) {
+    // Pad to 60 entries (newest on right)
+    const padded = [];
+    for (let i = 0; i < 60; i++) padded.push(null);
+    const start = Math.max(0, history.length - 60);
+    for (let i = start; i < history.length; i++) {
+      padded[60 - history.length + i] = history[i];
+    }
+
+    return padded.map(h => {
+      if (!h) return `<div class="uc-bar none" data-bar-tip="ไม่มีข้อมูล"></div>`;
+
+      const time   = fmtTime(h.ts);
+      const latMs  = h.latency;
+      let cls, label;
+
+      if (!h.up) {
+        cls   = 'down';
+        label = `ขัดข้อง`;
+      } else if (latMs >= 3000) {
+        cls   = 'slow';
+        label = `ช้า (${latMs.toLocaleString()} ms)`;
+      } else {
+        cls   = 'up';
+        label = `ปกติ (${latMs.toLocaleString()} ms)`;
+      }
+
+      const tip = `${time}\n${label}${h.code ? '\nHTTP ' + h.code : ''}`;
+      return `<div class="uc-bar ${cls}" data-bar-tip="${tip}"></div>`;
+    }).join('');
+  }
+
+  // ── Render axis times ────────────────────────────────────────────────────────
+
+  function buildAxis(history) {
+    const oldest = history.length > 0 ? history[Math.max(0, history.length - 60)] : null;
+    const leftLabel  = oldest ? fmtTime(oldest.ts) : '—';
+    const rightLabel = 'ตอนนี้';
+    return `<span>${leftLabel}</span><span>${rightLabel}</span>`;
+  }
+
+  // ── Render all cards ─────────────────────────────────────────────────────────
+
+  function renderAll(monitors) {
+    lastData = monitors;
+    const grid = document.getElementById('uptime-grid');
+
+    if (!monitors.length) {
+      grid.innerHTML = `<div class="uptime-empty"><div class="big"><i data-icon="satellite"></i></div><div>ยังไม่มี URL ที่ Monitor</div></div>`;
+      return;
+    }
+
+    grid.className = `uptime-grid ${isAdmin ? 'is-admin' : ''}`;
+    grid.innerHTML = monitors.map(m => renderCard(m)).join('');
+  }
+
+  function renderCard(m) {
+    const isUp      = m.is_up;
+    const dotCls    = isUp === null ? '' : isUp ? 'up' : 'down';
+    const statusTxt = isUp === null ? 'กำลังตรวจสอบ...' : isUp ? 'ระบบทำงานปกติ' : 'ระบบขัดข้อง!';
+    const statusCls = isUp === false ? 'down' : '';
+    const cardCls   = isUp === false ? 'is-down' : '';
+
+    return `
+    <div class="uptime-card ${cardCls}" id="card-${m.id}">
+      <div class="uc-header">
+        <div class="uc-title">
+          <div class="uc-dot ${dotCls}"></div>
+          ${escHtml(m.name)}
+        </div>
+        <button class="uc-delete" title="ลบ Monitor" onclick="deleteMonitor('${m.id}','${escHtml(m.name)}')"><i data-icon="trash"></i></button>
+      </div>
+      <div class="uc-status-txt ${statusCls}">${statusTxt}</div>
+      <div class="uc-updated">อัปเดตล่าสุด ${fmtDateTime(m.last_checked)}</div>
+
+      <div class="uc-stats">
+        <div class="uc-stat">
+          <div class="uc-stat-label">UPTIME (7วัน)</div>
+          ${fmtPct(m.uptime_7d)}
+        </div>
+        <div class="uc-stat">
+          <div class="uc-stat-label">UPTIME (1ชม.)</div>
+          ${fmtPct(m.uptime_1h)}
+        </div>
+        <div class="uc-stat">
+          <div class="uc-stat-label">LATENCY เฉลี่ย</div>
+          ${fmtLatency(m.latency_avg)}
+        </div>
+        <div class="uc-stat">
+          <div class="uc-stat-label">LATENCY ล่าสุด</div>
+          ${fmtLatency(m.latency_last)}
+        </div>
+      </div>
+
+      <div class="uc-bars-header">
+        <div>
+          <span class="uc-bars-title">ประวัติ 60 นาทีล่าสุด</span>
+          <span class="uc-bars-sub">แต่ละบาร์ = 1 นาที</span>
+        </div>
+        <div class="uc-legend">
+          <span><span class="uc-legend-dot" style="background:#22c55e"></span>ปกติ</span>
+          <span><span class="uc-legend-dot" style="background:#f59e0b"></span>ช้า</span>
+          <span><span class="uc-legend-dot" style="background:#ef4444"></span>ขัดข้อง</span>
+        </div>
+      </div>
+
+      <div class="uc-bars">${buildBars(m.history || [])}</div>
+      <div class="uc-bars-axis">${buildAxis(m.history || [])}</div>
+
+      <div class="uc-footer">
+        <i data-icon="circle"></i> ตรวจสอบโดย n8n ทุก 1 นาที · หน้านี้รีเฟรชทุก 1 นาที
+        ${m.url ? `· <a href="${escHtml(m.url)}" target="_blank" style="color:var(--text-muted);text-decoration:none">${escHtml(m.url)}</a>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // ── API calls ────────────────────────────────────────────────────────────────
+
+  async function loadData() {
+    const res = await API.get('/uptime/index.php');
+    if (res?.ok && Array.isArray(res.data?.data)) {
+      renderAll(res.data.data);
+    }
+  }
+
+  // Manual one-time check (fallback ถ้า n8n ยังไม่ได้ตั้งค่า)
+  async function forceRefresh() {
+    await API.get('/uptime/check.php');
+    await loadData();
+  }
+
+  // Regular tick — check แล้วโหลด
+  async function tick() {
+    await API.get('/uptime/check.php');
+    await loadData();
+  }
+
+  // ── n8n Config ──────────────────────────────────────────────────────────────
+
+  async function openN8nConfig() {
+    const res = await API.get('/uptime/config.php');
+    if (!res?.ok) { Toast.error('ไม่สามารถโหลด config ได้'); return; }
+    const key = res.data?.data?.push_key || '';
+    const base = window.location.origin + window.location.pathname.replace(/\/[^/]+$/, '');
+    document.getElementById('cfg-push-url').value = base + '/api/uptime/push.php';
+    document.getElementById('cfg-push-key').value = key;
+    document.getElementById('n8n-modal').style.display = 'flex';
+  }
+
+  function closeN8nModal() {
+    document.getElementById('n8n-modal').style.display = 'none';
+  }
+
+  function copyVal(id) {
+    const el = document.getElementById(id);
+    el.select(); el.setSelectionRange(0, 99999);
+    try {
+      document.execCommand('copy');
+      Toast.success('Copied!');
+    } catch {
+      Toast.error('Copy ไม่ได้ — กด Ctrl+C เอง');
+    }
+  }
+
+  async function regenKey() {
+    if (!await SOMDialog.confirm('Regenerate key?\n\nต้องอัปเดต n8n workflow ด้วยนะครับ', { title: 'ยืนยัน', okLabel: 'Regenerate', icon: 'warning', okColor: 'warning' })) return;
+    const res = await API.post('/uptime/config.php', {});
+    if (res?.ok) {
+      document.getElementById('cfg-push-key').value = res.data?.data?.push_key || '';
+      Toast.success('Key ใหม่ถูกสร้างแล้ว');
+    }
+  }
+
+  // ── Add / Delete ─────────────────────────────────────────────────────────────
+
+  function openModal() {
+    document.getElementById('add-name').value = '';
+    document.getElementById('add-url').value  = '';
+    document.getElementById('add-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('add-name').focus(), 50);
+  }
+
+  function closeModal() {
+    document.getElementById('add-modal').style.display = 'none';
+  }
+
+  async function addMonitor() {
+    const name = document.getElementById('add-name').value.trim();
+    const url  = document.getElementById('add-url').value.trim();
+    if (!name || !url) { Toast.error('กรุณากรอกชื่อและ URL'); return; }
+
+    const res = await API.post('/uptime/index.php', { name, url });
+    if (res?.ok) {
+      Toast.success('เพิ่ม Monitor เรียบร้อย');
+      closeModal();
+      await forceRefresh();
+    } else {
+      Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด');
+    }
+  }
+
+  async function deleteMonitor(id, name) {
+    if (!await SOMDialog.confirm(`ลบ Monitor "${name}" ออกจากระบบ?\n\nประวัติ check ทั้งหมดจะถูกลบด้วย`, { title: 'ยืนยันการลบ', okLabel: 'ลบ', icon: 'danger', okColor: 'danger' })) return;
+    const res = await API.delete(`/uptime/index.php?id=${id}`);
+    if (res?.ok) {
+      Toast.success('ลบเรียบร้อย');
+      await loadData();
+    } else {
+      Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด');
+    }
+  }
+
+  // ── Keyboard shortcut ────────────────────────────────────────────────────────
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Enter' && document.getElementById('add-modal').style.display !== 'none') addMonitor();
+  });
+
+  // ── Boot ─────────────────────────────────────────────────────────────────────
+
+  (async function init() {
+    if (isAdmin) {
+      document.getElementById('add-monitor-btn').style.display = '';
+      document.getElementById('n8n-config-btn').style.display = '';
+    }
+
+    await loadData();
+
+    document.getElementById('live-badge').style.display = 'inline-flex';
+    checkTimer = setInterval(tick, 60_000);
+  })();
+</script>
+</body>
+</html>

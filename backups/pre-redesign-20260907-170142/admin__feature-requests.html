@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feature Requests — Admin</title>
+  <link rel="icon" href="../favicon.ico">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
+    .page-title  { font-size:20px; font-weight:800; color:var(--text); }
+
+    /* ── Tabs ── */
+    .tab-bar { display:flex; gap:4px; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:0; }
+    .tab-btn {
+      padding:8px 18px; border:none; background:transparent; cursor:pointer;
+      font-family:var(--font); font-size:12px; font-weight:600; color:var(--text-muted);
+      border-bottom:2px solid transparent; transition:all .13s; position:relative; top:1px;
+    }
+    .tab-btn:hover { color:var(--text); }
+    .tab-btn.active { color:var(--orange); border-bottom-color:var(--orange); }
+    .tab-badge {
+      display:inline-block; background:var(--orange); color:#fff;
+      font-size:9px; font-weight:800; padding:1px 5px; border-radius:10px;
+      margin-left:5px; vertical-align:middle;
+    }
+
+    /* ── Layout ── */
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    @media(max-width:800px) { .two-col { grid-template-columns:1fr; } }
+
+    /* ── Feature catalogue cards ── */
+    .catalogue-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+    .feat-card {
+      background:var(--bg-card); border:1.5px solid var(--border); border-radius:12px;
+      padding:16px; display:flex; flex-direction:column; gap:8px; transition:all .15s;
+    }
+    .feat-card:hover { border-color:var(--orange); box-shadow:0 4px 12px rgba(0,0,0,.06); }
+    .feat-card.has-feature { border-color:rgba(16,185,129,.4); background:rgba(16,185,129,.03); }
+    .feat-card.pending-req  { border-color:rgba(245,158,11,.4); background:rgba(245,158,11,.03); }
+    .feat-header  { display:flex; align-items:center; gap:10px; }
+    .feat-icon    { font-size:22px; }
+    .feat-name    { font-size:13px; font-weight:800; color:var(--text); }
+    .feat-desc    { font-size:11px; color:var(--text-muted); line-height:1.6; flex:1; }
+    .feat-status  { font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; align-self:flex-start; }
+    .feat-status.owned    { background:rgba(16,185,129,.12); color:#10b981; }
+    .feat-status.pending  { background:rgba(245,158,11,.12); color:#f59e0b; }
+    .feat-status.default  { background:rgba(99,102,241,.12); color:#6366f1; }
+
+    /* ── Request history ── */
+    .req-list { display:flex; flex-direction:column; gap:12px; }
+    .req-card {
+      background:var(--bg-card); border:1.5px solid var(--border); border-radius:12px;
+      padding:16px; display:flex; align-items:flex-start; gap:14px;
+    }
+    .req-icon  { font-size:24px; flex-shrink:0; }
+    .req-body  { flex:1; min-width:0; }
+    .req-title { font-size:13px; font-weight:700; color:var(--text); margin-bottom:4px; }
+    .req-reason{ font-size:11px; color:var(--text-muted); margin-bottom:6px; }
+    .req-meta  { font-size:10px; color:var(--text-muted); }
+    .req-note  { font-size:11px; color:var(--text-muted); margin-top:6px; padding:6px 10px; background:var(--bg); border-radius:6px; }
+    .status-pill {
+      font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; flex-shrink:0;
+    }
+    .status-pending  { background:rgba(245,158,11,.12); color:#f59e0b; }
+    .status-approved { background:rgba(16,185,129,.12); color:#10b981; }
+    .status-denied   { background:rgba(239,68,68,.12);  color:#ef4444; }
+
+    /* ── Request modal ── */
+    .reason-textarea {
+      width:100%; min-height:80px; resize:vertical;
+      background:var(--bg); border:1.5px solid var(--border); border-radius:8px;
+      padding:10px 12px; font-family:var(--font); font-size:12px; color:var(--text);
+      outline:none; transition:border-color .15s;
+    }
+    .reason-textarea:focus { border-color:var(--orange); }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="zap"></i> Feature Requests</div>
+        <div class="page-sub">ขอ feature เพิ่มเติมสำหรับทีมของคุณ</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="zap"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Team Admin</div>
+          <h1>Feature Requests</h1>
+          <p>เลือก feature ที่ทีมของคุณต้องการเพิ่ม — super-admin จะเป็นผู้อนุมัติ (ดูสถานะได้ที่แท็บ Request History)</p>
+        </div>
+      </section>
+
+  <!-- ★ Update banner — shown when approved features detected -->
+  <div id="update-banner" style="display:none;background:rgba(16,185,129,.08);border:1.5px solid rgba(16,185,129,.3);border-radius:10px;padding:12px 16px;margin-bottom:20px;display:none;align-items:center;gap:10px;">
+    <span style="font-size:18px;"><i data-icon="sparkles"></i></span>
+    <span style="font-size:13px;font-weight:700;color:#10b981;">Features อัพเดทแล้ว! กำลัง reload...</span>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="catalogue" onclick="switchTab('catalogue')">
+      🛍 Available Features
+    </button>
+    <button class="tab-btn" data-tab="history" onclick="switchTab('history')">
+      <i data-icon="clipboard"></i> Request History
+      <span class="tab-badge" id="pending-badge" style="display:none"></span>
+    </button>
+  </div>
+
+  <!-- Tab: Catalogue -->
+  <div id="tab-catalogue">
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+      เลือก feature ที่ทีมต้องการแล้วกด <strong>Request</strong> — super admin จะ review และ approve ให้
+    </p>
+    <div class="catalogue-grid" id="catalogue-grid">
+      <div style="color:var(--text-muted);padding:20px;">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Tab: History -->
+  <div id="tab-history" style="display:none">
+    <div class="req-list" id="req-list">
+      <div style="color:var(--text-muted);padding:20px;">Loading...</div>
+    </div>
+  </div>
+
+    </main><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<!-- Request modal -->
+<div id="req-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--bg-card);border-radius:16px;padding:28px;width:90%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <h3 style="font-size:16px;font-weight:800;margin-bottom:6px;" id="modal-title">Request Feature</h3>
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:18px;" id="modal-desc"></p>
+    <div class="form-group" style="margin-bottom:20px;">
+      <label class="form-label">เหตุผลที่ต้องการ <span style="color:var(--orange)">*</span></label>
+      <textarea id="req-reason" class="reason-textarea" placeholder="อธิบายว่าทีมต้องการใช้ feature นี้เพื่ออะไร..."></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitRequest()" id="submit-btn"><i data-icon="upload"></i> Submit Request</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('feature-requests');
+
+let _catalogue    = {};
+let _teamFeatures = [];
+let _myRequests   = [];
+let _pendingReqKeys = new Set(); // features with pending requests
+let _currentFeatureKey = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  Auth.initUserUI();
+  loadAll();
+  // Start periodic refresh check — catches approvals even if user stays on this page
+  setInterval(checkFeaturesUpdate, 30000); // every 30s
+});
+
+async function checkFeaturesUpdate() {
+  const changed = await Auth.refreshTeamFeatures?.();
+  if (changed) {
+    // Show banner instead of instant reload so user knows why page is refreshing
+    const banner = document.getElementById('update-banner');
+    if (banner) banner.style.display = '';
+    setTimeout(() => window.location.reload(), 2500);
+  }
+}
+
+async function loadAll() {
+  const res = await API.featureRequests.list();
+  if (!res?.ok) { Toast.error('Failed to load data'); return; }
+
+  const d = res.data?.data || res.data || {};
+  _catalogue    = d.catalogue    || {};
+  _teamFeatures = d.team_features || [];
+  _myRequests   = d.requests     || [];
+
+  // Count pending for badge
+  const pending = _myRequests.filter(r => r.status === 'pending');
+  const badge = document.getElementById('pending-badge');
+  if (pending.length > 0) { badge.textContent = pending.length; badge.style.display = ''; }
+
+  // Build pending request key set
+  _pendingReqKeys = new Set(_myRequests.filter(r => r.status === 'pending').map(r => r.feature_key));
+
+  renderCatalogue();
+  renderHistory();
+}
+
+function renderCatalogue() {
+  const grid = document.getElementById('catalogue-grid');
+  const entries = Object.entries(_catalogue);
+  if (!entries.length) { grid.innerHTML = '<div style="color:var(--text-muted);">No requestable features.</div>'; return; }
+
+  grid.innerHTML = entries.map(([key, f]) => {
+    const owned   = _teamFeatures.includes(key);
+    const pending = _pendingReqKeys.has(key);
+    const cardCls = owned ? 'feat-card has-feature' : pending ? 'feat-card pending-req' : 'feat-card';
+    const statusEl = owned
+      ? `<span class="feat-status owned"><i data-icon="check"></i> Active</span>`
+      : pending
+        ? `<span class="feat-status pending">⏳ Pending</span>`
+        : '';
+    const btn = (!owned && !pending)
+      ? `<button class="btn btn-outline btn-sm" onclick="openModal('${key}')"><i data-icon="upload"></i> Request</button>`
+      : '';
+    return `
+      <div class="${cardCls}">
+        <div class="feat-header">
+          <span class="feat-icon">${f.icon}</span>
+          <span class="feat-name">${f.label}</span>
+        </div>
+        <div class="feat-desc">${f.desc}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          ${statusEl}
+          ${btn}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderHistory() {
+  const list = document.getElementById('req-list');
+  if (!_myRequests.length) {
+    list.innerHTML = '<div style="color:var(--text-muted);padding:20px;text-align:center;">ยังไม่มี request ครับ — ไปที่ Available Features เพื่อขอ feature ใหม่</div>';
+    return;
+  }
+  list.innerHTML = [..._myRequests].reverse().map(r => {
+    const meta = r.feature_meta || {};
+    const statusCls = `status-${r.status}`;
+    const statusLabel = r.status === 'pending' ? '⏳ รอ review' : r.status === 'approved' ? '<i data-icon="check-circle"></i> Approved' : '<i data-icon="x-circle"></i> Denied';
+    const noteHtml = r.review_note ? `<div class="req-note"><i data-icon="message-circle"></i> Note: ${r.review_note}</div>` : '';
+    const reviewedHtml = r.reviewed_at
+      ? `<span>Reviewed ${new Date(r.reviewed_at).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'})}</span>`
+      : '';
+    return `
+      <div class="req-card">
+        <div class="req-icon">${meta.icon || '⚡'}</div>
+        <div class="req-body">
+          <div class="req-title">${meta.label || r.feature_key}</div>
+          ${r.reason ? `<div class="req-reason">"${r.reason}"</div>` : ''}
+          <div class="req-meta">
+            <span>ยื่นเมื่อ ${new Date(r.requested_at).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'})}</span>
+            ${reviewedHtml ? ' · ' + reviewedHtml : ''}
+          </div>
+          ${noteHtml}
+        </div>
+        <span class="status-pill ${statusCls}">${statusLabel}</span>
+      </div>`;
+  }).join('');
+}
+
+// ── Modal ────────────────────────────────────────────────────────────────────
+function openModal(key) {
+  const f = _catalogue[key] || {};
+  _currentFeatureKey = key;
+  document.getElementById('modal-title').textContent = `${f.icon || '⚡'} ${f.label || key}`;
+  document.getElementById('modal-desc').textContent = f.desc || '';
+  document.getElementById('req-reason').value = '';
+  document.getElementById('req-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('req-reason').focus(), 50);
+}
+function closeModal() {
+  document.getElementById('req-modal').style.display = 'none';
+  _currentFeatureKey = null;
+}
+document.getElementById('req-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+async function submitRequest() {
+  const reason = document.getElementById('req-reason').value.trim();
+  if (!reason) { Toast.warning('กรุณาระบุเหตุผลก่อนครับ'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+
+  const res = await API.featureRequests.submit({
+    feature_key: _currentFeatureKey,
+    reason,
+  });
+
+  btn.disabled = false; btn.innerHTML = '<i data-icon="upload"></i> Submit Request';
+
+  if (res?.ok) {
+    Toast.success('ส่ง request แล้ว! รอ super admin approve ครับ');
+    closeModal();
+    await loadAll(); // refresh
+  } else {
+    Toast.error(res?.data?.message || 'Failed to submit request');
+  }
+}
+
+// ── Tab switch ──────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('tab-catalogue').style.display = tab === 'catalogue' ? '' : 'none';
+  document.getElementById('tab-history').style.display   = tab === 'history'   ? '' : 'none';
+}
+</script>
+</body>
+</html>

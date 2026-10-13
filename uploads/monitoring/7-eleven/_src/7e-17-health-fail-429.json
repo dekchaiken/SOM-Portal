@@ -1,0 +1,490 @@
+{
+  "n": 17,
+  "title": "7-Eleven · Health · Fail & 429",
+  "refresh": "1m",
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน fail แยกตาม HTTP status_code ที่ Gateway layer\n\nดูยังไง:\n- 500 INTERNAL_SERVER_ERROR = app logic error\n- 504 GATEWAY_TIMEOUT = upstream timeout\n- 503 SERVICE_UNAVAILABLE = pod ล่ม/overload\n\nใช้แยกได้ทันทีว่าเป็น app bug หรือ network/infrastructure problem",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 528
+      },
+      "id": 9021,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CHARGE\",status_code!=\"200 OK\"}[1m])) by (status_code)",
+          "legendFormat": "CHARGE {{status_code}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CANCEL\",status_code!=\"200 OK\"}[1m])) by (status_code)",
+          "legendFormat": "CANCEL {{status_code}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Gateway — Fail by Status Code  (seven-custom-in-gateway)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน fail ที่ Acquiring แยกตาม status_code และ reason\n\nดูยังไง:\n- invalid_payment_id = payment_id ผิดหรือ expire\n- failed_timeout = upstream ตอบช้า\n- other = ดู log เพิ่มเติม",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 528
+      },
+      "id": 9022,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(acquiring_service_total_transaction_total{status_code!=\"200\",app_name=\"acquiring-service\"}[1m])) by (status_code, status_code_reason)",
+          "legendFormat": "{{status_code}} — {{status_code_reason}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Acquiring — Fail by Status Code + Reason",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "แยกประเภท error ของ Omise/OPN Gateway ให้ชัดขึ้น\n\nดูยังไง:\n- OMISE_CONNECTION_ERROR = network ถึง Omise ขาด\n- SERVICE_UNAVAILABLE = Omise API down\n- PROCESSING_FAILED = bank ปฏิเสธ transaction\n- PAYMENT_REJECT = card ถูก block หรือ limit เกิน\n\nแต่ละ type มีวิธีแก้ต่างกัน อย่า lump รวมเป็น 'fail' เดียวกัน",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 536
+      },
+      "id": 9023,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"OMISE_CONNECTION_ERROR\"}[1m]))",
+          "legendFormat": "OMISE_CONNECTION_ERROR",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"SERVICE_UNAVAILABLE\"}[1m]))",
+          "legendFormat": "SERVICE_UNAVAILABLE",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"PROCESSING_FAILED\"}[1m]))",
+          "legendFormat": "PROCESSING_FAILED",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"PAYMENT_REJECT\"}[1m]))",
+          "legendFormat": "PAYMENT_REJECT",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=~\"OMISE_CONNECTION_ERROR|SERVICE_UNAVAILABLE|PROCESSING_FAILED|PAYMENT_REJECT\",status_code!~\"SUCCESS|INVALID_PARAM|INSUFFICIENT\"}[1m]))",
+          "legendFormat": "Other Fail",
+          "refId": "E"
+        }
+      ],
+      "title": "Omise/OPN — Error Type Breakdown  (Connection / Unavailable / Rejected)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "แยก error ของ Direct Debit ตามประเภท\n\nดูยังไง:\n- timeout (-1) = bank ตอบช้าหรือ connection หลุด\n- bank error (-1016/-1017/-1018) = bank ปฏิเสธด้วย business reason\n- 500 Internal = error ใน seven-composite\n\nถ้า timeout เยอะให้ตรวจ Fund Service connection ไปที่ bank",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 536
+      },
+      "id": 9024,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status!=\"200\",sof_type=\"BANK\",status_code=\"-1\"}[1m])) by (sof_code)",
+          "legendFormat": "timeout (-1) {{sof_code}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status!=\"200\",sof_type=\"BANK\",status_code=~\"-1016|-1017|-1018\"}[1m])) by (sof_code, status_code)",
+          "legendFormat": "bank error {{status_code}} {{sof_code}}",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"500\",sof_type=\"BANK\"}[1m])) by (sof_code)",
+          "legendFormat": "500 Internal {{sof_code}}",
+          "refId": "C"
+        }
+      ],
+      "title": "Bank Gateway (Direct Debit) — Fail by Error Code  (seven-composite)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวนครั้งที่ omise-gateway เรียก Omise/OPN API แล้วได้รับ 429 Too Many Requests กลับมา\n\nดูยังไง: ถ้าขึ้นมาหมายความว่า Omise API rate limit TMN แล้ว request ถัดไปจะ fail ต่อเนื่อง\n\nAction: แจ้ง Omise support ทันที พร้อมช่วงเวลาที่เกิดและ volume ที่ส่งไป",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 15,
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 545
+      },
+      "id": 9036,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(http_client_requests_seconds_count{app_name=\"omise-gateway\",status=\"429\"}[1m]))",
+          "legendFormat": "429 from Omise API",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum by (uri) (increase(http_client_requests_seconds_count{app_name=\"omise-gateway\",status=\"429\"}[1m]))",
+          "legendFormat": "{{uri}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Omise API — 429 Rate Limit (outbound http_client)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน transaction ใน omise_gateway_transaction_total ที่ status เกี่ยวกับ rate limit หรือ service unavailable\n\nดูยังไง: 429 จาก Omise อาจ map เป็น SERVICE_UNAVAILABLE หรือ OMISE_CONNECTION_ERROR ใน metric นี้\n\nถ้าเห็น spike พร้อมกับ panel ซ้าย = ยืนยันว่า 429 กระทบ transaction จริง",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 15,
+            "lineWidth": 2
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 545
+      },
+      "id": 9037,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum by (status_code) (increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=~\"SERVICE_UNAVAILABLE|OMISE_CONNECTION_ERROR|TOO_MANY_REQUESTS|RATE_LIMIT\"}[1m]))",
+          "legendFormat": "{{status_code}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum by (status_code) (increase(http_server_requests_seconds_count{app_name=\"omise-gateway\",status=\"429\"}[1m]))",
+          "legendFormat": "omise-gw returns 429 → {{status_code}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Omise API — 429 Rate Limit (omise_gateway_transaction_total)",
+      "type": "timeseries"
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "แยก error ของ PayNext/PayNext Extra ตาม error code\n\nดูยังไง:\n- -1 = timeout (MAMBU/Nano GW ช้า)\n- -1016 ถึง -1320 = MAMBU business error (insufficient, limit exceed ฯลฯ)\n\nถ้า -1 เยอะให้ตรวจ MAMBU Database connection",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 553
+      },
+      "id": 9025,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status_code=\"-1\",sof_code=~\"PAY_NEXT|PAY_NEXT_EXTRA\"}[1m])) by (sof_code)",
+          "legendFormat": "timeout (-1) {{sof_code}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status_code=~\"-1016|-1017|-1018|-1315|-1316|-1320|-1310\",sof_code=~\"PAY_NEXT|PAY_NEXT_EXTRA\"}[1m])) by (sof_code, status_code)",
+          "legendFormat": "{{status_code}} {{sof_code}}",
+          "refId": "B"
+        }
+      ],
+      "title": "PayNext / PNE — Fail by Error Code  (Nano Gateway)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "Error ที่เกิดจากการที่ omise-gateway เรียก Omise API ไม่ได้\n\nดูยังไง: CLIENT_ERROR = HTTP 4xx จาก Omise, 500 = network error\n\nถ้า SERVICE_UNAVAILABLE/CONNECTION_ERROR ขึ้นพร้อมกัน ให้ตรวจ network ระหว่าง TMN กับ Omise ทันที",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 553
+      },
+      "id": 9026,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(http_client_requests_seconds_count{app_name=\"omise-gateway\",status=~\"CLIENT_ERROR|500\",uri=\"/charges\"}[1m])) by (status, uri)",
+          "legendFormat": "{{status}} {{uri}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(omise_gateway_transaction_total{status_code=~\"SERVICE_UNAVAILABLE|OMISE_CONNECTION_ERROR\"}[1m])) by (status_code)",
+          "legendFormat": "{{status_code}}",
+          "refId": "B"
+        }
+      ],
+      "title": "HTTP Client Error — Upstream Connection Fail  (omise-gateway)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    }
+  ]
+}

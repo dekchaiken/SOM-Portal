@@ -1,0 +1,309 @@
+{
+  "title": "7-Eleven · Acquiring Flow",
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "valueName": "last"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 61
+      },
+      "id": 2014,
+      "options": {
+        "composites": [],
+        "content": "%%{init: {\"flowchart\": {\"useMaxWidth\": true, \"htmlLabels\": true}, \"theme\": \"dark\"}}%%\ngraph TD\n  GW711[\"seven-custom-in-gateway\"] --> ACQ[\"Acquiring Service\"]\n\n  ACQ -->|200| acq_ok([\"Total: OK\"])\n  ACQ -->|non-200| acq_fail([\"Total: Fail\"])\n\n  subgraph BREAKDOWN[\"Fail — breakdown by SoF type\"]\n    acq_card([\"Card: Fail\"])\n    acq_balance([\"Balance: Fail\"])\n    acq_bank([\"Bank: Fail\"])\n    acq_paynext([\"PayNext: Fail\"])\n  end\n\n  acq_fail --> acq_card\n  acq_fail --> acq_balance\n  acq_fail --> acq_bank\n  acq_fail --> acq_paynext\n  classDef svc    fill:#242930,stroke:#5794c7,stroke-width:2px,color:#fff\n  classDef ok     fill:#1c2c22,stroke:#47a468,stroke-width:2px,color:#fff\n  classDef fail   fill:#2c1e1e,stroke:#cc3333,stroke-width:2px,color:#fff\n  classDef client fill:#2c2020,stroke:#e05252,stroke-width:3px,color:#e05252,font-weight:bold\n  classDef net    fill:#2c251e,stroke:#ff8c42,stroke-width:2px,color:#fff",
+        "legend": {
+          "show": true
+        },
+        "links": [],
+        "mermaidThemeVariablesDark": {
+          "common": {
+            "fontFamily": "Roboto,Helvetica Neue,Arial,sans-serif"
+          }
+        },
+        "mermaidThemeVariablesLight": {
+          "common": {
+            "fontFamily": "Roboto,Helvetica Neue,Arial,sans-serif"
+          }
+        },
+        "nodeSize": {
+          "minHeight": 30,
+          "minWidth": 30
+        },
+        "pluginVersion": "latest",
+        "style": "width:100%;",
+        "useBackground": false,
+        "valueName": "current"
+      },
+      "pluginVersion": "1.10.4",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(acquiring_service_total_transaction_total{status_code=\"200\",app_name=\"acquiring-service\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "acq_ok",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(acquiring_service_total_transaction_total{status_code!=\"200\",app_name=\"acquiring-service\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "acq_fail",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(acquiring_service_total_payment_payment_method_transaction_total{payment_method=\"Card\",status_code!=\"200\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "acq_card",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(acquiring_service_total_payment_payment_method_transaction_total{payment_method=\"Balance\",status_code!=\"200\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "acq_balance",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(acquiring_service_total_payment_payment_method_transaction_total{payment_method=\"Bank\",status_code!=\"200\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "acq_bank",
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(acquiring_service_total_payment_payment_method_transaction_total{payment_method=\"PayNext\",status_code!=\"200\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "acq_paynext",
+          "refId": "F"
+        }
+      ],
+      "title": "Acquiring - Payment by SoF Type (5m window)",
+      "type": "jdbranham-diagram-panel"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 73
+      },
+      "hiddenSeries": false,
+      "id": 2015,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(acquiring_service_total_transaction_total{status_code=\"200\",app_name=\"acquiring-service\"}[1m])) by (status_code)",
+          "interval": "",
+          "legendFormat": "Success",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Acquiring  Payment Success (All SoF)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:200",
+          "format": "short",
+          "label": "count",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:201",
+          "format": "short",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 73
+      },
+      "hiddenSeries": false,
+      "id": 2016,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(acquiring_service_total_transaction_total{status_code!=\"200\",app_name=\"acquiring-service\"}[1m])) by (status_code,status_code_reason)",
+          "interval": "",
+          "legendFormat": "{{status_code}} – {{status_code_reason}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Acquiring  Payment Fail (All SoF)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "count",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    }
+  ]
+}

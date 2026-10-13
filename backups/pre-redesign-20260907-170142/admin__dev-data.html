@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Inspector — Dev Tools</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/dev-badge.css">
+  <style>
+    .layout-split { display:grid; grid-template-columns:260px 1fr; gap:14px; align-items:start; }
+
+    /* File list panel */
+    .file-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; overflow:hidden; position:sticky; top:70px; }
+    .file-panel-hd { padding:12px 14px; border-bottom:1px solid var(--border); background:linear-gradient(90deg,rgba(242,100,25,.07),transparent 60%); }
+    .file-panel-title { font-size:12px; font-weight:700; color:var(--text); margin-bottom:2px; }
+    .file-panel-sub   { font-size:10px; color:var(--text-muted); }
+    .file-search { padding:8px 12px; border-bottom:1px solid var(--border); }
+    .file-search input { width:100%; padding:6px 10px; border-radius:7px; border:1.5px solid var(--border); background:var(--bg); color:var(--text); font-size:11px; box-sizing:border-box; }
+    .file-search input:focus { outline:none; border-color:var(--orange); }
+    .file-list { max-height:calc(100vh - 240px); overflow-y:auto; scrollbar-width:thin; }
+    .file-list::-webkit-scrollbar { width:3px; }
+    .file-list::-webkit-scrollbar-thumb { background:rgba(242,100,25,.2); }
+    .file-item {
+      display:flex; flex-direction:column; gap:2px;
+      padding:9px 14px; border-bottom:1px solid var(--border);
+      cursor:pointer; transition:background .1s;
+    }
+    .file-item:hover { background:rgba(242,100,25,.06); }
+    .file-item.active { background:rgba(242,100,25,.1); border-left:3px solid var(--orange); }
+    .file-item-name { font-size:11px; font-weight:600; color:var(--text); word-break:break-all; }
+    .file-item-meta { font-size:9.5px; color:var(--text-muted); display:flex; gap:8px; }
+
+    /* Inspector panel */
+    .insp-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+    .insp-hd { display:flex; align-items:center; gap:10px; padding:12px 18px; border-bottom:1px solid var(--border); background:linear-gradient(90deg,rgba(242,100,25,.07),transparent 60%); flex-wrap:wrap; gap:8px; }
+    .insp-title { font-size:13px; font-weight:700; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'JetBrains Mono',Consolas,monospace; }
+    .insp-meta  { display:flex; gap:10px; font-size:10px; color:var(--text-muted); flex-shrink:0; }
+    .insp-meta span { display:flex; align-items:center; gap:4px; }
+    .insp-meta strong { color:var(--orange); }
+
+    /* Toolbar */
+    .insp-toolbar { display:flex; align-items:center; gap:8px; padding:8px 14px; border-bottom:1px solid var(--border); background:rgba(0,0,0,.06); flex-wrap:wrap; }
+    .d-btn { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:600; border-radius:7px; cursor:pointer; font-family:inherit; border:1.5px solid var(--border); background:var(--bg); color:var(--text); transition:all .15s; }
+    .d-btn:hover { border-color:var(--orange); color:var(--orange); }
+    .d-btn:disabled { opacity:.5; cursor:not-allowed; }
+    .insp-search { flex:1; min-width:140px; }
+    .insp-search input { width:100%; padding:5px 10px; border-radius:7px; border:1.5px solid var(--border); background:var(--bg); color:var(--text); font-size:11px; box-sizing:border-box; }
+    .insp-search input:focus { outline:none; border-color:var(--orange); }
+    .trunc-badge { font-size:10px; padding:3px 8px; border-radius:5px; background:rgba(245,158,11,.12); color:#f59e0b; border:1px solid rgba(245,158,11,.25); }
+
+    /* Content area */
+    .insp-body { padding:16px 18px; }
+
+    /* Stats row */
+    .stat-chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+    .stat-chip { padding:6px 12px; border-radius:8px; background:rgba(242,100,25,.08); border:1px solid rgba(242,100,25,.15); font-size:11px; }
+    .stat-chip strong { color:var(--orange); font-size:15px; display:block; line-height:1.2; }
+    .stat-chip span { color:var(--text-muted); font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; }
+
+    /* JSON viewer */
+    .json-viewer {
+      background:#0a0a0f; border:1px solid var(--border); border-radius:8px;
+      padding:14px 16px; font-family:'JetBrains Mono',Consolas,monospace;
+      font-size:11px; line-height:1.7; max-height:560px; overflow:auto;
+      scrollbar-width:thin; scrollbar-color:rgba(242,100,25,.2) transparent;
+      white-space:pre-wrap; word-break:break-word;
+    }
+    .json-viewer::-webkit-scrollbar { width:5px; }
+    .json-viewer::-webkit-scrollbar-thumb { background:rgba(242,100,25,.2); }
+
+    /* JSON syntax highlighting */
+    .jk  { color:#60a5fa; }   /* key */
+    .js  { color:#4ade80; }   /* string value */
+    .jn  { color:#fb923c; }   /* number */
+    .jb  { color:#c084fc; }   /* boolean */
+    .jl  { color:#94a3b8; }   /* null */
+    .jp  { color:#64748b; }   /* punctuation */
+
+    /* Table view */
+    .json-table { width:100%; border-collapse:collapse; font-size:11px; }
+    .json-table th { text-align:left; padding:6px 10px; border-bottom:2px solid var(--border); color:var(--text-muted); font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; background:var(--bg-input); position:sticky; top:0; }
+    .json-table td { padding:6px 10px; border-bottom:1px solid rgba(255,255,255,.04); color:var(--text); vertical-align:top; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'JetBrains Mono',Consolas,monospace; font-size:10.5px; }
+    .json-table tr:hover td { background:rgba(242,100,25,.04); }
+    .json-table .jn { color:#fb923c; } .json-table .js { color:#4ade80; }
+    .json-table .jb { color:#c084fc; } .json-table .jl { color:#94a3b8; }
+
+    /* Empty / placeholder */
+    .insp-empty { text-align:center; padding:60px 20px; color:var(--text-muted); }
+    .insp-empty .icon { font-size:40px; margin-bottom:12px; opacity:.4; }
+    .loading-spin { display:inline-block; width:16px; height:16px; border:2px solid rgba(242,100,25,.2); border-top-color:var(--orange); border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* View toggle */
+    .view-toggle { display:flex; gap:4px; }
+    .vtab { padding:4px 10px; border-radius:6px; font-size:10px; font-weight:700; cursor:pointer; border:1.5px solid var(--border); color:var(--text-muted); }
+    .vtab.active { border-color:var(--orange); color:var(--orange); background:rgba(242,100,25,.08); }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="archive"></i> Data Inspector</div>
+        <div class="page-sub">Browse ไฟล์ JSON ใน /data/ แบบ real-time — เฉพาะ Dev SM</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="d-btn" onclick="refreshFileList()" id="btn-refresh-list">↻ Refresh</button>
+      </div>
+    </header>
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="archive"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Dev Tools</div>
+          <h1>Data Inspector</h1>
+          <p>Browse ไฟล์ JSON ใน <code>/data/</code> แบบ real-time — เฉพาะ Dev SM · ห้ามแก้ไขจากที่นี่</p>
+        </div>
+      </section>
+
+      <div class="layout-split">
+        <!-- Left: file list -->
+        <div class="file-panel">
+          <div class="file-panel-hd">
+            <div class="file-panel-title"><i data-icon="folder"></i> Data Files</div>
+            <div class="file-panel-sub" id="file-count">Loading…</div>
+          </div>
+          <div class="file-search">
+            <input type="text" id="file-search" placeholder="🔍 ค้นหาไฟล์…" oninput="filterFiles(this.value)">
+          </div>
+          <div class="file-list" id="file-list">
+            <div style="padding:16px;color:var(--text-muted);font-size:11px"><span class="loading-spin"></span>Loading…</div>
+          </div>
+        </div>
+
+        <!-- Right: inspector -->
+        <div class="insp-panel">
+          <div class="insp-hd">
+            <div class="insp-title" id="insp-title">เลือกไฟล์จากรายการซ้าย</div>
+            <div class="insp-meta" id="insp-meta" style="display:none">
+              <span><strong id="insp-count">–</strong> records</span>
+              <span><strong id="insp-size">–</strong></span>
+              <span id="insp-trunc" class="trunc-badge" style="display:none"><i data-icon="alert-triangle"></i> แสดง 200 records แรก</span>
+            </div>
+          </div>
+          <div class="insp-toolbar" id="insp-toolbar" style="display:none">
+            <div class="view-toggle">
+              <div class="vtab active" onclick="setView('table')" id="vtab-table">Table</div>
+              <div class="vtab" onclick="setView('json')" id="vtab-json">JSON</div>
+            </div>
+            <div class="insp-search">
+              <input type="text" id="insp-search" placeholder="🔍 Filter records…" oninput="filterRecords(this.value)">
+            </div>
+            <button class="d-btn" onclick="copyRawJson()">Copy JSON</button>
+            <button class="d-btn" onclick="downloadJson()"><i data-icon="arrow-down"></i> Download</button>
+          </div>
+          <div class="insp-body" id="insp-body">
+            <div class="insp-empty">
+              <div class="icon"><i data-icon="archive"></i></div>
+              <div>เลือกไฟล์จากรายการซ้ายเพื่อดูข้อมูล</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAuth()) { /* redirected */ }
+const _u = Auth.getUser?.();
+if (_u && _u.role !== 'dev_sm') window.location.replace('./index.html');
+Layout.render('dev-data');
+
+// ── State ──────────────────────────────────────────────
+let _allFiles   = [];
+let _activeFile = null;
+let _rawData    = null;
+let _filteredData = null;
+let _view       = 'table';
+let _truncated  = false;
+
+// ── Helpers ────────────────────────────────────────────
+function fmtBytes(b) {
+  if (b < 1024)    return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(2) + ' MB';
+}
+function relTime(ts) {
+  const diff = Math.floor((Date.now()/1000) - ts);
+  if (diff < 60)   return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400)return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+
+// ── File list ──────────────────────────────────────────
+async function refreshFileList() {
+  document.getElementById('file-list').innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:11px"><span class="loading-spin"></span>Loading…</div>';
+  const res = await API.dev.stats();
+  if (!res?.ok) {
+    document.getElementById('file-list').innerHTML = '<div style="padding:16px;color:#f87171;font-size:11px">Failed to load file list</div>';
+    return;
+  }
+  _allFiles = res.data.data?.data_files || [];
+  document.getElementById('file-count').textContent = `${_allFiles.length} files · ${fmtBytes(_allFiles.reduce((s,f)=>s+f.size,0))} total`;
+  renderFileList(_allFiles);
+}
+
+function renderFileList(files) {
+  if (!files.length) {
+    document.getElementById('file-list').innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:11px">ไม่พบไฟล์</div>';
+    return;
+  }
+  document.getElementById('file-list').innerHTML = files.map(f =>
+    `<div class="file-item${_activeFile===f.name?' active':''}" onclick="openFile('${escHtml(f.name)}')" id="fi-${f.name.replace('.','_')}">
+      <div class="file-item-name">${escHtml(f.name)}</div>
+      <div class="file-item-meta">
+        <span>${fmtBytes(f.size)}</span>
+        <span>${relTime(f.mtime)}</span>
+      </div>
+    </div>`
+  ).join('');
+}
+
+function filterFiles(q) {
+  const q2 = q.toLowerCase();
+  renderFileList(_allFiles.filter(f => f.name.toLowerCase().includes(q2)));
+}
+
+// ── Open file ──────────────────────────────────────────
+async function openFile(name) {
+  _activeFile = name;
+  // Update active state in list
+  document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
+  const fi = document.getElementById('fi-' + name.replace('.','_'));
+  if (fi) fi.classList.add('active');
+
+  document.getElementById('insp-title').textContent = name;
+  document.getElementById('insp-body').innerHTML = '<div style="padding:20px;color:var(--text-muted);font-size:11px"><span class="loading-spin"></span>Loading ' + escHtml(name) + '…</div>';
+  document.getElementById('insp-toolbar').style.display = 'none';
+  document.getElementById('insp-meta').style.display = 'none';
+  document.getElementById('insp-search').value = '';
+
+  const res = await API.dev.readFile(name);
+  if (!res?.ok) {
+    document.getElementById('insp-body').innerHTML = `<div class="insp-empty"><div class="icon"><i data-icon="alert-triangle"></i></div><div>${escHtml(res?.data?.message || 'Error loading file')}</div></div>`;
+    return;
+  }
+
+  const d = res.data.data;
+  _rawData      = d.data;
+  _filteredData = _rawData;
+  _truncated    = d.truncated;
+
+  // Meta
+  const meta = d.meta;
+  document.getElementById('insp-count').textContent = meta.count != null ? meta.count : (d.is_map ? 'map' : '?');
+  document.getElementById('insp-size').textContent  = fmtBytes(meta.size);
+  document.getElementById('insp-trunc').style.display = _truncated ? 'inline' : 'none';
+  document.getElementById('insp-meta').style.display = 'flex';
+  document.getElementById('insp-toolbar').style.display = 'flex';
+
+  renderInspector();
+}
+
+// ── Render inspector ───────────────────────────────────
+function renderInspector() {
+  const body = document.getElementById('insp-body');
+  if (_rawData == null) return;
+
+  if (_view === 'json') {
+    body.innerHTML = `<div class="json-viewer">${syntaxHighlight(JSON.stringify(_filteredData, null, 2))}</div>`;
+    return;
+  }
+
+  // Table view
+  if (Array.isArray(_filteredData) && _filteredData.length > 0 && typeof _filteredData[0] === 'object') {
+    const cols = [...new Set(_filteredData.flatMap(r => Object.keys(r || {})))].slice(0, 12);
+    const rows = _filteredData.map(r => {
+      const cells = cols.map(c => {
+        const v = r?.[c];
+        const cls = v === null ? 'jl' : typeof v === 'boolean' ? 'jb' : typeof v === 'number' ? 'jn' : typeof v === 'object' ? '' : 'js';
+        const display = v === null ? 'null' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+        const safe = escHtml(display.slice(0, 120)) + (display.length > 120 ? '…' : '');
+        return `<td class="${cls}" title="${escHtml(display)}">${safe}</td>`;
+      }).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+    body.innerHTML = `<div style="overflow:auto;max-height:560px"><table class="json-table"><thead><tr>${cols.map(c=>`<th>${escHtml(c)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;
+    return;
+  }
+
+  // For non-array or non-object-array, show JSON
+  body.innerHTML = `<div class="json-viewer">${syntaxHighlight(JSON.stringify(_filteredData, null, 2))}</div>`;
+}
+
+function setView(v) {
+  _view = v;
+  document.getElementById('vtab-table').classList.toggle('active', v === 'table');
+  document.getElementById('vtab-json').classList.toggle('active',  v === 'json');
+  renderInspector();
+}
+
+function filterRecords(q) {
+  if (!q.trim()) { _filteredData = _rawData; renderInspector(); return; }
+  const ql = q.toLowerCase();
+  if (Array.isArray(_rawData)) {
+    _filteredData = _rawData.filter(r => JSON.stringify(r).toLowerCase().includes(ql));
+  } else {
+    _filteredData = _rawData;
+  }
+  renderInspector();
+}
+
+// ── JSON syntax highlighting ───────────────────────────
+function syntaxHighlight(json) {
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+\.?\d*([eE][+-]?\d+)?)/g, match => {
+    if (/^"/.test(match)) {
+      if (/:$/.test(match)) return `<span class="jk">${escHtml(match)}</span>`;
+      return `<span class="js">${escHtml(match)}</span>`;
+    }
+    if (/true|false/.test(match)) return `<span class="jb">${match}</span>`;
+    if (/null/.test(match))       return `<span class="jl">${match}</span>`;
+    return `<span class="jn">${match}</span>`;
+  });
+}
+
+// ── Actions ────────────────────────────────────────────
+function copyRawJson() {
+  if (_rawData == null) return;
+  navigator.clipboard?.writeText(JSON.stringify(_rawData, null, 2))
+    .then(() => Toast.success('Copied JSON to clipboard'));
+}
+
+function downloadJson() {
+  if (_rawData == null || !_activeFile) return;
+  const blob = new Blob([JSON.stringify(_rawData, null, 2)], { type: 'application/json' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = _activeFile;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── Init ───────────────────────────────────────────────
+refreshFileList();
+</script>
+</body>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch Monitor — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/batch-monitor/batch-monitor.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">⊞ Batch Monitor</div>
+        <div class="page-sub">
+          Jenkins live job status — via API proxy
+          <a href="batch-monitor-v2.html" class="v2-try-link" title="Try the new Pipeline Chain view (beta)"><i data-icon="test-tube"></i> Try new Pipeline Chain view</a>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="refresh-bar">
+          <span class="last-refresh" id="last-refresh">—</span>
+          <a href="pipeline-flow.html" class="btn btn-ghost" style="font-size:11px; text-decoration:none" title="ดู Pipeline Flow ทั้งหมด (NANO / TMN / WEALTH)"><i data-icon="git-branch"></i> Pipeline Flow</a>
+          <button class="btn btn-ghost" data-action="write" onclick="openBatchRecords()" style="font-size:11px"><i data-icon="bar-chart"></i> Batch Records</button>
+          <button class="btn btn-ghost" data-action="write" onclick="openBatchReport()" style="font-size:11px"><i data-icon="clipboard"></i> Batch Report</button>
+          <button class="btn btn-ghost" onclick="refreshCurrent()" style="font-size:11px">↺ Refresh</button>
+          <div class="auto-toggle on" id="auto-toggle" onclick="toggleAuto()" title="Auto-refresh every 60s">
+            <div class="auto-toggle-dot"></div>
+            <span style="font-size:11px">Auto</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- Server tabs -->
+      <div class="srv-tabs" id="srv-tabs">
+        <div class="loading-state" style="padding:8px 0"><div class="spinner"></div></div>
+      </div>
+
+      <!-- Control row -->
+      <div class="control-row" id="control-row" style="display:none">
+        <div class="summary-chips">
+          <div class="chip s-failure"><strong id="cnt-fail">0</strong> Failed</div>
+          <span class="chip-sep">·</span>
+          <div class="chip s-running"><strong id="cnt-run">0</strong> Running</div>
+          <span class="chip-sep">·</span>
+          <div class="chip s-success"><strong id="cnt-ok">0</strong> OK</div>
+          <span class="chip-sep">·</span>
+          <div class="chip s-aborted"><strong id="cnt-aborted">0</strong> Aborted</div>
+          <span class="chip-sep">·</span>
+          <div class="chip"><strong id="cnt-other">0</strong> Other</div>
+        </div>
+        <input class="filter-input" type="text" id="search-input" placeholder="Search jobs…" oninput="applyFilter()">
+        <select class="filter-select" id="status-filter" onchange="applyFilter()">
+          <option value="">All</option>
+          <option value="failure">Failed</option>
+          <option value="success">Success</option>
+          <option value="running">Running</option>
+          <option value="unstable">Unstable</option>
+          <option value="aborted">Aborted</option>
+          <option value="notbuilt">Not Built</option>
+          <option value="disabled">Disabled</option>
+        </select>
+        <button type="button" class="filter-select time-btn" id="time-filter-btn" onclick="toggleTimeFilterPanel(event)" title="กรองตามช่วงเวลาที่ start">⏱ Time</button>
+        <button type="button" class="filter-select" id="export-filtered-btn" onclick="exportFilteredJobs()" title="Export jobs ที่กรองอยู่เป็น CSV"><i data-icon="arrow-down"></i> Export</button>
+        <span class="vis-count" id="visible-count"></span>
+      </div>
+
+      <!-- Time filter popover -->
+      <div id="time-filter-panel">
+        <div class="tf-title">⏱ Filter by start time</div>
+        <div class="tf-row">
+          <label for="tf-date">วันที่</label>
+          <input type="date" id="tf-date">
+        </div>
+        <div class="tf-row">
+          <label for="tf-start">Start</label>
+          <input type="time" id="tf-start" value="01:00" onchange="updateCrossMidnightHint()">
+        </div>
+        <div class="tf-row">
+          <label for="tf-end">End</label>
+          <input type="time" id="tf-end" value="03:00" onchange="updateCrossMidnightHint()">
+        </div>
+        <div class="tf-cross-hint" id="tf-cross-hint"><i data-icon="alert-triangle"></i> ข้ามคืน — end < start ถือว่าจบวันถัดไป</div>
+        <label class="tf-check">
+          <input type="checkbox" id="tf-overlap">
+          <span>
+            <span>Include jobs still running from earlier</span>
+            <span class="tf-check-sub">รวม job ที่ start ก่อนช่วงแต่ยังรันอยู่ตอนช่วงเริ่ม</span>
+          </span>
+        </label>
+        <div class="tf-btns">
+          <button type="button" class="tf-btn" onclick="clearTimeFilter()">Clear</button>
+          <button type="button" class="tf-btn primary" onclick="applyTimeFilter()">Apply</button>
+        </div>
+      </div>
+
+      <!-- Back + breadcrumb -->
+      <div id="nav-strip" style="display:none">
+        <div class="nav-strip">
+          <button class="back-btn" onclick="goBack()">← Back</button>
+          <div class="bc-trail" id="bc-trail"></div>
+        </div>
+      </div>
+
+      <!-- Jobs -->
+      <div id="jobs-container">
+        <div class="server-loading">เลือก server ด้านบนเพื่อโหลด jobs</div>
+      </div>
+
+      <!-- Footer -->
+      <div style="margin-top:14px; font-size:11px; color:var(--text-muted); line-height:2;">
+        คลิก job card เพื่อดูรายละเอียด &nbsp;·&nbsp;
+        <a href="./jira-templates.html" style="color:var(--orange)">Jira Templates</a> &nbsp;·&nbsp;
+        <a href="./board.html" style="color:var(--orange)">Web Board</a>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ══ Batch Records Panel ══ -->
+<div class="brec-overlay" id="brec-overlay" onclick="brecBackdropClose(event)">
+  <div class="brec-panel" id="brec-panel">
+    <div class="brec-resize-handle" id="brec-resize-handle"></div>
+    <div class="brec-hd">
+      <span class="brec-title"><i data-icon="bar-chart"></i> Batch Daily Records</span>
+      <button class="brec-close" onclick="closeBatchRecords()"><i data-icon="x"></i></button>
+    </div>
+    <div class="brec-toolbar">
+      <select id="brec-month-sel" class="btn btn-ghost" style="font-size:11px;cursor:pointer;padding-right:6px" onchange="brecMonthChange(this.value)"><option>กำลังโหลด…</option></select>
+      <button class="btn btn-ghost" onclick="brecLoad()" style="font-size:11px">↺ Refresh</button>
+      <button class="btn btn-ghost" onclick="brecExportCSV()" style="font-size:11px"><i data-icon="arrow-down"></i> Export CSV</button>
+      <button class="btn btn-danger" id="brec-clear-btn" onclick="brecClearAll()" style="font-size:11px;display:none"><i data-icon="trash"></i> Clear All</button>
+      <span style="flex:1"></span>
+      <span id="brec-count" style="font-size:10px;color:var(--text-muted)"></span>
+    </div>
+    <div class="brec-tabs">
+      <button class="brec-tab-btn active" id="brec-tab-records"  onclick="brecSwitchView('records')"><i data-icon="clipboard"></i> Records</button>
+      <button class="brec-tab-btn"        id="brec-tab-coverage" onclick="brecSwitchView('coverage')"><i data-icon="calendar"></i> Coverage <span id="brec-tab-miss-badge" class="brec-tab-badge" style="display:none">0</span></button>
+    </div>
+
+    <!-- Records view -->
+    <div class="brec-view active" id="brec-view-records">
+      <div class="brec-hint">คลิกเซลล์วันที่หรือผู้รายงานเพื่อแก้ไข · คลิก Status pill เพื่อเปลี่ยน · <i data-icon="trash"></i> ลบรายการ</div>
+      <div class="brec-body">
+        <table class="brec-tbl">
+          <thead>
+            <tr>
+              <th style="width:28px"></th>
+              <th>วันที่/เวลา</th>
+              <th>Server</th>
+              <th>ผู้รายงาน</th>
+              <th>Jobs</th>
+              <th>สรุป</th>
+              <th>Edited</th>
+              <th style="width:44px"></th>
+            </tr>
+          </thead>
+          <tbody id="brec-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Coverage view -->
+    <div class="brec-view" id="brec-view-coverage">
+      <div class="cov-summary" id="cov-summary"></div>
+      <div class="cov-filters">
+        <label><input type="checkbox" id="cov-only-missing" onchange="covRender()"> เฉพาะวันที่ขาด/ไม่ครบ</label>
+        <label><input type="checkbox" id="cov-hide-weekend" onchange="covRender()"> ซ่อนเสาร์-อาทิตย์</label>
+        <label><input type="checkbox" id="cov-hide-holiday" onchange="covRender()"> ซ่อนวันหยุด</label>
+        <label><input type="checkbox" id="cov-hide-future" checked onchange="covRender()"> ซ่อนวันที่ยังไม่ถึง</label>
+      </div>
+      <div class="brec-body">
+        <div class="cov-list" id="cov-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Batch Ticket Modal ══ -->
+<div class="modal-overlay" id="bt-modal">
+  <div class="bt-modal">
+    <div class="bt-header">
+      <span class="bt-title"><i data-icon="ticket"></i> สร้าง Jira Ticket — Batch Fail</span>
+      <button class="detail-close" onclick="closeBatchTicketModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="bt-body">
+      <div class="bt-form-group">
+        <label class="bt-label">Summary <span>*</span></label>
+        <input id="bt-summary" class="bt-input" type="text" placeholder="Job name + Fail + วันที่">
+      </div>
+      <div class="bt-form-group">
+        <label class="bt-label">Work Type <span>*</span></label>
+        <select id="bt-worktype" class="bt-select">
+          <option value="">— กำลังโหลด... —</option>
+        </select>
+      </div>
+      <div class="bt-form-group">
+        <label class="bt-label">Fault Start (Date &amp; Time) <span>*</span></label>
+        <input id="bt-fault-start" class="bt-input" type="datetime-local">
+      </div>
+      <div class="bt-form-group">
+        <label class="bt-label">SM Priority <span>*</span></label>
+        <select id="bt-priority" class="bt-select">
+          <option value="">— กำลังโหลด... —</option>
+        </select>
+      </div>
+      <div class="bt-form-group">
+        <label class="bt-label">Batch Issue <span>*</span></label>
+        <select id="bt-issue" class="bt-select">
+          <option value="">— กำลังโหลด... —</option>
+        </select>
+      </div>
+      <div class="bt-form-group">
+        <label class="bt-label">Batch File Type <span>*</span></label>
+        <select id="bt-filetype" class="bt-select" onchange="onBatchFileTypeChange()">
+          <option value="">— กำลังโหลด... —</option>
+        </select>
+      </div>
+      <div class="bt-sub-group" id="bt-subtype-group">
+        <label class="bt-label">Sub Type <span>*</span></label>
+        <select id="bt-subtype" class="bt-select">
+          <option value="">— เลือก Sub Type —</option>
+        </select>
+      </div>
+    </div>
+    <div class="bt-footer">
+      <button class="btn btn-ghost" onclick="closeBatchTicketModal()">Cancel</button>
+      <button class="btn btn-primary" id="bt-create-btn" onclick="createBatchTicket()">
+        <span id="bt-create-text"><i data-icon="zap"></i> Create Ticket</span>
+        <span id="bt-create-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Batch Ticket Success Modal ══ -->
+<div class="modal-overlay" id="bt-success-modal">
+  <div class="batch-ok-modal">
+    <div class="batch-ok-ring"><i data-icon="check-circle"></i></div>
+    <div style="font-size:16px;font-weight:700;color:var(--text)">Ticket สร้างแล้ว!</div>
+    <div id="bt-ticket-key" style="font-size:13px;color:var(--text-muted)"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <a id="bt-ticket-link" href="#" target="_blank" class="btn btn-primary" style="font-size:12px">เปิดใน Jira ↗</a>
+      <button class="btn btn-ghost" style="font-size:12px" onclick="document.getElementById('bt-success-modal').classList.remove('open')">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Meta Change History Modal ══ -->
+<div class="mh-overlay" id="mh-modal" onclick="if(event.target===this)closeMetaHistory()">
+  <div class="mh-panel">
+    <div class="mh-header">
+      <i data-icon="clock" style="color:var(--text-muted)"></i>
+      <div style="flex:1;overflow:hidden">
+        <div class="mh-sub">Change History</div>
+        <div class="mh-title" id="mh-modal-title">—</div>
+      </div>
+      <button class="mh-close" onclick="closeMetaHistory()" aria-label="Close"><i data-icon="x"></i></button>
+    </div>
+    <div class="mh-body" id="mh-modal-body"></div>
+  </div>
+</div>
+
+<!-- ══ Batch Report Panel ══ -->
+<div class="batch-report-overlay" id="brp-overlay" onclick="brpBackdropClose(event)">
+  <div class="batch-report-panel">
+    <div class="brp-hd">
+      <span class="brp-title"><i data-icon="clipboard"></i> Batch Daily Report</span>
+      <span id="brp-datetime" style="font-size:11px;color:var(--text-muted)"></span>
+      <button class="brp-close" onclick="closeBatchReport()"><i data-icon="x"></i></button>
+    </div>
+    <div class="brp-server-tabs" id="brp-server-tabs"></div>
+    <div class="brp-body" id="brp-body">
+      <div class="server-loading"><div class="spinner" style="display:inline-block;margin-right:8px"></div>กำลังโหลด jobs…</div>
+    </div>
+    <div class="brp-foot">
+      <span class="brp-foot-meta" id="brp-reporter"></span>
+      <button class="brp-submit-btn" id="brp-submit-btn" onclick="submitBatchReport()">
+        <span id="brp-submit-icon"><i data-icon="check-circle"></i></span>
+        <span id="brp-submit-text">Submit Batch Report</span>
+      </button>
+    </div>
+  </div><!-- end .batch-report-panel -->
+</div><!-- end .batch-report-overlay -->
+
+<!-- ══ Build with Parameters Modal ══ -->
+<div class="modal-overlay" id="bwp-modal">
+  <div class="detail-modal" style="width:520px">
+    <div class="detail-header">
+      <div class="detail-header-left">
+        <div class="detail-job-name" id="bwp-job-name">—</div>
+        <div class="detail-job-meta" style="margin-top:3px;font-size:11px;color:var(--text-muted)">Build with Parameters</div>
+      </div>
+      <button class="detail-close" onclick="closeBwpModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="detail-body" id="bwp-body" style="gap:12px;max-height:65vh;overflow-y:auto"></div>
+    <div class="detail-footer">
+      <button class="btn btn-ghost" onclick="closeBwpModal()">Cancel</button>
+      <button class="build-now-btn" id="bwp-submit-btn" data-action="write" onclick="submitBuildWithParams()"><i data-icon="play"></i> Build</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Job Detail Modal ══ -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="detail-modal">
+    <div class="detail-header">
+      <div class="detail-hero-ring" id="d-ring">
+        <div class="detail-hero-ring-inner">
+          <div class="detail-hero-ring-pct" id="d-ring-pct">—</div>
+          <div class="detail-hero-ring-lbl" id="d-ring-lbl">HEALTH</div>
+        </div>
+      </div>
+      <div class="detail-header-left">
+        <div class="detail-job-meta" id="d-meta"></div>
+        <div class="detail-job-name" id="d-name">—</div>
+        <div class="detail-hero-spark" id="d-hero-spark"></div>
+        <div class="detail-hero-stats" id="d-hero-stats"></div>
+      </div>
+      <button class="detail-close" onclick="closeDetail()"><i data-icon="x"></i></button>
+    </div>
+    <div class="detail-body">
+
+      <!-- Meta chips (Category · Owner · SM · Manual) -->
+      <div class="detail-meta-strip" id="d-meta-strip"></div>
+
+      <!-- Info cards from batch_meta (Category / Parameter / Note) -->
+      <div class="detail-info-cards" id="d-info-cards"></div>
+      <!-- Inline edit form — SM Team only, shown via enterMetaEditMode() -->
+      <div id="d-meta-edit" style="display:none" class="me-edit-box"></div>
+
+      <!-- Upstream / Downstream -->
+      <div>
+        <div class="detail-section-title">Dependencies</div>
+        <div class="dep-section" id="d-deps">
+          <div class="dep-box">
+            <div class="dep-box-title"><span style="color:#7c3aed"><i data-icon="arrow-up"></i></span> Triggered by</div>
+            <div id="d-upstream"><span class="dep-loading">Loading…</span></div>
+          </div>
+          <div class="dep-box">
+            <div class="dep-box-title"><span style="color:#0891b2"><i data-icon="arrow-down"></i></span> Triggers</div>
+            <div id="d-downstream"><span class="dep-loading">Loading…</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Build history -->
+      <div class="builds-section">
+        <div class="detail-section-title">
+          <span>Recent Builds</span>
+          <span class="sub" id="d-next-build"></span>
+        </div>
+        <div id="d-builds"><div class="builds-loading"><div class="spinner" style="display:inline-block;margin-right:6px"></div>Loading…</div></div>
+      </div>
+
+    </div>
+    <div class="detail-footer">
+      <a id="d-open-link" href="#" target="_blank" rel="noopener" class="open-jenkins-link">↗ Open in Jenkins</a>
+      <button class="build-now-btn" id="d-build-btn" data-action="write" onclick="triggerBuild()"><i data-icon="play"></i> Build Now</button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/analytics.js"></script>
+<script src="./assets/js/analytics-features.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script src="./assets/pages/batch-monitor/batch-monitor.js"></script>
+</body>
+</html>

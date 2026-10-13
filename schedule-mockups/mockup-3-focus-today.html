@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup 3 — Focus Today (Schedule)</title>
+<link rel="stylesheet" href="../assets/css/dark.css">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/ui-themes.css">
+<script src="../assets/js/theme.js"></script>
+<style>
+  :root {
+    --ft-hot:#ef4444; --ft-warn:#f59e0b; --ft-ok:#22c55e;
+    --ft-cool:#3b82f6; --ft-violet:#8b5cf6; --ft-orange:#f26419; --ft-amber:#f59e0b;
+    --ft-text-soft: color-mix(in srgb, var(--text-muted) 70%, transparent);
+    --ft-bg-subtle: color-mix(in srgb, var(--border) 40%, transparent);
+  }
+
+  .page-wrap { padding:20px 24px; max-width:1400px; margin:0 auto; }
+  .mockup-banner {
+    background:linear-gradient(90deg, color-mix(in srgb, var(--ft-ok) 12%, var(--bg-card)), var(--bg-card));
+    border:1px solid var(--border); border-radius:12px; padding:10px 16px; font-size:12px;
+    color:var(--text-muted); margin-bottom:14px; display:flex; align-items:center; gap:10px;
+  }
+  .mockup-banner strong { color:var(--text); }
+
+  .ft-top {
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .ft-title { font-size:22px; font-weight:700; letter-spacing:-.02em; color:var(--text); }
+  .ft-nav { display:flex; align-items:center; gap:8px; }
+  .ft-nav-btn {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:8px;
+    padding:7px 12px; font-size:12px; font-weight:600; color:var(--text); cursor:pointer;
+  }
+  .ft-nav-btn:hover { border-color:var(--ft-orange); color:var(--ft-orange); }
+  .ft-nav-btn.primary { background:var(--ft-orange); color:#fff; border-color:var(--ft-orange); }
+  .ft-nav-btn.primary:hover { color:#fff; }
+
+  /* Hero grid: today card + mini calendar */
+  .ft-hero-grid {
+    display:grid; grid-template-columns:1fr 320px; gap:14px; margin-bottom:14px;
+  }
+  @media (max-width:960px) { .ft-hero-grid { grid-template-columns:1fr; } }
+
+  .ft-today-card {
+    background:linear-gradient(135deg,
+      color-mix(in srgb, var(--ft-orange) 10%, var(--bg-card)) 0%,
+      var(--bg-card) 60%);
+    border:1px solid var(--border); border-radius:16px; padding:22px;
+    position:relative; overflow:hidden;
+  }
+  .ft-today-card::before {
+    content:''; position:absolute; top:0; right:0; width:200px; height:200px;
+    background:radial-gradient(circle at top right, color-mix(in srgb, var(--ft-orange) 18%, transparent), transparent 70%);
+    pointer-events:none;
+  }
+  .ft-today-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 10px; border-radius:20px; background:color-mix(in srgb, var(--ft-ok) 15%, transparent); color:var(--ft-ok);
+    font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em;
+    margin-bottom:8px;
+  }
+  .ft-today-badge .live-dot {
+    width:6px; height:6px; border-radius:50%; background:currentColor;
+    animation:ftBlink 1.4s ease-in-out infinite;
+  }
+  @keyframes ftBlink { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .ft-today-date {
+    font-size:24px; font-weight:800; letter-spacing:-.02em; color:var(--text); margin-bottom:2px;
+  }
+  .ft-today-sub { font-size:12.5px; color:var(--ft-text-soft); margin-bottom:20px; }
+
+  .ft-shift-list { display:flex; flex-direction:column; gap:12px; }
+  .ft-shift {
+    display:grid; grid-template-columns:auto 1fr auto; gap:14px; align-items:center;
+    padding:12px 16px; border-radius:12px;
+    background:var(--bg-card); border:1px solid var(--border);
+    transition:all .15s;
+  }
+  .ft-shift:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.06); }
+  .ft-shift.you { border-color:var(--ft-orange); background:color-mix(in srgb, var(--ft-orange) 4%, var(--bg-card)); }
+  .ft-shift-dot {
+    width:12px; height:12px; border-radius:50%; box-shadow:0 0 0 3px currentColor;
+    opacity:.85;
+  }
+  .ft-shift-dot.s1 { color:color-mix(in srgb, var(--ft-orange) 25%, transparent); background:var(--ft-orange); }
+  .ft-shift-dot.oc { color:color-mix(in srgb, var(--ft-amber) 25%, transparent); background:var(--ft-amber); }
+  .ft-shift-dot.s2 { color:color-mix(in srgb, var(--ft-violet) 25%, transparent); background:var(--ft-violet); }
+  .ft-shift-info { min-width:0; }
+  .ft-shift-lbl { font-size:11px; color:var(--ft-text-soft); text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+  .ft-shift-name {
+    font-size:15px; font-weight:700; color:var(--text); margin-top:2px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .ft-shift-name .av {
+    width:26px; height:26px; border-radius:8px; color:#fff; font-weight:800; font-size:10px;
+    display:grid; place-items:center; letter-spacing:-.02em;
+  }
+  .ft-shift-name .you-star {
+    background:color-mix(in srgb, var(--ft-orange) 18%, transparent); color:var(--ft-orange);
+    padding:2px 8px; border-radius:20px; font-size:10px; font-weight:800; letter-spacing:.03em;
+  }
+  .ft-shift-time { font-size:12px; color:var(--ft-text-soft); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; text-align:right; }
+
+  .ft-next {
+    margin-top:16px; padding:12px 14px;
+    background:color-mix(in srgb, var(--ft-cool) 8%, transparent);
+    border:1px dashed color-mix(in srgb, var(--ft-cool) 50%, transparent);
+    border-radius:10px; font-size:12px; color:var(--text);
+    display:flex; align-items:center; gap:10px;
+  }
+  .ft-next-ico {
+    width:28px; height:28px; border-radius:8px; background:color-mix(in srgb, var(--ft-cool) 15%, transparent);
+    color:var(--ft-cool); display:grid; place-items:center;
+  }
+  .ft-next b { color:var(--text); }
+
+  /* Mini calendar */
+  .ft-mini {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
+    padding:16px; display:flex; flex-direction:column;
+  }
+  .ft-mini-hd {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .ft-mini-title { font-size:13px; font-weight:700; color:var(--text); }
+  .ft-mini-nav { display:flex; gap:4px; }
+  .ft-mini-nav button {
+    width:22px; height:22px; border-radius:6px; background:transparent; border:1px solid var(--border);
+    cursor:pointer; color:var(--ft-text-soft); font-size:12px;
+  }
+  .ft-mini-nav button:hover { background:var(--ft-orange); color:#fff; border-color:var(--ft-orange); }
+
+  .ft-mini-grid { display:grid; grid-template-columns:repeat(7, 1fr); gap:3px; }
+  .ft-mini-dow {
+    text-align:center; font-size:9.5px; font-weight:700; color:var(--ft-text-soft);
+    text-transform:uppercase; padding:3px 0;
+  }
+  .ft-mini-day {
+    aspect-ratio:1; display:grid; place-items:center;
+    font-size:11.5px; color:var(--text); border-radius:8px; cursor:pointer;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    position:relative;
+  }
+  .ft-mini-day.other { color:var(--ft-text-soft); opacity:.4; }
+  .ft-mini-day.weekend { color:var(--ft-cool); }
+  .ft-mini-day.today { background:var(--ft-orange); color:#fff; font-weight:800; }
+  .ft-mini-day.holiday { color:var(--ft-hot); font-weight:700; }
+  .ft-mini-day.my-day::after {
+    content:''; position:absolute; bottom:3px; left:50%; transform:translateX(-50%);
+    width:4px; height:4px; border-radius:50%; background:var(--ft-orange);
+  }
+  .ft-mini-day.today.my-day::after { background:#fff; }
+  .ft-mini-day:hover:not(.today) { background:var(--ft-bg-subtle); }
+
+  .ft-mini-legend {
+    display:flex; gap:12px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border);
+    font-size:10.5px; color:var(--ft-text-soft);
+  }
+  .ft-mini-legend > div { display:flex; align-items:center; gap:5px; }
+  .ft-mini-legend .dot { width:6px; height:6px; border-radius:50%; background:var(--ft-orange); }
+
+  /* Upcoming list */
+  .ft-upcoming-card {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
+    overflow:hidden; margin-bottom:14px;
+  }
+  .ft-upcoming-hd {
+    padding:14px 20px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .ft-upcoming-hd .t { font-size:14px; font-weight:700; color:var(--text); }
+  .ft-upcoming-hd .sub { font-size:11.5px; color:var(--ft-text-soft); }
+
+  .ft-upcoming-list { display:flex; flex-direction:column; }
+  .ft-upcoming-day {
+    display:grid; grid-template-columns:70px 1fr; gap:16px; padding:14px 20px;
+    border-bottom:1px solid var(--border);
+    align-items:start;
+  }
+  .ft-upcoming-day:last-child { border-bottom:none; }
+  .ft-upcoming-day.today { background:color-mix(in srgb, var(--ft-orange) 4%, transparent); }
+  .ft-day-badge {
+    text-align:center; padding:6px; border-radius:10px;
+    background:var(--ft-bg-subtle); font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  .ft-day-badge .dow { font-size:9.5px; font-weight:700; text-transform:uppercase; color:var(--ft-text-soft); }
+  .ft-day-badge .num { font-size:20px; font-weight:800; color:var(--text); line-height:1.05; }
+  .ft-upcoming-day.today .ft-day-badge { background:var(--ft-orange); }
+  .ft-upcoming-day.today .ft-day-badge .dow,
+  .ft-upcoming-day.today .ft-day-badge .num { color:#fff; }
+
+  .ft-day-slots { display:flex; flex-direction:column; gap:6px; }
+  .ft-slot-line {
+    display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text);
+  }
+  .ft-slot-line .badge {
+    padding:1px 7px; border-radius:5px; font-size:10px; font-weight:700; color:#fff;
+    letter-spacing:.02em; flex:none;
+  }
+  .ft-slot-line .badge.s1 { background:var(--ft-orange); }
+  .ft-slot-line .badge.oc { background:var(--ft-amber); }
+  .ft-slot-line .badge.s2 { background:var(--ft-violet); }
+  .ft-slot-line .who { font-weight:600; }
+  .ft-slot-line .who.you { color:var(--ft-orange); }
+  .ft-slot-line small { color:var(--ft-text-soft); margin-left:auto; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .ft-empty-day { font-size:12px; color:var(--ft-text-soft); font-style:italic; padding:4px 0; }
+
+  /* My quota strip */
+  .ft-quota {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:16px 20px;
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:20px;
+  }
+  @media (max-width:720px) { .ft-quota { grid-template-columns:repeat(2, 1fr); } }
+  .ft-quota-tile { display:flex; flex-direction:column; gap:6px; }
+  .ft-quota-lbl { font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600; color:var(--ft-text-soft); }
+  .ft-quota-val { font-size:22px; font-weight:800; color:var(--text); letter-spacing:-.02em; line-height:1; }
+  .ft-quota-val .frac { color:var(--ft-text-soft); font-size:14px; font-weight:600; }
+  .ft-quota-bar {
+    height:5px; border-radius:3px; background:var(--ft-bg-subtle); overflow:hidden;
+  }
+  .ft-quota-bar > i { display:block; height:100%; border-radius:3px; }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="mockup-banner">
+    <strong>Mockup 3 · Focus Today</strong> — "app-like" อ่อนหวานหน่อย. Hero card ตอนบนบอกใครเวรตอนนี้แบบเด่นๆ + mini calendar ให้ scan เดือน + upcoming 7 วันข้างหน้าเป็นการ์ด. เหมาะสำหรับ user ที่แค่อยากรู้ "วันนี้ต้องทำอะไร" ไม่ต้องดู full month
+  </div>
+
+  <div class="ft-top">
+    <div>
+      <div class="ft-title">📅 Schedule</div>
+      <div style="font-size:12px;color:var(--ft-text-soft);margin-top:2px">Fri, 15 August 2026</div>
+    </div>
+    <div class="ft-nav">
+      <button class="ft-nav-btn">📅 Full month</button>
+      <button class="ft-nav-btn">👤 My schedule</button>
+      <button class="ft-nav-btn primary">📋 Request leave</button>
+    </div>
+  </div>
+
+  <!-- Hero: today + mini calendar -->
+  <div class="ft-hero-grid">
+
+    <div class="ft-today-card">
+      <div class="ft-today-badge"><span class="live-dot"></span>Live now</div>
+      <div class="ft-today-date">Today, 15 August</div>
+      <div class="ft-today-sub">3 shifts running · Shift#1 active until 21:00</div>
+
+      <div class="ft-shift-list" id="ft-today-shifts"></div>
+
+      <div class="ft-next">
+        <div class="ft-next-ico">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div>Next: <b>Shift#2 W@H</b> starts in <b>6h 12min</b> — handoff to <b id="ft-next-who">—</b></div>
+      </div>
+    </div>
+
+    <div class="ft-mini">
+      <div class="ft-mini-hd">
+        <div class="ft-mini-title">August 2026</div>
+        <div class="ft-mini-nav">
+          <button>‹</button>
+          <button>›</button>
+        </div>
+      </div>
+      <div class="ft-mini-grid" id="ft-mini"></div>
+      <div class="ft-mini-legend">
+        <div><span class="dot"></span> My shift days</div>
+        <div><span class="dot" style="background:var(--ft-hot)"></span> Holiday</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- My quota strip -->
+  <div class="ft-quota" style="margin-bottom:14px">
+    <div class="ft-quota-tile">
+      <span class="ft-quota-lbl">My shifts (Aug)</span>
+      <span class="ft-quota-val" id="q-my-shifts">—</span>
+    </div>
+    <div class="ft-quota-tile">
+      <span class="ft-quota-lbl">Days off used</span>
+      <span class="ft-quota-val"><span id="q-off">3</span><span class="frac"> / 12</span></span>
+      <div class="ft-quota-bar"><i style="width:25%;background:var(--ft-ok)"></i></div>
+    </div>
+    <div class="ft-quota-tile">
+      <span class="ft-quota-lbl">On-call (Aug)</span>
+      <span class="ft-quota-val" id="q-oc">—</span>
+    </div>
+    <div class="ft-quota-tile">
+      <span class="ft-quota-lbl">Weekends worked</span>
+      <span class="ft-quota-val">2<span class="frac"> / 8</span></span>
+      <div class="ft-quota-bar"><i style="width:25%;background:var(--ft-cool)"></i></div>
+    </div>
+  </div>
+
+  <!-- Upcoming 7 days -->
+  <div class="ft-upcoming-card">
+    <div class="ft-upcoming-hd">
+      <div>
+        <div class="t">🗓 Upcoming — next 7 days</div>
+        <div class="sub">Aug 15 → Aug 21 · your shifts highlighted in orange</div>
+      </div>
+      <a class="ft-nav-btn" style="text-decoration:none">See full month →</a>
+    </div>
+    <div class="ft-upcoming-list" id="ft-upcoming"></div>
+  </div>
+
+</div>
+
+<script src="sample-data.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const D = window.SCHED_SAMPLE;
+const DOW_SHORT = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+const DOW_TINY  = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+
+// ── Today's shift card list ───────────────────────────────
+(function today() {
+  const today = D.TODAY.day;
+  const s = D.shifts[today];
+  const lines = [
+    { slot:'s1_tdpk', kind:'s1', lbl:'Shift#1 · TDPK',    time:'09:00–21:00' },
+    { slot:'s1_wah',  kind:'s1', lbl:'Shift#1 · W@H',     time:'09:00–21:00' },
+    { slot:'s1_oc',   kind:'oc', lbl:'Shift#1 · On Call', time:'09:00–21:00' },
+  ];
+
+  $('ft-today-shifts').innerHTML = lines.map(l => {
+    const people = D.slotPeople(today, l.slot).map(D.person);
+    const iAmIn = people.some(p => p.me);
+    // On-call = single person
+    if (l.slot === 's1_oc') {
+      const p = people[0] || { name:'—', short:'?', color:'#999' };
+      return `<div class="ft-shift ${p.me ? 'you' : ''}">
+        <span class="ft-shift-dot ${l.kind}"></span>
+        <div class="ft-shift-info">
+          <div class="ft-shift-lbl">${l.lbl}</div>
+          <div class="ft-shift-name">
+            <span class="av" style="background:${p.color}">${p.short}</span>
+            ${p.name}
+            ${p.me ? '<span class="you-star">YOU</span>' : ''}
+          </div>
+        </div>
+        <div class="ft-shift-time">${l.time}</div>
+      </div>`;
+    }
+    // Team slot — stack multiple avatars + name list
+    const avStack = people.length ? people.map((p, i) => `
+      <span class="av" style="background:${p.color};margin-left:${i ? -8 : 0}px;border:2px solid var(--bg-card);position:relative;z-index:${10 - i}">${p.short}</span>
+    `).join('') : '<span style="color:var(--ft-text-soft);font-size:11px">ยังไม่มี</span>';
+    const namesTxt = people.length
+      ? people.map(p => p.me ? `<b style="color:var(--ft-orange)">${p.name.replace(' (you)','')} 🌟</b>` : p.name).join(', ')
+      : 'ไม่มีเวร';
+    return `<div class="ft-shift ${iAmIn ? 'you' : ''}">
+      <span class="ft-shift-dot ${l.kind}"></span>
+      <div class="ft-shift-info">
+        <div class="ft-shift-lbl">${l.lbl} · <span style="color:var(--text)">${people.length} คน</span></div>
+        <div class="ft-shift-name" style="align-items:center">
+          <span style="display:inline-flex">${avStack}</span>
+          <span style="font-size:12.5px;font-weight:500;color:var(--text)">${namesTxt}</span>
+        </div>
+      </div>
+      <div class="ft-shift-time">${l.time}</div>
+    </div>`;
+  }).join('');
+
+  // Events today
+  const events = s.events || [];
+  if (events.length) {
+    $('ft-today-shifts').innerHTML += `<div class="ft-shift" style="border-style:dashed;background:color-mix(in srgb,var(--ft-cool) 5%,transparent)">
+      <span class="ft-shift-dot" style="background:var(--ft-cool);color:color-mix(in srgb,var(--ft-cool) 25%,transparent)"></span>
+      <div class="ft-shift-info">
+        <div class="ft-shift-lbl">📌 Events วันนี้</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-top:3px">${events.join(' · ')}</div>
+      </div>
+    </div>`;
+  }
+
+  // Next handoff = first person in s2_wah
+  const nextS2 = D.person(D.slotPeople(today, 's2_wah')[0] || '');
+  $('ft-next-who').textContent = nextS2.name || '—';
+})();
+
+// ── Mini calendar ────────────────────────────────────────
+(function mini() {
+  // Grid starts on Sunday. Get first-of-month dow and last day.
+  const firstDow = new Date(D.YEAR, D.MONTH - 1, 1).getDay();
+  const daysInMonth = D.daysInMonth;
+  const prevMonthLastDay = new Date(D.YEAR, D.MONTH - 1, 0).getDate();
+
+  let cells = DOW_TINY.map(d => `<div class="ft-mini-dow">${d}</div>`).join('');
+
+  for (let i = 0; i < firstDow; i++) {
+    const dnum = prevMonthLastDay - firstDow + i + 1;
+    cells += `<div class="ft-mini-day other">${dnum}</div>`;
+  }
+
+  // Compute my days (any slot where I'm listed, minus leave days)
+  const myDays = new Set();
+  for (let d = 1; d <= daysInMonth; d++) {
+    if (D.personDayShifts(d, 'warapon').length && !(D.leaves[d] || []).includes('warapon')) myDays.add(d);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dow = new Date(D.YEAR, D.MONTH - 1, d).getDay();
+    const cls = [
+      d === D.TODAY.day ? 'today' : '',
+      D.holidays[d] ? 'holiday' : (dow === 0 || dow === 6 ? 'weekend' : ''),
+      myDays.has(d) ? 'my-day' : '',
+    ].filter(Boolean).join(' ');
+    cells += `<div class="ft-mini-day ${cls}" title="${D.holidays[d] || ''}">${d}</div>`;
+  }
+
+  // Fill trailing to complete 6 rows
+  const filled = firstDow + daysInMonth;
+  const trailing = (42 - filled) % 7;
+  for (let i = 1; i <= trailing; i++) {
+    cells += `<div class="ft-mini-day other">${i}</div>`;
+  }
+
+  $('ft-mini').innerHTML = cells;
+})();
+
+// ── Upcoming 7 days ──────────────────────────────────────
+(function upcoming() {
+  const start = D.TODAY.day;
+  const rows = [];
+  for (let i = 0; i < 7; i++) {
+    const d = start + i;
+    if (d > D.daysInMonth) break;
+    const date = new Date(D.YEAR, D.MONTH - 1, d);
+    const dow = date.getDay();
+    const s = D.shifts[d];
+    const isToday = d === D.TODAY.day;
+    const isHoliday = D.holidays[d];
+
+    const slots = [
+      { key:'s1_tdpk', kind:'s1', lbl:'S1 TDPK', time:'09-21' },
+      { key:'s1_wah',  kind:'s1', lbl:'S1 W@H',  time:'09-21' },
+      { key:'s1_oc',   kind:'oc', lbl:'S1 OC',   time:'09-21' },
+      { key:'s2_wah',  kind:'s2', lbl:'S2 W@H',  time:'21-09' },
+      { key:'s2_oc',   kind:'oc', lbl:'S2 OC',   time:'21-09' },
+    ];
+    const slotHtml = slots.map(sl => {
+      const people = D.slotPeople(d, sl.key).map(D.person);
+      const leaveSet = new Set(D.leaves[d] || []);
+      if (!people.length) {
+        return `<div class="ft-slot-line">
+          <span class="badge ${sl.kind}">${sl.lbl}</span>
+          <span style="color:var(--ft-text-soft);font-style:italic">ไม่มีเวร</span>
+          <small>${sl.time}</small>
+        </div>`;
+      }
+      const nameFragments = people.map(p => {
+        const onLeave = leaveSet.has(p.id);
+        if (onLeave) return `<span style="text-decoration:line-through;color:var(--ft-text-soft)">${p.short}</span>`;
+        return `<span class="who ${p.me ? 'you' : ''}" title="${p.name}">${p.short}${p.me ? '🌟' : ''}</span>`;
+      });
+      return `<div class="ft-slot-line">
+        <span class="badge ${sl.kind}">${sl.lbl}</span>
+        <span style="display:flex;gap:6px;flex-wrap:wrap">${nameFragments.join('<span style="color:var(--ft-text-soft)">·</span>')}</span>
+        <small>${sl.time}</small>
+      </div>`;
+    }).join('');
+
+    // Event line if any
+    const events = (s.events || []).length
+      ? `<div class="ft-slot-line" style="margin-top:4px;padding-top:6px;border-top:1px dashed var(--border)">
+          <span class="badge" style="background:var(--ft-cool)">📌 EVT</span>
+          <span style="color:var(--text);font-size:11.5px">${(s.events || []).join(' · ')}</span>
+        </div>`
+      : '';
+
+    rows.push(`<div class="ft-upcoming-day ${isToday ? 'today' : ''}">
+      <div class="ft-day-badge">
+        <div class="dow">${DOW_SHORT[dow]}</div>
+        <div class="num">${d}</div>
+        ${isHoliday ? `<div style="font-size:9px;color:var(--ft-hot);margin-top:3px;font-weight:600;text-transform:uppercase">Holiday</div>` : ''}
+      </div>
+      <div class="ft-day-slots">${slotHtml}${events}</div>
+    </div>`);
+  }
+  $('ft-upcoming').innerHTML = rows.join('');
+})();
+
+// ── Quota strip fills ─────────────────────────────────────
+(function fillQuota() {
+  const me = D.stats().find(r => r.me);
+  $('q-my-shifts').textContent = me.total;
+  $('q-oc').textContent = me.s1_oc + me.s2_oc;
+})();
+</script>
+</body>
+</html>

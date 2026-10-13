@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usage Analytics — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .analytics-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+    
+    .analytics-card:hover {
+      border-color: var(--orange);
+    }
+    
+    .card-header-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    
+    .card-title-sm {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    
+    .card-subtitle {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    
+    .stat-big {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--orange);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    
+    .feature-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .feature-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .feature-item:last-child {
+      border-bottom: none;
+    }
+    
+    .feature-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .feature-rank {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    
+    .rank-1 { background: rgba(242, 100, 25, 0.15); color: var(--orange); }
+    .rank-2 { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .rank-3 { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+    .rank-other { background: var(--bg); color: var(--text-muted); }
+    
+    .feature-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .feature-count {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--orange);
+      margin-right: 8px;
+    }
+    
+    .feature-bar {
+      width: 80px;
+      height: 6px;
+      background: var(--bg);
+      border-radius: 3px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    
+    .feature-bar-fill {
+      height: 100%;
+      background: var(--orange);
+      transition: width 0.3s ease;
+    }
+    
+    .chart-container {
+      position: relative;
+      height: 300px;
+      margin-top: 16px;
+    }
+    
+    .date-range-picker {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 11px;
+    }
+    
+    .date-range-picker input {
+      padding: 6px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      font-size: 11px;
+      font-family: var(--font);
+      background: var(--bg-input);
+      color: var(--text);
+    }
+    
+    .date-range-picker input:focus {
+      outline: none;
+      border-color: var(--orange);
+    }
+    
+    .empty-state-sm {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+    
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+    
+    .badge-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      background: var(--orange-bg);
+      color: var(--orange);
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="bar-chart"></i> Usage Analytics</div>
+        <div class="page-sub">ติดตามการใช้งานและพฤติกรรม users</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="date-range-picker">
+          <span style="color: var(--text-muted)">Period:</span>
+          <input type="date" id="start-date" onchange="loadAnalytics()">
+          <span style="color: var(--text-muted)">to</span>
+          <input type="date" id="end-date" onchange="loadAnalytics()">
+        </div>
+        <button class="btn btn-ghost" onclick="loadAnalytics()">↺ Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="bar-chart"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Usage Analytics</h1>
+          <p>ติดตามการใช้งานและพฤติกรรม users — page views, feature usage, popular content</p>
+        </div>
+      </section>
+
+      <!-- Summary Stats -->
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <div class="stat-big" id="total-events">—</div>
+          <div class="stat-label">Total Events</div>
+        </div>
+        
+        <div class="analytics-card">
+          <div class="stat-big" id="unique-users">—</div>
+          <div class="stat-label">Active Users</div>
+        </div>
+        
+        <div class="analytics-card">
+          <div class="stat-big" id="total-pages">—</div>
+          <div class="stat-label">Page Views</div>
+        </div>
+        
+        <div class="analytics-card">
+          <div class="stat-big" id="total-features">—</div>
+          <div class="stat-label">Feature Uses</div>
+        </div>
+      </div>
+
+      <!-- Top Features -->
+      <div class="analytics-grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="analytics-card">
+          <div class="card-header-flex">
+            <div>
+              <div class="card-title-sm"><i data-icon="flame"></i> Top Features</div>
+              <div class="card-subtitle">Most used features</div>
+            </div>
+            <span class="badge-pill">Popular</span>
+          </div>
+          <ul class="feature-list" id="top-features">
+            <li class="empty-state-sm">
+              <div class="empty-icon"><i data-icon="bar-chart"></i></div>
+              <div>Loading...</div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="analytics-card">
+          <div class="card-header-flex">
+            <div>
+              <div class="card-title-sm">❄️ Bottom Features</div>
+              <div class="card-subtitle">Least used features</div>
+            </div>
+            <span class="badge-pill" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">Underused</span>
+          </div>
+          <ul class="feature-list" id="bottom-features">
+            <li class="empty-state-sm">
+              <div class="empty-icon"><i data-icon="bar-chart"></i></div>
+              <div>Loading...</div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Usage Trends Chart -->
+      <div class="analytics-card">
+        <div class="card-header-flex">
+          <div>
+            <div class="card-title-sm"><i data-icon="trending-up"></i> Usage Trends</div>
+            <div class="card-subtitle">Daily activity over time</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="trends-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- Top Pages -->
+      <div class="analytics-card">
+        <div class="card-header-flex">
+          <div>
+            <div class="card-title-sm"><i data-icon="file"></i> Top Pages</div>
+            <div class="card-subtitle">Most visited pages</div>
+          </div>
+        </div>
+        <ul class="feature-list" id="top-pages">
+          <li class="empty-state-sm">
+            <div class="empty-icon"><i data-icon="file"></i></div>
+            <div>Loading...</div>
+          </li>
+        </ul>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+  if (!Auth.requireAdmin()) {}
+  Layout.render('admin');
+
+  let trendsChart = null;
+
+  // Set default date range (last 30 days)
+  const today = new Date();
+  const thirtyDaysAgo = new Date(today);
+  thirtyDaysAgo.setDate(today.getDate() - 30);
+  
+  document.getElementById('end-date').valueAsDate = today;
+  document.getElementById('start-date').valueAsDate = thirtyDaysAgo;
+
+  async function loadAnalytics() {
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
+    
+    try {
+      const res = await fetch(`${API_BASE}/analytics/stats.php?start_date=${startDate}&end_date=${endDate}`, {
+        headers: { 'Authorization': 'Bearer ' + Auth.getToken() }
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        renderStats(data.data);
+        renderTopFeatures(data.data.top_features);
+        renderBottomFeatures(data.data.bottom_features);
+        renderTopPages(data.data.top_pages);
+        renderTrendsChart(data.data.daily_trends);
+      }
+    } catch (error) {
+      console.error('Failed to load analytics:', error);
+    }
+  }
+
+  function renderStats(data) {
+    document.getElementById('total-events').textContent = formatNumber(data.total_events || 0);
+    document.getElementById('unique-users').textContent = formatNumber(data.unique_users || 0);
+    document.getElementById('total-pages').textContent = formatNumber(data.total_page_views || 0);
+    document.getElementById('total-features').textContent = formatNumber(data.total_feature_uses || 0);
+  }
+
+  function renderTopFeatures(features) {
+    const container = document.getElementById('top-features');
+    
+    if (!features || features.length === 0) {
+      container.innerHTML = '<li class="empty-state-sm"><div class="empty-icon"><i data-icon="bar-chart"></i></div><div>No data available</div></li>';
+      return;
+    }
+    
+    const maxCount = features[0]?.count || 1;
+    
+    container.innerHTML = features.slice(0, 10).map((feature, index) => {
+      const percentage = (feature.count / maxCount) * 100;
+      const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : 'rank-other';
+      
+      return `
+        <li class="feature-item">
+          <div class="feature-info">
+            <div class="feature-rank ${rankClass}">${index + 1}</div>
+            <div class="feature-name" title="${escapeHtml(feature.feature)}">${escapeHtml(formatFeatureName(feature.feature))}</div>
+          </div>
+          <div style="display: flex; align-items: center;">
+            <span class="feature-count">${formatNumber(feature.count)}</span>
+            <div class="feature-bar">
+              <div class="feature-bar-fill" style="width: ${percentage}%"></div>
+            </div>
+          </div>
+        </li>
+      `;
+    }).join('');
+  }
+
+  function renderBottomFeatures(features) {
+    const container = document.getElementById('bottom-features');
+    
+    if (!features || features.length === 0) {
+      container.innerHTML = '<li class="empty-state-sm"><div class="empty-icon"><i data-icon="bar-chart"></i></div><div>No data available</div></li>';
+      return;
+    }
+    
+    const maxCount = features[0]?.count || 1;
+    
+    container.innerHTML = features.slice(0, 10).map((feature, index) => {
+      const percentage = (feature.count / maxCount) * 100;
+      
+      return `
+        <li class="feature-item">
+          <div class="feature-info">
+            <div class="feature-rank rank-other">${index + 1}</div>
+            <div class="feature-name" title="${escapeHtml(feature.feature)}">${escapeHtml(formatFeatureName(feature.feature))}</div>
+          </div>
+          <div style="display: flex; align-items: center;">
+            <span class="feature-count" style="color: #ef4444;">${formatNumber(feature.count)}</span>
+            <div class="feature-bar">
+              <div class="feature-bar-fill" style="width: ${percentage}%; background: #ef4444;"></div>
+            </div>
+          </div>
+        </li>
+      `;
+    }).join('');
+  }
+
+  function renderTopPages(pages) {
+    const container = document.getElementById('top-pages');
+    
+    if (!pages || pages.length === 0) {
+      container.innerHTML = '<li class="empty-state-sm"><div class="empty-icon"><i data-icon="file"></i></div><div>No data available</div></li>';
+      return;
+    }
+    
+    const maxCount = pages[0]?.count || 1;
+    
+    container.innerHTML = pages.slice(0, 10).map((page, index) => {
+      const percentage = (page.count / maxCount) * 100;
+      const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : 'rank-other';
+      
+      return `
+        <li class="feature-item">
+          <div class="feature-info">
+            <div class="feature-rank ${rankClass}">${index + 1}</div>
+            <div class="feature-name" title="${escapeHtml(page.page)}">${escapeHtml(formatPageName(page.page))}</div>
+          </div>
+          <div style="display: flex; align-items: center;">
+            <span class="feature-count">${formatNumber(page.count)}</span>
+            <div class="feature-bar">
+              <div class="feature-bar-fill" style="width: ${percentage}%"></div>
+            </div>
+          </div>
+        </li>
+      `;
+    }).join('');
+  }
+
+  function renderTrendsChart(trends) {
+    const ctx = document.getElementById('trends-chart');
+    
+    if (!ctx) {
+      console.error('Chart canvas not found');
+      return;
+    }
+    
+    if (!trends || trends.length === 0) {
+      const container = ctx.parentElement;
+      if (container) {
+        container.innerHTML = '<div class="empty-state-sm"><div class="empty-icon"><i data-icon="trending-up"></i></div><div>No trend data available</div></div>';
+      }
+      return;
+    }
+    
+    // Destroy existing chart
+    if (trendsChart) {
+      trendsChart.destroy();
+    }
+    
+    const labels = trends.map(t => {
+      const date = new Date(t.date);
+      return date.toLocaleDateString('th-TH', { month: 'short', day: 'numeric' });
+    });
+    
+    const pageViews = trends.map(t => t.page_views || 0);
+    const featureUses = trends.map(t => t.feature_uses || 0);
+    
+    trendsChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Page Views',
+            data: pageViews,
+            borderColor: '#f97316',
+            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+            tension: 0.4,
+            fill: true
+          },
+          {
+            label: 'Feature Uses',
+            data: featureUses,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              font: { family: 'JetBrains Mono', size: 11 },
+              color: '#666',
+              usePointStyle: true,
+              padding: 15
+            }
+          },
+          tooltip: {
+            backgroundColor: '#1c1c1e',
+            titleFont: { family: 'JetBrains Mono', size: 11 },
+            bodyFont: { family: 'JetBrains Mono', size: 11 },
+            padding: 12,
+            cornerRadius: 8
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              font: { family: 'JetBrains Mono', size: 10 },
+              color: '#999'
+            },
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            }
+          },
+          x: {
+            ticks: {
+              font: { family: 'JetBrains Mono', size: 10 },
+              color: '#999'
+            },
+            grid: {
+              display: false
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function formatFeatureName(feature) {
+    // Convert snake_case to Title Case
+    return feature
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  function formatPageName(page) {
+    // Extract filename from path
+    const parts = page.split('/');
+    const filename = parts[parts.length - 1] || 'Home';
+    return filename.replace('.html', '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  function formatNumber(num) {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Initial load
+  loadAnalytics();
+</script>
+
+</body>
+</html>

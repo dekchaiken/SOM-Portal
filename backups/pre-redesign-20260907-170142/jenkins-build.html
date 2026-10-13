@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jenkins Build — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ── Wealth-portal palette (scoped to this page + modals) ───────────── */
+    .jb-page, .jb-modal-overlay {
+      --jb-primary:       #FF8C00;
+      --jb-primary-light: #FF9D33;
+      --jb-primary-dark:  #cc7000;
+      --jb-primary-bg:    #FFF5EB;
+      --jb-surface:       #FAFAFA;
+      --jb-card-bg:       #FFFFFF;
+      --jb-border:        #F0F0F0;
+      --jb-text:          #1A1A1A;
+      --jb-muted:         #666666;
+      --jb-success:       #00C853;
+      --jb-error:         #FF4D4D;
+      --jb-radius-sm:     8px;
+      --jb-radius-md:     12px;
+      --jb-radius-lg:     20px;
+      --jb-shadow-sm:     0 2px 8px rgba(0,0,0,.05);
+      --jb-shadow-md:     0 8px 16px rgba(0,0,0,.08);
+      --jb-shadow-lg:     0 15px 35px rgba(255,140,0,.10);
+      --jb-font:          'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --jb-trans:         all .3s cubic-bezier(.4,0,.2,1);
+    }
+    .jb-page {
+      font-family: var(--jb-font);
+      color: var(--jb-text);
+      background: linear-gradient(135deg, #FFF5EB 0%, #FFFFFF 100%);
+      min-height: 100%;
+    }
+    .jb-page *, .jb-modal-overlay .jb-modal, .jb-modal-overlay .jb-modal * { font-family: var(--jb-font); }
+
+    /* ── Wrap & hero ─────────────────────────────────────────────────────── */
+    .jb-wrap { max-width: 1200px; margin: 0 auto; width: 100%; padding: 2.5rem 1.5rem 3rem; animation: jbFadeIn .5s ease-out; }
+    @keyframes jbFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+    .jb-hero { margin-bottom: 2rem; }
+    .jb-hero h1 { font-size: 2.2rem; font-weight: 800; color: var(--jb-text); letter-spacing: -.5px; line-height: 1.2; }
+    .jb-hero h1 .jb-orange { color: var(--jb-primary); }
+    .jb-hero p { color: var(--jb-muted); font-size: .95rem; margin-top: .35rem; }
+
+    /* ── Cards ───────────────────────────────────────────────────────────── */
+    .jb-card {
+      background: var(--jb-card-bg);
+      border: 1px solid var(--jb-border);
+      border-radius: var(--jb-radius-lg);
+      padding: 2.25rem;
+      box-shadow: var(--jb-shadow-md);
+      transition: var(--jb-trans);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .jb-card:hover { box-shadow: var(--jb-shadow-lg); }
+    .jb-card::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 4px; height: 100%; background: var(--jb-primary); opacity: .3;
+    }
+    .jb-card h3, .jb-card h4 {
+      font-size: 1.05rem; font-weight: 700; color: var(--jb-text); margin-bottom: .35rem;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .jb-card-sub { font-size: .85rem; color: var(--jb-muted); margin-bottom: 1.75rem; line-height: 1.6; }
+    .jb-card .jb-count, .jb-card h3 .jb-count, .jb-card h4 .jb-count {
+      font-size: .7rem; font-weight: 700; color: var(--jb-primary);
+      background: var(--jb-primary-bg); border: 1px solid var(--jb-primary-light);
+      border-radius: 999px; padding: .2rem .7rem; margin-left: .5rem;
+      display: inline-block; vertical-align: middle;
+    }
+
+    /* ── Grid: form (left) + status/rules (right) ───────────────────────── */
+    .jb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+    .jb-side-col { display: flex; flex-direction: column; gap: 1.5rem; }
+    @media (max-width: 900px) { .jb-grid { grid-template-columns: 1fr; } }
+
+    /* ── System Status card (tinted primary) ────────────────────────────── */
+    .jb-status-card {
+      background: var(--jb-primary-bg);
+      border-color: var(--jb-primary-light);
+      padding: 1.5rem;
+    }
+    .jb-status-card h4 { color: var(--jb-primary-dark); margin-bottom: .5rem; }
+    .jb-status-line { display: flex; align-items: center; gap: .5rem; font-size: .85rem; font-weight: 600; }
+    .jb-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; background: var(--jb-success); }
+    .jb-dot.bad { background: var(--jb-error); }
+    .jb-dot.warn { background: #f97316; }
+
+    /* ── Validation rules list ──────────────────────────────────────────── */
+    .jb-rules { font-size: .8rem; color: var(--jb-muted); padding-left: 1.2rem; margin-top: .75rem; line-height: 1.7; }
+    .jb-rules li { margin-bottom: .5rem; }
+    .jb-rules code { color: var(--jb-primary); font-family: var(--jb-font); background: none; padding: 0; font-weight: 700; }
+
+    /* ── Portal-style status grid (Jenkins/Pending/Success rate) ────────── */
+    .jb-status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    @media (max-width: 700px) { .jb-status-grid { grid-template-columns: 1fr; } }
+    .jb-stat {
+      background: var(--jb-card-bg); border: 1px solid var(--jb-border);
+      border-radius: var(--jb-radius-lg); padding: 1.1rem 1.25rem;
+      display: flex; align-items: center; gap: .9rem; box-shadow: var(--jb-shadow-sm);
+      transition: var(--jb-trans);
+    }
+    .jb-stat:hover { box-shadow: var(--jb-shadow-md); }
+    .jb-stat-icon {
+      width: 38px; height: 38px; border-radius: var(--jb-radius-md); flex-shrink: 0;
+      background: var(--jb-primary-bg); color: var(--jb-primary);
+      display: flex; align-items: center; justify-content: center; font-size: 1.05rem; font-weight: 800;
+    }
+    .jb-stat-label { font-size: .68rem; font-weight: 700; color: var(--jb-muted); text-transform: uppercase; letter-spacing: .5px; }
+    .jb-stat-value { font-size: .95rem; font-weight: 800; color: var(--jb-text); margin-top: .15rem; }
+    .jb-stat-value.ok { color: var(--jb-success); }
+    .jb-stat-value.bad { color: var(--jb-error); }
+    .jb-stat-value.warn { color: #f97316; }
+
+    /* ── Toolbar & tool selector ────────────────────────────────────────── */
+    .jb-toolbar { display: flex; align-items: center; gap: .75rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .jb-tool-select {
+      background: var(--jb-surface); border: 2px solid var(--jb-border);
+      border-radius: var(--jb-radius-md); padding: .75rem 1rem;
+      font-family: var(--jb-font); font-size: .9rem; font-weight: 600; color: var(--jb-text);
+      min-width: 260px; outline: none; cursor: pointer; transition: var(--jb-trans);
+    }
+    .jb-tool-select:focus { border-color: var(--jb-primary); background: #fff; box-shadow: 0 0 0 4px rgba(255,140,0,.1); }
+    .jb-server-pill {
+      font-size: .7rem; font-weight: 700; color: var(--jb-primary);
+      background: var(--jb-primary-bg); border: 1px solid var(--jb-primary-light);
+      border-radius: 999px; padding: .3rem .8rem; letter-spacing: .3px;
+    }
+    .jb-refresh-btn {
+      margin-left: auto; background: transparent; color: var(--jb-muted);
+      border: 1px solid var(--jb-border); border-radius: var(--jb-radius-sm);
+      padding: .5rem 1rem; font-family: var(--jb-font); font-size: .75rem;
+      font-weight: 700; cursor: pointer; transition: var(--jb-trans);
+    }
+    .jb-refresh-btn:hover { background: var(--jb-surface); color: var(--jb-primary); border-color: var(--jb-primary); box-shadow: var(--jb-shadow-sm); }
+
+    /* ── Landing choice cards ───────────────────────────────────────────── */
+    .jb-checker-home { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem; }
+    @media (max-width: 700px) { .jb-checker-home { grid-template-columns: 1fr; } }
+    .jb-ch-card {
+      background: var(--jb-card-bg); border: 1px solid var(--jb-border);
+      border-radius: var(--jb-radius-lg); padding: 2rem 1.75rem;
+      cursor: pointer; text-align: left; font-family: var(--jb-font);
+      transition: var(--jb-trans); position: relative; overflow: hidden;
+      display: flex; flex-direction: column; gap: .35rem; color: var(--jb-text);
+      box-shadow: var(--jb-shadow-sm);
+    }
+    .jb-ch-card::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 4px; height: 100%; background: var(--jb-primary); opacity: .3;
+    }
+    .jb-ch-card:hover { box-shadow: var(--jb-shadow-lg); transform: translateY(-2px); }
+    .jb-ch-card:active { transform: translateY(0); }
+    .jb-ch-icon { font-size: 1.5rem; color: var(--jb-primary); font-weight: 800; }
+    .jb-ch-title { font-size: 1rem; font-weight: 700; }
+    .jb-ch-sub { font-size: .8rem; color: var(--jb-muted); line-height: 1.55; }
+    .jb-ch-count {
+      align-self: flex-start; font-size: .7rem; font-weight: 700; color: var(--jb-primary);
+      background: var(--jb-primary-bg); border: 1px solid var(--jb-primary-light);
+      border-radius: 999px; padding: .2rem .8rem; margin-top: .6rem; text-transform: uppercase; letter-spacing: .3px;
+    }
+    .jb-ch-count.zero { color: var(--jb-muted); background: var(--jb-surface); border-color: var(--jb-border); }
+
+    /* ── Panel slide-in ─────────────────────────────────────────────────── */
+    @keyframes jbSlideIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+    .jb-panel-enter { animation: jbSlideIn .22s ease-out both; }
+    .jb-panel-back {
+      display: inline-flex; align-items: center; gap: .35rem; margin-bottom: 1rem;
+      background: transparent; border: 1px solid var(--jb-border);
+      color: var(--jb-muted); font-family: var(--jb-font);
+      font-size: .78rem; font-weight: 600; cursor: pointer;
+      padding: .5rem .85rem; border-radius: var(--jb-radius-sm); transition: var(--jb-trans);
+    }
+    .jb-panel-back:hover { color: var(--jb-primary); border-color: var(--jb-primary); background: var(--jb-surface); }
+    .jb-checker-panels { display: none; }
+    .jb-checker-panels.visible { display: block; }
+
+    /* ── Form fields ────────────────────────────────────────────────────── */
+    .jb-field { margin-bottom: 1.5rem; }
+    .jb-field label {
+      display: block; margin-bottom: .55rem;
+      font-family: var(--jb-font); font-weight: 600; font-size: .8rem;
+      color: var(--jb-muted); text-transform: uppercase; letter-spacing: .5px;
+    }
+    .jb-field input, .jb-field select {
+      width: 100%; padding: .95rem 1.1rem;
+      border: 2px solid var(--jb-border); border-radius: var(--jb-radius-md);
+      font-family: var(--jb-font); font-size: .95rem; background: var(--jb-surface);
+      color: var(--jb-text); transition: var(--jb-trans); outline: none;
+      box-sizing: border-box;
+    }
+    .jb-field input:focus, .jb-field select:focus {
+      border-color: var(--jb-primary); background: #fff; box-shadow: 0 0 0 4px rgba(255,140,0,.1);
+    }
+    .jb-field input.jb-invalid, .jb-field select.jb-invalid { border-color: var(--jb-error); background: #FFF8F8; }
+    .jb-readonly { background: #F0F0F0 !important; border-color: #E0E0E0 !important; color: var(--jb-primary) !important; font-weight: 700 !important; cursor: not-allowed; }
+    .jb-hint { font-size: .72rem; color: var(--jb-muted); opacity: .85; margin-top: .35rem; }
+    .jb-field .jb-err { display: none; font-size: .72rem; color: var(--jb-error); margin-top: .35rem; font-weight: 600; }
+    .jb-field.jb-has-err .jb-err { display: block; }
+
+    /* ── Primary button (Run Build Pipeline) ────────────────────────────── */
+    .jb-submit {
+      width: 100%; display: flex; align-items: center; justify-content: center; gap: .5rem;
+      padding: 1rem 2rem; border: none; border-radius: var(--jb-radius-md);
+      background: var(--jb-primary); color: #fff;
+      font-family: var(--jb-font); font-size: .95rem; font-weight: 700;
+      cursor: pointer; transition: var(--jb-trans);
+      box-shadow: 0 4px 10px rgba(255,140,0,.3);
+      margin-top: .5rem;
+    }
+    .jb-submit:hover:not(:disabled) { background: var(--jb-primary-light); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(255,140,0,.4); }
+    .jb-submit:active:not(:disabled) { transform: translateY(0); }
+    .jb-submit:disabled { background: #E0E0E0; color: #AAA; box-shadow: none; cursor: not-allowed; opacity: .8; }
+
+    /* ── Role banner ────────────────────────────────────────────────────── */
+    .jb-banner {
+      border: 1px solid var(--jb-primary-light); background: var(--jb-primary-bg);
+      color: var(--jb-primary-dark); border-radius: var(--jb-radius-md);
+      padding: .85rem 1.25rem; font-size: .85rem; font-weight: 500; margin-bottom: 1.25rem;
+    }
+    .jb-banner b { color: var(--jb-primary); font-weight: 700; }
+
+    /* ── Approvals ──────────────────────────────────────────────────────── */
+    .jb-apv-item {
+      border: 1px solid var(--jb-border); border-radius: var(--jb-radius-md);
+      padding: 1rem 1.15rem; margin-bottom: .85rem; background: var(--jb-surface);
+      transition: var(--jb-trans);
+    }
+    .jb-apv-item:hover { border-color: var(--jb-primary-light); background: #fff; box-shadow: var(--jb-shadow-sm); }
+    .jb-apv-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .65rem; flex-wrap: wrap; }
+    .jb-apv-by { font-size: .82rem; font-weight: 700; color: var(--jb-text); }
+    .jb-apv-time { font-size: .7rem; color: var(--jb-muted); }
+    .jb-kv { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .75rem; }
+    .jb-kv span {
+      font-size: .7rem; font-weight: 500; color: var(--jb-muted);
+      background: #fff; border: 1px solid var(--jb-border);
+      border-radius: var(--jb-radius-sm); padding: .2rem .6rem;
+    }
+    .jb-kv b { color: var(--jb-text); font-weight: 700; }
+    .jb-apv-actions { display: flex; gap: .5rem; }
+    .jb-btn {
+      border-radius: var(--jb-radius-sm); padding: .5rem 1.1rem;
+      font-family: var(--jb-font); font-size: .75rem; font-weight: 700;
+      cursor: pointer; border: 1px solid transparent; transition: var(--jb-trans);
+    }
+    .jb-btn:hover { transform: translateY(-1px); box-shadow: var(--jb-shadow-sm); }
+    .jb-btn:active { transform: translateY(0); }
+    .jb-btn-ok, .jb-btn-approve { background: var(--jb-primary); color: #fff; border-color: var(--jb-primary); box-shadow: 0 2px 6px rgba(255,140,0,.25); }
+    .jb-btn-approve:hover { background: var(--jb-primary-light); }
+    .jb-btn-no { background: transparent; color: var(--jb-error); border-color: #FFCDD2; }
+    .jb-btn-no:hover { background: #FFEBEE; border-color: var(--jb-error); }
+
+    .jb-empty { text-align: center; color: var(--jb-muted); font-size: .85rem; padding: 2rem 0; opacity: .8; }
+
+    /* ── History table ──────────────────────────────────────────────────── */
+    .jb-table-wrap { overflow-x: auto; border-radius: var(--jb-radius-md); border: 1px solid var(--jb-border); }
+    .jb-table { width: 100%; border-collapse: collapse; font-size: .82rem; background: #fff; }
+    .jb-table th {
+      background: var(--jb-surface); color: var(--jb-muted); font-weight: 700;
+      font-size: .7rem; text-transform: uppercase; letter-spacing: .5px;
+      padding: .85rem 1rem; text-align: left; border-bottom: 2px solid var(--jb-border); white-space: nowrap;
+    }
+    .jb-table td { padding: .9rem 1rem; border-bottom: 1px solid var(--jb-border); color: var(--jb-text); vertical-align: top; }
+    .jb-table tr:last-child td { border-bottom: none; }
+    .jb-table tr:hover td { background: var(--jb-surface); }
+    .jb-table .jb-tool-cell { font-weight: 700; white-space: nowrap; }
+    .jb-table .jb-params-cell { color: var(--jb-muted); font-size: .75rem; max-width: 260px; }
+    .jb-table .jb-meta-cell { color: var(--jb-muted); font-size: .72rem; white-space: nowrap; }
+
+    /* ── Status badge ───────────────────────────────────────────────────── */
+    .jb-badge {
+      display: inline-flex; align-items: center; gap: .35rem;
+      font-size: .68rem; font-weight: 700; border-radius: 6px;
+      padding: .25rem .65rem; white-space: nowrap; text-transform: uppercase; letter-spacing: .3px;
+    }
+    .jb-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .jb-b-success { background: #E8F5E9; color: #2E7D32; }
+    .jb-b-failure { background: #FFEBEE; color: #C62828; }
+    .jb-b-aborted { background: #ECEFF1; color: #607D8B; }
+    .jb-b-rejected{ background: #FFF3E0; color: #E65100; }
+    .jb-b-running { background: #E3F2FD; color: #1565C0; }
+    .jb-b-running::before { animation: jb-pulse 1.1s ease infinite; }
+    @keyframes jb-pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+    .jb-b-unknown { background: var(--jb-surface); color: var(--jb-muted); }
+
+    /* ── Progress modal ─────────────────────────────────────────────────── */
+    .jb-modal-overlay {
+      position: fixed; inset: 0; z-index: 1200; display: none; align-items: center; justify-content: center;
+      background: rgba(0,0,0,.4); backdrop-filter: blur(5px);
+    }
+    .jb-modal {
+      background: #fff; border-radius: var(--jb-radius-lg);
+      padding: 2.5rem; width: min(500px, 92vw);
+      box-shadow: var(--jb-shadow-lg); text-align: center;
+      animation: jbModalUp .3s ease-out; font-family: var(--jb-font);
+    }
+    @keyframes jbModalUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .jb-modal h3 { font-size: 1.25rem; font-weight: 700; color: var(--jb-text); margin-bottom: .5rem; }
+    .jb-modal .jb-modal-sub { font-size: .9rem; color: var(--jb-muted); margin-bottom: .5rem; }
+    .jb-progress-track { width: 100%; height: 12px; background: var(--jb-border); border-radius: 10px; margin: 2rem 0 .75rem; overflow: hidden; }
+    .jb-progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--jb-primary) 0%, var(--jb-primary-light) 100%); transition: width .5s ease; }
+    .jb-progress-pct { font-weight: 800; font-size: 1.5rem; color: var(--jb-text); margin-bottom: 1rem; }
+    .jb-modal-result {
+      display: none; padding: 1rem; border-radius: var(--jb-radius-md);
+      font-weight: 700; margin-bottom: 1.5rem; font-size: .9rem;
+    }
+    .jb-modal-result.ok  { background: #E8F5E9; color: #2E7D32; border: 1px solid #C8E6C9; }
+    .jb-modal-result.bad { background: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; }
+    .jb-modal-result.mid { background: var(--jb-surface); color: var(--jb-muted); border: 1px solid var(--jb-border); }
+
+    .jb-loading { text-align: center; padding: 4rem 0; color: var(--jb-muted); font-size: .9rem; font-family: var(--jb-font); }
+    .jb-pulsate { animation: jb-pulsate 1.5s infinite ease-in-out; }
+    @keyframes jb-pulsate { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+
+    /* ── Checker approvals table (wealth-portal parity) ─────────────────── */
+    .jb-param-box {
+      background: var(--jb-surface); padding: .8rem 1rem;
+      border-radius: var(--jb-radius-sm); border: 1px solid var(--jb-border);
+      font-size: .78rem; line-height: 1.8; color: var(--jb-text);
+    }
+    .jb-param-box .jb-pk { color: var(--jb-primary); font-weight: 700; margin-right: .35rem; }
+    .jb-maker-name { font-weight: 700; color: var(--jb-text); font-size: .88rem; }
+    .jb-maker-handle { font-size: .72rem; color: var(--jb-muted); margin-top: .15rem; }
+    .jb-decision-cell { text-align: right; white-space: nowrap; }
+    .jb-btn-sm {
+      padding: .5rem 1rem; font-size: .72rem; border-radius: var(--jb-radius-sm);
+      box-shadow: var(--jb-shadow-sm); font-weight: 700; border: 1px solid transparent;
+      font-family: var(--jb-font); cursor: pointer; transition: var(--jb-trans);
+      display: inline-flex; align-items: center; gap: .3rem;
+    }
+    .jb-btn-sm:hover { transform: translateY(-1px); }
+    .jb-btn-approve-sm { background: var(--jb-success); color: #fff; border-color: var(--jb-success); }
+    .jb-btn-approve-sm:hover { filter: brightness(1.08); box-shadow: 0 4px 10px rgba(0,200,83,.3); }
+    .jb-btn-reject-sm { background: transparent; color: var(--jb-error); border-color: #FFCDD2; }
+    .jb-btn-reject-sm:hover { background: #FFEBEE; border-color: var(--jb-error); box-shadow: 0 4px 10px rgba(255,77,77,.15); }
+
+    /* ── Hide back button on Trigger panel for non-checker roles ────────── */
+    .jb-page.role-maker #jb-panel-trigger .jb-panel-back,
+    .jb-page.role-admin #jb-panel-trigger .jb-panel-back { display: none; }
+
+    /* ── "Sent to Checker" modal (wealth-portal confirm style) ──────────── */
+    .jb-confirm-details {
+      background: var(--jb-primary-bg);
+      border: 1px solid var(--jb-primary-light);
+      border-radius: var(--jb-radius-md);
+      padding: 1.25rem 1.5rem;
+      margin: 1.25rem 0;
+      text-align: left;
+    }
+    .jb-confirm-row {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 1rem; margin-bottom: .7rem; font-size: .85rem;
+    }
+    .jb-confirm-row:last-child { margin-bottom: 0; }
+    .jb-confirm-label { color: var(--jb-muted); font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .5px; }
+    .jb-confirm-value { color: var(--jb-text); font-weight: 700; font-family: var(--jb-font); font-size: .9rem; text-align: right; word-break: break-all; }
+    .jb-confirm-value.orange { color: var(--jb-primary); }
+
+    .jb-appr-status {
+      display: flex; align-items: center; justify-content: center; gap: .55rem;
+      background: var(--jb-surface); border: 1px solid var(--jb-border);
+      border-radius: var(--jb-radius-md); padding: .85rem 1rem;
+      font-size: .82rem; font-weight: 700; color: var(--jb-text);
+      margin-bottom: 1.25rem; letter-spacing: .3px;
+    }
+    .jb-appr-status .jb-dot { width: 10px; height: 10px; border-radius: 50%; animation: jb-pulse 1.1s ease infinite; }
+    .jb-appr-status.pending { background: #FFF3E0; border-color: #FFCC80; color: #E65100; }
+    .jb-appr-status.pending .jb-dot { background: #E65100; }
+    .jb-appr-status.approved { background: #E8F5E9; border-color: #A5D6A7; color: #2E7D32; animation: none; }
+    .jb-appr-status.approved .jb-dot { background: #2E7D32; animation: none; }
+    .jb-appr-status.rejected { background: #FFEBEE; border-color: #FFCDD2; color: #C62828; animation: none; }
+    .jb-appr-status.rejected .jb-dot { background: #C62828; animation: none; }
+
+    .jb-modal-icon {
+      width: 64px; height: 64px; margin: 0 auto 1rem;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 1.75rem; font-weight: 800;
+      background: var(--jb-primary-bg); color: var(--jb-primary);
+      border: 2px solid var(--jb-primary-light);
+    }
+    .jb-modal-icon.ok  { background: #E8F5E9; color: #2E7D32; border-color: #A5D6A7; }
+    .jb-modal-icon.bad { background: #FFEBEE; color: #C62828; border-color: #FFCDD2; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content jb-page" style="display:flex;flex-direction:column">
+    <div class="jb-wrap" id="jb-wrap">
+      <!-- Hero title (wealth-portal style) -->
+      <header class="jb-hero">
+        <h1>Trigger <span class="jb-orange">Jenkins Job</span></h1>
+        <p id="jb-page-sub">Pipeline: Config-driven build launcher</p>
+      </header>
+
+      <div class="jb-loading" id="jb-loading">กำลังโหลด...</div>
+
+      <div id="jb-body" style="display:none">
+        <!-- ── Portal-style status strip ──────────────────── -->
+        <div class="jb-status-grid">
+          <div class="jb-stat">
+            <div class="jb-stat-icon">J</div>
+            <div>
+              <div class="jb-stat-label">Jenkins Status</div>
+              <div class="jb-stat-value" id="jb-jenkins-status">—</div>
+            </div>
+          </div>
+          <div class="jb-stat">
+            <div class="jb-stat-icon">P</div>
+            <div>
+              <div class="jb-stat-label">รออนุมัติ</div>
+              <div class="jb-stat-value" id="jb-status-pending">—</div>
+            </div>
+          </div>
+          <div class="jb-stat">
+            <div class="jb-stat-icon">%</div>
+            <div>
+              <div class="jb-stat-label">Success Rate (50 ล่าสุด)</div>
+              <div class="jb-stat-value" id="jb-status-rate">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Role banner (checker/maker/admin) -->
+        <div class="jb-banner" id="jb-role-banner" style="display:none"></div>
+
+        <div class="jb-toolbar" id="jb-toolbar" style="display:none">
+          <button class="jb-refresh-btn" id="jb-refresh-btn">↻ Refresh</button>
+        </div>
+
+        <!-- ── Landing: choice cards (every role) ────────── -->
+        <div class="jb-checker-home" id="jb-checker-home" style="display:none">
+          <button class="jb-ch-card" id="jb-home-trigger" onclick="openCheckerPanel('trigger')">
+            <span class="jb-ch-icon">&#9889;</span>
+            <span class="jb-ch-title">Trigger</span>
+            <span class="jb-ch-sub">สร้างรายการ Build ใหม่</span>
+            <span class="jb-ch-count zero">สร้างได้เลย</span>
+          </button>
+          <button class="jb-ch-card" onclick="openCheckerPanel('approvals')">
+            <span class="jb-ch-icon">&#10003;</span>
+            <span class="jb-ch-title">รออนุมัติ</span>
+            <span class="jb-ch-sub">รายการที่รอการตัดสินใจ</span>
+            <span class="jb-ch-count" id="jb-ch-approvals-count">0 รายการ</span>
+          </button>
+          <button class="jb-ch-card" onclick="openCheckerPanel('history')">
+            <span class="jb-ch-icon">&#8635;</span>
+            <span class="jb-ch-title">Build History</span>
+            <span class="jb-ch-sub">ประวัติการ Build ของทีมทั้งหมด</span>
+            <span class="jb-ch-count" id="jb-ch-history-count">0 รายการ</span>
+          </button>
+        </div>
+
+        <!-- ── Panels (one at a time, slide in) ── -->
+        <div class="jb-checker-panels" id="jb-checker-panels">
+          <!-- Trigger panel: form (left) + System Status / Validation Rules (right) -->
+          <div id="jb-panel-trigger">
+            <button class="jb-panel-back" onclick="backToCheckerHome()">&larr; กลับไปหน้าหลัก</button>
+            <div class="jb-grid">
+              <div class="jb-card">
+                <h3>Build Parameters <span style="font-weight:400;color:var(--jb-muted);font-size:.8rem" id="jb-form-tool-name"></span></h3>
+                <p class="jb-card-sub" id="jb-form-desc">Please fill in all required information correctly to initiate the automation process.</p>
+                <div class="jb-toolbar">
+                  <select class="jb-tool-select" id="jb-tool-select"></select>
+                  <span class="jb-server-pill" id="jb-server-pill"></span>
+                </div>
+                <form id="jb-form" autocomplete="off"></form>
+              </div>
+
+              <div class="jb-side-col">
+                <div class="jb-card jb-status-card">
+                  <h4>System Status</h4>
+                  <div class="jb-status-line">
+                    <span class="jb-dot" id="jb-side-dot"></span>
+                    <span id="jb-side-user">Connecting...</span>
+                  </div>
+                </div>
+                <div class="jb-card">
+                  <h4>Validation Rules</h4>
+                  <ul class="jb-rules" id="jb-rules-list">
+                    <li><b>ID:</b> Must be a valid numerical customer ID. <b>No special characters allowed.</b></li>
+                    <li><b>TMNID:</b> Must be <code>tmn.</code> followed by exactly <code>11 digits</code>. <b>No special characters allowed.</b></li>
+                    <li><b>Mobile:</b> Exactly <code>10 digits</code>, no spaces or special characters.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="jb-panel-approvals">
+            <button class="jb-panel-back" onclick="backToCheckerHome()">&larr; กลับไปหน้าหลัก</button>
+            <div class="jb-card">
+              <h3>Pending <span class="jb-orange">Approvals</span> <span class="jb-count" id="jb-approvals-count">0</span></h3>
+              <p class="jb-card-sub">Review and authorize submitted pipelines · Maker ส่งรายการแล้วรอ Checker ตัดสินใจ</p>
+              <div class="jb-table-wrap" id="jb-approvals-list">
+                <table class="jb-table">
+                  <thead>
+                    <tr>
+                      <th style="width:170px">Submitted On</th>
+                      <th>Maker</th>
+                      <th>Target Parameters</th>
+                      <th class="jb-decision-cell" style="width:200px">Decision</th>
+                    </tr>
+                  </thead>
+                  <tbody id="jb-approvals-body">
+                    <tr><td colspan="4" class="jb-empty">ไม่มีรายการรออนุมัติ</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div id="jb-panel-history">
+            <button class="jb-panel-back" onclick="backToCheckerHome()">&larr; กลับไปหน้าหลัก</button>
+            <div class="jb-card">
+              <h3>Build History <span class="jb-count" id="jb-history-count">0</span></h3>
+              <p class="jb-card-sub">ประวัติการ Build ของทีม (auto-refresh ทุก 30 วิ)</p>
+              <div class="jb-table-wrap">
+                <table class="jb-table">
+                  <thead>
+                    <tr>
+                      <th>Tool</th><th>Params</th><th>Status / Result</th><th>Submitted By</th><th>Time</th><th>Build #</th>
+                    </tr>
+                  </thead>
+                  <tbody id="jb-history-body">
+                    <tr><td colspan="6" style="text-align:center;color:var(--jb-muted)">ยังไม่มีประวัติ</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress modal -->
+<div class="jb-modal-overlay" id="jb-progress-modal">
+  <div class="jb-modal">
+    <h3 id="jb-modal-title">Executing Pipeline</h3>
+    <div class="jb-modal-sub" id="jb-modal-status">Initializing build sequence...</div>
+    <div class="jb-progress-track"><div class="jb-progress-bar" id="jb-progress-bar"></div></div>
+    <div class="jb-progress-pct" id="jb-progress-pct">0%</div>
+    <div class="jb-modal-result" id="jb-modal-result"></div>
+    <button class="jb-submit" id="jb-modal-close" style="display:none">ปิด</button>
+  </div>
+</div>
+
+<!-- Approval-sent modal (Maker) — shows what was submitted + live status -->
+<div class="jb-modal-overlay" id="jb-approval-modal">
+  <div class="jb-modal">
+    <div class="jb-modal-icon" id="jb-appr-icon">&#8987;</div>
+    <h3 id="jb-appr-title">ส่งรายการให้ Checker แล้ว</h3>
+    <div class="jb-modal-sub" id="jb-appr-sub">Checker กำลังตรวจสอบคำขอของคุณ</div>
+
+    <div class="jb-appr-status pending" id="jb-appr-status">
+      <span class="jb-dot"></span>
+      <span id="jb-appr-status-text">Pending Approval</span>
+    </div>
+
+    <div class="jb-confirm-details" id="jb-appr-details"></div>
+
+    <div style="display:flex;gap:.75rem">
+      <button type="button" class="jb-btn-sm jb-btn-reject-sm" id="jb-appr-close" style="flex:1;justify-content:center;padding:.85rem 1rem">ปิด</button>
+      <button type="button" class="jb-submit" id="jb-appr-view" style="flex:1;margin-top:0;padding:.85rem 1rem;font-size:.82rem">ดูรายการรออนุมัติทั้งหมด</button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script>
+  if (!Auth.requireAuth()) {}
+  Layout.render('jenkins-build');
+
+  const state = {
+    tools: [], servers: {}, canApprove: false, jbRole: 'maker', toolId: null,
+    history: [], approvals: [], pollTimer: null,
+  };
+
+  const isChecker = () => state.jbRole === 'checker';
+
+  const $ = id => document.getElementById(id);
+
+  // ── Loaders ────────────────────────────────────────────────────────────────
+  async function loadTools() {
+    const res = await API.get('/jenkins-build/');
+    if (!res?.ok) throw new Error(res?.data?.message || 'โหลดไม่สำเร็จ');
+    state.tools   = res.data.data.tools   || [];
+    state.servers = res.data.data.servers || {};
+    state.canApprove = !!res.data.data.can_approve;
+    state.jbRole     = res.data.data.jb_role || 'maker';
+    if (!state.tools.length) {
+      $('jb-loading').textContent = 'ทีมของคุณยังไม่มี Jenkins Build tool ที่เปิดใช้งาน — ติดต่อ Admin';
+      $('jb-loading').style.display = '';
+      return;
+    }
+    if (!state.toolId || !state.tools.find(t => t.id === state.toolId)) {
+      state.toolId = state.tools[0].id;
+    }
+    // Tag page with role so CSS can hide back-button etc.
+    const pageEl = document.querySelector('.jb-page');
+    if (pageEl) {
+      pageEl.classList.remove('role-maker', 'role-checker', 'role-admin');
+      pageEl.classList.add('role-' + (state.jbRole || 'maker'));
+    }
+    renderToolbar();
+    renderRoleHeader();
+    // Trigger card ถูกซ่อนไว้เสมอ: Checker สร้างไม่ได้, Maker เข้ามาก็ไปหน้า Trigger ตรงๆ อยู่แล้ว
+    $('jb-home-trigger').style.display = 'none';
+    // Maker/Admin → ข้าม landing ไปหน้า Trigger เลย; Checker → เห็น landing 2 การ์ด (รออนุมัติ/History)
+    if (isChecker()) {
+      showCheckerHome();
+      renderCheckerHome();
+      const h1 = document.querySelector('.jb-hero h1');
+      const sub = document.getElementById('jb-page-sub');
+      if (h1) h1.innerHTML = 'Checker <span class="jb-orange">Dashboard</span>';
+      if (sub) sub.textContent = 'เลือกงานที่ต้องการตรวจสอบ · ' + state.approvals.filter(a => a.status === 'pending').length + ' รายการรออนุมัติ';
+    } else {
+      renderCheckerHome();
+      openCheckerPanel('trigger');
+    }
+  }
+
+  // ── Landing (all roles) ────────────────────────────────────────────────────
+  // Home shows choice cards (Trigger / รออนุมัติ / Build History). Checker sees
+  // only the last two. Clicking a card slides the matching panel in.
+  function showCheckerHome() {
+    $('jb-checker-panels').classList.remove('visible');
+    $('jb-checker-home').style.display = '';
+    document.querySelectorAll('#jb-checker-panels > div').forEach(p => { p.style.display = 'none'; });
+    state.checkerPanel = null;
+    const tb = $('jb-toolbar');
+    if (tb) tb.style.display = '';
+  }
+
+  function renderCheckerHome() {
+    const ap = $('jb-ch-approvals-count');
+    if (ap) ap.textContent = state.approvals.filter(a => a.status === 'pending').length + ' รายการ';
+    const hc = $('jb-ch-history-count');
+    if (hc) hc.textContent = state.history.length + ' รายการ';
+  }
+
+  function openCheckerPanel(name) {
+    const panels = $('jb-checker-panels');
+    $('jb-checker-home').style.display = 'none';
+    const tb = $('jb-toolbar');
+    if (tb) tb.style.display = 'none';
+    document.querySelectorAll('#jb-checker-panels > div').forEach(p => { p.style.display = 'none'; });
+    const target = $('jb-panel-' + name);
+    if (!target) return;
+    target.style.display = '';
+    target.classList.remove('jb-panel-enter');
+    void target.offsetWidth; // restart animation
+    target.classList.add('jb-panel-enter');
+    panels.classList.add('visible');
+    state.checkerPanel = name;
+    updateHero(name);
+    if (name === 'trigger') renderForm();
+    if (name === 'approvals') renderApprovals();
+    if (name === 'history') renderHistory();
+  }
+
+  // Hero title changes per panel — Trigger keeps "Trigger Jenkins Job",
+  // Approvals switches to "Pending Approvals", History to "Build History".
+  function updateHero(panel) {
+    const h1 = document.querySelector('.jb-hero h1');
+    const sub = document.getElementById('jb-page-sub');
+    if (!h1 || !sub) return;
+    if (panel === 'approvals') {
+      h1.innerHTML = 'Pending <span class="jb-orange">Approvals</span>';
+      sub.textContent = 'Review and authorize submitted pipelines';
+    } else if (panel === 'history') {
+      h1.innerHTML = 'Build <span class="jb-orange">History</span>';
+      sub.textContent = 'ประวัติการ Build ของทีม · auto-refresh ทุก 30 วิ';
+    } else {
+      h1.innerHTML = 'Trigger <span class="jb-orange">Jenkins Job</span>';
+      const tool = state.tools.find(t => t.id === state.toolId);
+      sub.textContent = tool ? 'Pipeline: ' + (tool.name || tool.id) : 'Pipeline: Config-driven build launcher';
+    }
+  }
+
+  function backToCheckerHome() {
+    showCheckerHome();
+    renderCheckerHome();
+    // Checker landing = pick between รออนุมัติ / History
+    const h1 = document.querySelector('.jb-hero h1');
+    const sub = document.getElementById('jb-page-sub');
+    if (h1 && sub) {
+      if (isChecker()) {
+        h1.innerHTML = 'Checker <span class="jb-orange">Dashboard</span>';
+        sub.textContent = 'เลือกงานที่ต้องการตรวจสอบ';
+      } else {
+        h1.innerHTML = 'Trigger <span class="jb-orange">Jenkins Job</span>';
+        sub.textContent = 'Pipeline: Config-driven build launcher';
+      }
+    }
+  }
+
+  // Role banner — explains what this user can/cannot do (maker vs checker).
+  function renderRoleHeader() {
+    const el = $('jb-role-banner');
+    if (!el) return;
+    if (state.jbRole === 'checker') {
+      el.style.display = '';
+      el.innerHTML = '🛂 คุณเป็น <b>Checker</b> — ตรวจสอบและอนุมัติรายการได้อย่างเดียว ไม่สามารถสร้างรายการ Build ใหม่ได้';
+    } else if (state.jbRole === 'maker') {
+      el.style.display = '';
+      el.innerHTML = '✍️ คุณเป็น <b>Maker</b> — สร้างรายการ Build ได้ และรอ Checker อนุมัติก่อนเริ่ม Build';
+    } else if (state.jbRole === 'admin') {
+      el.style.display = '';
+      el.innerHTML = '👑 คุณเป็น <b>Admin</b> — สร้างรายการได้ และอนุมัติได้โดยตรง';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  async function loadHistory() {
+    const res = await API.get('/jenkins-build/?history=1');
+    if (!res?.ok) return;
+    state.history = res.data.data || [];
+    renderHistory();
+    renderStats();
+    renderCheckerHome();
+  }
+
+  async function loadApprovals() {
+    const res = await API.get('/jenkins-build/?approvals=1');
+    if (!res?.ok) return;
+    state.approvals = (res.data.data || []).filter(a => a.status === 'pending');
+    renderApprovals();
+    renderStats();
+    renderCheckerHome();
+  }
+
+  async function refreshAll() {
+    try {
+      await Promise.all([loadTools(), loadHistory(), loadApprovals()]);
+      $('jb-loading').style.display = 'none';
+      $('jb-body').style.display = '';
+    } catch (e) {
+      $('jb-loading').textContent = e.message;
+    }
+  }
+
+  // ── Stats + Server status (portal-style cards) ────────────────────────────
+  function renderStats() {
+    const recent  = state.history.slice(0, 50);
+    const succ    = recent.filter(h => String(h.status).toLowerCase() === 'success').length;
+    const rateEl  = $('jb-status-rate');
+    if (rateEl) rateEl.textContent = recent.length ? Math.round(succ / recent.length * 100) + '%' : '—';
+    const pendEl  = $('jb-status-pending');
+    if (pendEl) {
+      const n = state.approvals.length;
+      pendEl.textContent = n + ' รายการ';
+      pendEl.className = 'jb-status-value' + (n > 0 ? ' warn' : '');
+    }
+  }
+
+  async function loadStatus() {
+    const el = $('jb-jenkins-status');
+    if (!el) return;
+    const tool = state.tools[0];
+    if (!tool) return;
+    try {
+      const res = await API.get('/jenkins-build/?status=1&tool_id=' + encodeURIComponent(tool.id));
+      if (!res?.ok) { el.textContent = 'ไม่สามารถเช็คได้'; el.className = 'jb-status-value bad'; return; }
+      const d = res.data.data || {};
+      if (d.reachable) {
+        el.textContent = 'Connected' + (d.last_build ? ' · #' + d.last_build.number : '');
+        el.className = 'jb-status-value ok';
+      } else {
+        el.textContent = 'Offline'; el.title = d.message || ''; el.className = 'jb-status-value bad';
+      }
+    } catch { el.textContent = '—'; }
+  }
+
+  // ── Toolbar + form ─────────────────────────────────────────────────────────
+  function renderToolbar() {
+    const sel = $('jb-tool-select');
+    sel.innerHTML = state.tools.map(t =>
+      `<option value="${escHtml(t.id)}">${escHtml(t.name || t.id)}</option>`
+    ).join('');
+    sel.value = state.toolId;
+
+    const tool = state.tools.find(t => t.id === state.toolId);
+    const srv  = tool ? state.servers[tool.server_id] : null;
+    $('jb-server-pill').textContent = srv ? '⊙ ' + (srv.display || srv.base_url) : '⊙ server not configured';
+    $('jb-form-tool-name').textContent = tool ? '— ' + escHtml(tool.name || '') : '';
+    $('jb-form-desc').textContent = tool?.description || 'Please fill in all required information correctly to initiate the automation process.';
+    const sub = document.getElementById('jb-page-sub');
+    if (sub && tool) sub.textContent = 'Pipeline: ' + (tool.name || tool.id);
+  }
+
+  function renderForm() {
+    const tool = state.tools.find(t => t.id === state.toolId);
+    const form = $('jb-form');
+    if (!tool) { form.innerHTML = '<div class="jb-empty">ไม่พบ tool</div>'; return; }
+    // Checker cannot create build requests — show a notice instead of the form.
+    if (isChecker()) {
+      form.innerHTML = '<div class="jb-empty" style="padding:24px">🛂 Checker ไม่สามารถสร้างรายการได้ — ตรวจสอบและอนุมัติจากช่อง "รออนุมัติ" ทางขวาเท่านั้น</div>';
+      const btn = $('jb-submit-btn');
+      if (btn) btn.style.display = 'none';
+      return;
+    }
+
+    form.innerHTML = (tool.params || []).map(p => {
+      const label = escHtml(p.label || p.key) + (p.required ? ' <span style="color:#ef4444">*</span>' : '');
+      const hint = p.hint ? `<div class="jb-hint">${escHtml(p.hint)}</div>` : '';
+      const err  = '<div class="jb-err">รูปแบบไม่ถูกต้อง</div>';
+      if (p.type === 'select' && Array.isArray(p.options)) {
+        const opts = (p.required ? '<option value="">— เลือก —</option>' : '') + p.options
+          .map(o => typeof o === 'object'
+            ? `<option value="${escHtml(String(o.value ?? o.label))}">${escHtml(String(o.label ?? o.value))}</option>`
+            : `<option value="${escHtml(String(o))}">${escHtml(String(o))}</option>`).join('');
+        return `<div class="jb-field" data-key="${escHtml(p.key)}">
+          <label>${label}</label>
+          <select data-key="${escHtml(p.key)}" data-required="${p.required ? 1 : 0}">${opts}</select>
+          ${hint}${err}</div>`;
+      }
+      const isReadonly = (tool.auto_params || {})[p.key];
+      const roAttr = isReadonly ? ' readonly class="jb-readonly"' : '';
+      return `<div class="jb-field" data-key="${escHtml(p.key)}">
+        <label>${label}</label>
+        <input type="text" data-key="${escHtml(p.key)}" placeholder="${escHtml(p.placeholder || '')}"
+               data-pattern="${escHtml(p.pattern || '')}" data-required="${p.required ? 1 : 0}"
+               ${p.required ? 'required' : ''}${roAttr}>
+        ${hint}${err}</div>`;
+    }).join('') + `
+      <button type="submit" class="jb-submit" id="jb-submit-btn">
+        <span>⚡</span> ${tool.approval?.enabled && !state.canApprove ? 'ส่งเพื่อขออนุมัติ' : 'Run Build Pipeline'}
+      </button>`;
+
+    const me = Auth.getUser();
+    form.querySelectorAll('input[readonly]').forEach(inp => {
+      if ((tool.auto_params || {})[inp.dataset.key] === 'username') inp.value = me?.username || '';
+    });
+    form.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('input',  () => { validateField(el); updateSubmitState(); });
+      el.addEventListener('change', () => { validateField(el); updateSubmitState(); });
+    });
+    updateSubmitState();
+  }
+
+  function validateField(el) {
+    const field = el.closest('.jb-field');
+    const pattern = el.dataset.pattern;
+    const val = el.value.trim();
+    let ok = true;
+    if (el.dataset.required === '1' && val === '') ok = false;
+    else if (val && pattern) { try { ok = new RegExp('^(?:' + pattern + ')$').test(val); } catch { ok = true; } }
+    el.classList.toggle('jb-invalid', !ok);
+    field.classList.toggle('jb-has-err', !ok && val !== '');
+    return ok;
+  }
+
+  function updateSubmitState() {
+    const btn = $('jb-submit-btn');
+    if (!btn) return;
+    const els = [...$('jb-form').querySelectorAll('input, select')];
+    btn.disabled = !els.every(validateField) || els.some(e => e.dataset.required === '1' && !e.value.trim());
+  }
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
+  // Guard: if Auth/Layout already showed a No Access overlay, document.body
+  // was wiped — stop before touching elements that no longer exist.
+  const _jbForm = document.getElementById('jb-form');
+  if (_jbForm) {
+    _jbForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const tool = state.tools.find(t => t.id === state.toolId);
+    if (!tool) return;
+
+    const params = {};
+    $('jb-form').querySelectorAll('input, select').forEach(el => { params[el.dataset.key] = el.value.trim(); });
+
+    const res = await API.post('/jenkins-build/', { action: 'submit', tool_id: state.toolId, params });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'Submit ล้มเหลว'); return; }
+
+    const d = res.data.data;
+    if (d.status === 'pending_approval') {
+      $('jb-form').reset();
+      updateSubmitState();
+      await loadApprovals();
+      openApprovalSentModal(d.approval_id || d.id, params, tool);
+    } else if (d.status === 'queued') {
+      Toast.success('Build ถูก queue แล้ว');
+      $('jb-form').reset();
+      updateSubmitState();
+      openProgress(d.queue_id);
+      await loadHistory();
+    }
+    });
+  }
+
+  // ── Approvals (table view, wealth-portal style) ────────────────────────────
+  function renderApprovals() {
+    $('jb-approvals-count').textContent = state.approvals.length;
+    const body = $('jb-approvals-body');
+    if (!body) return;
+    if (!state.approvals.length) {
+      body.innerHTML = '<tr><td colspan="4" class="jb-empty">&#127881; No pending approvals right now.</td></tr>';
+      return;
+    }
+    body.innerHTML = state.approvals.map(a => {
+      const paramsHtml = Object.entries(a.params || {})
+        .filter(([k]) => !k.startsWith('updated_by'))
+        .map(([k, v]) => `<span class="jb-pk">${escHtml(k)}:</span> ${escHtml(String(v))}`)
+        .join('<br>');
+      const decisionCell = state.canApprove
+        ? `<div style="display:inline-flex;gap:.5rem">
+            <button class="jb-btn-sm jb-btn-approve-sm" onclick="decideApproval('${escHtml(a.id)}', 'approve')">&#10003; Approve</button>
+            <button class="jb-btn-sm jb-btn-reject-sm" onclick="decideApproval('${escHtml(a.id)}', 'reject')">&#10007; Reject</button>
+          </div>`
+        : '<span class="jb-hint" style="margin:0">รอ Checker…</span>';
+      return `<tr data-id="${escHtml(a.id)}">
+        <td class="jb-meta-cell">${escHtml(fmtTime(a.submitted_at))}</td>
+        <td>
+          <div class="jb-maker-name">${escHtml(a.submitted_name || a.submitted_by || '—')}</div>
+          <div class="jb-maker-handle">${escHtml(a.tool_name || a.tool_id || '')}</div>
+        </td>
+        <td><div class="jb-param-box">${paramsHtml || '<span style="color:var(--jb-muted)">(no params)</span>'}</div></td>
+        <td class="jb-decision-cell">${decisionCell}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function decideApproval(id, action) {
+    const a = state.approvals.find(x => x.id === id);
+    const label = action === 'approve' ? 'อนุมัติ' : 'ปฏิเสธ';
+    const paramsText = Object.entries(a?.params || {}).map(([k,v]) => k + ': ' + v).join('\n');
+    if (!await confirmDialog(paramsText || '(ไม่มีข้อมูล params)', `ยืนยันการ${label}?`, {
+      variant: action === 'approve' ? 'primary' : 'danger',
+      confirmText: label, cancelText: 'ยกเลิก'
+    })) return;
+    const res = await API.post('/jenkins-build/', { action, approval_id: id });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'ดำเนินการไม่สำเร็จ'); return; }
+    Toast.success(res.data.message || (label + 'สำเร็จ'));
+    const d = res.data.data;
+    if (d?.status === 'queued') openProgress(d.queue_id);
+    await Promise.all([loadApprovals(), loadHistory()]);
+  }
+
+  // ── History ────────────────────────────────────────────────────────────────
+  function fmtDuration(val) {
+    if (!val) return '';
+    const ms = Number(val);
+    if (isNaN(ms) || ms <= 0) return String(val);
+    const s = Math.round(ms / 1000);
+    if (s < 60) return s + 's';
+    const m = Math.floor(s / 60), rem = s % 60;
+    if (m < 60) return m + 'm' + (rem ? ' ' + rem + 's' : '');
+    return Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+  }
+
+  function buildUrl(h) {
+    if (!h.build_number) return null;
+    const tool = state.tools.find(t => t.id === h.tool_id);
+    if (!tool) return null;
+    const srv = state.servers[tool.server_id];
+    if (!srv?.base_url) return null;
+    return srv.base_url.replace(/\/$/, '') + tool.job_path + '/' + h.build_number + '/';
+  }
+
+  function statusBadge(status) {
+    const s = String(status || '').toLowerCase();
+    const map = {
+      success: ['jb-b-success', 'Success'], failure: ['jb-b-failure', 'Failure'],
+      aborted: ['jb-b-aborted', 'Aborted'], rejected: ['jb-b-rejected', 'Rejected'],
+      queued: ['jb-b-running', 'Queued'], 'in queue': ['jb-b-running', 'In Queue'],
+      building: ['jb-b-running', 'Building'],
+    };
+    const [cls, label] = map[s] || ['jb-b-unknown', status || 'Unknown'];
+    return `<span class="jb-badge ${cls}">${escHtml(label)}</span>`;
+  }
+
+  function historyRowsHtml() {
+    if (!state.history.length) {
+      return '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">ยังไม่มีประวัติ</td></tr>';
+    }
+    return state.history.map(h => {
+      const params = Object.entries(h.params || {})
+        .filter(([k]) => !k.startsWith('updated_by'))
+        .map(([k, v]) => `${k}=${v}`).join(' · ');
+      const url = buildUrl(h);
+      const s = String(h.status || '').toLowerCase();
+      const isLive = ['queued', 'in queue', 'building'].includes(s);
+      const buildCell = h.build_number
+        ? (url
+            ? `<a href="${url}" target="_blank" rel="noopener" style="color:var(--orange);font-weight:800;text-decoration:none">#${escHtml(String(h.build_number))} <span style="font-size:9px;opacity:.7">&#8599;</span></a>`
+            : `<span style="font-weight:800">#${escHtml(String(h.build_number))}</span>`)
+        : (isLive ? `<span style="color:var(--text-muted);font-size:10px">In Queue</span>` : '<span style="opacity:.35">—</span>');
+      const dur = h.duration ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${fmtDuration(h.duration)}</div>` : '';
+      const approval = [
+        h.approved_by ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px">✓ ${escHtml(h.approved_by)}</div>` : '',
+        h.rejected_by ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px">✕ ${escHtml(h.rejected_by)}</div>` : '',
+      ].join('');
+      const resultLabel = h.result && !isLive
+        ? `<div style="font-size:9.5px;color:var(--text-muted);margin-top:2px;letter-spacing:.03em">${escHtml(h.result)}</div>`
+        : '';
+      return `<tr>
+        <td class="jb-tool-cell">${escHtml(h.tool_name || h.tool_id || '')}</td>
+        <td class="jb-params-cell">${escHtml(params)}</td>
+        <td>${statusBadge(h.status)}${resultLabel}</td>
+        <td class="jb-meta-cell">${escHtml(h.user_name || h.user_id || '')}</td>
+        <td class="jb-meta-cell">${escHtml(fmtTime(h.ts))}</td>
+        <td class="jb-meta-cell">${buildCell}${dur}${approval}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderHistory() {
+    $('jb-history-count').textContent = state.history.length;
+    const body = $('jb-history-body');
+    if (body) body.innerHTML = historyRowsHtml();
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+
+  // ── Progress modal ─────────────────────────────────────────────────────────
+  function openProgress(queueId) {
+    const tool = state.tools.find(t => t.id === state.toolId);
+    if (!tool) return;
+    const modal = $('jb-progress-modal');
+    $('jb-modal-title').textContent = 'Executing Pipeline';
+    $('jb-modal-status').textContent = 'Waiting in Jenkins queue...';
+    $('jb-progress-bar').style.width = '0%';
+    $('jb-progress-pct').textContent = '0%';
+    $('jb-modal-result').style.display = 'none';
+    $('jb-modal-close').style.display = 'none';
+    modal.style.display = 'flex';
+
+    let tries = 0;
+    const poll = async () => {
+      tries++;
+      const res = await API.get(`/jenkins-build/?action=status&tool_id=${encodeURIComponent(tool.id)}&queue_id=${encodeURIComponent(queueId)}`);
+      if (!res?.ok) { $('jb-modal-status').textContent = 'Error polling status'; return; }
+      const st = res.data.data || {};
+      $('jb-progress-bar').style.width = (st.progress || 0) + '%';
+      $('jb-progress-pct').textContent = (st.progress || 0) + '%';
+      if (st.status === 'Finished') {
+        $('jb-modal-status').textContent = 'Build completed.';
+        $('jb-modal-title').textContent = 'Pipeline Finished';
+        const result = (st.result || 'UNKNOWN').toUpperCase();
+        const el = $('jb-modal-result');
+        el.textContent = 'STATUS: ' + result;
+        el.className = 'jb-modal-result ' + (result === 'SUCCESS' ? 'ok' : result === 'FAILURE' ? 'bad' : 'mid');
+        el.style.display = 'block';
+        $('jb-progress-bar').style.width = '100%';
+        $('jb-progress-pct').textContent = '100%';
+        $('jb-modal-close').style.display = '';
+        await loadHistory();
+        return;
+      }
+      if (st.status === 'Building') $('jb-modal-status').textContent = 'Processing pipeline steps...';
+      if (st.status === 'In Queue') $('jb-modal-status').textContent = 'Waiting in Jenkins queue...';
+      if (st.status === 'Unknown' && tries > 40) { // ~60s timeout
+        $('jb-modal-status').textContent = 'ไม่สามารถติดตามสถานะได้ (Jenkins queue หมดอายุ) — ตรวจใน History';
+        $('jb-modal-close').style.display = '';
+        return;
+      }
+      setTimeout(poll, 1500);
+    };
+    poll();
+  }
+
+  $('jb-modal-close').addEventListener('click', () => { $('jb-progress-modal').style.display = 'none'; });
+
+  // ── Approval-sent popup (Maker) ───────────────────────────────────────────
+  // Opens after submit-with-approval succeeds. Lists what was sent and polls
+  // /approvals every 5s; when the item disappears from pending, cross-checks
+  // history to say Approved or Rejected, and shows a "start build progress"
+  // button if Checker approved (queued).
+  let apprPollTimer = null;
+  function openApprovalSentModal(approvalId, params, tool) {
+    const modal = $('jb-approval-modal');
+    const details = $('jb-appr-details');
+    const rows = Object.entries(params || {})
+      .filter(([k]) => !k.startsWith('updated_by'))
+      .map(([k, v]) => `
+        <div class="jb-confirm-row">
+          <span class="jb-confirm-label">${escHtml(k)}</span>
+          <span class="jb-confirm-value">${escHtml(String(v))}</span>
+        </div>`).join('');
+    const me = Auth.getUser();
+    details.innerHTML = `
+      <div class="jb-confirm-row">
+        <span class="jb-confirm-label">Tool</span>
+        <span class="jb-confirm-value orange">${escHtml(tool?.name || tool?.id || '')}</span>
+      </div>
+      ${rows}
+      <div class="jb-confirm-row">
+        <span class="jb-confirm-label">Submitted By</span>
+        <span class="jb-confirm-value">${escHtml(me?.fullname || me?.username || '')}</span>
+      </div>
+      <div class="jb-confirm-row">
+        <span class="jb-confirm-label">Submitted At</span>
+        <span class="jb-confirm-value">${escHtml(fmtTime(new Date().toISOString()))}</span>
+      </div>`;
+
+    setApprState('pending', 'Pending Approval', 'Checker กำลังตรวจสอบคำขอของคุณ', '⏳');
+    modal.style.display = 'flex';
+
+    if (apprPollTimer) clearInterval(apprPollTimer);
+    if (!approvalId) return; // no id → static popup, user can close manually
+    apprPollTimer = setInterval(() => pollApproval(approvalId), 5000);
+  }
+
+  function setApprState(state, statusText, subText, icon) {
+    const statusEl = $('jb-appr-status');
+    statusEl.className = 'jb-appr-status ' + state;
+    $('jb-appr-status-text').textContent = statusText;
+    $('jb-appr-sub').textContent = subText;
+    const iconEl = $('jb-appr-icon');
+    iconEl.textContent = icon;
+    iconEl.className = 'jb-modal-icon' + (state === 'approved' ? ' ok' : state === 'rejected' ? ' bad' : '');
+    if (state === 'approved') $('jb-appr-title').textContent = 'Checker อนุมัติแล้ว';
+    else if (state === 'rejected') $('jb-appr-title').textContent = 'Checker ปฏิเสธรายการ';
+    else $('jb-appr-title').textContent = 'ส่งรายการให้ Checker แล้ว';
+  }
+
+  async function pollApproval(approvalId) {
+    try {
+      const apvRes = await API.get('/jenkins-build/?approvals=1');
+      const stillPending = (apvRes?.data?.data || [])
+        .some(a => a.id === approvalId && a.status === 'pending');
+      if (stillPending) return; // keep polling
+
+      // Not pending anymore → check history to see if approved (queued/building/done) or rejected
+      const hRes = await API.get('/jenkins-build/?history=1');
+      const hist = (hRes?.data?.data || []).find(h => h.approval_id === approvalId);
+      const status = String(hist?.status || '').toLowerCase();
+
+      if (['queued', 'in queue', 'building', 'success', 'failure', 'aborted'].includes(status)) {
+        setApprState('approved', 'Approved & Building', 'Checker อนุมัติแล้ว · Build กำลังทำงาน', '✓');
+      } else if (status === 'rejected' || hist?.rejected_by) {
+        setApprState('rejected', 'Rejected', 'Checker ปฏิเสธรายการนี้', '✕');
+      } else {
+        // Fallback: no longer pending, no history match — assume acted on
+        setApprState('approved', 'Reviewed', 'Checker ได้ตรวจสอบรายการแล้ว', '✓');
+      }
+      clearInterval(apprPollTimer);
+      apprPollTimer = null;
+      await loadHistory();
+    } catch { /* keep polling on transient errors */ }
+  }
+
+  $('jb-appr-close').addEventListener('click', () => {
+    $('jb-approval-modal').style.display = 'none';
+    if (apprPollTimer) { clearInterval(apprPollTimer); apprPollTimer = null; }
+  });
+  $('jb-appr-view').addEventListener('click', () => {
+    $('jb-approval-modal').style.display = 'none';
+    if (apprPollTimer) { clearInterval(apprPollTimer); apprPollTimer = null; }
+    // Maker doesn't normally have the approvals landing — show it explicitly.
+    showCheckerHome();
+    renderCheckerHome();
+    openCheckerPanel('approvals');
+  });
+
+  // ── Tool switch ────────────────────────────────────────────────────────────
+  $('jb-tool-select').addEventListener('change', (e) => {
+    state.toolId = e.target.value;
+    renderToolbar();
+    renderForm();
+  });
+
+  $('jb-refresh-btn').addEventListener('click', async () => {
+    await Promise.all([loadHistory(), loadApprovals()]);
+    Toast.success('อัปเดตแล้ว');
+  });
+
+  // ── Side "System Status" panel (Trigger view) ────────────────────────────
+  function renderSideStatus() {
+    const me = Auth.getUser();
+    const nameEl = document.getElementById('jb-side-user');
+    const dotEl  = document.getElementById('jb-side-dot');
+    if (nameEl) {
+      const display = me?.fullname || me?.name || me?.username || 'Guest';
+      nameEl.textContent = 'Authenticated: ' + display;
+    }
+    if (dotEl) dotEl.className = 'jb-dot' + (me ? '' : ' bad');
+  }
+
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  (async function init() {
+    renderSideStatus();
+    await refreshAll();
+    loadStatus();
+    setInterval(() => { loadHistory(); loadApprovals(); }, 30_000);
+    setInterval(loadStatus, 60_000);
+  })();
+</script>
+</body>
+</html>

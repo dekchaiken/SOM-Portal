@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Base Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .admin-actions {
+      display: flex; gap: 10px; margin-bottom: 20px;
+      padding: 16px; background: var(--bg-card);
+      border: 1.5px solid var(--border); border-radius: 10px;
+    }
+    .stat-row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px; margin-bottom: 20px;
+    }
+    .stat-box {
+      padding: 16px; background: var(--bg-card);
+      border: 1.5px solid var(--border); border-radius: 10px;
+    }
+    .stat-box-label {
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px;
+    }
+    .stat-box-value {
+      font-size: 28px; font-weight: 800; color: var(--text);
+    }
+    .category-list {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .category-card {
+      padding: 16px 20px; background: var(--bg-card);
+      border: 1.5px solid var(--border); border-radius: 10px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .category-info { flex: 1; }
+    .category-name {
+      font-size: 13px; font-weight: 700; color: var(--text);
+      margin-bottom: 4px;
+    }
+    .category-meta {
+      font-size: 10px; color: var(--text-muted);
+    }
+    .category-actions {
+      display: flex; gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside id="sidebar-mount"></aside>
+
+    <main class="main-content">
+      <div class="topbar">
+        <div class="tb-prompt">
+          <span class="tb-path">~/sm/admin</span>
+          <span class="tb-arrow"><i data-icon="play"></i></span>
+        </div>
+        <div class="topbar-title">
+          <span class="page-title">Knowledge Base Admin</span>
+          <span class="page-sub">จัดการ Categories & Data</span>
+        </div>
+      </div>
+
+      <div class="page-content">
+
+        <section class="page-hero">
+          <div class="page-hero-mark"><i data-icon="book-open"></i></div>
+          <div class="page-hero-body">
+            <div class="page-hero-eyebrow">Admin</div>
+            <h1>Knowledge Base</h1>
+            <p>จัดการ Categories และ Data — Q&amp;A, runbook, knowledge entries สำหรับทีม SM</p>
+          </div>
+        </section>
+
+        <!-- Stats -->
+        <div class="stat-row" id="stats-row">
+          <div class="stat-box">
+            <div class="stat-box-label">Total Categories</div>
+            <div class="stat-box-value" id="stat-categories">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">Total Entries</div>
+            <div class="stat-box-value" id="stat-entries">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">Last Updated</div>
+            <div class="stat-box-value" style="font-size:14px" id="stat-updated">—</div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="admin-actions">
+          <button class="btn btn-primary" onclick="exportData()">
+            <i>↓</i> Export JSON
+          </button>
+          <button class="btn btn-outline" onclick="openImportModal()">
+            <i>↑</i> Import JSON
+          </button>
+          <button class="btn btn-danger" onclick="confirmClearAll()">
+            <i>⌫</i> Clear All Data
+          </button>
+        </div>
+
+        <!-- Categories -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Categories Management</h3>
+          </div>
+          <div class="card-body">
+            <div class="category-list" id="category-list">
+              <!-- Dynamic -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal-overlay" id="modal-delete-category">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Delete Category</h3>
+        <button class="btn-close" onclick="closeModal('modal-delete-category')">×</button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete this category and all its entries?</p>
+        <p style="color:var(--danger);font-weight:600;margin-top:10px">This action cannot be undone!</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-delete-category')">Cancel</button>
+        <button class="btn btn-danger" onclick="executeDeleteCategory()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-import">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Import JSON Data</h3>
+        <button class="btn-close" onclick="closeModal('modal-import')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Paste JSON Data</label>
+          <textarea class="form-control" id="import-json" rows="10" placeholder='{"categories": {...}, "entries": {...}}'></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-import')">Cancel</button>
+        <button class="btn btn-primary" onclick="executeImport()">Import</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/layout.js"></script>
+  <script src="../assets/js/admin-nav.js"></script>
+  <script src="../assets/js/admin-kb.js"></script>
+</body>
+</html>

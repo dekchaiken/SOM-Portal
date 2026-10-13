@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenSearch — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/opensearch-config/opensearch-config.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="database"></i> OpenSearch Endpoints</div>
+        <div class="page-sub">Config for the SM log viewer (service-performance.html → View Logs)</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadEndpoints()" style="font-size:11px">↺ Reload</button>
+        <button class="btn btn-primary" onclick="openModal()">+ Add endpoint</button>
+      </div>
+    </header>
+
+    <main class="page-content os">
+      <div class="os-hint">
+        Each endpoint = 1 OpenSearch cluster the log viewer can query (basic-auth user/pass).
+        <b>Default index pattern</b> is what auto-loads when the viewer opens (e.g. <code>logstash-tmn-*-applog-*</code>).
+        Extra patterns are picker options. <b>Dashboards URL</b> is optional — used only to build the "Open in OpenSearch" deeplink.
+        Passwords are stored in <code>data/sm/opensearch_config.json</code> (SM-only file).
+      </div>
+
+      <div class="os-card">
+        <div class="os-defaults">
+          <div>
+            <label>Default page size</label>
+            <input id="os-def-size" type="number" min="10" max="2000">
+          </div>
+          <div>
+            <label>Max page size cap</label>
+            <input id="os-def-max" type="number" min="50" max="5000">
+          </div>
+          <div>
+            <label>Default time range (minutes)</label>
+            <input id="os-def-range" type="number" min="1" max="1440">
+          </div>
+        </div>
+        <div class="os-defaults-foot">
+          <button class="os-btn primary" onclick="saveDefaults()">Save defaults</button>
+        </div>
+      </div>
+
+      <div class="os-card">
+        <table class="os-table">
+          <thead>
+            <tr>
+              <th style="width:44px">On</th>
+              <th>Name</th>
+              <th>Base URL</th>
+              <th>Default index</th>
+              <th>User</th>
+              <th style="width:150px">Test</th>
+              <th style="width:96px"></th>
+            </tr>
+          </thead>
+          <tbody id="os-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="modal-overlay" id="os-modal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <span class="modal-title" id="os-modal-title">Add endpoint</span>
+      <button class="btn-close" onclick="closeModal()"><i data-icon="x"></i></button>
+    </div>
+
+    <div class="modal-body">
+      <input type="hidden" id="os-edit-id">
+
+      <div class="form-group">
+        <label class="form-label">Name *</label>
+        <input type="text" id="os-f-name" class="form-control" placeholder="e.g. TMN OpenSearch (private-a-cloud1p)">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Base URL *</label>
+        <input type="text" id="os-f-url" class="form-control" placeholder="https://opensearch.private-a-cloud1p.ascendmoney.io" style="font-family:ui-monospace,monospace">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:5px">
+          Host of the OpenSearch or OpenSearch Dashboards front door. Auto-normalized to <code>scheme://host</code> on save (paths/query stripped).
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Auth mode *</label>
+        <div class="os-modetabs" id="os-modetabs">
+          <div class="os-modetab active" data-mode="basic">
+            Direct REST (basic auth)
+            <span class="sub">Hit /_cluster/health, /_search etc. with HTTP Basic</span>
+          </div>
+          <div class="os-modetab" data-mode="dashboards">
+            Dashboards proxy
+            <span class="sub">Login via /auth/login, query through /internal/search/opensearch</span>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
+          Use <b>Dashboards proxy</b> when the REST API isn't exposed publicly and you only have Dashboards login credentials (session cookies + <code>osd-xsrf</code> header).
+        </div>
+      </div>
+
+      <div class="form-group" id="os-osd-ver-field" style="display:none">
+        <label class="form-label">Dashboards version (osd-version header)</label>
+        <input type="text" id="os-f-osdver" class="form-control" placeholder="2.7.0" style="font-family:ui-monospace,monospace;max-width:120px">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:5px">Must match server. Check DevTools → Network → any request → <code>osd-version</code> header.</div>
+      </div>
+
+      <div style="display:flex;gap:14px">
+        <div class="form-group" style="flex:1;min-width:0">
+          <label class="form-label">Username *</label>
+          <input type="text" id="os-f-user" class="form-control" placeholder="basic-auth username" autocomplete="off" style="font-family:ui-monospace,monospace">
+        </div>
+        <div class="form-group" style="flex:1;min-width:0">
+          <label class="form-label">Password</label>
+          <input type="password" id="os-f-pass" class="form-control" placeholder="leave blank to keep existing" autocomplete="new-password" style="font-family:ui-monospace,monospace">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Default index pattern *</label>
+        <input type="text" id="os-f-idx" class="form-control" placeholder="logstash-tmn-*-applog-*" style="font-family:ui-monospace,monospace">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Extra index patterns (optional)</label>
+        <div class="os-chips-input" id="os-idx-chips">
+          <input id="os-idx-in" type="text" placeholder="type pattern + Enter to add">
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:5px">Show up in the viewer's index dropdown</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Dashboards URL (optional)</label>
+        <input type="text" id="os-f-dash" class="form-control" placeholder="https://opensearch.private-a-cloud1p.ascendmoney.io" style="font-family:ui-monospace,monospace">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:5px">Used only for the "Open in OpenSearch" deeplink — fallback to Base URL if empty</div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:0">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <span class="switch"><input type="checkbox" id="os-f-enabled" checked><span class="slider"></span></span>
+          <span id="os-enabled-lbl" style="font-weight:600;font-size:12px">Enabled</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-ghost btn-sm" id="os-test-btn" onclick="testInModal()"><i data-icon="plug"></i> Test connection</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="os-save-btn" onclick="saveEndpoint()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/opensearch-config/opensearch-config.js"></script>
+</body>
+</html>

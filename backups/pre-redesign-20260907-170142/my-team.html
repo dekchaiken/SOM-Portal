@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Team — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/dev-badge.css">
+  <style>
+    :root {
+      --accent:      var(--orange);
+      --accent-soft: rgba(242,100,25,.10);
+      --accent-line: rgba(242,100,25,.35);
+      --accent-glow: rgba(242,100,25,.20);
+    }
+
+    .mt-wrap { max-width: 1400px; margin: 0 auto; padding-bottom: 40px; }
+
+    .mt-head { display: flex; align-items: flex-end; justify-content: space-between;
+               gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .mt-title { font-size: 20px; font-weight: 800; margin: 0; letter-spacing: .02em; }
+    .mt-sub   { color: var(--text-muted); font-size: 11.5px; margin-top: 4px; }
+    .mt-team-badge {
+      display: inline-block; margin-left: 8px; font-size: 8.5px; font-weight: 800;
+      letter-spacing: .15em; padding: 3px 8px; border-radius: 4px;
+      background: var(--accent-soft); color: var(--accent); vertical-align: middle;
+    }
+
+    .mt-toolbar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 12px; margin-bottom: 20px;
+    }
+    .mt-search {
+      flex: 1; min-width: 220px; display: flex; align-items: center; gap: 8px;
+      background: var(--bg-input); border: 1.5px solid var(--border);
+      border-radius: 8px; padding: 8px 12px;
+    }
+    .mt-search input {
+      flex: 1; border: 0; outline: 0; background: transparent;
+      font-family: var(--font-mono, monospace); font-size: 11.5px; color: var(--text);
+    }
+    .mt-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border-radius: 999px;
+      border: 1.5px solid var(--border); background: var(--bg-card);
+      font-size: 10.5px; font-weight: 600; color: var(--text-muted);
+      cursor: pointer; user-select: none; transition: all .15s;
+    }
+    .mt-chip:hover { border-color: var(--accent-line); color: var(--text); }
+    .mt-chip.on   { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .mt-count-pill {
+      padding: 6px 10px; border-radius: 6px;
+      background: var(--accent-soft); color: var(--accent);
+      font-size: 10.5px; font-weight: 700;
+    }
+
+    .mt-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .mt-card {
+      position: relative; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; transition: all .18s ease;
+    }
+    .mt-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,.06);
+      border-color: var(--accent-line);
+    }
+    .mt-card .banner {
+      height: 52px; position: relative;
+      background: linear-gradient(135deg,
+        color-mix(in srgb, var(--accent) 8%, var(--bg-card)) 0%,
+        var(--bg-card) 70%);
+      border-bottom: 1px solid var(--border);
+    }
+    .mt-card .banner::before {
+      content: ''; position: absolute; inset: 0;
+      background-image: radial-gradient(circle, var(--accent-line) 1px, transparent 1px);
+      background-size: 14px 14px; opacity: .5;
+      mask-image: linear-gradient(225deg, black 0%, transparent 60%);
+      -webkit-mask-image: linear-gradient(225deg, black 0%, transparent 60%);
+    }
+    .mt-card .self-mark {
+      position: absolute; top: 8px; left: 10px; z-index: 2;
+      font-size: 7.5px; font-weight: 800; letter-spacing: .15em;
+      padding: 2px 7px; border-radius: 4px;
+      background: var(--accent); color: #fff; text-transform: uppercase;
+    }
+    .mt-card .copy-ic {
+      position: absolute; top: 6px; right: 8px; z-index: 3;
+      width: 24px; height: 24px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid transparent; background: transparent;
+      color: var(--text-muted); cursor: pointer; font-size: 12px;
+      opacity: 0; transition: all .15s;
+    }
+    .mt-card:hover .copy-ic { opacity: .85; }
+    .mt-card .copy-ic:hover {
+      opacity: 1; background: var(--bg-card); border-color: var(--accent-line); color: var(--accent);
+    }
+    .mt-card .copy-ic.pulse { color: var(--accent); background: var(--accent-soft); opacity: 1; }
+
+    /* Toolbar copy split-button */
+    .mt-copy-wrap { display: inline-flex; position: relative; }
+    .mt-copy-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 999px 0 0 999px;
+      border: 1.5px solid var(--border); border-right: 0;
+      background: var(--bg-card); font-family: inherit; font-size: 10.5px; font-weight: 700;
+      color: var(--text); cursor: pointer; transition: all .15s;
+    }
+    .mt-copy-btn:hover { border-color: var(--accent-line); color: var(--accent); }
+    .mt-copy-more {
+      padding: 6px 10px; border-radius: 0 999px 999px 0;
+      border: 1.5px solid var(--border); background: var(--bg-card);
+      font-family: inherit; font-size: 10.5px; font-weight: 700;
+      color: var(--text-muted); cursor: pointer; transition: all .15s;
+    }
+    .mt-copy-more:hover { border-color: var(--accent-line); color: var(--accent); }
+    .mt-copy-menu {
+      position: absolute; top: calc(100% + 6px); right: 0;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; min-width: 220px; padding: 6px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.14);
+      z-index: 100; display: none;
+    }
+    .mt-copy-menu.on { display: block; }
+    .mt-copy-menu > div {
+      padding: 8px 10px; border-radius: 6px; cursor: pointer;
+      font-size: 11px; font-weight: 600; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .mt-copy-menu > div:hover { background: var(--accent-soft); color: var(--accent); }
+    .mt-copy-menu .desc { font-size: 9.5px; color: var(--text-muted); font-weight: 500; margin-left: auto; }
+
+    .mt-card .body {
+      padding: 0 16px 14px; display: flex; flex-direction: column;
+      align-items: center; text-align: center;
+    }
+    .mt-av-wrap { margin-top: -28px; position: relative; }
+    .mt-av {
+      width: 60px; height: 60px; border-radius: 50%;
+      border: 3px solid var(--bg-card);
+      box-shadow: 0 0 0 2px var(--accent-line), 0 4px 14px var(--accent-glow);
+      background: linear-gradient(135deg, var(--accent-soft), var(--bg-card));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; color: var(--accent);
+      overflow: hidden;
+    }
+    .mt-av img { width: 100%; height: 100%; object-fit: cover; }
+
+    .mt-name    { margin-top: 10px; font-size: 13.5px; font-weight: 800; letter-spacing: .01em; }
+    .mt-name-th { margin-top: 2px; font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
+    .mt-name-th.miss { font-style: italic; opacity: .55; font-weight: 500; }
+    .mt-nick    { margin-top: 2px; font-size: 11px; color: var(--text-muted); }
+    .mt-nick .p { color: var(--accent); font-weight: 700; }
+    .mt-nick.miss .p { opacity: .55; font-style: italic; }
+    .mt-emp-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 9px; font-weight: 700; letter-spacing: .05em;
+      padding: 2px 7px; border-radius: 4px;
+      background: var(--bg-input); color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .mt-emp-chip .k { color: var(--text-muted); opacity: .7 }
+    .mt-emp-chip.miss { opacity: .55; font-style: italic; font-weight: 500; }
+
+    .mt-role-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+    .mt-role {
+      font-size: 8px; font-weight: 800; letter-spacing: .1em;
+      padding: 2.5px 8px; border-radius: 4px; text-transform: uppercase;
+    }
+    .rb-admin { background: rgba(220,38,38,.12); color: #b91c1c; }
+    .rb-lead  { background: rgba(147,51,234,.12); color: #7e22ce; }
+    .rb-user  { background: var(--accent-soft); color: var(--accent); }
+    .rb-dev   { background: rgba(6,182,212,.12); color: #0891b2; }
+    .mt-team-chip {
+      font-size: 8px; font-weight: 800; letter-spacing: .12em;
+      padding: 2.5px 7px; border-radius: 4px; text-transform: uppercase;
+    }
+
+    .mt-contact {
+      margin-top: 14px; width: 100%; border-top: 1px dashed var(--border);
+      padding-top: 12px; display: grid; gap: 7px;
+    }
+    .mt-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 10.5px; color: var(--text);
+    }
+    .mt-row .k {
+      width: 14px; height: 14px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); flex-shrink: 0;
+    }
+    .mt-row .k img, .lbl-img {
+      width: 14px; height: 14px; object-fit: contain;
+      vertical-align: middle; display: inline-block;
+    }
+    .mt-row .v {
+      flex: 1; text-align: left; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .mt-row .v.muted { color: var(--text-muted); font-style: italic; }
+
+    .mt-actions { margin-top: 14px; display: flex; gap: 8px; width: 100%; }
+    .mt-btn {
+      flex: 1; padding: 8px; border-radius: 8px;
+      border: 1.5px solid var(--border); background: var(--bg-card);
+      font-family: inherit; font-size: 10.5px; font-weight: 700;
+      color: var(--text); cursor: pointer; transition: all .15s;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    .mt-btn:hover { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+    .mt-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .mt-btn.primary:hover { background: color-mix(in srgb, var(--accent) 85%, black); color: #fff; }
+    .mt-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .mt-btn:disabled:hover { background: var(--bg-card); border-color: var(--border); color: var(--text); }
+
+    .mt-empty {
+      grid-column: 1 / -1; padding: 60px 20px; text-align: center;
+      background: var(--bg-card); border: 1px dashed var(--border); border-radius: 12px;
+    }
+    .mt-empty .ic { font-size: 32px; margin-bottom: 8px; }
+    .mt-empty h3 { margin: 0 0 6px; font-size: 14px; font-weight: 700; }
+    .mt-empty p  { margin: 0; color: var(--text-muted); font-size: 11px; }
+
+    .mt-skel {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      height: 280px; overflow: hidden; position: relative;
+    }
+    .mt-skel::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
+      animation: mt-shimmer 1.4s infinite;
+    }
+    @keyframes mt-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+    /* ── Edit modal ── */
+    .mt-modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.5);
+      z-index: 9999; opacity: 0; pointer-events: none;
+      transition: opacity .2s; display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .mt-modal-overlay.on { opacity: 1; pointer-events: auto; }
+    .mt-modal {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; width: 100%; max-width: 480px;
+      max-height: calc(100vh - 40px); overflow: hidden;
+      display: flex; flex-direction: column;
+      transform: scale(.96); transition: transform .2s;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+    .mt-modal-overlay.on .mt-modal { transform: scale(1); }
+    .mt-m-head { padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
+                 display: flex; align-items: center; gap: 14px; }
+    .mt-m-av-wrap { position: relative; cursor: pointer; }
+    .mt-m-av {
+      width: 60px; height: 60px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 800; overflow: hidden;
+      box-shadow: 0 0 0 2px var(--accent-line), 0 4px 14px var(--accent-glow);
+    }
+    .mt-m-av img { width: 100%; height: 100%; object-fit: cover; }
+    .mt-m-av-ov {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 9px; font-weight: 700; opacity: 0; transition: opacity .15s;
+      text-align: center; letter-spacing: .05em;
+    }
+    .mt-m-av-wrap:hover .mt-m-av-ov { opacity: 1; }
+    .mt-m-info { flex: 1; min-width: 0; }
+    .mt-m-title { font-size: 14px; font-weight: 800; }
+    .mt-m-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+    .mt-m-close {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 1.5px solid var(--border); background: var(--bg-card);
+      cursor: pointer; font-size: 14px; color: var(--text-muted);
+    }
+    .mt-m-close:hover { border-color: var(--accent-line); color: var(--accent); }
+
+    .mt-m-body { padding: 16px 20px 20px; overflow-y: auto; }
+    .mt-fld { margin-bottom: 12px; }
+    .mt-fld label {
+      font-size: 9.5px; font-weight: 700; color: var(--text-muted);
+      letter-spacing: .05em; text-transform: uppercase;
+      display: block; margin-bottom: 5px;
+    }
+    .mt-fld input {
+      width: 100%; padding: 9px 12px; background: var(--bg-input);
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-family: inherit; font-size: 11.5px; color: var(--text);
+      outline: 0; transition: all .15s;
+    }
+    .mt-fld input:focus {
+      border-color: var(--accent); background: var(--bg-card);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .mt-fld input[disabled] { background: var(--bg); color: var(--text-muted); cursor: not-allowed; }
+    .mt-m-hint {
+      font-size: 9.5px; color: var(--text-muted); margin-top: 4px;
+    }
+
+    .mt-m-foot {
+      border-top: 1px solid var(--border); padding: 12px 20px;
+      display: flex; gap: 10px; justify-content: flex-end;
+    }
+
+    /* Hidden file input for avatar upload */
+    #mt-avatar-file { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title" id="page-title-text">My Team</div>
+        <div class="page-sub" id="date-display"></div>
+      </div>
+      <div class="topbar-actions"></div>
+    </header>
+    <main class="page-content">
+
+<div class="mt-wrap">
+  <div class="mt-head">
+    <div>
+      <h1 class="mt-title">
+        My Team
+        <span class="mt-team-badge" id="mt-team-badge">SM</span>
+      </h1>
+      <div class="mt-sub" id="mt-sub">
+        รายชื่อทีมที่มีชื่ออยู่ในตารางเวร · แสดงข้อมูลติดต่อ, TMN.ID, และเครือข่ายอินเทอร์เน็ต
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-toolbar">
+    <div class="mt-search">
+      <span style="color:var(--text-muted)">⌕</span>
+      <input id="mt-search"/>
+    </div>
+    <div class="mt-chip on" data-role="all">ทั้งหมด</div>
+    <div class="mt-chip" data-role="sm_admin">Admin</div>
+    <div class="mt-chip" data-role="sm_lead">Lead</div>
+    <div class="mt-chip" data-role="sm_user">User</div>
+    <div class="mt-chip" data-role="dev_sm">Dev</div>
+    <span class="mt-count-pill" id="mt-count">— คน</span>
+    <div class="mt-copy-wrap">
+      <button class="mt-copy-btn" onclick="copyTeam('text')" title="Copy all filtered members as text">
+        <i data-icon="clipboard"></i> <span>Copy team</span>
+      </button>
+      <button class="mt-copy-more" onclick="toggleCopyMenu(event)" title="เลือก format">▾</button>
+      <div class="mt-copy-menu" id="mt-copy-menu">
+        <div onclick="copyTeam('text'); closeCopyMenu()"><i data-icon="file"></i> Text <span class="desc">multi-line</span></div>
+        <div onclick="copyTeam('csv');  closeCopyMenu()"><i data-icon="bar-chart"></i> CSV <span class="desc">spreadsheet</span></div>
+        <div onclick="copyTeam('md');   closeCopyMenu()"><i data-icon="edit"></i> Markdown <span class="desc">table</span></div>
+        <div onclick="copyTeam('json'); closeCopyMenu()">🧩 JSON <span class="desc">raw</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-grid" id="mt-grid">
+    <div class="mt-skel"></div>
+    <div class="mt-skel"></div>
+    <div class="mt-skel"></div>
+    <div class="mt-skel"></div>
+    <div class="mt-skel"></div>
+    <div class="mt-skel"></div>
+  </div>
+</div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="mt-modal-overlay" id="mt-modal-overlay">
+  <div class="mt-modal">
+    <div class="mt-m-head">
+      <div class="mt-m-av-wrap" id="mt-m-av-wrap" title="คลิกเพื่อเปลี่ยนรูป">
+        <div class="mt-m-av" id="mt-m-av"><span id="mt-m-av-initials">—</span></div>
+        <div class="mt-m-av-ov" id="mt-m-av-ov"><i data-icon="camera"></i><br/>เปลี่ยนรูป</div>
+      </div>
+      <div class="mt-m-info">
+        <div class="mt-m-title" id="mt-m-title">—</div>
+        <div class="mt-m-sub"  id="mt-m-sub">—</div>
+      </div>
+      <button class="mt-m-close" onclick="closeEditModal()"><i data-icon="x"></i></button>
+    </div>
+    <input type="file" id="mt-avatar-file" accept="image/png,image/jpeg,image/gif,image/webp">
+    <canvas id="mt-avatar-canvas" width="200" height="200" style="display:none"></canvas>
+
+    <div class="mt-m-body">
+      <div class="mt-fld">
+        <label>🇹🇭 ชื่อ-นามสกุลภาษาไทย</label>
+        <input type="text" id="mt-in-name-th" maxlength="80">
+      </div>
+      <div class="mt-fld" id="mt-fld-nickname">
+        <label><i data-icon="message-circle"></i> Nickname</label>
+        <input type="text" id="mt-in-nickname" maxlength="30">
+      </div>
+      <div class="mt-fld">
+        <label><i data-icon="id-card"></i> รหัสพนักงาน (Employee ID)</label>
+        <input type="text" id="mt-in-emp-id" maxlength="20">
+      </div>
+      <div class="mt-fld">
+        <label><i data-icon="smartphone"></i> เบอร์มือถือ</label>
+        <input type="text" id="mt-in-phone" maxlength="20">
+      </div>
+      <div class="mt-fld">
+        <label><img src="./uploads/tmn.png" alt="TMN" class="lbl-img"> TMN.ID </label>
+        <input type="text" id="mt-in-tmn-id" maxlength="20">
+      </div>
+      <div class="mt-fld">
+        <label><i data-icon="home"></i> เน็ตบ้าน (ISP + speed)</label>
+        <input type="text" id="mt-in-net-home" maxlength="100">
+      </div>
+      <div class="mt-fld">
+        <label><i data-icon="wifi"></i> เครือข่ายมือถือ</label>
+        <input type="text" id="mt-in-net-mobile" maxlength="50">
+      </div>
+      <div class="mt-m-hint" id="mt-m-hint">
+        คลิกที่รูปด้านบนเพื่ออัปโหลด · การเปลี่ยนแปลงจะบันทึกเมื่อกด “Save”
+      </div>
+    </div>
+
+    <div class="mt-m-foot">
+      <button class="mt-btn" onclick="closeEditModal()">Cancel</button>
+      <button class="mt-btn primary" id="mt-save-btn" onclick="saveEdit()"><i data-icon="save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/skeletons.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script>
+if (!Auth.requireAuth()) {}
+Layout.render('my-team');
+
+// Role labels are team-agnostic (roles apply the same to SM, TS, or any team).
+// Uses Roles.label() from utils.js so labels stay consistent across the app.
+const ROLE_CLASS = {
+  sm_admin:     'rb-admin',
+  sm_lead:      'rb-lead',
+  sm_user:      'rb-user',
+  dev_sm:       'rb-dev',
+  external:     'rb-user',
+  super_admin:  'rb-admin',
+  super_viewer: 'rb-lead',
+};
+// Per-team accent color for team badges when viewing "All teams"
+const TEAM_COLORS = {
+  sm: '#F26419', ts: '#6366F1', ns: '#0891B2', ps: '#7E22CE',
+  tc: '#B91C1C', ma: '#15803D', vc: '#A16207', on: '#DB2777',
+};
+function teamColor(slug) { return TEAM_COLORS[slug] || '#525252'; }
+const BG_PALETTE = ['#F26419','#6366F1','#0891B2','#7E22CE','#B91C1C','#15803D','#A16207','#DB2777','#059669','#EA580C'];
+
+const State = {
+  me: null,
+  myRole: '',
+  team: '',
+  allTeams: false,       // true when super_admin is viewing All-teams
+  members: [],
+  filterRole: 'all',
+  filterTeam: 'all',     // only meaningful when allTeams=true
+  search: '',
+  editingId: null,
+  pendingAvatar: null,   // data URL or null
+  rmAvatar: false,       // flag to clear avatar
+};
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function initials(name, nick) {
+  const src = (nick || name || '?').trim();
+  if (!src) return '?';
+  const parts = src.split(/\s+/).filter(Boolean);
+  return (parts.length >= 2 ? parts[0][0] + parts[1][0] : src.slice(0, 2)).toUpperCase();
+}
+function colorFor(id) {
+  let h = 0;
+  for (let i = 0; i < (id||'').length; i++) h = ((h << 5) - h) + id.charCodeAt(i);
+  return BG_PALETTE[Math.abs(h) % BG_PALETTE.length];
+}
+function isAdmin() {
+  // super_viewer is read-only — NOT an admin here.
+  return ['sm_admin', 'dev_sm', 'super_admin'].includes(State.myRole);
+}
+function isReadOnly() {
+  return State.myRole === 'super_viewer';
+}
+function canEdit(memberId) {
+  if (isReadOnly()) return false;
+  return memberId === State.me || isAdmin();
+}
+
+async function load() {
+  const res = await API.myTeam.list();
+  const grid = document.getElementById('mt-grid');
+  if (!res?.ok) {
+    grid.innerHTML = `<div class="mt-empty">
+      <div class="ic"><i data-icon=\"alert-triangle\"></i></div>
+      <h3>โหลดรายชื่อทีมไม่สำเร็จ</h3>
+      <p>${esc(res?.data?.message || 'Unknown error')}</p>
+    </div>`;
+    return;
+  }
+  const d = res.data.data || res.data || {};
+  State.team     = d.team     || '';
+  State.allTeams = !!d.all_teams;
+  State.me       = d.me       || '';
+  State.myRole   = d.my_role  || '';
+  State.members  = d.members  || [];
+
+  const badge = document.getElementById('mt-team-badge');
+  if (State.allTeams) {
+    badge.textContent = 'ALL TEAMS';
+    // Build unique team chips for filtering
+    buildTeamChips();
+  } else {
+    badge.textContent = (State.team || 'team').toUpperCase();
+  }
+
+  const sub = isReadOnly() ? 'อ่านอย่างเดียว (super_viewer)'
+            : isAdmin()    ? 'admin แก้ไขได้ทุกคน'
+                           : 'แก้ไขได้เฉพาะโปรไฟล์ของตัวเอง';
+  const scope = State.allTeams
+    ? `ทุกทีมที่มีอยู่ในตารางเวร · ${State.members.length} คน`
+    : `ทีม ${State.team.toUpperCase()} ที่มีอยู่ในตารางเวร · ${State.members.length} คน`;
+  document.getElementById('mt-sub').textContent = `${scope} · ${sub}`;
+  render();
+}
+
+function buildTeamChips() {
+  // Insert team chips before the count pill in the toolbar.
+  const bar = document.querySelector('.mt-toolbar');
+  if (!bar || document.getElementById('mt-team-chips')) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'mt-team-chips';
+  wrap.style.display = 'flex';
+  wrap.style.gap = '6px';
+  wrap.style.flexWrap = 'wrap';
+  wrap.style.paddingLeft = '10px';
+  wrap.style.borderLeft = '1px solid var(--border)';
+  wrap.style.marginLeft = '2px';
+  const teams = Array.from(new Set(State.members.map(m => m.team).filter(Boolean))).sort();
+  const mk = (slug, label, on) => {
+    const clr = slug === 'all' ? 'var(--accent)' : teamColor(slug);
+    return `<div class="mt-chip${on ? ' on' : ''}" data-team="${slug}"
+              style="${on ? `background:${clr};border-color:${clr}` : `color:${clr};border-color:${clr}55`}">${label}</div>`;
+  };
+  wrap.innerHTML = mk('all','All teams', true) + teams.map(t => mk(t, t.toUpperCase(), false)).join('');
+  bar.querySelector('.mt-count-pill').insertAdjacentElement('beforebegin', wrap);
+  wrap.querySelectorAll('.mt-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      wrap.querySelectorAll('.mt-chip').forEach(c => {
+        c.classList.remove('on');
+        const cs = c.dataset.team;
+        const clr = cs === 'all' ? 'var(--accent)' : teamColor(cs);
+        c.setAttribute('style', `color:${clr};border-color:${clr}55`);
+      });
+      chip.classList.add('on');
+      const cs = chip.dataset.team;
+      const clr = cs === 'all' ? 'var(--accent)' : teamColor(cs);
+      chip.setAttribute('style', `background:${clr};border-color:${clr};color:#fff`);
+      State.filterTeam = cs;
+      render();
+    });
+  });
+}
+
+function render() {
+  const grid = document.getElementById('mt-grid');
+  const q = State.search.toLowerCase();
+  const rows = State.members.filter(m => {
+    if (State.filterRole !== 'all' && m.role !== State.filterRole) return false;
+    if (State.allTeams && State.filterTeam !== 'all' && m.team !== State.filterTeam) return false;
+    if (!q) return true;
+    return [m.name, m.name_th, m.nickname, m.emp_id, m.email, m.phone, m.tmn_id, m.net_home, m.net_mobile, m.team]
+      .some(v => (v || '').toLowerCase().includes(q));
+  });
+  document.getElementById('mt-count').textContent = rows.length + ' คน';
+
+  if (!rows.length) {
+    grid.innerHTML = `<div class="mt-empty">
+      <div class="ic"><i data-icon=\"users\"></i></div>
+      <h3>ไม่พบรายชื่อ</h3>
+      <p>ลองล้าง filter หรือเช็ค admin ว่าติ๊ก "รวมในตารางเวร" ให้สมาชิกทีมหรือยัง</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = rows.map(m => {
+    const rcls = ROLE_CLASS[m.role] || 'rb-user';
+    const rlbl = (typeof Roles !== 'undefined' && Roles.label) ? Roles.label(m.role) : m.role;
+    const bg = colorFor(m.id);
+    const me = m.id === State.me;
+    const editable = canEdit(m.id);
+    const avContent = m.avatar_url
+      ? `<img src="${esc(m.avatar_url)}" alt="${esc(m.name)}" onerror="this.replaceWith(Object.assign(document.createTextNode('${esc(initials(m.name,m.nickname))}'), {}))">`
+      : esc(initials(m.name, m.nickname));
+    const teamBadge = State.allTeams && m.team ? `
+      <span class="mt-team-chip" style="background:${teamColor(m.team)}22;color:${teamColor(m.team)};border:1px solid ${teamColor(m.team)}55">${esc(m.team.toUpperCase())}</span>` : '';
+
+    const row = (icon, val, placeholder) => {
+      const has = !!(val && val.trim());
+      return `<div class="mt-row">
+        <span class="k">${icon}</span>
+        <span class="v${has ? '' : ' muted'}">${has ? esc(val) : placeholder}</span>
+      </div>`;
+    };
+
+    return `
+      <div class="mt-card" data-mid="${esc(m.id)}">
+        <div class="banner">
+          ${me ? '<span class="self-mark">You</span>' : ''}
+          <button class="copy-ic" title="คัดลอกข้อมูลติดต่อ"
+                  onclick="event.stopPropagation(); copyMember('${esc(m.id)}', this)"><i data-icon=\"clipboard\"></i></button>
+        </div>
+        <div class="body">
+          <div class="mt-av-wrap">
+            <div class="mt-av" style="background:linear-gradient(135deg, ${bg}22, var(--bg-card)); color:${bg}">
+              ${avContent}
+            </div>
+          </div>
+          <div class="mt-name">${esc(m.name)}</div>
+          <div class="mt-name-th${m.name_th ? '' : ' miss'}">
+            ${m.name_th ? esc(m.name_th) : 'ยังไม่ระบุชื่อไทย'}
+          </div>
+          <div class="mt-nick${m.nickname ? '' : ' miss'}">
+            <span class="p">"${esc(m.nickname || 'ยังไม่ระบุ nickname')}"</span>
+          </div>
+          <div class="mt-role-row">
+            <span class="mt-role ${rcls}">${esc(rlbl)}</span>
+            ${teamBadge}
+            <span class="mt-emp-chip${m.emp_id ? '' : ' miss'}">
+              <span class="k"><i data-icon=\"id-card\"></i></span>${m.emp_id ? esc(m.emp_id) : 'ยังไม่ระบุ'}
+            </span>
+          </div>
+          <div class="mt-contact">
+            ${row('<i data-icon=\"mail\"></i>', m.email,       'ยังไม่ระบุ email')}
+            ${row('<i data-icon=\"smartphone\"></i>', m.phone,      'ยังไม่ระบุเบอร์')}
+            ${row('<img src="./uploads/tmn.png" alt="TMN">', m.tmn_id ? 'TMN.ID ' + m.tmn_id : '', 'ยังไม่ระบุ TMN.ID')}
+            ${row('<i data-icon=\"home\"></i>', m.net_home,   'ยังไม่ระบุเน็ตบ้าน')}
+            ${row('<i data-icon=\"wifi\"></i>', m.net_mobile, 'ยังไม่ระบุมือถือ')}
+          </div>
+          <div class="mt-actions">
+            <button class="mt-btn" onclick="viewProfile('${esc(m.id)}')">Profile</button>
+            <button class="mt-btn primary" onclick="openEditModal('${esc(m.id)}')" ${editable ? '' : 'disabled'}>
+              ${editable ? '<i data-icon=\"pencil\"></i> Edit' : '<i data-icon=\"lock\"></i> Locked'}
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function viewProfile(id) { window.location.href = './profile.html?user=' + encodeURIComponent(id); }
+
+document.getElementById('mt-search').addEventListener('input', (e) => {
+  State.search = e.target.value.trim();
+  render();
+});
+document.querySelectorAll('.mt-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.mt-chip').forEach(c => c.classList.remove('on'));
+    chip.classList.add('on');
+    State.filterRole = chip.dataset.role;
+    render();
+  });
+});
+
+/* ─── Edit Modal ─── */
+function openEditModal(id) {
+  const m = State.members.find(x => x.id === id);
+  if (!m) return;
+  State.editingId = id;
+  State.pendingAvatar = null;
+  State.rmAvatar = false;
+
+  const bg = colorFor(m.id);
+  const avEl = document.getElementById('mt-m-av');
+  avEl.style.background = bg;
+  const avInner = m.avatar_url
+    ? `<img src="${esc(m.avatar_url)}" alt="">`
+    : `<span>${esc(initials(m.name, m.nickname))}</span>`;
+  avEl.innerHTML = avInner;
+
+  document.getElementById('mt-m-title').textContent = m.name;
+  const rlbl2 = (typeof Roles !== 'undefined' && Roles.label) ? Roles.label(m.role) : m.role;
+  const teamSuffix = State.allTeams && m.team ? ` · ${m.team.toUpperCase()}` : '';
+  document.getElementById('mt-m-sub').textContent = `"${m.nickname || '—'}" · ${rlbl2}${teamSuffix}`;
+  document.getElementById('mt-in-name-th').value     = m.name_th    || '';
+  document.getElementById('mt-in-nickname').value    = m.nickname   || '';
+  document.getElementById('mt-in-emp-id').value      = m.emp_id     || '';
+  document.getElementById('mt-in-phone').value       = m.phone      || '';
+  document.getElementById('mt-in-tmn-id').value      = m.tmn_id     || '';
+  document.getElementById('mt-in-net-home').value    = m.net_home   || '';
+  document.getElementById('mt-in-net-mobile').value  = m.net_mobile || '';
+
+  // Nickname: user can edit own via profile.php; admin can edit anyone via users PUT.
+  // Both endpoints accept nickname, so always allow.
+  document.getElementById('mt-fld-nickname').style.display = '';
+
+  document.getElementById('mt-modal-overlay').classList.add('on');
+}
+function closeEditModal() {
+  document.getElementById('mt-modal-overlay').classList.remove('on');
+  State.editingId = null;
+  State.pendingAvatar = null;
+  State.rmAvatar = false;
+  document.getElementById('mt-avatar-file').value = '';
+}
+document.getElementById('mt-modal-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'mt-modal-overlay') closeEditModal();
+});
+
+/* ─── Avatar upload — reuse compress logic pattern from profile.html ─── */
+document.getElementById('mt-m-av-wrap').addEventListener('click', () => {
+  document.getElementById('mt-avatar-file').click();
+});
+document.getElementById('mt-avatar-file').addEventListener('change', (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { Toast.show('รูปใหญ่เกิน 5MB', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.getElementById('mt-avatar-canvas');
+      const size = 200;
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      // Square-crop center
+      const s = Math.min(img.width, img.height);
+      const sx = (img.width - s) / 2, sy = (img.height - s) / 2;
+      ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      State.pendingAvatar = dataUrl;
+      State.rmAvatar = false;
+      const avEl = document.getElementById('mt-m-av');
+      avEl.innerHTML = `<img src="${dataUrl}" alt="">`;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
+
+/* ─── Save ─── */
+async function saveEdit() {
+  const id = State.editingId;
+  if (!id) return;
+  const btn = document.getElementById('mt-save-btn');
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก…';
+
+  const isSelf = (id === State.me);
+  const payload = {
+    name_th:    document.getElementById('mt-in-name-th').value.trim(),
+    nickname:   document.getElementById('mt-in-nickname').value.trim(),
+    emp_id:     document.getElementById('mt-in-emp-id').value.trim(),
+    phone:      document.getElementById('mt-in-phone').value.trim(),
+    tmn_id:     document.getElementById('mt-in-tmn-id').value.trim(),
+    net_home:   document.getElementById('mt-in-net-home').value.trim(),
+    net_mobile: document.getElementById('mt-in-net-mobile').value.trim(),
+  };
+  if (State.pendingAvatar) payload.avatar_url = State.pendingAvatar;
+  else if (State.rmAvatar) payload.avatar_url = '';
+
+  let res;
+  if (isSelf) {
+    res = await API.auth.updateProfile(payload);
+  } else {
+    // admin editing another user — hits PUT /api/users/?id=xxx
+    res = await API.users.update(id, payload);
+  }
+  btn.disabled = false; btn.innerHTML = '<i data-icon=\"save\"></i> Save';
+  if (!res?.ok) {
+    Toast.show(res?.data?.message || 'บันทึกไม่สำเร็จ', 'error');
+    return;
+  }
+
+  // Optimistic local update
+  const m = State.members.find(x => x.id === id);
+  if (m) {
+    Object.assign(m, {
+      name_th:    payload.name_th,
+      nickname:   payload.nickname,
+      emp_id:     payload.emp_id,
+      phone:      payload.phone,
+      tmn_id:     payload.tmn_id,
+      net_home:   payload.net_home,
+      net_mobile: payload.net_mobile,
+    });
+    if ('avatar_url' in payload) m.avatar_url = payload.avatar_url;
+  }
+  // If we updated our own record, refresh Auth cache so sidebar + other pages see it
+  if (isSelf) {
+    Auth.updateUser({
+      nickname: payload.nickname,
+      ...(('avatar_url' in payload) ? { avatar_url: payload.avatar_url } : {}),
+    });
+    if (typeof Layout.updateUserInfo === 'function') Layout.updateUserInfo();
+  }
+
+  closeEditModal();
+  render();
+  Toast.show('บันทึกโปรไฟล์แล้ว <i data-icon=\"check\"></i>', 'success');
+}
+
+/* ─── Copy helpers ─── */
+function getFiltered() {
+  const q = State.search.toLowerCase();
+  return State.members.filter(m => {
+    if (State.filterRole !== 'all' && m.role !== State.filterRole) return false;
+    if (State.allTeams && State.filterTeam !== 'all' && m.team !== State.filterTeam) return false;
+    if (!q) return true;
+    return [m.name, m.name_th, m.nickname, m.emp_id, m.email, m.phone, m.tmn_id, m.net_home, m.net_mobile, m.team]
+      .some(v => (v || '').toLowerCase().includes(q));
+  });
+}
+function formatMemberText(m) {
+  const rlbl = (typeof Roles !== 'undefined' && Roles.label) ? Roles.label(m.role) : m.role;
+  const teamStr = m.team ? ` · ${m.team.toUpperCase()}` : '';
+  const lines = [`${m.name} ("${m.nickname || '—'}") · ${rlbl}${teamStr}`];
+  if (m.name_th)    lines.push(`🇹🇭 ${m.name_th}`);
+  if (m.emp_id)     lines.push(`<i data-icon=\"id-card\"></i> EmpID ${m.emp_id}`);
+  if (m.email)      lines.push(`<i data-icon=\"mail\"></i> ${m.email}`);
+  if (m.phone)      lines.push(`<i data-icon=\"smartphone\"></i> ${m.phone}`);
+  if (m.tmn_id)     lines.push(`₿ TMN.ID ${m.tmn_id}`);
+  if (m.net_home)   lines.push(`<i data-icon=\"home\"></i> ${m.net_home}`);
+  if (m.net_mobile) lines.push(`<i data-icon=\"wifi\"></i> ${m.net_mobile}`);
+  return lines.join('\n');
+}
+function formatTeamText(rows) {
+  const scope = State.allTeams
+    ? (State.filterTeam === 'all' ? 'All teams' : State.filterTeam.toUpperCase())
+    : (State.team || 'team').toUpperCase();
+  const header = `═══ My Team · ${scope} · ${rows.length} members ═══`;
+  const body = rows.map((m, i) => `\n[${String(i+1).padStart(2,'0')}] ${formatMemberText(m)}`).join('\n');
+  return `${header}\n${body}\n\n— exported ${new Date().toLocaleString('th-TH')}`;
+}
+function formatTeamCSV(rows) {
+  const cols = ['name','name_th','nickname','emp_id','role','team','email','phone','tmn_id','net_home','net_mobile'];
+  const escc = (v) => {
+    const s = String(v ?? '');
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  return [cols.join(','), ...rows.map(m => cols.map(c => escc(m[c])).join(','))].join('\n');
+}
+function formatTeamMD(rows) {
+  const cols = ['Name','Name (TH)','Nickname','Emp ID','Role','Team','Email','Phone','TMN.ID','Home Net','Mobile Net'];
+  const keys = ['name','name_th','nickname','emp_id','role','team','email','phone','tmn_id','net_home','net_mobile'];
+  const escm = (v) => String(v ?? '').replace(/\|/g,'\\|').replace(/\n/g,' ');
+  return [
+    '| ' + cols.join(' | ') + ' |',
+    '|' + cols.map(() => '---').join('|') + '|',
+    ...rows.map(m => '| ' + keys.map(k => escm(m[k])).join(' | ') + ' |'),
+  ].join('\n');
+}
+function formatTeamJSON(rows) {
+  const stripped = rows.map(m => ({
+    name: m.name, name_th: m.name_th, nickname: m.nickname, emp_id: m.emp_id,
+    role: m.role, team: m.team,
+    email: m.email, phone: m.phone, tmn_id: m.tmn_id,
+    net_home: m.net_home, net_mobile: m.net_mobile,
+  }));
+  return JSON.stringify(stripped, null, 2);
+}
+async function copyToClipboard(txt) {
+  try {
+    await navigator.clipboard.writeText(txt);
+    return true;
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch {}
+    ta.remove();
+    return ok;
+  }
+}
+async function copyMember(id, btn) {
+  const m = State.members.find(x => x.id === id);
+  if (!m) return;
+  const ok = await copyToClipboard(formatMemberText(m));
+  if (ok) {
+    if (btn) { btn.classList.add('pulse'); btn.textContent = '✓'; setTimeout(() => { btn.classList.remove('pulse'); btn.textContent = '📋'; }, 1200); }
+    Toast.show(`คัดลอกข้อมูลของ ${m.name} แล้ว ✓`, 'success');
+  } else {
+    Toast.show('คัดลอกไม่สำเร็จ — ลอง Cmd/Ctrl+C แทน', 'error');
+  }
+}
+async function copyTeam(fmt) {
+  const rows = getFiltered();
+  if (!rows.length) { Toast.show('ไม่มีข้อมูลให้ copy', 'warning'); return; }
+  let txt, label;
+  if      (fmt === 'csv')  { txt = formatTeamCSV(rows);  label = 'CSV'; }
+  else if (fmt === 'md')   { txt = formatTeamMD(rows);   label = 'Markdown table'; }
+  else if (fmt === 'json') { txt = formatTeamJSON(rows); label = 'JSON'; }
+  else                     { txt = formatTeamText(rows); label = 'Text'; }
+  const ok = await copyToClipboard(txt);
+  if (ok) Toast.show(`คัดลอก ${label} · ${rows.length} คน (${txt.length.toLocaleString()} chars) ✓`, 'success');
+  else    Toast.show('คัดลอกไม่สำเร็จ', 'error');
+}
+function toggleCopyMenu(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('mt-copy-menu').classList.toggle('on');
+}
+function closeCopyMenu() { document.getElementById('mt-copy-menu').classList.remove('on'); }
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.mt-copy-wrap')) closeCopyMenu();
+});
+
+load();
+</script>
+</body>
+</html>

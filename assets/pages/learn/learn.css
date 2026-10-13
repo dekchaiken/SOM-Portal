@@ -1,0 +1,859 @@
+/* ────────── Page-level CSS vars (overridden at runtime from page-config) ────────── */
+    :root {
+      --accent:        #f26419;
+      --accent-soft:   rgba(242,100,25,.10);
+      --accent-line:   rgba(242,100,25,.35);
+      --accent-glow:   rgba(242,100,25,.18);
+      --card-bg:       var(--bg-card, #fff);
+      --card-pad:      22px 24px;
+      --grid-gap:      16px;
+      --card-min:      300px;
+      --section-gap:   20px;
+      --shadow-sm:     0 1px 2px rgba(15,17,23,.04), 0 1px 1px rgba(15,17,23,.03);
+      --shadow-md:     0 4px 12px rgba(15,17,23,.06), 0 2px 4px rgba(15,17,23,.04);
+      --shadow-lg:     0 12px 28px rgba(15,17,23,.10), 0 4px 10px rgba(15,17,23,.05);
+    }
+    html[data-theme="dark"] {
+      --shadow-sm:     0 1px 2px rgba(0,0,0,.30);
+      --shadow-md:     0 4px 14px rgba(0,0,0,.35);
+      --shadow-lg:     0 14px 32px rgba(0,0,0,.45);
+    }
+    body.density-compact  { --card-pad:16px 18px; --grid-gap:12px; --card-min:260px; --section-gap:16px }
+    body.density-spacious { --card-pad:28px 30px; --grid-gap:20px; --card-min:340px; --section-gap:26px }
+
+    /* ════════════════════════════════════════════════════════
+       SPLIT CHOOSER — full-frame immersive entry point
+       ════════════════════════════════════════════════════════ */
+    #split-chooser {
+      display:flex; position:relative; overflow:hidden;
+      border:1px solid var(--border); border-radius:20px;
+      box-shadow:var(--shadow-lg);
+      min-height:clamp(300px,62vh,500px);
+      max-height:600px;
+      margin-bottom:var(--section-gap);
+      transition:max-height .46s cubic-bezier(.4,0,.2,1),
+                 opacity .34s ease,
+                 margin-bottom .46s ease;
+    }
+    #split-chooser.collapsing {
+      max-height:0 !important;
+      opacity:0;
+      margin-bottom:0;
+      pointer-events:none;
+    }
+    .sc-panel {
+      --scp:var(--accent);
+      --scp-s:var(--accent-soft);
+      --scp-l:var(--accent-line);
+      position:relative; overflow:hidden;
+      display:flex; flex-direction:column; justify-content:flex-end;
+      padding:clamp(22px,3vw,38px) clamp(20px,3vw,36px);
+      cursor:pointer; flex:1;
+      transition:flex .42s cubic-bezier(.4,0,.2,1),
+                 opacity .34s ease;
+    }
+    .sc-panel.sc-course {
+      background:
+        radial-gradient(150% 200% at 5% 5%, rgba(242,100,25,.18), transparent 55%),
+        linear-gradient(155deg,rgba(255,246,242,.8) 0%,var(--card-bg) 62%);
+      border-right:1px solid var(--border);
+    }
+    .sc-panel.sc-exam {
+      --scp:#6366f1;
+      --scp-s:rgba(99,102,241,.10);
+      --scp-l:rgba(99,102,241,.32);
+      background:
+        radial-gradient(150% 200% at 95% 5%, rgba(99,102,241,.16), transparent 55%),
+        linear-gradient(205deg,rgba(241,241,255,.8) 0%,var(--card-bg) 62%);
+    }
+    html[data-theme="dark"] .sc-panel.sc-course {
+      background:radial-gradient(150% 200% at 5% 5%,rgba(242,100,25,.22),transparent 55%), var(--card-bg);
+    }
+    html[data-theme="dark"] .sc-panel.sc-exam {
+      --scp:#818cf8;
+      background:radial-gradient(150% 200% at 95% 5%,rgba(99,102,241,.22),transparent 55%), var(--card-bg);
+    }
+    /* Dot mesh */
+    .sc-panel::before {
+      content:''; position:absolute; inset:0; pointer-events:none;
+      background-image:radial-gradient(circle, var(--scp-l) 1px, transparent 1px);
+      background-size:20px 20px; opacity:.5;
+      mask-image:linear-gradient(225deg, black 0%, transparent 62%);
+      -webkit-mask-image:linear-gradient(225deg, black 0%, transparent 62%);
+    }
+    /* Big icon top-left */
+    .sc-bigicon {
+      position:absolute; top:26px; left:28px;
+      width:58px; height:58px; border-radius:16px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      background:color-mix(in srgb,var(--scp) 12%,transparent);
+      border:1.5px solid color-mix(in srgb,var(--scp) 28%,transparent);
+      color:var(--scp); font-size:24px;
+      transition:transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s;
+      box-shadow:0 2px 10px -4px color-mix(in srgb,var(--scp) 30%,transparent);
+    }
+    .sc-panel:hover .sc-bigicon {
+      transform:scale(1.08);
+      box-shadow:0 6px 18px -4px color-mix(in srgb,var(--scp) 50%,transparent);
+    }
+    /* Stat pills top-right */
+    .sc-stats-col {
+      position:absolute; top:22px; right:22px;
+      display:flex; flex-direction:column; gap:6px; align-items:flex-end;
+    }
+    .sc-stat-pill {
+      display:inline-flex; align-items:center; gap:5px;
+      padding:5px 12px; border-radius:999px; font-size:11px; font-weight:700;
+      background:color-mix(in srgb,var(--scp) 10%,var(--card-bg));
+      border:1px solid color-mix(in srgb,var(--scp) 24%,transparent);
+      color:var(--scp);
+      transition:transform .2s;
+    }
+    .sc-panel:hover .sc-stat-pill { transform:translateY(-1px) }
+    /* Body */
+    .sc-body { position:relative; z-index:2 }
+    .sc-eyebrow {
+      font-size:9.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+      color:var(--scp); opacity:.65; margin-bottom:8px;
+    }
+    .sc-title {
+      font-size:clamp(26px,3.8vw,42px); font-weight:900; letter-spacing:-.03em; line-height:1.05;
+      color:var(--text); margin-bottom:10px;
+    }
+    .sc-title em { color:var(--scp); font-style:normal }
+    .sc-sub {
+      font-size:13px; color:var(--text-muted); line-height:1.7;
+      margin-bottom:22px; max-width:360px;
+    }
+    .sc-progress-row {
+      display:flex; align-items:center; gap:10px; margin-bottom:26px;
+    }
+    .sc-pbar {
+      flex:1; height:6px; border-radius:999px;
+      background:color-mix(in srgb,var(--scp) 14%,var(--border));
+      overflow:hidden;
+    }
+    .sc-pfill {
+      height:100%; border-radius:999px; background:var(--scp);
+      transition:width .9s cubic-bezier(.4,0,.2,1) .3s;
+    }
+    .sc-pct {
+      font-size:13px; font-weight:900; color:var(--scp);
+      white-space:nowrap; min-width:48px; text-align:right;
+    }
+    .sc-cta {
+      display:inline-flex; align-items:center; gap:10px;
+      padding:13px 26px; border-radius:14px; border:none;
+      font-size:14px; font-weight:800; cursor:pointer; color:#fff;
+      background:var(--scp);
+      box-shadow:0 4px 18px -4px color-mix(in srgb,var(--scp) 55%,transparent);
+      transition:transform .22s cubic-bezier(.4,0,.2,1), box-shadow .22s;
+    }
+    .sc-cta:hover {
+      transform:translateY(-2px);
+      box-shadow:0 8px 28px -4px color-mix(in srgb,var(--scp) 65%,transparent);
+    }
+    .sc-cta .sc-arrow { display:inline-flex; transition:transform .2s ease }
+    .sc-cta:hover .sc-arrow { transform:translateX(4px) }
+    /* Divider badge */
+    .sc-divider {
+      position:absolute; top:50%; left:50%;
+      transform:translate(-50%,-50%); z-index:10;
+      width:44px; height:44px; border-radius:50%;
+      background:var(--card-bg); border:2px solid var(--border);
+      box-shadow:var(--shadow-md);
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:800; color:var(--text-muted);
+      pointer-events:none;
+      transition:opacity .22s ease, transform .3s ease;
+    }
+    /* Cover sweep overlay (JS-created, handles the click wipe) */
+    .sc-cover {
+      position:absolute; inset:0; pointer-events:none; z-index:20;
+      clip-path:inset(0 100% 0 0);
+      transition:clip-path .38s cubic-bezier(.76,0,.24,1);
+    }
+    .sc-cover.from-right { clip-path:inset(0 0 0 100%) }
+    .sc-cover.sweep      { clip-path:inset(0 0% 0 0) !important }
+    /* Panel re-entry animation (back to chooser) */
+    @keyframes scPanelEnter {
+      from { opacity:0; transform:translateY(14px) }
+      to   { opacity:1; transform:none }
+    }
+    #split-chooser.entering .sc-panel {
+      animation:scPanelEnter .45s cubic-bezier(.16,1,.3,1) both;
+    }
+    #split-chooser.entering .sc-panel.sc-exam { animation-delay:.08s }
+    /* Choosing: other panel collapses */
+    #split-chooser.choosing-c .sc-exam,
+    #split-chooser.choosing-e .sc-course {
+      flex:0 0 0; opacity:0; pointer-events:none;
+    }
+    #split-chooser.choosing-c .sc-exam  { border-left:none }
+    #split-chooser.choosing-c .sc-divider,
+    #split-chooser.choosing-e .sc-divider {
+      opacity:0; transform:translate(-50%,-50%) scale(.5);
+    }
+    /* ── Mode bar ─────────────────────────────────────────── */
+    #mode-bar {
+      display:none; align-items:center; gap:12px;
+      padding:10px 16px; border-radius:12px;
+      background:var(--card-bg); border:1px solid var(--border);
+      box-shadow:var(--shadow-sm); margin-bottom:var(--section-gap);
+      animation:fadeUp .32s ease both;
+    }
+    #mode-bar.visible { display:flex }
+    #back-btn {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 12px; border-radius:8px;
+      border:1px solid var(--border); background:transparent;
+      font-size:12px; font-weight:700; cursor:pointer; color:var(--text-muted);
+      transition:background .15s, color .15s, border-color .15s;
+      white-space:nowrap;
+    }
+    #back-btn:hover { background:var(--bg-input); color:var(--text) }
+    .mbar-label {
+      display:flex; align-items:center; gap:8px;
+      font-size:14px; font-weight:800; color:var(--text);
+    }
+    .mbar-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0 }
+    #mode-bar.mode-c .mbar-dot { background:var(--accent) }
+    #mode-bar.mode-e .mbar-dot { background:#6366f1 }
+    html[data-theme="dark"] #mode-bar.mode-e .mbar-dot { background:#818cf8 }
+    .mbar-cnt {
+      font-size:11px; font-weight:700; color:var(--text-muted);
+      background:var(--bg-input); padding:2px 9px; border-radius:999px;
+      border:1px solid var(--border);
+    }
+
+    /* ════════════════════════════════════════════════════════
+       PATH CHOOSER — two big "mode" cards (Learn vs Exam)
+       Both always visible so users see there are TWO things.
+       ════════════════════════════════════════════════════════ */
+    .path-hub {
+      display:grid; grid-template-columns:1fr 1fr; gap:14px;
+      margin-bottom:var(--section-gap);
+    }
+    @media (max-width:640px) {
+      #split-chooser { flex-direction:column; min-height:auto }
+      .sc-panel.sc-course { border-right:none; border-bottom:1px solid var(--border) }
+      .sc-divider { top:auto; left:50%; transform:translate(-50%,0); position:relative;
+                    margin:-22px auto; display:flex }
+      .sc-stats-col { position:static; flex-direction:row; flex-wrap:wrap; margin-bottom:12px }
+      .sc-bigicon { position:static; margin-bottom:14px }
+      #split-chooser.choosing-c .sc-exam,
+      #split-chooser.choosing-e .sc-course { flex:0 0 0; max-height:0 }
+    }
+
+    /* blocks.so aesthetic: flat block, 1px border, calm shadow, restrained accent.
+       No heavy gradients/glows — active state = soft tint + thin left rail. */
+    .path-card {
+      --pc: var(--accent);                       /* per-card hue */
+      position:relative; overflow:hidden; cursor:pointer;
+      border:1px solid var(--border); border-radius:14px;
+      padding:18px 20px; background:var(--card-bg);
+      box-shadow:var(--shadow-sm);
+      display:flex; gap:15px; align-items:center;
+      transition:transform .2s cubic-bezier(.4,0,.2,1),
+                 box-shadow .2s, border-color .2s, background .2s;
+    }
+    .path-card.exam { --pc:#6366f1 }             /* exam mode = indigo, visually distinct */
+    html[data-theme="dark"] .path-card.exam { --pc:#818cf8 }
+    .path-card:hover {
+      transform:translateY(-2px); box-shadow:var(--shadow-md);
+      border-color:color-mix(in srgb, var(--pc) 35%, transparent);
+    }
+    .path-card:focus-visible { outline:2px solid var(--pc); outline-offset:2px }
+    .path-card.active {
+      border-color:color-mix(in srgb, var(--pc) 45%, transparent);
+      background:color-mix(in srgb, var(--pc) 5%, var(--card-bg));
+    }
+    .path-card.active::before {                  /* thin left accent rail = minimal active marker */
+      content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--pc);
+    }
+    .pc-mark {
+      width:50px; height:50px; border-radius:12px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:25px; line-height:1;
+      background:color-mix(in srgb, var(--pc) 12%, transparent);
+      border:1px solid color-mix(in srgb, var(--pc) 22%, transparent);
+      color:var(--pc);
+      transition:transform .2s cubic-bezier(.4,0,.2,1);
+    }
+    .path-card:hover .pc-mark { transform:scale(1.04) }
+    .pc-body { flex:1; min-width:0 }
+    .pc-title {
+      font-size:16px; font-weight:800; letter-spacing:-.01em; color:var(--text);
+      display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    }
+    .pc-viewing {
+      display:none; font-size:9px; font-weight:800; letter-spacing:.5px; text-transform:uppercase;
+      padding:2px 8px; border-radius:999px;
+      background:color-mix(in srgb, var(--pc) 15%, transparent); color:var(--pc);
+    }
+    .path-card.active .pc-viewing { display:inline-flex }
+    .pc-count { font-size:12.5px; color:var(--text-muted); margin-top:3px }
+    .pc-count b { color:var(--text); font-weight:800; font-size:14px }
+    .pc-stats { display:flex; flex-wrap:wrap; gap:6px 13px; margin-top:9px; font-size:11px; color:var(--text-muted) }
+    .pc-stats .s { display:inline-flex; align-items:center; gap:5px }
+    .pc-stats .dot { width:6px; height:6px; border-radius:50%; flex-shrink:0 }
+    .pc-go {
+      margin-left:auto; align-self:center; flex-shrink:0;
+      width:34px; height:34px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      background:color-mix(in srgb, var(--pc) 12%, transparent); color:var(--pc);
+      font-size:16px; font-weight:800;
+      transition:transform .2s, background .2s, color .2s;
+    }
+    .path-card:hover .pc-go { transform:translateX(3px) }
+    .path-card.active .pc-go { background:var(--pc); color:#fff }
+
+    /* Header above the active grid — reinforces "what am I looking at" */
+    .pane-head { display:flex; align-items:baseline; gap:10px; margin-bottom:14px; flex-wrap:wrap }
+    .pane-head h2 { font-size:15px; font-weight:800; margin:0; display:flex; align-items:center; gap:8px; color:var(--text) }
+    .pane-head .cnt {
+      font-size:11px; font-weight:700; color:var(--text-muted);
+      background:var(--border); padding:2px 9px; border-radius:999px;
+    }
+
+    .lp-pane { display:none } .lp-pane.active { display:block; animation:fadeUp .35s ease both }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(6px) }
+      to   { opacity:1; transform:translateY(0) }
+    }
+
+    .course-grid {
+      display:grid; gap:var(--grid-gap);
+      grid-template-columns:repeat(auto-fill, minmax(var(--card-min), 1fr));
+    }
+
+    /* ════════════════════════════════════════════════════════
+       RING + PHASE-DOTS CARD  (V2 Ring Icon merged w/ Skill Tree)
+       Whole card = button · progress ring around icon · per-phase
+       dots below title · stats as chips · no separate CTA.
+       ════════════════════════════════════════════════════════ */
+    .rn-card {
+      --cc: var(--bar-color, var(--accent));
+      --pct: 0;
+      position:relative; overflow:hidden;
+      background:var(--card-bg);
+      border:1px solid var(--border); border-radius:16px;
+      padding:22px 20px 20px;
+      text-decoration:none; color:inherit;
+      display:flex; flex-direction:column; gap:14px;
+      box-shadow:var(--shadow-sm);
+      transition:transform .22s cubic-bezier(.4,0,.2,1),
+                 box-shadow .22s, border-color .18s ease;
+      cursor:pointer;
+      animation:cardEnter .45s cubic-bezier(.16,1,.3,1) both;
+    }
+    .rn-card::before {
+      content:''; position:absolute; inset:0; pointer-events:none;
+      background:radial-gradient(circle at 100% 0%,
+        color-mix(in srgb, var(--cc) 10%, transparent), transparent 45%);
+      transition:opacity .22s; opacity:.7;
+    }
+    .rn-card:hover {
+      transform:translateY(-3px);
+      border-color:color-mix(in srgb, var(--cc) 45%, transparent);
+      box-shadow:var(--shadow-lg);
+    }
+    .rn-card:hover::before { opacity:1 }
+    .rn-card:hover .rn-ring { transform:scale(1.05); }
+
+    /* ══════════════════════════════════════════════════════
+       POPULAR treatment — make it feel undeniably HOT.
+       Layers: warm fire tint · bright orange 2px border · pulsing
+       ambient glow · diagonal corner ribbon (top-right) · flickering
+       flame emblem · rising sparks · shimmer sweep · warm halo behind
+       ring · warm % badge. All effects respect prefers-reduced-motion.
+       ══════════════════════════════════════════════════════ */
+    .rn-card.popular {
+      /* Warm fire-orange base tint layered onto cover_color */
+      background:
+        radial-gradient(140% 200% at 0% 0%,
+          rgba(251,146,60,.28), transparent 55%),
+        radial-gradient(120% 180% at 100% 100%,
+          rgba(239,68,68,.20), transparent 55%),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--cc) 14%, var(--card-bg)) 0%,
+          var(--card-bg) 60%);
+      border:2px solid #f97316;
+      box-shadow:
+        0 6px 24px rgba(249,115,22,.38),
+        0 2px 6px rgba(0,0,0,.06),
+        inset 0 0 0 1px rgba(255,190,110,.18);
+      animation:
+        cardEnter .45s cubic-bezier(.16,1,.3,1) both,
+        rnPopularPulse 2.6s ease-in-out infinite 1s;
+    }
+    html[data-theme="dark"] .rn-card.popular {
+      border-color:#fb923c;
+      box-shadow:
+        0 6px 26px rgba(251,146,60,.48),
+        0 2px 6px rgba(0,0,0,.5),
+        inset 0 0 0 1px rgba(255,190,110,.14);
+    }
+    .rn-card.popular:hover {
+      border-color:#ef4444;
+      transform:translateY(-4px);
+      box-shadow:
+        0 18px 48px rgba(249,115,22,.60),
+        0 6px 14px rgba(0,0,0,.12),
+        inset 0 0 0 1px rgba(255,210,140,.28);
+    }
+    @keyframes rnPopularPulse {
+      0%, 100% { box-shadow:
+                   0 6px 24px rgba(249,115,22,.38),
+                   0 2px 6px rgba(0,0,0,.06),
+                   inset 0 0 0 1px rgba(255,190,110,.18); }
+      50%      { box-shadow:
+                   0 10px 36px rgba(249,115,22,.62),
+                   0 2px 8px rgba(0,0,0,.10),
+                   inset 0 0 0 1px rgba(255,210,140,.30); }
+    }
+
+    /* Shimmer sweep — bright + rhythmic */
+    .rn-card.popular::after {
+      content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+      background:linear-gradient(115deg,
+        transparent 25%,
+        rgba(255,220,160,.32) 45%,
+        rgba(255,220,160,.10) 55%,
+        transparent 70%);
+      transform:translateX(-100%);
+      animation:rnShimmer 4.2s ease-in-out .4s infinite;
+      z-index:2;
+    }
+    @keyframes rnShimmer {
+      0%, 10%   { transform:translateX(-100%); }
+      35%, 100% { transform:translateX(110%); }
+    }
+
+    /* Diagonal corner ribbon — top-right, classic "hot/featured" banner */
+    .rn-popular-ribbon {
+      position:absolute;
+      top:20px; right:-48px;
+      width:170px;
+      padding:6px 0 5px;
+      background:linear-gradient(90deg, #fbbf24 0%, #f97316 50%, #ef4444 100%);
+      color:#fff;
+      text-align:center;
+      font-size:10.5px; font-weight:900;
+      letter-spacing:.16em; text-transform:uppercase;
+      transform:rotate(45deg);
+      box-shadow:
+        0 3px 12px rgba(239,68,68,.55),
+        inset 0 0 0 1px rgba(255,255,255,.20);
+      z-index:6; pointer-events:none; white-space:nowrap;
+      display:inline-flex; align-items:center; justify-content:center; gap:5px;
+    }
+    .rn-popular-ribbon .icon-svg {
+      width:12px; height:12px;
+      filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));
+    }
+
+    /* Flickering flame emblem in the top-left corner */
+    .rn-popular-flame {
+      position:absolute;
+      top:12px; left:14px;
+      width:22px; height:22px;
+      color:#f97316;
+      filter:drop-shadow(0 2px 8px rgba(249,115,22,.75));
+      z-index:5; pointer-events:none;
+      display:flex; align-items:center; justify-content:center;
+      animation:rnFlameFlicker 1.6s ease-in-out infinite;
+    }
+    .rn-popular-flame .icon-svg { width:22px; height:22px; }
+    @keyframes rnFlameFlicker {
+      0%, 100% { transform:scale(1)     rotate(-3deg); opacity:1;   }
+      25%      { transform:scale(1.08)  rotate( 2deg); opacity:.92; }
+      50%      { transform:scale(.96)   rotate(-2deg); opacity:1;   }
+      75%      { transform:scale(1.05)  rotate( 3deg); opacity:.88; }
+    }
+    /* Hide the flame when a cross-team badge occupies the same corner */
+    .rn-card.popular .rn-team-badge ~ .rn-popular-flame { display:none; }
+
+    /* Rising sparks — three tiny embers floating up along the left edge */
+    .rn-popular-sparks {
+      position:absolute;
+      top:0; left:40px; bottom:0; width:28px;
+      pointer-events:none; z-index:4;
+    }
+    .rn-popular-sparks span {
+      position:absolute; bottom:14px;
+      width:4px; height:4px; border-radius:50%;
+      background:radial-gradient(circle, #fef3c7 0%, #fbbf24 45%, #f97316 100%);
+      box-shadow:0 0 8px rgba(251,191,36,.85);
+      opacity:0;
+      animation:rnSpark 2.6s ease-in infinite;
+    }
+    .rn-popular-sparks span:nth-child(1) { left:2px;  animation-delay:0s;   }
+    .rn-popular-sparks span:nth-child(2) { left:12px; animation-delay:.85s; }
+    .rn-popular-sparks span:nth-child(3) { left:22px; animation-delay:1.7s; }
+    @keyframes rnSpark {
+      0%   { transform:translateY(0)     scale(.5); opacity:0; }
+      15%  { opacity:1; }
+      70%  { opacity:.6; }
+      100% { transform:translateY(-110%) scale(1);  opacity:0; }
+    }
+
+    /* Warm halo behind the ring — makes the icon feel on fire */
+    .rn-card.popular .rn-ring-wrap { position:relative; }
+    .rn-card.popular .rn-ring-wrap::before {
+      content:'';
+      position:absolute; inset:-18px;
+      border-radius:50%;
+      background:radial-gradient(circle,
+        rgba(251,146,60,.45) 0%,
+        rgba(249,115,22,.20) 40%,
+        transparent 70%);
+      animation:rnHalo 3s ease-in-out infinite;
+      pointer-events:none;
+      z-index:0;
+    }
+    @keyframes rnHalo {
+      0%, 100% { transform:scale(1);    opacity:.78; }
+      50%      { transform:scale(1.16); opacity:1;   }
+    }
+    /* Keep the ring on top of its own halo */
+    .rn-card.popular .rn-ring { position:relative; z-index:1; }
+
+    /* Warm-tint the % badge on popular cards so it matches the ribbon */
+    .rn-card.popular .rn-pct:not(.done):not(.locked):not(.warn):not(.new) {
+      background:linear-gradient(135deg, #fbbf24, #f97316);
+      box-shadow:0 3px 12px rgba(249,115,22,.55);
+      color:#fff;
+    }
+
+    .rn-card.locked { opacity:.65; filter:saturate(.45); cursor:not-allowed; }
+
+    /* ══════════════════════════════════════════════════════
+       SM-FEATURED — cool emerald counterpart to Popular's warm orange.
+       For team-anchor tiles like Team Onboarding: pinned, distinctive,
+       but not competing with Popular's fire intensity.
+       ══════════════════════════════════════════════════════ */
+    .rn-card.sm-featured {
+      background:
+        radial-gradient(140% 200% at 100% 0%,
+          rgba(16,185,129,.22), transparent 55%),
+        radial-gradient(120% 180% at 0% 100%,
+          rgba(59,130,246,.16), transparent 55%),
+        linear-gradient(135deg,
+          color-mix(in srgb, #10b981 12%, var(--card-bg)) 0%,
+          var(--card-bg) 60%);
+      border:2px solid #10b981;
+      box-shadow:
+        0 6px 22px rgba(16,185,129,.32),
+        0 2px 6px rgba(0,0,0,.05),
+        inset 0 0 0 1px rgba(110,231,183,.18);
+      animation:
+        cardEnter .45s cubic-bezier(.16,1,.3,1) both,
+        rnSmPulse 3.4s ease-in-out infinite 1s;
+    }
+    html[data-theme="dark"] .rn-card.sm-featured {
+      border-color:#34d399;
+      box-shadow:
+        0 6px 26px rgba(52,211,153,.42),
+        0 2px 6px rgba(0,0,0,.5),
+        inset 0 0 0 1px rgba(110,231,183,.14);
+    }
+    .rn-card.sm-featured:hover {
+      border-color:#059669;
+      transform:translateY(-4px);
+      box-shadow:
+        0 16px 42px rgba(16,185,129,.50),
+        0 6px 14px rgba(0,0,0,.10),
+        inset 0 0 0 1px rgba(167,243,208,.28);
+    }
+    @keyframes rnSmPulse {
+      0%, 100% { box-shadow:
+                   0 6px 22px rgba(16,185,129,.32),
+                   0 2px 6px rgba(0,0,0,.05),
+                   inset 0 0 0 1px rgba(110,231,183,.18); }
+      50%      { box-shadow:
+                   0 10px 32px rgba(16,185,129,.52),
+                   0 2px 8px rgba(0,0,0,.08),
+                   inset 0 0 0 1px rgba(167,243,208,.28); }
+    }
+    /* Corner ribbon — top-LEFT diagonal (mirror of Popular's top-right) */
+    .rn-sm-ribbon {
+      position:absolute;
+      top:20px; left:-48px;
+      width:170px;
+      padding:6px 0 5px;
+      background:linear-gradient(90deg, #34d399 0%, #10b981 50%, #059669 100%);
+      color:#fff;
+      text-align:center;
+      font-size:10.5px; font-weight:900;
+      letter-spacing:.16em; text-transform:uppercase;
+      transform:rotate(-45deg);
+      box-shadow:
+        0 3px 12px rgba(16,185,129,.55),
+        inset 0 0 0 1px rgba(255,255,255,.20);
+      z-index:6; pointer-events:none; white-space:nowrap;
+      display:inline-flex; align-items:center; justify-content:center; gap:5px;
+    }
+    .rn-sm-ribbon .icon-svg {
+      width:12px; height:12px;
+      filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));
+    }
+    /* Emerald halo behind the ring — cool counterpart to popular's warm halo */
+    .rn-card.sm-featured .rn-ring-wrap { position:relative; }
+    .rn-card.sm-featured .rn-ring-wrap::before {
+      content:'';
+      position:absolute; inset:-16px;
+      border-radius:50%;
+      background:radial-gradient(circle,
+        rgba(16,185,129,.35) 0%,
+        rgba(59,130,246,.14) 45%,
+        transparent 72%);
+      animation:rnSmHalo 3.6s ease-in-out infinite;
+      pointer-events:none;
+      z-index:0;
+    }
+    @keyframes rnSmHalo {
+      0%, 100% { transform:scale(1);    opacity:.75; }
+      50%      { transform:scale(1.14); opacity:1;   }
+    }
+    .rn-card.sm-featured .rn-ring { position:relative; z-index:1; }
+    /* Emerald-tint the % badge on sm-featured cards so it matches the ribbon */
+    .rn-card.sm-featured .rn-pct:not(.done):not(.locked):not(.warn):not(.new) {
+      background:linear-gradient(135deg, #34d399, #059669);
+      box-shadow:0 3px 12px rgba(16,185,129,.55);
+      color:#fff;
+    }
+
+    /* Cross-team badge (super_viewer / shared course) */
+    .rn-team-badge {
+      position:absolute; top:14px; left:14px; z-index:3;
+      padding:2px 8px; border-radius:999px;
+      font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+      color:var(--tm-color, #6366F1);
+      background:color-mix(in srgb, var(--tm-color, #6366F1) 12%, transparent);
+      border:1px solid color-mix(in srgb, var(--tm-color, #6366F1) 32%, transparent);
+      display:inline-flex; align-items:center; gap:4px;
+    }
+
+    /* Ring wrap ═══════════════════════════════════════════ */
+    .rn-ring-wrap {
+      align-self:center; position:relative;
+      margin-top:6px;
+    }
+    .rn-ring {
+      width:96px; height:96px; border-radius:50%;
+      background:conic-gradient(var(--cc) calc(var(--pct) * 1%), var(--border) 0);
+      display:flex; align-items:center; justify-content:center;
+      transition:transform .22s;
+      position:relative;
+    }
+    .rn-ring::before {
+      content:''; position:absolute; inset:6px; border-radius:50%; background:var(--card-bg);
+    }
+    .rn-ring-inner {
+      position:relative; z-index:1;
+      width:68px; height:68px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(135deg,
+        color-mix(in srgb, var(--cc) 22%, transparent),
+        color-mix(in srgb, var(--cc) 8%, transparent));
+      border:1px solid color-mix(in srgb, var(--cc) 28%, transparent);
+      color:var(--cc); font-size:26px;
+    }
+    .rn-card.done .rn-ring {
+      background:conic-gradient(var(--success) 100%, var(--border) 0);
+    }
+    .rn-card.done .rn-ring-inner {
+      background:linear-gradient(135deg, var(--success), #15803d);
+      border-color:var(--success);
+      color:#fff;
+    }
+    .rn-card.locked .rn-ring-inner {
+      color:var(--warning);
+      background:rgba(245,158,11,.12);
+      border-color:rgba(245,158,11,.35);
+    }
+    /* Floating percentage/score badge on the ring — z-index above shimmer (2)
+       + halo (0) so ✓/percent stays readable on popular cards */
+    .rn-pct {
+      position:absolute; top:-4px; right:-6px; z-index:3;
+      min-width:38px; height:32px; padding:0 10px;
+      border-radius:999px;
+      background:var(--cc); color:#fff;
+      font-family:'JetBrains Mono', ui-monospace, monospace;
+      font-size:11.5px; font-weight:800; letter-spacing:-.02em;
+      display:flex; align-items:center; justify-content:center; gap:1px;
+      border:3px solid var(--card-bg);
+      box-shadow:0 3px 10px color-mix(in srgb, var(--cc) 35%, transparent);
+    }
+    .rn-pct .u { font-size:9px; opacity:.7; font-weight:700; }
+    .rn-pct.done { background:var(--success); box-shadow:0 3px 10px rgba(34,197,94,.4); }
+    .rn-pct.warn { background:var(--warning); box-shadow:0 3px 10px rgba(245,158,11,.4); }
+    .rn-pct.locked { background:var(--warning); font-size:14px; }
+    .rn-pct.new { background:var(--info); box-shadow:0 3px 10px rgba(59,130,246,.4); }
+
+    /* Title area ═══════════════════════════════════════════ */
+    .rn-title-wrap {
+      text-align:center; padding:0 6px;
+    }
+    .rn-title {
+      font-size:15px; font-weight:800; letter-spacing:-.005em; line-height:1.3;
+      margin:0 0 3px; color:var(--text);
+    }
+    .rn-sub {
+      font-size:12px; color:var(--text-muted); line-height:1.5; margin:0;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    }
+
+    /* Phase dots (skill-tree) ══════════════════════════════ */
+    .rn-phases {
+      padding:12px 14px;
+      background:var(--bg-input);
+      border:1px solid var(--border); border-radius:10px;
+    }
+    .rn-phases-head {
+      display:flex; justify-content:space-between; align-items:baseline;
+      font-size:10.5px; font-weight:800; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.07em;
+      margin-bottom:9px;
+    }
+    .rn-phases-head b {
+      color:var(--text); font-size:12px; letter-spacing:0; text-transform:none;
+      font-family:'JetBrains Mono', ui-monospace, monospace; font-weight:800;
+    }
+    .rn-dots {
+      display:flex; align-items:center; gap:0;
+    }
+    .rn-dot {
+      flex-shrink:0;
+      width:26px; height:26px; border-radius:50%;
+      background:var(--card-bg); border:2px solid var(--border);
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:800; color:var(--text-muted);
+      font-family:'JetBrains Mono', ui-monospace, monospace;
+      transition:transform .15s;
+      position:relative; overflow:hidden;
+    }
+    .rn-dot.done {
+      background:var(--success); border-color:var(--success); color:#fff;
+    }
+    .rn-dot.fail {
+      background:var(--danger); border-color:var(--danger); color:#fff;
+    }
+    .rn-dot.pass {
+      background:var(--success); border-color:var(--success); color:#fff;
+      font-size:9.5px;
+    }
+    .rn-dot.current {
+      background:var(--card-bg); border-color:var(--cc); color:var(--cc);
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--cc) 22%, transparent);
+      animation:rnPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes rnPulse {
+      50% { box-shadow:0 0 0 6px color-mix(in srgb, var(--cc) 12%, transparent); }
+    }
+    .rn-dot.locked {
+      border-style:dashed; color:transparent;
+      background-image:linear-gradient(135deg, var(--border) 25%, transparent 25%,
+        transparent 50%, var(--border) 50%, var(--border) 75%, transparent 75%);
+      background-size:6px 6px;
+    }
+    .rn-dot.more {
+      border-style:solid; background:transparent; color:var(--text-muted);
+      font-size:9.5px;
+    }
+    .rn-line {
+      flex:1; height:3px; min-width:4px;
+      background:var(--border);
+    }
+    .rn-line.done { background:var(--success); }
+    .rn-line.fail { background:var(--danger); }
+    .rn-line.pass { background:var(--success); }
+
+    /* Optional note (prereq / exam window) ═════════════════ */
+    .rn-note {
+      padding:8px 12px; border-radius:8px;
+      font-size:11.5px; font-weight:600; line-height:1.4;
+      display:flex; align-items:center; gap:6px;
+    }
+    .rn-note.locked   { background:rgba(245,158,11,.10); color:var(--warning); border:1px solid rgba(245,158,11,.28); }
+    .rn-note.upcoming { background:rgba(59,130,246,.10); color:var(--info);    border:1px solid rgba(59,130,246,.28); }
+    .rn-note.open     { background:rgba(34,197,94,.10);  color:var(--success); border:1px solid rgba(34,197,94,.28); }
+    .rn-note.closed   { background:rgba(239,68,68,.10);  color:var(--danger);  border:1px solid rgba(239,68,68,.28); }
+
+    /* Stats chips (integrated) ════════════════════════════ */
+    .rn-stats {
+      display:flex; gap:5px; flex-wrap:wrap; justify-content:center;
+      margin-top:auto;
+    }
+    .rn-chip {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:4px 10px; border-radius:999px;
+      font-size:10.5px; font-weight:800; letter-spacing:.03em;
+      background:var(--bg-input); border:1px solid var(--border);
+      color:var(--text-muted);
+    }
+    .rn-chip.progress { background:color-mix(in srgb, var(--cc) 14%, transparent);
+                        border-color:color-mix(in srgb, var(--cc) 35%, transparent); color:var(--cc); }
+    .rn-chip.done     { background:rgba(34,197,94,.14); border-color:rgba(34,197,94,.35); color:var(--success); }
+    .rn-chip.warn     { background:rgba(245,158,11,.14); border-color:rgba(245,158,11,.35); color:var(--warning); }
+    .rn-chip.new      { background:rgba(59,130,246,.14); border-color:rgba(59,130,246,.35); color:var(--info); }
+    .rn-chip.popular  { background:rgba(251,146,60,.15); border-color:rgba(251,146,60,.4);  color:#ea580c; }
+    html[data-theme="dark"] .rn-chip.popular { color:#fdba74; }
+    html[data-theme="dark"] .rn-chip.done { color:#4ade80; }
+    html[data-theme="dark"] .rn-chip.new  { color:#93c5fd; }
+
+    /* Legacy no-op aliases (unused in new design, kept to avoid
+       CSS errors if a stray selector survives elsewhere) */
+    .bl-card, .bl-mark, .bl-info, .bl-title, .bl-sub,
+    .bl-status, .bl-progress, .bl-bar, .bl-badges, .bl-badge,
+    .bl-meta, .bl-window, .bl-action, .bl-best, .bl-chev,
+    .bl-team-badge, .bl-prereq { /* superseded */ }
+
+    /* Stagger the first 12 rn-cards on load */
+    @keyframes cardEnter {
+      from { opacity:0; transform:translateY(10px) }
+      to   { opacity:1; transform:translateY(0) }
+    }
+    .rn-card:nth-child(1)  { animation-delay:.02s }
+    .rn-card:nth-child(2)  { animation-delay:.06s }
+    .rn-card:nth-child(3)  { animation-delay:.10s }
+    .rn-card:nth-child(4)  { animation-delay:.14s }
+    .rn-card:nth-child(5)  { animation-delay:.18s }
+    .rn-card:nth-child(6)  { animation-delay:.22s }
+    .rn-card:nth-child(7)  { animation-delay:.26s }
+    .rn-card:nth-child(8)  { animation-delay:.30s }
+    .rn-card:nth-child(n+9){ animation-delay:.34s }
+
+    /* Retry button used in the empty/error state (keep .bl-go alive) */
+    .bl-go {
+      padding:8px 14px; border-radius:9px; font-weight:600; font-size:12px;
+      background:var(--accent); color:#fff; border:0; cursor:pointer; text-decoration:none;
+      display:inline-flex; align-items:center; gap:5px;
+      box-shadow:0 2px 8px var(--accent-glow);
+      transition:filter .15s, transform .15s, box-shadow .15s;
+    }
+    .bl-go:hover {
+      filter:brightness(1.08); transform:translateX(2px);
+      box-shadow:0 4px 14px var(--accent-glow);
+    }
+
+    .empty {
+      text-align:center; padding:60px 20px; color:var(--text-muted);
+      border:1.5px dashed var(--border); border-radius:14px;
+      background:var(--card-bg);
+    }
+    .empty .icon { font-size:38px; margin-bottom:10px; opacity:.45 }
+
+
+    /* Honor user reduced-motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      .rn-card, .lp-pane, .rn-ring { animation:none !important; transition:none !important }
+      .rn-card.popular,
+      .rn-card.popular::after,
+      .rn-card.popular .rn-ring-wrap::before,
+      .rn-popular-flame,
+      .rn-popular-sparks span { animation:none !important; }
+      .rn-popular-sparks { display:none; }
+      .rn-dot.current { animation:none }
+    }

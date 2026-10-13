@@ -1,0 +1,513 @@
+{
+  "title": "7-Eleven · Acquiring Detail",
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "tOZ1JoTMk"
+      },
+      "description": "นับ transaction ที่ fail เพราะ timeout แยกตาม SoF type\n\nดูยังไง: ถ้า timeout spike ขึ้นให้ดู P99 Latency ใน Section C ว่า SoF ไหน slow จนเกิน threshold\n\nเกี่ยวกับ: Case #1 — High Latency / Session Timeout",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 81
+      },
+      "id": 2017,
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "main-acquiring-service-transaction-count",
+          "url": "https://grafana-thanos.truemoney.com/d/000000169/main-acquiring-service-transaction-count?orgId=3&refresh=5s&from=now-12h&to=now"
+        }
+      ],
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Max",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.5.15",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "tOZ1JoTMk"
+          },
+          "editorMode": "code",
+          "expr": "sum by (status_code, status_code_reason) (increase(acquiring_service_total_transaction_total{service=\"Payment\", status_code!=\"200\", status_code_reason=\"failed_timeout\"}[1m])) ",
+          "hide": false,
+          "legendFormat": " {{status_code}} - {{status_code_reason}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "tOZ1JoTMk"
+          },
+          "editorMode": "code",
+          "expr": "sum by (status_code, payment_method)(increase(acquiring_service_total_payment_payment_method_transaction_total{status_code=\"400\", payment_method=\"Card\"}[1m]))",
+          "hide": false,
+          "legendFormat": " {{payment_method}} - {{status_code}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "tOZ1JoTMk"
+          },
+          "editorMode": "code",
+          "expr": "sum by (status_code, payment_method)(increase(acquiring_service_total_payment_payment_method_transaction_total{status_code=\"400\", payment_method!~\"Balance|Bank|PayNext|PayNextExtra|Card\"}[1m]))",
+          "hide": false,
+          "legendFormat": " {{payment_method}} - {{status_code}}",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "tOZ1JoTMk"
+          },
+          "editorMode": "code",
+          "expr": "sum by (status_code, payment_method)(increase(acquiring_service_total_payment_payment_method_transaction_total{status_code=\"400\", payment_method=\"PayNext\"}[1m]))/3.5",
+          "hide": false,
+          "legendFormat": " {{payment_method}} - {{status_code}}",
+          "range": true,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "tOZ1JoTMk"
+          },
+          "editorMode": "code",
+          "expr": "sum by (status_code, payment_method)(increase(acquiring_service_total_payment_payment_method_transaction_total{status_code=\"400\", payment_method=\"PayNextExtra\"}[1m]))",
+          "hide": false,
+          "legendFormat": " {{payment_method}} - {{status_code}}",
+          "range": true,
+          "refId": "E"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "op": "gt",
+          "value": 10,
+          "visible": true
+        }
+      ],
+      "title": "SOF failed_timeout",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "Alert panel — trigger เมื่อ invalid_payment_id error เกิน 25 ครั้งใน 1 นาที\n\nอาจหมายความว่า 7-11 ส่ง payment_id ซ้ำหรือ expire (Case #3)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 81
+      },
+      "id": 2018,
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "third-party-pay-composite-transaction-count",
+          "url": "https://grafana-thanos.truemoney.com/d/000000213/third-party-pay-composite-transaction-count?orgId=3&refresh=10s"
+        }
+      ],
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "8.4.7",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(acquiring_service_total_transaction_total{status_code!=\"200\", app_name=\"acquiring-service\",status_code_reason=\"invalid_payment_id\"}[1m])) by (status_code, status_code_reason, app_name)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{app_name}} : {{status_code_reason}} - {{status_code}} ",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "op": "gt",
+          "value": 25,
+          "visible": true
+        }
+      ],
+      "title": "[SMC] Acquiring-transaction_invalid_payment_id_Fail => 25",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน message ใน RabbitMQ Queue ของ Acquiring Refund\n\nดูยังไง: ค่าปกติควรใกล้ 0 ถ้า queue สะสมสูงขึ้นหมายความว่า Consumer/Worker ประมวลผลไม่ทัน\n\nเกี่ยวกับ: Case #2 — ตัดเงินแล้ว Slip ไม่พิมพ์ (refund ค้างใน queue)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 89
+      },
+      "id": 2019,
+      "maxDataPoints": 1230,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "8.4.7",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "rabbitmq_queue_messages{queue=~\"acquiring-transaction-refund-event|acquiring-transaction-refund-event-dl\"}",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{queue}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "op": "gt",
+          "value": 50,
+          "visible": true
+        }
+      ],
+      "title": "queue_messages_acquiring-transaction-refund-event",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 95
+      },
+      "hiddenSeries": false,
+      "id": 2020,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "avg(acquiring_service_time_payment_payment_method_transaction{payment_method=\"Card\",status_code=\"200\"})",
+          "interval": "",
+          "legendFormat": "Card",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "avg(acquiring_service_time_payment_payment_method_transaction{payment_method=\"Balance\",status_code=\"200\"})",
+          "interval": "",
+          "legendFormat": "Balance",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "avg(acquiring_service_time_payment_payment_method_transaction{payment_method=\"Bank\",status_code=\"200\"})",
+          "interval": "",
+          "legendFormat": "Bank",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "avg(acquiring_service_time_payment_payment_method_transaction{payment_method=\"PayNext\",status_code=\"200\"})",
+          "interval": "",
+          "legendFormat": "PayNext",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Acquiring  Processing Time by SoF Type",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:282",
+          "format": "short",
+          "label": "ms",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:283",
+          "format": "short",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    }
+  ]
+}

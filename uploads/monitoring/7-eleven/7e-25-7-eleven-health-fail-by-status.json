@@ -1,0 +1,248 @@
+{
+  "title": "7-Eleven · Health Fail by Status",
+  "panels": [
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน fail แยกตาม HTTP status_code ที่ Gateway layer\n\nดูยังไง:\n- 500 INTERNAL_SERVER_ERROR = app logic error\n- 504 GATEWAY_TIMEOUT = upstream timeout\n- 503 SERVICE_UNAVAILABLE = pod ล่ม/overload\n\nใช้แยกได้ทันทีว่าเป็น app bug หรือ network/infrastructure problem",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 528
+      },
+      "id": 9021,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CHARGE\",status_code!=\"200 OK\"}[1m])) by (status_code)",
+          "legendFormat": "CHARGE {{status_code}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CANCEL\",status_code!=\"200 OK\"}[1m])) by (status_code)",
+          "legendFormat": "CANCEL {{status_code}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Gateway — Fail by Status Code  (seven-custom-in-gateway)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน fail ที่ Acquiring แยกตาม status_code และ reason\n\nดูยังไง:\n- invalid_payment_id = payment_id ผิดหรือ expire\n- failed_timeout = upstream ตอบช้า\n- other = ดู log เพิ่มเติม",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 528
+      },
+      "id": 9022,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(acquiring_service_total_transaction_total{status_code!=\"200\",app_name=\"acquiring-service\"}[1m])) by (status_code, status_code_reason)",
+          "legendFormat": "{{status_code}} — {{status_code_reason}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Acquiring — Fail by Status Code + Reason",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "แยกประเภท error ของ Omise/OPN Gateway ให้ชัดขึ้น\n\nดูยังไง:\n- OMISE_CONNECTION_ERROR = network ถึง Omise ขาด\n- SERVICE_UNAVAILABLE = Omise API down\n- PROCESSING_FAILED = bank ปฏิเสธ transaction\n- PAYMENT_REJECT = card ถูก block หรือ limit เกิน\n\nแต่ละ type มีวิธีแก้ต่างกัน อย่า lump รวมเป็น 'fail' เดียวกัน",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 536
+      },
+      "id": 9023,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"OMISE_CONNECTION_ERROR\"}[1m]))",
+          "legendFormat": "OMISE_CONNECTION_ERROR",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"SERVICE_UNAVAILABLE\"}[1m]))",
+          "legendFormat": "SERVICE_UNAVAILABLE",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"PROCESSING_FAILED\"}[1m]))",
+          "legendFormat": "PROCESSING_FAILED",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"PAYMENT_REJECT\"}[1m]))",
+          "legendFormat": "PAYMENT_REJECT",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=~\"OMISE_CONNECTION_ERROR|SERVICE_UNAVAILABLE|PROCESSING_FAILED|PAYMENT_REJECT\",status_code!~\"SUCCESS|INVALID_PARAM|INSUFFICIENT\"}[1m]))",
+          "legendFormat": "Other Fail",
+          "refId": "E"
+        }
+      ],
+      "title": "Omise/OPN — Error Type Breakdown  (Connection / Unavailable / Rejected)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "แยก error ของ Direct Debit ตามประเภท\n\nดูยังไง:\n- timeout (-1) = bank ตอบช้าหรือ connection หลุด\n- bank error (-1016/-1017/-1018) = bank ปฏิเสธด้วย business reason\n- 500 Internal = error ใน seven-composite\n\nถ้า timeout เยอะให้ตรวจ Fund Service connection ไปที่ bank",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 536
+      },
+      "id": 9024,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status!=\"200\",sof_type=\"BANK\",status_code=\"-1\"}[1m])) by (sof_code)",
+          "legendFormat": "timeout (-1) {{sof_code}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status!=\"200\",sof_type=\"BANK\",status_code=~\"-1016|-1017|-1018\"}[1m])) by (sof_code, status_code)",
+          "legendFormat": "bank error {{status_code}} {{sof_code}}",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"500\",sof_type=\"BANK\"}[1m])) by (sof_code)",
+          "legendFormat": "500 Internal {{sof_code}}",
+          "refId": "C"
+        }
+      ],
+      "title": "Bank Gateway (Direct Debit) — Fail by Error Code  (seven-composite)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    }
+  ]
+}

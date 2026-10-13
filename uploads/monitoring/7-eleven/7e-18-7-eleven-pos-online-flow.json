@@ -1,0 +1,522 @@
+{
+  "title": "7-Eleven · POS Online Flow",
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 334
+      },
+      "id": 2069,
+      "options": {
+        "composites": [],
+        "content": "%%{init: {\"flowchart\": {\"useMaxWidth\": true, \"htmlLabels\": true}, \"theme\": \"dark\"}}%%\ngraph TD\n  subgraph APPS[\"7-Eleven Applications\"]\n    APP[\"7Delivery App\nPOS Online\"]\n  end\n\n  subgraph NETWORK[\"Network — AWS PrivateLink\"]\n    PRIV[\"PrivateLink (VPCE)\"]\n    NLB[\"NLB\"]\n  end\n\n  subgraph TMN[\"AWS — TrueMoney\"]\n    B2B[\"B2B In Gateway\"]\n    b2b_pay_ok([\"Pay: OK\"])\n    b2b_pay_fail([\"Pay: Fail\"])\n    b2b_ref_ok([\"Refund: OK\"])\n  end\n\n  APP --> PRIV\n  PRIV --> NLB\n  NLB --> B2B\n  B2B -->|200 OK| b2b_pay_ok\n  B2B -->|non-200| b2b_pay_fail\n  B2B --> b2b_ref_ok\n  classDef svc    fill:#242930,stroke:#5794c7,stroke-width:2px,color:#fff\n  classDef ok     fill:#1c2c22,stroke:#47a468,stroke-width:2px,color:#fff\n  classDef fail   fill:#2c1e1e,stroke:#cc3333,stroke-width:2px,color:#fff\n  classDef client fill:#2c2020,stroke:#e05252,stroke-width:3px,color:#e05252,font-weight:bold\n  classDef net    fill:#2c251e,stroke:#ff8c42,stroke-width:2px,color:#fff",
+        "links": [],
+        "style": "width:100%;",
+        "useBackground": false,
+        "valueName": "current"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(B2B_IN_GATEWAY_transaction_total{service=\"payments-pay\",status_code=\"200 OK\",isv=\"010000000000292912477\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "b2b_pay_ok",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(B2B_IN_GATEWAY_transaction_total{service=\"payments-pay\",isv=\"010000000000292912477\",status_code!~\"200 OK|400 BAD_REQUEST\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "b2b_pay_fail",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(B2B_IN_GATEWAY_transaction_total{service=\"payments-refund\",status_code=\"200 OK\",isv=\"010000000000292912477\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "b2b_ref_ok",
+          "refId": "C"
+        }
+      ],
+      "title": "B2B Gateway - POS Online Flow (5m window)",
+      "type": "jdbranham-diagram-panel"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน payment-pay request ที่สำเร็จผ่าน B2B In Gateway (ISV: 7-Eleven Delivery)\n\nดูยังไง: traffic มาจาก 7Delivery App ผ่าน AWS PrivateLink ถ้า drop ให้ตรวจ PrivateLink connection ก่อน",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 348
+      },
+      "hiddenSeries": false,
+      "id": 2070,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "exemplar": true,
+          "expr": "sum (increase(B2B_IN_GATEWAY_transaction_total{service=\"payments-pay\" , status_code=\"200 OK\" , isv=\"010000000000292912477\"}[1m])) by (isv)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{service}}{{status_code}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum (increase(B2B_IN_GATEWAY_transaction_total{isv=\"010000000000292912477\",status_code=\"200 OK\",service=\"payments-refund\"}[1m])) by(status_code,service)",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{service}}{{status_code}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "lt",
+          "value": 20,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "7-Delivery - POS Online (7App) [B2B in GW] Success",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:71",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:72",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน payment-pay request ที่ fail ที่ B2B Gateway (ไม่นับ 400 BAD_REQUEST)\n\nดูยังไง: status 5xx = server error, timeout = upstream problem ให้ดู B2B response time ประกอบ",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 348
+      },
+      "hiddenSeries": false,
+      "id": 2071,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum (increase(B2B_IN_GATEWAY_transaction_total{service=\"payments-pay\", isv=\"010000000000292912477\" , status_code!~\"200 OK|400 BAD_REQUEST\"}[1m])) by (status_code)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{status_code}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum (increase(B2B_IN_GATEWAY_transaction_total{service=\"payments-pay\", isv=\"010000000000292912477\" , status_code=\"200 OK\"}[1m])) by (status_code)",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{status_code}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 5,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "7-Delivery - POS Online (7App) [B2B in GW] Fail",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:71",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:72",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "Processing time ของ B2B In Gateway สำหรับ 7-Delivery (ISV: 010000000000292912477)\n\nดูยังไง: ถ้าสูงขึ้นให้ตรวจ Acquiring และ SoF downstream เพราะ B2B GW เป็น thin layer",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 356
+      },
+      "hiddenSeries": false,
+      "id": 2072,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum (rate(B2B_IN_GATEWAY_transaction_total{service=\"payments-pay\" , status_code=\"200 OK\" , isv=\"010000000000292912477\"}[1m])) by (isv)",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{service}}{{status_code}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(rate(B2B_IN_GATEWAY_processing_time_seconds_sum{isv=\"010000000000292912477\"}[1m])) by(status_code,service)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{service}}{{status_code}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(rate(B2B_IN_GATEWAY_processing_time_seconds_sum{isv=\"010000000000292912477\"}[1m])) by(status_code,service)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{service}}{{status_code}}",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "7-Eleven Delivery [B2B in GW] Respaone time",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:71",
+          "format": "s",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:72",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน barcode generation สำเร็จจาก payment-code service สำหรับ cspay / online merchant\n\nเส้นนี้แสดง upstream ของ B2B flow ก่อนที่ request จะเข้า TMN",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 364
+      },
+      "hiddenSeries": false,
+      "id": 2073,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum by (service, requestor) (increase(payment_code_transaction_total{status=\"200\",service=\"generateBarcodeV2\" , requestor=\"cspay\"}[1m]))",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{service}} : {{requestor}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "expr": "sum by (service, requestor) (increase(payment_code_transaction_total{status=\"200\",service=\"generateBarcodeV2\" , requestor=\"pay@all  (online merchant)\"}[1m]))",
+          "hide": true,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "lt",
+          "value": 10,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "7-Delivery - POS Online (7App) Success",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:350",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:351",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    }
+  ]
+}

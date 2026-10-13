@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Learn Hero — Journey with REAL data</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#F26419; --orange-light:#FB923C; --orange-dark:#EA580C;
+  --amber:#FBBF24;
+  --bg:#F5F6F8; --bg-card:#FFFFFF;
+  --text:#1C1C1E; --text-muted:#767676;
+  --border:#E5E5E5;
+  --font:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); font-family:var(--font); color:var(--text); font-size:12px}
+.page{max-width:1220px; margin:0 auto; padding:32px 32px 80px; display:flex; flex-direction:column; gap:24px}
+.pageHead{padding-bottom:12px; border-bottom:2px solid var(--text)}
+.pageHead h1{margin:0; font-size:20px; font-weight:800; letter-spacing:-.02em}
+.pageHead .sub{margin:6px 0 0; color:var(--text-muted); font-size:12px}
+.pageHead .sub b{color:var(--text)}
+
+/* Section header */
+.sec-head{display:flex; align-items:baseline; gap:12px; padding:0 2px}
+.sec-num{font-size:10px; font-weight:800; color:#fff; background:var(--text);
+  padding:3px 8px; border-radius:6px; letter-spacing:.06em}
+.sec-title{font-size:14px; font-weight:800}
+.sec-hint{font-size:11px; color:var(--text-muted); margin-left:auto}
+
+/* Journey hero (same wrapper as Design 7) */
+.jn-hero{
+  position:relative; display:flex; align-items:stretch; gap:18px;
+  padding:16px 20px; border-radius:16px; overflow:hidden;
+  background:radial-gradient(120% 200% at 100% 0%, rgba(251,191,36,.18), transparent 55%),
+    linear-gradient(135deg, rgba(242,100,25,.14), rgba(251,191,36,.09) 55%, rgba(242,100,25,.05));
+  border:1.5px solid rgba(242,100,25,.32);
+  box-shadow:0 4px 20px -8px rgba(242,100,25,.40);
+  animation:jnEnter .55s cubic-bezier(.22,.9,.32,1.1) both;
+}
+@keyframes jnEnter{ from{opacity:0; transform:translateY(-8px)} to{opacity:1; transform:none} }
+
+/* User info card on the left */
+.jn-info{flex-shrink:0; display:flex; flex-direction:column; justify-content:center;
+  padding-right:14px; border-right:1px dashed rgba(242,100,25,.25);
+  min-width:200px; max-width:230px}
+.jn-user{display:flex; align-items:center; gap:10px; margin-bottom:6px}
+.jn-ava{width:34px; height:34px; border-radius:50%; flex-shrink:0;
+  background:linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color:#fff; font-size:12px; font-weight:800; display:grid; place-items:center;
+  box-shadow:0 3px 8px -2px rgba(242,100,25,.5)}
+.jn-uname{font-size:11px; font-weight:800; line-height:1.2}
+.jn-uname small{display:block; color:var(--text-muted); font-size:9.5px; font-weight:600; margin-top:1px}
+.jn-tag{align-self:flex-start; font-size:9px; font-weight:800; letter-spacing:.1em;
+  text-transform:uppercase; color:#7C2D12; background:rgba(251,191,36,.28);
+  border:1px solid rgba(251,191,36,.55); padding:2px 8px; border-radius:999px; margin-bottom:4px}
+.jn-title{font-size:13.5px; font-weight:800; line-height:1.25}
+.jn-title b{color:var(--orange)}
+.jn-sub{font-size:10.5px; color:var(--text-muted); margin-top:4px; line-height:1.45}
+.jn-sub b{color:var(--text); font-weight:800}
+.jn-pct{margin-top:6px; display:flex; align-items:baseline; gap:4px}
+.jn-pct .n{font-size:24px; font-weight:800; color:var(--orange); letter-spacing:-.02em; line-height:1;
+  font-variant-numeric:tabular-nums}
+.jn-pct .u{font-size:12px; color:var(--text-muted); font-weight:700}
+.jn-pct .k{font-size:10px; color:var(--text-muted); font-weight:700; margin-left:6px}
+
+/* Path */
+.rd-path{flex:1; min-width:0; position:relative; display:flex; align-items:center; padding:18px 12px 22px}
+.rd-track{position:absolute; left:20px; right:20px; top:50%; height:6px;
+  border-radius:3px; transform:translateY(-50%); z-index:1}
+.rd-track.rt-course{
+  background:linear-gradient(90deg,
+    #16A34A 0%, #16A34A 20.0%,
+    var(--amber) 20.0%, var(--amber) 25.0%,
+    rgba(0,0,0,.07) 25.0%, rgba(0,0,0,.07) 100%);
+}
+.rd-track.rt-phase{
+  background:linear-gradient(90deg,
+    #16A34A 0%, #16A34A 83.3%,
+    var(--amber) 83.3%, var(--amber) 91.3%,
+    rgba(0,0,0,.07) 91.3%, rgba(0,0,0,.07) 100%);
+}
+
+.rd-nodes{position:relative; z-index:2; flex:1; display:grid; gap:0}
+.rd-nodes.n10{grid-template-columns:repeat(10,1fr)}
+.rd-nodes.n12{grid-template-columns:repeat(12,1fr)}
+
+.rd-node{position:relative; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:default; padding:0 2px}
+.rd-dot{width:34px; height:34px; border-radius:50%; display:grid; place-items:center;
+  font-size:12.5px; font-weight:800; color:#fff;
+  box-shadow:0 3px 8px -2px rgba(0,0,0,.15); flex-shrink:0}
+.rd-node.done .rd-dot{background:linear-gradient(135deg, #22C55E, #16A34A)}
+.rd-node.current .rd-dot{background:linear-gradient(135deg, var(--amber), var(--orange));
+  box-shadow:0 4px 14px -2px rgba(242,100,25,.7); position:relative}
+.rd-node.current .rd-dot::before{content:''; position:absolute; inset:-4px; border-radius:50%;
+  border:2px solid var(--orange); opacity:0; animation:rdRip 1.8s ease-out infinite}
+@keyframes rdRip{ 0%{transform:scale(.9); opacity:.8} 100%{transform:scale(1.7); opacity:0} }
+.rd-node.locked .rd-dot{background:#E5E7EB; color:#9CA3AF; box-shadow:none}
+.rd-icon{font-size:14px; margin-top:2px}
+.rd-node.locked .rd-icon{opacity:.45; filter:grayscale(1)}
+.rd-lbl{font-size:9.5px; font-weight:800; text-align:center; color:var(--text);
+  white-space:nowrap; max-width:110px; overflow:hidden; text-overflow:ellipsis}
+.rd-node.locked .rd-lbl{color:var(--text-muted)}
+.rd-mini{font-size:8.5px; font-weight:700; color:var(--text-muted); font-variant-numeric:tabular-nums}
+.rd-node.done .rd-mini{color:#16A34A}
+.rd-node.current .rd-mini{color:var(--orange)}
+
+/* Walking mascot on current node */
+.rd-walk{position:absolute; top:-30px; left:50%; transform:translateX(-50%);
+  animation:rdWalk 1.4s ease-in-out infinite}
+@keyframes rdWalk{
+  0%,100%{transform:translateX(-50%) translateY(0) rotate(-4deg)}
+  50%    {transform:translateX(-50%) translateY(-3px) rotate(4deg)}
+}
+.rd-walk .m{width:22px; height:22px; border-radius:50%;
+  background:linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color:#fff; display:grid; place-items:center;
+  box-shadow:0 4px 10px -2px rgba(242,100,25,.55)}
+.rd-walk .m svg{width:12px; height:12px; stroke:#fff; fill:none; stroke-width:2.4}
+.rd-walk::after{content:'▼'; position:absolute; bottom:-7px; left:50%; transform:translateX(-50%);
+  font-size:7px; color:var(--orange)}
+
+/* CTA */
+.rd-cta{flex-shrink:0; align-self:center;
+  display:inline-flex; align-items:center; gap:8px; padding:12px 18px; border-radius:12px;
+  color:#fff !important; text-decoration:none; font-size:12px; font-weight:800;
+  background:linear-gradient(135deg, var(--orange), var(--orange-dark));
+  box-shadow:0 6px 16px -6px rgba(242,100,25,.7), inset 0 1px 0 rgba(255,255,255,.25);
+  transition:transform .15s; position:relative; overflow:hidden}
+.rd-cta::before{content:''; position:absolute; inset:0;
+  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.4) 50%, transparent 70%);
+  transform:translateX(-100%); animation:rdShine 3s ease-in-out infinite}
+@keyframes rdShine{ 0%,30%{transform:translateX(-100%)} 55%,100%{transform:translateX(110%)} }
+.rd-cta:hover{transform:translateY(-1px)}
+.rd-cta .arr{animation:rdArr 1.3s ease-in-out infinite}
+@keyframes rdArr{ 0%,100%{transform:translateX(0)} 50%{transform:translateX(4px)} }
+
+/* Data breakdown box */
+.rd-facts{background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:16px 20px}
+.rd-facts h4{margin:0 0 10px; font-size:11px; letter-spacing:.14em; font-weight:800; text-transform:uppercase}
+.rd-facts .row{display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:12px}
+.rd-facts .row + .row{margin-top:6px}
+.rd-facts .num{font-variant-numeric:tabular-nums; font-weight:800; color:var(--orange)}
+.rd-facts .kv{padding:5px 10px; border-radius:8px; background:var(--bg); font-size:11px}
+.rd-facts .kv b{color:var(--text); font-weight:800}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="pageHead">
+    <h1>Learning Path Journey — REAL data</h1>
+    <p class="sub">User <b>Chumpon khongmanee</b> (<code>usr_f2ee56edb840</code>) &middot; อ่านตรงๆ จาก <code>data/sm/courses/*.json</code></p>
+  </div>
+
+  <!-- ─── VIEW A: Course-level roadmap (10 nodes) ─── -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">A</span>
+      <span class="sec-title">Course-level Journey — 10 courses จริง</span>
+      <span class="sec-hint">แต่ละ node = 1 คอร์ส · เขียว = จบทั้ง course · ส้ม = กำลังทำ · เทา = ยังไม่แตะ</span>
+    </div>
+    <div class="jn-hero">
+      <div class="jn-info">
+        <div class="jn-user">
+          <div class="jn-ava">CK</div>
+          <div class="jn-uname">Chumpon khongmanee<small>SM team · learning</small></div>
+        </div>
+        <span class="jn-tag">All Courses</span>
+        <div class="jn-title"><b>2/10</b> คอร์สจบ · <b>50/47</b> phases</div>
+        <div class="jn-sub">รวมเรียนไปแล้ว <b>820</b> นาที · เพิ่งเสร็จ Grafana 102</div>
+        <div class="jn-pct"><span class="n">106</span><span class="u">%</span><span class="k">overall</span></div>
+      </div>
+      <div class="rd-path">
+        <div class="rd-track rt-course"></div>
+        <div class="rd-nodes n10">
+          
+      <div class="rd-node locked" title="SMC Fundamentals 101">
+        
+        <div class="rd-dot">·</div>
+        <div class="rd-icon">🎓</div>
+        <div class="rd-lbl">SMC Fundamentals…</div>
+        <div class="rd-mini">ยังไม่มี phase</div>
+      </div>
+      <div class="rd-node locked" title="SMC Fundamentals 102">
+        
+        <div class="rd-dot">·</div>
+        <div class="rd-icon">🛰️</div>
+        <div class="rd-lbl">SMC Fundamentals…</div>
+        <div class="rd-mini">ยังไม่มี phase</div>
+      </div>
+      <div class="rd-node current" title="Grafana 101 (TMN Service)">
+        <div class="rd-walk"><div class="m"><svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div></div>
+        <div class="rd-dot">10</div>
+        <div class="rd-icon">💳</div>
+        <div class="rd-lbl">Grafana 101 (TMN…</div>
+        <div class="rd-mini">10/12</div>
+      </div>
+      <div class="rd-node done" title="Grafana 102 (TMN Service)">
+        
+        <div class="rd-dot">✓</div>
+        <div class="rd-icon">🧪</div>
+        <div class="rd-lbl">Grafana 102 (TMN…</div>
+        <div class="rd-mini">6/6</div>
+      </div>
+      <div class="rd-node done" title="7-Eleven Network Interface &amp; Troubleshooting">
+        
+        <div class="rd-dot">✓</div>
+        <div class="rd-icon">🏪</div>
+        <div class="rd-lbl">7-Eleven Network…</div>
+        <div class="rd-mini">12/12</div>
+      </div>
+      <div class="rd-node locked" title="IMPB — Incident &amp; Problem Management">
+        
+        <div class="rd-dot">·</div>
+        <div class="rd-icon">🚨</div>
+        <div class="rd-lbl">IMPB — Incident …</div>
+        <div class="rd-mini">ยังไม่มี phase</div>
+      </div>
+      <div class="rd-node locked" title="FAS — 2nd Tier Nano Support">
+        
+        <div class="rd-dot">·</div>
+        <div class="rd-icon">🏦</div>
+        <div class="rd-lbl">FAS — 2nd Tier N…</div>
+        <div class="rd-mini">ยังไม่มี phase</div>
+      </div>
+      <div class="rd-node locked" title="TS — 2nd Tier TrueMoney Support">
+        
+        <div class="rd-dot">·</div>
+        <div class="rd-icon">💰</div>
+        <div class="rd-lbl">TS — 2nd Tier Tr…</div>
+        <div class="rd-mini">ยังไม่มี phase</div>
+      </div>
+      <div class="rd-node locked" title="CMT — Change Management">
+        
+        <div class="rd-dot">·</div>
+        <div class="rd-icon">📋</div>
+        <div class="rd-lbl">CMT — Change Man…</div>
+        <div class="rd-mini">ยังไม่มี phase</div>
+      </div>
+      <div class="rd-node locked" title="Partners Management &amp; CPPay QR (C-Scan-B)">
+        
+        <div class="rd-dot">·</div>
+        <div class="rd-icon">💳</div>
+        <div class="rd-lbl">Partners Managem…</div>
+        <div class="rd-mini">ยังไม่มี phase</div>
+      </div>
+        </div>
+      </div>
+      <a class="rd-cta" href="./learn.html">ไปต่อ <span class="arr">→</span></a>
+    </div>
+  </section>
+
+  <!-- ─── VIEW B: Phase-level roadmap for current course ─── -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">B</span>
+      <span class="sec-title">Phase-level Journey — คอร์ส "Grafana 101 (TMN Service)"</span>
+      <span class="sec-hint">แต่ละ node = 1 phase · โชว์ score จริง · mascot ปักที่ phase ถัดไป</span>
+    </div>
+    <div class="jn-hero">
+      <div class="jn-info">
+        <div class="jn-user">
+          <div class="jn-ava" style="background:linear-gradient(135deg,#10b981,#7F1D1D)">💳</div>
+          <div class="jn-uname">Grafana 101 (TMN Service)<small>อ่าน dashboard Team Service Moni</small></div>
+        </div>
+        <span class="jn-tag">Current Course</span>
+        <div class="jn-title"><b>10/12</b> phase ผ่านแล้ว · เหลืออีก <b>2</b></div>
+        <div class="jn-sub">ถัดไป: <b>VAS, IRS, ECS &amp; Misc</b> (25 min)</div>
+        <div class="jn-pct"><span class="n">83</span><span class="u">%</span><span class="k">course</span></div>
+      </div>
+      <div class="rd-path">
+        <div class="rd-track rt-phase"></div>
+        <div class="rd-nodes n12">
+          
+      <div class="rd-node done" title="Phase 1 — ภาพรวม Dashboard TMN">
+        
+        <div class="rd-dot">✓</div>
+        <div class="rd-icon">🗺️</div>
+        <div class="rd-lbl">ภาพรวม Dashboa…</div>
+        <div class="rd-mini">100</div>
+      </div>
+      <div class="rd-node done" title="Phase 2 — Login, SMS, OTP &amp; KYC">
+        
+        <div class="rd-dot">✓</div>
+        <div class="rd-icon">🔐</div>
+        <div class="rd-lbl">Login, SMS, OT…</div>
+        <div class="rd-mini">100</div>
+      </div>
+      <div class="rd-node done" title="Phase 3 — 7-Eleven &amp; CP Payment">
+        
+        <div class="rd-dot">✓</div>
+        <div class="rd-icon">🏪</div>
+        <div class="rd-lbl">7-Eleven &amp; CP …</div>
+        <div class="rd-mini">100</div>
+      </div>
+      <div class="rd-node done" title="Phase 4 — Topup, P2P &amp; Voucher">
+        
+        <div class="rd-dot">✓</div>
+        <div class="rd-icon">💰</div>
+        <div class="rd-lbl">Topup, P2P &amp; V…</div>
+        <div class="rd-mini">100</div>
+      </div>
+      <div class="rd-node done" title="Phase 5 — Fund Out (TMN Gateway)">
+        
+        <div class="rd-dot">✓</div>
+        <div class="rd-icon">🏦</div>
+        <div class="rd-lbl">Fund Out (TMN …</div>
+        <div class="rd-mini">100</div>
+      </div>
+      <div class="rd-node done" title="Phase 6 — PromptPay, CIMB &amp; BAY">
+        
+        <div class="rd-dot">✓</div>
+        <div class="rd-icon">📲</div>
+        <div class="rd-lbl">PromptPay, CIM…</div>
+        <div class="rd-mini">100</div>
+      </div>
+      <div class="rd-node done" title="Phase 7 — 3rd Party, Partner &amp; NSF">
+        
+        <div class="rd-dot">✓</div>
+        <div class="rd-icon">🤝</div>
+        <div class="rd-lbl">3rd Party, Par…</div>
+        <div class="rd-mini">100</div>
+      </div>
+      <div class="rd-node done" title="Phase 8 — Apple/Google Pay &amp; Global Merchant">
+        
+        <div class="rd-dot">✓</div>
+        <div class="rd-icon">🍎</div>
+        <div class="rd-lbl">Apple/Google P…</div>
+        <div class="rd-mini">100</div>
+      </div>
+      <div class="rd-node done" title="Phase 9 — Direct Debit &amp; inAPP">
+        
+        <div class="rd-dot">✓</div>
+        <div class="rd-icon">🏧</div>
+        <div class="rd-lbl">Direct Debit &amp;…</div>
+        <div class="rd-mini">100</div>
+      </div>
+      <div class="rd-node done" title="Phase 10 — RabbitMQ &amp; Queue Monitoring">
+        
+        <div class="rd-dot">✓</div>
+        <div class="rd-icon">🐇</div>
+        <div class="rd-lbl">RabbitMQ &amp; Que…</div>
+        <div class="rd-mini">100</div>
+      </div>
+      <div class="rd-node current" title="Phase 11 — VAS, IRS, ECS &amp; Misc">
+        <div class="rd-walk"><div class="m"><svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div></div>
+        <div class="rd-dot">11</div>
+        <div class="rd-icon">🔧</div>
+        <div class="rd-lbl">VAS, IRS, ECS …</div>
+        <div class="rd-mini">VAS, IRS, ECS …</div>
+      </div>
+      <div class="rd-node locked" title="Phase 12 — JVM, CPU &amp; Memory Monitoring">
+        
+        <div class="rd-dot">12</div>
+        <div class="rd-icon">🧠</div>
+        <div class="rd-lbl">JVM, CPU &amp; Mem…</div>
+        <div class="rd-mini">JVM, CPU &amp; Mem…</div>
+      </div>
+        </div>
+      </div>
+      <a class="rd-cta" href="./learn.html?course=course_grafana_tmn">ทำ Phase 11 <span class="arr">→</span></a>
+    </div>
+  </section>
+
+  <!-- Data provenance -->
+  <div class="rd-facts">
+    <h4>ที่มาของข้อมูล (source-of-truth)</h4>
+    <div class="row">
+      <span class="kv"><b>courses.json</b>: 10 courses</span>
+      <span class="kv"><b>phases.json</b>: 47 phases · 5 courses มี phases</span>
+      <span class="kv"><b>progress.json</b>: 491 records · 21 users</span>
+    </div>
+    <div class="row">
+      <span>User <b>Chumpon khongmanee</b> ทำมาแล้ว <span class="num">50</span> phases (all passed) · <span class="num">2</span> คอร์สจบ · Current: <b>Grafana 101 (TMN Service)</b> (10/12)</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

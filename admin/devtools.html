@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dev Tools — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/devtools/devtools.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="wrench"></i> Dev Tools</div>
+        <div class="page-sub">เครื่องมือ debug ระบบภายใน — เฉพาะ Role: Dev SM</div>
+      </div>
+      <div class="topbar-actions"></div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="wrench"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Dev Tools</div>
+          <h1>Dev Tools</h1>
+          <p>เครื่องมือ debug ระบบภายใน — เฉพาะ Role: <code>dev_sm</code> · API explorer, data inspector, logs, email tester</p>
+        </div>
+      </section>
+
+      <div class="dt-banner">
+        <span class="dt-banner-tag">DEV SM</span>
+        <span>เครื่องมือ debug นี้แสดงเฉพาะ role <code style="color:var(--orange)">dev_sm</code> — สำหรับทดสอบและตรวจสอบระบบโดยไม่กระทบข้อมูลจริง</span>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════
+           1. SESSION / JWT INSPECTOR
+           ════════════════════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon"><i data-icon="lock"></i></div>
+          <div>
+            <div class="dt-card-title">Session &amp; JWT Inspector</div>
+            <div class="dt-card-sub">Decode JWT ปัจจุบัน · ดู role, expiry, claims ทั้งหมด</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <dl class="dt-kv" id="sess-kv"></dl>
+          <div class="dt-output info" id="sess-payload" style="margin-top:12px"></div>
+        </div>
+        <div class="dt-card-foot">
+          <button class="dt-btn" onclick="loadSession()">↺ Refresh</button>
+          <button class="dt-btn" onclick="copyToken()"><i data-icon="clipboard"></i> Copy Token</button>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════
+           2. HEALTH CHECK
+           ════════════════════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(34,197,94,.12);color:#22c55e"><i data-icon="building"></i></div>
+          <div>
+            <div class="dt-card-title">System Health Check</div>
+            <div class="dt-card-sub">ตรวจสอบสถานะ Jira · SMTP · Jenkins ทุก server แบบละเอียด</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div id="health-list" style="font-size:11px;color:var(--text-muted)">Loading…</div>
+        </div>
+        <div class="dt-card-foot">
+          <button class="dt-btn primary" onclick="loadHealth(true)" id="btn-health">↻ ตรวจสอบ (force fresh)</button>
+          <button class="dt-btn" onclick="loadHealth(false)"><i data-icon="zap"></i> ใช้ cache</button>
+          <span style="font-size:10px;color:var(--text-muted)" id="health-meta"></span>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════
+           3. SMTP CONNECTION TEST
+           ════════════════════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(59,130,246,.12);color:#3b82f6"><i data-icon="plug"></i></div>
+          <div>
+            <div class="dt-card-title">SMTP Connection Test</div>
+            <div class="dt-card-sub">ทดสอบ TCP → EHLO → STARTTLS → AUTH โดยไม่ส่ง email จริง</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div id="smtp-result" style="font-size:11px;color:var(--text-muted)">กดปุ่มด้านล่างเพื่อทดสอบ</div>
+        </div>
+        <div class="dt-card-foot">
+          <button class="dt-btn primary" onclick="testSmtp()" id="btn-smtp"><i data-icon="search"></i> Test Connection</button>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════
+           4. EMAIL TESTER (mock ticket — no Jira create)
+           ════════════════════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(242,100,25,.12);color:var(--orange)"><i data-icon="mail"></i></div>
+          <div>
+            <div class="dt-card-title">Email Tester (Mock Ticket)</div>
+            <div class="dt-card-sub">ส่ง email ทดสอบโดยไม่สร้าง Jira ticket — ทดสอบ template ครบทั้ง header + body + footer</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div class="dt-row-2">
+            <div>
+              <div class="dt-label">Mock Issue Key</div>
+              <input type="text" class="dt-input" id="mail-issue" value="DEV-TEST-001">
+            </div>
+            <div>
+              <div class="dt-label">Service Subtype (CC auto-load)</div>
+              <select class="dt-select" id="mail-subtype">
+                <option value="">— ไม่เลือก (ใช้ Global CC อย่างเดียว) —</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="dt-row">
+            <div class="dt-label">Mock Summary</div>
+            <input type="text" class="dt-input" id="mail-summary" value="Test ticket from Dev Tools — please ignore">
+          </div>
+
+          <div class="dt-row-2">
+            <div>
+              <div class="dt-label">To (comma-separated)</div>
+              <input type="text" class="dt-input" id="mail-to" placeholder="me@example.com">
+            </div>
+            <div>
+              <div class="dt-label">CC (comma-separated)</div>
+              <input type="text" class="dt-input" id="mail-cc" placeholder="auto-loaded from subtype">
+            </div>
+          </div>
+
+          <div class="dt-row">
+            <div class="dt-label">Body <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(กด Enter ขึ้นบรรทัดใหม่ได้ · วางรูปด้วย Cmd+V / Ctrl+V)</span></div>
+            <div class="dt-editor">
+              <div class="dt-editor-toolbar">
+                <button type="button" class="dt-editor-btn" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+                <button type="button" class="dt-editor-btn" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+                <button type="button" class="dt-editor-btn" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+                <span class="dt-editor-sep"></span>
+                <button type="button" class="dt-editor-btn" data-cmd="insertUnorderedList" title="Bullet list"><i data-icon="circle"></i></button>
+                <button type="button" class="dt-editor-btn" data-cmd="insertOrderedList" title="Numbered list">1.</button>
+                <span class="dt-editor-sep"></span>
+                <button type="button" class="dt-editor-btn" id="mail-img-btn" title="แทรกรูป"><i data-icon="image"></i></button>
+                <input type="file" id="mail-img-input" accept="image/*" style="display:none">
+                <span class="dt-editor-sep"></span>
+                <button type="button" class="dt-editor-btn" data-cmd="removeFormat" title="Clear formatting"><i data-icon="x"></i></button>
+              </div>
+              <div class="dt-editor-content" id="mail-body" contenteditable="true" spellcheck="true"
+                   data-placeholder="พิมพ์เนื้อหา email ที่นี่… กด Enter ขึ้นบรรทัดใหม่ · วางรูป Cmd+V"><p>นี่คือ email ทดสอบจาก Dev Tools</p><p>สำหรับทดสอบรูปแบบ <b>branded template</b> ที่ระบบส่งออกไป</p><p>หากเห็น email ฉบับนี้ แปลว่า SMTP config + template ทำงานปกติ</p></div>
+            </div>
+          </div>
+
+          <div id="mail-result" class="dt-output"></div>
+        </div>
+        <div class="dt-card-foot">
+          <button class="dt-btn primary" onclick="sendMockEmail()" id="btn-mail"><i data-icon="mail"></i> ส่ง Test Email</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)">
+            <input type="checkbox" id="mail-branded" checked> ใช้ Branded Template
+          </label>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════
+           5. API ENDPOINT TESTER
+           ════════════════════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(245,158,11,.12);color:#f59e0b"><i data-icon="wrench"></i></div>
+          <div>
+            <div class="dt-card-title">API Endpoint Tester</div>
+            <div class="dt-card-sub">ยิง request ไป API endpoint ใดๆ ก็ได้ใน <code>/api/</code> — token แนบให้อัตโนมัติ</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:10px;margin-bottom:12px">
+            <select class="dt-select" id="api-method">
+              <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
+            </select>
+            <input type="text" class="dt-input" id="api-path" value="/health/index.php" placeholder="/users/index.php">
+          </div>
+          <div class="dt-row">
+            <div class="dt-label">Body (JSON, สำหรับ POST/PUT/PATCH)</div>
+            <textarea class="dt-textarea" id="api-body" placeholder='{"key":"value"}'></textarea>
+          </div>
+          <div id="api-result" class="dt-output"></div>
+        </div>
+        <div class="dt-card-foot">
+          <button class="dt-btn primary" onclick="callApi()" id="btn-api"><i data-icon="play"></i> Send Request</button>
+          <button class="dt-btn" onclick="document.getElementById('api-result').innerHTML=''"><i data-icon="trash"></i> Clear</button>
+          <span style="font-size:10px;color:var(--text-muted)" id="api-meta"></span>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════
+           6. RECENT LOGS (activity + security)
+           ════════════════════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(239,68,68,.12);color:#ef4444"><i data-icon="file-text"></i></div>
+          <div>
+            <div class="dt-card-title">Recent Logs</div>
+            <div class="dt-card-sub">Activity &amp; Security audit logs — แสดง 50 entry ล่าสุด</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div class="dt-tabs">
+            <div class="dt-tab active" data-log="activity" onclick="switchLogTab('activity')"><i data-icon="clipboard"></i> Activity</div>
+            <div class="dt-tab" data-log="security" onclick="switchLogTab('security')"><i data-icon="lock"></i> Security</div>
+          </div>
+          <div id="logs-list" style="font-size:11px;color:var(--text-muted)">Loading…</div>
+        </div>
+        <div class="dt-card-foot">
+          <button class="dt-btn" onclick="loadLogs()">↺ Refresh</button>
+          <span style="font-size:10px;color:var(--text-muted)" id="logs-meta"></span>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/devtools/devtools.js"></script>
+</body>
+</html>

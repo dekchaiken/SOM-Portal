@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Courses — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/courses/courses.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="graduation-cap"></i> Course Management</div>
+        <div class="page-sub">จัดการ learning path — Courses / Phases / Lessons / Quiz / Progress</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="../learn.html" class="btn btn-ghost btn-sm">ดูหน้าผู้เรียน →</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="graduation-cap"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Course Management</h1>
+          <p>จัดการ learning path — Courses / Phases / Lessons / Quiz / Progress · แต่ละคอร์สเก็บแยกใน <code>data/courses/&lt;id&gt;/</code></p>
+        </div>
+      </section>
+
+      <div class="c-tabs">
+        <div class="c-tab active" data-tab="courses"><i data-icon="book"></i> Courses</div>
+        <div class="c-tab" data-tab="phases"><i data-icon="target"></i> Phases</div>
+        <div class="c-tab" data-tab="lessons"><i data-icon="file"></i> Lessons</div>
+        <div class="c-tab" data-tab="quiz"><i data-icon="help-circle"></i> Quiz</div>
+        <div class="c-tab" data-tab="progress"><i data-icon="bar-chart"></i> Progress</div>
+        <div class="c-tab" data-tab="pagecfg"><i data-icon="palette"></i> Page Settings</div>
+      </div>
+
+      <!-- ─── COURSES ─── -->
+      <div id="panel-courses" class="c-panel active">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">All Courses</span>
+            <button class="btn btn-primary btn-sm" onclick="openCourseModal()">+ สร้าง Course</button>
+          </div>
+          <div class="card-body">
+            <div id="course-grid" class="c-grid">
+              <div data-skel="list" data-rows="3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PHASES ─── -->
+      <div id="panel-phases" class="c-panel">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Phases</span>
+            <div style="display:flex; gap:10px; align-items:center">
+              <select id="ph-course-filter" class="form-control" style="min-width:220px"></select>
+              <button class="btn btn-primary btn-sm" onclick="openPhaseModal()">+ เพิ่ม Phase</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="phase-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── LESSONS ─── -->
+      <div id="panel-lessons" class="c-panel">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Lessons</span>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+              <select id="les-course" class="form-control" style="min-width:200px"></select>
+              <select id="les-phase" class="form-control" style="min-width:240px"></select>
+              <button class="btn btn-primary btn-sm" onclick="openLessonModal()">+ เพิ่ม Lesson</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="lesson-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── QUIZ ─── -->
+      <div id="panel-quiz" class="c-panel">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Quiz Builder</span>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+              <select id="qz-course" class="form-control" style="min-width:200px"></select>
+              <select id="qz-phase"  class="form-control" style="min-width:240px"></select>
+              <button class="btn btn-primary btn-sm" onclick="saveQuiz()"><i data-icon="save"></i> บันทึก Quiz</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-field"><label>ชื่อ Quiz</label><input id="qz-title" class="form-control"></div>
+              <div class="form-field"><label>คำอธิบาย</label><input id="qz-desc"  class="form-control"></div>
+            </div>
+            <div id="qz-questions" style="margin-top:10px"></div>
+            <button class="btn btn-ghost btn-sm" onclick="addQuestion()">+ เพิ่มคำถาม</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PROGRESS ─── -->
+      <div id="panel-progress" class="c-panel">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">ภาพรวมความคืบหน้า</span>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+              <select id="prog-course-filter" class="form-control" style="min-width:220px">
+                <option value="">ทั้งหมด (ทุก course)</option>
+              </select>
+              <button class="btn btn-ghost btn-sm" onclick="exportCsv()"><i data-icon="inbox"></i> Export CSV</button>
+              <button class="btn btn-ghost btn-sm" onclick="resetAllProgress()" style="color:#ef4444"><i data-icon="trash"></i> Reset ทั้งหมด</button>
+            </div>
+          </div>
+          <div class="card-body">
+
+            <div class="stat-grid" id="stat-row">
+              <div class="stat-tile"><div class="n" id="st-total">—</div><div class="l">พนักงานทั้งหมด</div></div>
+              <div class="stat-tile green"><div class="n" id="st-done">—</div><div class="l">เรียนครบทุก phase</div></div>
+              <div class="stat-tile orange"><div class="n" id="st-inprog">—</div><div class="l">กำลังเรียน</div></div>
+              <div class="stat-tile gray"><div class="n" id="st-none">—</div><div class="l">ยังไม่เริ่ม</div></div>
+              <div class="stat-tile blue"><div class="n" id="st-avg">—</div><div class="l">คะแนนเฉลี่ย</div></div>
+            </div>
+
+            <div id="progress-table" style="margin-top:12px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PAGE SETTINGS (learn.html UI) ─── -->
+      <div id="panel-pagecfg" class="c-panel">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">หน้า Learning — Page Settings</span>
+            <button class="btn btn-primary btn-sm" onclick="savePageCfg()"><i data-icon="save"></i> บันทึก</button>
+          </div>
+          <div class="card-body">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px">
+
+              <!-- Form column -->
+              <div>
+                <div class="form-field">
+                  <label>Hero Title (เว้นว่าง = ใช้ "สวัสดี {ชื่อผู้ใช้} <i data-icon="hand"></i>")</label>
+                  <input id="pc-hero-title" class="form-control" maxlength="80" placeholder="เช่น Welcome to SM Learning Hub">
+                </div>
+                <div class="form-field">
+                  <label>Hero Subtitle (เว้นว่าง = ใช้ค่าเริ่มต้น)</label>
+                  <textarea id="pc-hero-sub" class="form-control" rows="2" maxlength="200" placeholder="เลือกแท็บ Learns เพื่อเรียนคอร์ส หรือ Exams เพื่อเข้าทำข้อสอบประจำปี"></textarea>
+                </div>
+                <div class="form-field">
+                  <label>Accent Color</label>
+                  <div style="display:flex; gap:8px; align-items:center">
+                    <input type="color" id="pc-accent" class="form-control" style="height:38px; width:60px; padding:2px">
+                    <input type="text" id="pc-accent-hex" class="form-control" style="flex:1; font-family:monospace" maxlength="7" placeholder="#f26419">
+                    <button class="btn btn-ghost btn-sm" onclick="pcResetAccent()">↻ default</button>
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label>Layout Density</label>
+                  <select id="pc-density" class="form-control">
+                    <option value="compact">Compact — แน่น, การ์ดเล็ก</option>
+                    <option value="comfortable" selected>Comfortable — ค่าเริ่มต้น</option>
+                    <option value="spacious">Spacious — โปร่ง, การ์ดใหญ่</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label style="display:flex; gap:8px; align-items:center; text-transform:none; letter-spacing:0; font-size:13px; color:var(--text); cursor:pointer">
+                    <input type="checkbox" id="pc-badge" checked>
+                    <span>แสดง badge จำนวน (Learns · 5, Exams · 2) บนแท็บ</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Live preview column -->
+              <div>
+                <label style="display:block; font-size:10.5px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em">Live Preview</label>
+                <div id="pc-preview-wrap" style="border:1px solid var(--border); border-radius:10px; padding:16px; background:var(--bg)">
+
+                  <!-- Hero preview -->
+                  <div id="pc-prev-hero" style="display:flex; gap:14px; align-items:flex-start; padding:18px 20px; border:1px solid var(--border); border-radius:12px; background:var(--bg-card); margin-bottom:14px">
+                    <div id="pc-prev-mark" style="width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; flex-shrink:0"><i data-icon="graduation-cap"></i></div>
+                    <div style="flex:1; min-width:0">
+                      <div id="pc-prev-title" style="font-size:16px; font-weight:700; margin-bottom:3px">สวัสดี ผู้ใช้ <i data-icon="hand"></i></div>
+                      <div id="pc-prev-sub" style="font-size:12.5px; color:var(--text-muted); line-height:1.55"></div>
+                    </div>
+                  </div>
+
+                  <!-- Tabs preview -->
+                  <div style="display:flex; gap:2px; border-bottom:1px solid var(--border); margin-bottom:14px">
+                    <div id="pc-prev-tab" style="padding:9px 14px; font-size:13px; font-weight:600; border-bottom:2px solid; display:flex; align-items:center; gap:7px">
+                      <i data-icon="book-open"></i> Learns <span id="pc-prev-badge" style="font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px">5</span>
+                    </div>
+                    <div style="padding:9px 14px; font-size:13px; font-weight:600; color:var(--text-muted)"><i data-icon="edit"></i> Exams</div>
+                  </div>
+
+                  <!-- Card preview -->
+                  <div id="pc-prev-card" style="border:1px solid var(--border); border-radius:12px; background:var(--bg-card); display:flex; flex-direction:column">
+                    <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:12px">
+                      <div id="pc-prev-cardmark" style="width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0"><i data-icon="book"></i></div>
+                      <div style="flex:1; min-width:0">
+                        <div style="font-weight:700; font-size:14px; margin-bottom:2px">SM Operations 101</div>
+                        <div style="font-size:12px; color:var(--text-muted); line-height:1.5">คอร์สพื้นฐานสำหรับสมาชิกใหม่</div>
+                        <span id="pc-prev-status" style="display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600; margin-top:6px">
+                          <span id="pc-prev-dot" style="width:6px; height:6px; border-radius:50%"></span>กำลังเรียน
+                        </span>
+                      </div>
+                    </div>
+                    <div style="padding-top:12px; border-top:1px solid var(--border)">
+                      <div style="display:flex; justify-content:space-between; margin-bottom:7px; font-size:11.5px; color:var(--text-muted)">
+                        <span><b style="color:var(--text)">3</b> / 5 phases</span>
+                        <span id="pc-prev-pct" style="font-weight:700; font-size:13px">60%</span>
+                      </div>
+                      <div style="height:4px; background:var(--border); border-radius:2px; overflow:hidden">
+                        <div id="pc-prev-bar" style="height:100%; width:60%"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:8px">
+                  <i data-icon="lightbulb"></i> ตัวอย่างจำลอง — การ์ดบน learn.html จะใช้สีจาก field <code>cover_color</code> ของแต่ละคอร์สก่อน, แต่ accent นี้ใช้กับ hero / tabs / hover ของหน้า
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODALS ═══════════════════ -->
+
+<!-- Course Modal -->
+<div id="m-course" class="modal-overlay" onclick="if(event.target===this)closeAllModals()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="m-course-title">Course</span>
+      <button class="btn-close" onclick="closeAllModals()"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body form-grid">
+      <input type="hidden" id="cm-id">
+      <div class="form-field">
+        <label>Icon</label>
+        <input type="text" id="cm-icon" class="form-control" placeholder="📘" maxlength="4">
+      </div>
+      <div class="form-field">
+        <label>ลำดับ</label>
+        <input type="number" id="cm-order" class="form-control" min="1">
+      </div>
+      <div class="form-field full">
+        <label>ชื่อ Course *</label>
+        <input type="text" id="cm-title" class="form-control">
+      </div>
+      <div class="form-field full">
+        <label>Subtitle</label>
+        <input type="text" id="cm-subtitle" class="form-control">
+      </div>
+      <div class="form-field full">
+        <label>Description</label>
+        <textarea id="cm-desc" class="form-control" rows="3"></textarea>
+      </div>
+      <div class="form-field full">
+        <label>Prerequisites (ต้องเรียนคอร์สไหนก่อนถึงจะเปิดให้เรียนคอร์สนี้)</label>
+        <div id="cm-prereqs" style="display:flex; flex-direction:column; gap:6px; padding:10px; border:1px solid var(--border); border-radius:6px; background:var(--bg); max-height:180px; overflow:auto">
+          <div style="font-size:11px; color:var(--text-muted)">กำลังโหลด...</div>
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:4px">ถ้าไม่เลือกเลย = คอร์สเปิดให้เรียนได้ทุกคน</div>
+      </div>
+      <div class="form-field">
+        <label>Cover Color</label>
+        <input type="color" id="cm-color" class="form-control" value="#f26419" style="height:38px; padding:2px">
+      </div>
+      <div class="form-field">
+        <label>Published</label>
+        <select id="cm-pub" class="form-control">
+          <option value="1">เผยแพร่ (ผู้ใช้เห็น)</option>
+          <option value="0">ซ่อน (draft)</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label style="display:flex; gap:8px; align-items:center; cursor:pointer">
+          <input type="checkbox" id="cm-popular" style="width:16px; height:16px">
+          <span><i data-icon="flame"></i> คอร์สยอดฮิต (แสดง badge "POPULAR" ที่ card)</span>
+        </label>
+      </div>
+      <div class="form-field" id="cm-shared-row">
+        <label style="display:flex; gap:8px; align-items:center; cursor:pointer">
+          <input type="checkbox" id="cm-shared" style="width:16px; height:16px">
+          <span><i data-icon="globe"></i> <b>Share ข้ามทีม</b> — ทีมอื่นจะเห็นและเข้าเรียนได้ (progress ของผู้เรียนแยกตามทีม)</span>
+        </label>
+        <div id="cm-shared-note" style="font-size:11px; color:var(--text-muted); margin-top:4px"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeAllModals()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveCourse()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Phase Modal -->
+<div id="m-phase" class="modal-overlay" onclick="if(event.target===this)closeAllModals()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="m-phase-title">Phase</span>
+      <button class="btn-close" onclick="closeAllModals()"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body form-grid">
+      <input type="hidden" id="pm-id">
+      <div class="form-field full">
+        <label>Course *</label>
+        <select id="pm-course" class="form-control"></select>
+      </div>
+      <div class="form-field">
+        <label>Icon</label>
+        <input type="text" id="pm-icon" class="form-control" placeholder="📘" maxlength="4">
+      </div>
+      <div class="form-field">
+        <label>ลำดับ</label>
+        <input type="number" id="pm-order" class="form-control" min="1">
+      </div>
+      <div class="form-field full">
+        <label>Title *</label>
+        <input type="text" id="pm-title" class="form-control">
+      </div>
+      <div class="form-field full">
+        <label>Subtitle</label>
+        <input type="text" id="pm-subtitle" class="form-control">
+      </div>
+      <div class="form-field full">
+        <label>Description</label>
+        <textarea id="pm-desc" class="form-control" rows="3"></textarea>
+      </div>
+      <div class="form-field">
+        <label>เกณฑ์ผ่าน (%)</label>
+        <input type="number" id="pm-pass" class="form-control" min="0" max="100" value="70">
+      </div>
+      <div class="form-field">
+        <label>เวลาโดยประมาณ (นาที)</label>
+        <input type="number" id="pm-minutes" class="form-control" min="1" value="20">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeAllModals()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="savePhase()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lesson Modal -->
+<div id="m-lesson" class="modal-overlay" onclick="if(event.target===this)closeAllModals()">
+  <div class="modal xl">
+    <div class="modal-header">
+      <span class="modal-title" id="m-lesson-title">Lesson</span>
+      <button class="btn-close" onclick="closeAllModals()"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" style="padding-bottom:0">
+      <input type="hidden" id="lm-id">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px">
+        <div class="form-field" style="margin-bottom:0">
+          <label>Phase *</label>
+          <select id="lm-phase" class="form-control"></select>
+        </div>
+        <div class="form-field" style="margin-bottom:0">
+          <label>ลำดับ</label>
+          <input type="number" id="lm-order" class="form-control" min="1">
+        </div>
+      </div>
+      <div class="form-field" style="margin-bottom:12px">
+        <label>Title *</label>
+        <input type="text" id="lm-title" class="form-control">
+      </div>
+
+      <!-- Rich text editor (full width) -->
+      <div class="rte-bar">
+        <button type="button" class="rte-btn" title="Bold" onclick="rteCmd('bold')"><b>B</b></button>
+        <button type="button" class="rte-btn" title="Italic" onclick="rteCmd('italic')"><i>I</i></button>
+        <button type="button" class="rte-btn" title="Underline" onclick="rteCmd('underline')"><u>U</u></button>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" title="หัวข้อใหญ่" onclick="rteBlock('h2')">H2</button>
+        <button type="button" class="rte-btn" title="หัวข้อรอง" onclick="rteBlock('h3')">H3</button>
+        <button type="button" class="rte-btn" title="ย่อหน้าปกติ" onclick="rteBlock('p')">¶ P</button>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" title="Bullet list" onclick="rteCmd('insertUnorderedList')"><i data-icon="circle"></i> List</button>
+        <button type="button" class="rte-btn" title="Numbered list" onclick="rteCmd('insertOrderedList')">1. List</button>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" title="Align left"   onclick="rteCmd('justifyLeft')"><i data-icon="arrow-left"></i></button>
+        <button type="button" class="rte-btn" title="Align center" onclick="rteCmd('justifyCenter')"><i data-icon="menu"></i></button>
+        <button type="button" class="rte-btn" title="Align right"  onclick="rteCmd('justifyRight')"><i data-icon="arrow-right"></i></button>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" title="แทรก Link" onclick="rteLink()"><i data-icon="link"></i> Link</button>
+        <button type="button" class="rte-btn" title="แทรกตาราง" onclick="rteTable()">⊞ Table</button>
+        <button type="button" class="rte-btn" title="Code block" onclick="rteCode()">{ } Code</button>
+        <button type="button" class="rte-btn" title="เส้นคั่น" onclick="rteCmd('insertHorizontalRule')">— HR</button>
+        <div class="rte-sep"></div>
+        <select class="rte-select" title="แทรก Callout block" onchange="rteCallout(this.value); this.value=''">
+          <option value="">Callout…</option>
+          <option value="tip">Tip</option>
+          <option value="warning">Warning</option>
+          <option value="danger">Danger</option>
+          <option value="success">Success</option>
+          <option value="note">Note</option>
+        </select>
+      </div>
+      <div id="lm-editor" class="rte-area" contenteditable="true" onpaste="rtePaste(event)"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeAllModals()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveLesson()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- User Detail Modal -->
+<div id="m-user" class="modal-overlay" onclick="if(event.target===this)closeAllModals()">
+  <div class="modal lg">
+    <div class="modal-header">
+      <span class="modal-title" id="um-title">รายละเอียดผู้ใช้</span>
+      <button class="btn-close" onclick="closeAllModals()"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" id="um-body">
+      <div data-skel="text" data-rows="6"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeAllModals()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/courses/courses.js"></script>
+</body>
+</html>

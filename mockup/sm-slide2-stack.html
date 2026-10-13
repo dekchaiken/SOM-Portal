@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SM Slide 2 - Stack</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .slide {
+    width: 1200px;
+    min-height: 675px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 48px 56px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+  }
+  .slide-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 40px;
+  }
+  .slide-title h1 { font-size: 28px; font-weight: 900; color: #e8001c; text-transform: uppercase; }
+  .slide-title h2 { font-size: 28px; font-weight: 900; color: #1a1a1a; text-transform: uppercase; }
+  .brand-logo { font-size: 26px; font-weight: 900; color: #e8001c; font-style: italic; }
+
+  /* Main layout: layers (left) + SOM Portal (right) */
+  .diagram {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 32px;
+    flex: 1;
+    align-items: start;
+  }
+
+  /* Stack layers */
+  .layers {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .layer {
+    display: flex;
+    align-items: stretch;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid #eee;
+  }
+
+  .layer-label {
+    width: 110px;
+    flex-shrink: 0;
+    background: #1a1a1a;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 16px 10px;
+    gap: 6px;
+  }
+  .layer-label svg { width: 22px; height: 22px; fill: #e8001c; }
+  .layer-label span {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #fff;
+  }
+
+  .layer.highlight .layer-label { background: #e8001c; }
+  .layer.highlight .layer-label svg { fill: #fff; }
+
+  .layer-content {
+    flex: 1;
+    padding: 16px 20px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+  .layer.highlight .layer-content { background: #fff8f8; }
+
+  .layer-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #1a1a1a;
+  }
+  .layer-desc {
+    font-size: 12.5px;
+    color: #666;
+    line-height: 1.5;
+  }
+
+  .layer-tools {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+  .tool-chip {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: #f0f0f0;
+    color: #444;
+  }
+  .layer.highlight .tool-chip { background: #fde8e8; color: #c00; }
+
+  /* Right: SOM Portal card */
+  .portal-card {
+    background: #1a1a1a;
+    border-radius: 16px;
+    padding: 28px 24px;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .portal-card svg { width: 36px; height: 36px; fill: #e8001c; }
+  .portal-card h3 { font-size: 18px; font-weight: 900; }
+  .portal-card .sub { font-size: 12px; color: #aaa; }
+  .portal-card ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-top: 1px solid #333;
+    padding-top: 14px;
+  }
+  .portal-card ul li {
+    font-size: 12.5px;
+    color: #ddd;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.4;
+  }
+  .portal-card ul li::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #e8001c;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+
+  /* Flow arrow between layers */
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    padding-left: 55px;
+    gap: 0;
+    height: 4px;
+    position: relative;
+  }
+  .flow-arrow::after {
+    content: '▼';
+    position: absolute;
+    left: 48px;
+    top: -9px;
+    font-size: 14px;
+    color: #ddd;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+
+  <div class="slide-header">
+    <div class="slide-title">
+      <h1>SERVICE MONITORING</h1>
+      <h2>MONITORING & ALERTING STACK</h2>
+    </div>
+    <div class="brand-logo">ascend</div>
+  </div>
+
+  <div class="diagram">
+
+    <!-- Left: Stack Layers -->
+    <div class="layers">
+
+      <!-- Collect -->
+      <div class="layer">
+        <div class="layer-label">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+          <span>Collect</span>
+        </div>
+        <div class="layer-content">
+          <div class="layer-title">Metrics &amp; Logs Collection</div>
+          <div class="layer-desc">ดึงข้อมูล metrics จาก services และ aggregate logs แบบ real-time</div>
+          <div class="layer-tools">
+            <span class="tool-chip">Prometheus</span>
+            <span class="tool-chip">Loki</span>
+            <span class="tool-chip">Node Exporter</span>
+            <span class="tool-chip">kube-state-metrics</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visualize -->
+      <div class="layer highlight">
+        <div class="layer-label">
+          <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+          <span>Visualize</span>
+        </div>
+        <div class="layer-content">
+          <div class="layer-title">Dashboard &amp; Exploration</div>
+          <div class="layer-desc">แสดงผล metrics, logs บน dashboards — ดู trend, investigate, drill-down</div>
+          <div class="layer-tools">
+            <span class="tool-chip">Grafana</span>
+            <span class="tool-chip">Thanos</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alert -->
+      <div class="layer">
+        <div class="layer-label">
+          <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+          <span>Alert</span>
+        </div>
+        <div class="layer-content">
+          <div class="layer-title">Alerting &amp; On-Call Routing</div>
+          <div class="layer-desc">ส่ง alert ตาม severity, route ไปยัง oncall engineer, manage escalation</div>
+          <div class="layer-tools">
+            <span class="tool-chip">Grafana OnCall</span>
+            <span class="tool-chip">Alert Rules</span>
+            <span class="tool-chip">Silences</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CI/CD -->
+      <div class="layer">
+        <div class="layer-label">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+          <span>CI/CD</span>
+        </div>
+        <div class="layer-content">
+          <div class="layer-title">Pipeline &amp; Deployment Monitoring</div>
+          <div class="layer-desc">ติดตาม Jenkins build health และเชื่อม deployment events เข้า monitoring</div>
+          <div class="layer-tools">
+            <span class="tool-chip">Jenkins</span>
+            <span class="tool-chip">Build Status</span>
+            <span class="tool-chip">Deploy Annotations</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right: SOM Portal -->
+    <div class="portal-card">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <h3>SOM Portal</h3>
+      <div class="sub">In-house Command Center</div>
+      <ul>
+        <li>Incident posting &amp; tracking</li>
+        <li>Service status overview</li>
+        <li>Alert history &amp; RCA log</li>
+        <li>Jenkins pipeline visibility</li>
+        <li>MA Services management</li>
+        <li>Team notifications</li>
+      </ul>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>

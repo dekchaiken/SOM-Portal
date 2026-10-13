@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jenkins Portal — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/jenkins-portal/jenkins-portal.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content" style="display:flex;flex-direction:column">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">🔓 Jenkins Portal</div>
+        <div class="page-sub" id="jp-page-sub">Trigger Jenkins Unbind Build (TMN ID + Ticket + Application)</div>
+      </div>
+    </header>
+
+    <div class="jp-wrap" id="jp-wrap">
+      <div class="jp-loading" id="jp-loading">กำลังโหลด...</div>
+
+      <div id="jp-body" style="display:none">
+        <!-- Admin banner -->
+        <div class="jp-banner" id="jp-admin-banner" style="display:none">
+          👑 คุณเป็น <b>Admin</b> — จัดการ Applications / ผู้ใช้ / Sessions ได้จากเมนู "Jenkins Admin"
+        </div>
+
+        <!-- ── Status cards ──────────────────────────── -->
+        <div class="jp-status-grid">
+          <div class="jp-status-card">
+            <div class="jp-status-icon">🖥️</div>
+            <div>
+              <div class="jp-status-label">Jenkins Status</div>
+              <div class="jp-status-value" id="jp-jenkins-status">Checking...</div>
+            </div>
+          </div>
+          <div class="jp-status-card">
+            <div class="jp-status-icon">🔢</div>
+            <div>
+              <div class="jp-status-label">Last Build</div>
+              <div class="jp-status-value" id="jp-last-build">—</div>
+            </div>
+          </div>
+          <div class="jp-status-card">
+            <div class="jp-status-icon">📈</div>
+            <div>
+              <div class="jp-status-label">Success Rate (50 ล่าสุด)</div>
+              <div class="jp-status-value" id="jp-success-rate">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Actions toolbar (History always visible, Admin admin-only) ─── -->
+        <div class="jp-toolbar">
+          <span class="jp-server-pill" id="jp-toolbar-server"></span>
+          <button class="jp-refresh-btn" id="jp-btn-history" style="margin-left:auto">📜 History</button>
+          <button class="jp-refresh-btn" id="jp-btn-admin" style="display:none;margin-left:0">🛠 Admin</button>
+          <button class="jp-refresh-btn" id="jp-refresh-btn" style="margin-left:0">↻ Refresh</button>
+        </div>
+
+        <!-- ── Trigger form (always visible unless a panel is open) ─── -->
+        <div id="jp-panel-trigger">
+          <div class="jp-card">
+            <div class="jp-card-title">⚡ Trigger Jenkins Build</div>
+            <div class="jp-card-sub" id="jp-form-desc"></div>
+            <form id="jp-form" autocomplete="off"></form>
+          </div>
+        </div>
+
+        <!-- ── Slide-in panels (History / Admin) ────────── -->
+        <div class="jp-checker-panels" id="jp-panels">
+          <!-- History (merged Build History + Build Logs) -->
+          <div id="jp-panel-history" style="display:none">
+            <button class="jp-panel-back" onclick="backToTrigger()">← กลับหน้า Trigger</button>
+            <div class="jp-card">
+              <div class="jp-card-title">📜 Build History <span class="jp-count" id="jp-history-count">0</span></div>
+              <div class="jp-card-sub">ประวัติการ Build ทั้งหมด — สถานะ update อัตโนมัติ (refresh ทุก 30 วิ)</div>
+              <div class="jp-toolbar-row">
+                <select id="jp-hist-filter">
+                  <option value="all">ทั้งหมด</option>
+                  <option value="success">สำเร็จ</option>
+                  <option value="failed">ล้มเหลว</option>
+                  <option value="today">วันนี้</option>
+                </select>
+                <input type="text" id="jp-hist-search" placeholder="ค้นหา (TMN ID / Ticket / App / User)...">
+                <button class="jp-btn jp-btn-danger" id="jp-hist-clear" style="display:none">🗑 ล้าง</button>
+                <button class="jp-btn" id="jp-hist-export" style="display:none">⬇ Export</button>
+              </div>
+              <div style="overflow-x:auto">
+                <table class="jp-table">
+                  <thead>
+                    <tr><th>Time</th><th>Status</th><th>User</th><th>TMN ID</th><th>Ticket</th><th>App</th><th>Build</th></tr>
+                  </thead>
+                  <tbody id="jp-history-body">
+                    <tr><td colspan="7" class="jp-empty">ยังไม่มีประวัติ</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin -->
+          <div id="jp-panel-admin" style="display:none">
+            <button class="jp-panel-back" onclick="backToTrigger()">← กลับหน้า Trigger</button>
+            <div class="jp-card">
+              <div class="jp-card-title">🛠 Jenkins Admin</div>
+              <div class="jp-card-sub">จัดการ Jenkins Portal — เฉพาะ Admin</div>
+              <div class="jpa-tabs">
+                <button class="jpa-tab active" data-tab="apps">📱 Applications</button>
+                <button class="jpa-tab" data-tab="users">👥 ผู้ใช้</button>
+                <button class="jpa-tab" data-tab="settings">⚙️ Settings</button>
+              </div>
+
+              <div class="jpa-panel active" id="jpa-panel-apps">
+                <div class="jpa-grid">
+                  <div class="jpa-field">
+                    <label>ชื่อ Application</label>
+                    <input type="text" id="jpa-app-name" placeholder="e.g. Google">
+                  </div>
+                  <div class="jpa-field">
+                    <label>สถานะ</label>
+                    <select id="jpa-app-enabled">
+                      <option value="1">เปิดใช้งาน</option>
+                      <option value="0">ปิดใช้งาน</option>
+                    </select>
+                  </div>
+                  <div class="jpa-field" style="display:flex;align-items:flex-end">
+                    <button class="jp-btn" id="jpa-app-add" style="width:100%;background:var(--orange, #f26419);color:#fff;border-color:transparent">＋ เพิ่ม Application</button>
+                  </div>
+                </div>
+                <div style="overflow-x:auto">
+                  <table class="jp-table">
+                    <thead><tr><th>Name</th><th>Status</th><th>Created</th><th>By</th><th>Actions</th></tr></thead>
+                    <tbody id="jpa-app-body"><tr><td colspan="5" class="jp-empty">ยังไม่มี Application</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="jpa-panel" id="jpa-panel-users">
+                <div class="jpa-grid">
+                  <div class="jpa-field">
+                    <label>Username</label>
+                    <input type="text" id="jpa-user-username" placeholder="e.g. somchai.jai">
+                  </div>
+                  <div class="jpa-field">
+                    <label>Email</label>
+                    <input type="text" id="jpa-user-email" placeholder="name@ascendcorp.com">
+                  </div>
+                  <div class="jpa-field">
+                    <label>Role</label>
+                    <select id="jpa-user-role">
+                      <option value="user">user</option>
+                      <option value="admin">admin</option>
+                    </select>
+                  </div>
+                  <div class="jpa-field" style="display:flex;align-items:flex-end">
+                    <button class="jp-btn" id="jpa-user-add" style="width:100%;background:var(--orange, #f26419);color:#fff;border-color:transparent">＋ สร้างผู้ใช้</button>
+                  </div>
+                </div>
+                <div style="overflow-x:auto">
+                  <table class="jp-table">
+                    <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="jpa-user-body"><tr><td colspan="5" class="jp-empty">ยังไม่มีผู้ใช้</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="jpa-panel" id="jpa-panel-settings">
+                <div class="jpa-kv" id="jpa-me-kv" style="margin-bottom:16px"></div>
+                <div class="jpa-note">💡 เปลี่ยนรหัสผ่านได้ที่เมนู <b>เปลี่ยนรหัสผ่าน</b> (ด้านล่างซ้ายของ sidebar)</div>
+                <hr style="border:none;border-top:1px solid var(--border);margin:18px 0">
+                <div style="font-size:12.5px;font-weight:800;color:var(--text);margin-bottom:12px">🔗 Jenkins Server &amp; Job</div>
+                <div class="jpa-kv" id="jpa-server-kv"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress modal -->
+<div class="jp-modal-overlay" id="jp-progress-modal">
+  <div class="jp-modal">
+    <h3 id="jp-modal-title">Executing Pipeline</h3>
+    <div class="jp-modal-sub" id="jp-modal-status">Waiting in Jenkins queue...</div>
+    <div class="jp-progress-track"><div class="jp-progress-bar" id="jp-progress-bar"></div></div>
+    <div class="jp-progress-pct" id="jp-progress-pct">0%</div>
+    <div class="jp-modal-result" id="jp-modal-result"></div>
+    <button class="jp-submit" id="jp-modal-close" style="display:none">ปิด</button>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/pages/jenkins-portal/jenkins-portal.js"></script>
+</body>
+</html>

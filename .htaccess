@@ -1,0 +1,54 @@
+Options -Indexes
+
+# Block direct access to sensitive files
+<FilesMatch "^\.env(\..*)?$">
+  Order deny,allow
+  Deny from all
+</FilesMatch>
+
+# ── Security headers ──────────────────────────────────────────
+Header set X-Content-Type-Options "nosniff"
+Header set X-Frame-Options "SAMEORIGIN"
+Header set Referrer-Policy "strict-origin-when-cross-origin"
+Header set X-XSS-Protection "1; mode=block"
+Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+# Content Security Policy — allows inline scripts (needed by this app)
+# Review and tighten before public production deployment
+Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; connect-src 'self' https://cdnjs.cloudflare.com https://acm-backoffice-aaa.backoffice-a-cloud1p.ascendmoney.io https://acm-financial-portal.backoffice-a-cloud1p.ascendmoney.io https://docs.google.com https://spreadsheets.google.com; frame-src 'self' https://grafana-thanos.truemoney.com https://truemoney.atlassian.net https://script.google.com https://docs.google.com https://app.datadoghq.com https://p.datadoghq.com https://acm-financial-portal.backoffice-a-cloud1p.ascendmoney.io https://jenkins-batch-eks-cicd.private-a-cloud1p.ascendmoney.io https://jenkins-batch-eks-cicd.private-a-cloud1p.ascendnano.io https://jenkins-batch-truemoney.cicd-thp.mgt.ascendmoney.io https://core-jenkins-batch-eks-cicd.private-cloud1p.ascendwealth.io https://jenkins-scheduler-new.ascendnano.internal http://10.164.16.19:8080 http://10.164.16.47:8888; font-src 'self' https://fonts.gstatic.com; object-src 'none'; base-uri 'self';"
+
+# Pass Authorization header to PHP
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+SetEnvIf X-Jenkins-Token "(.*)" HTTP_X_JENKINS_TOKEN=$1
+SetEnvIf X-Jenkins-User "(.*)" HTTP_X_JENKINS_USER=$1
+SetEnvIf X-Rundeck-User "(.*)" HTTP_X_RUNDECK_USER=$1
+SetEnvIf X-Rundeck-Pass "(.*)" HTTP_X_RUNDECK_PASS=$1
+
+# PHP rewrite for API (not needed but good to have)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+</IfModule>
+
+# ── Cache control ─────────────────────────────────────────────
+# Goal: users always see fresh JS/CSS/HTML after a deploy WITHOUT
+# needing to hard-refresh, while keeping bandwidth low via 304s.
+#
+# Strategy:
+#   HTML/JS/CSS  → no-cache, must-revalidate
+#     Browser may cache, but MUST ping the server before using the
+#     cached copy. Server replies 304 (Not Modified) when file is
+#     unchanged (~few bytes, very fast). When we deploy, mtime
+#     changes → server replies 200 with the fresh bytes.
+#
+#   Images/fonts/favicon → public, 1 week cache
+#     These almost never change and are the biggest wins for cache.
+#     If we need to bust one, rename the file.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|js|mjs|css)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+
+  <FilesMatch "\.(jpg|jpeg|png|gif|svg|ico|webp|avif|woff|woff2|ttf|otf|eot)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+</IfModule>

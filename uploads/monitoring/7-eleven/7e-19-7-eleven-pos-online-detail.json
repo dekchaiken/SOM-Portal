@@ -1,0 +1,480 @@
+{
+  "title": "7-Eleven · POS Online Detail",
+  "panels": [
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน online payment barcode generation สำเร็จ แยกตาม requestor\n\nดูยังไง: ถ้า cspay drop แต่ online merchant ปกติแสดงว่าปัญหาเฉพาะ channel",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 364
+      },
+      "hiddenSeries": false,
+      "id": 2074,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum by (service, requestor) (increase(payment_code_transaction_total{status=\"200\",service=\"generateBarcodeV2\" , requestor=\"pay@all  (online merchant)\",app_name=\"payment-code\"}[5m]))",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{service}} : {{requestor}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum by (service, requestor) (increase(payment_code_transaction_total{status=\"200\",service=\"generateBarcodeV2\" , requestor=\"cspay\"}[1m]))",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{service}} : {{requestor}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "7-Eleven Delivery [payment online] Success",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:350",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:351",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน Balance payment fail สำหรับ ISV 7-Eleven Delivery (third_party_pay_composite)\n\nดูยังไง: status_code 5xx ที่ third party composite layer แสดงว่า downstream มีปัญหา",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 372
+      },
+      "id": 2075,
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "third-party-pay-composite-transaction-count",
+          "url": "https://grafana-thanos.truemoney.com/d/000000213/third-party-pay-composite-transaction-count?orgId=3&refresh=10s"
+        }
+      ],
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "8.4.7",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(third_party_pay_composite_transaction_total{service=\"Balance-Payment\",status_code=~\"5.*\",isv=\"010000000000292912477\"}[1m])) by (service,status_code) ",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{service}} : {{status_code}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "op": "gt",
+          "value": 5,
+          "visible": true
+        }
+      ],
+      "title": "7-Eleven Delivery [ISV] Fail",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "Alert panel — ดู Balance payment success ของ ISV ว่าเป็น 0 หรือเปล่า\n\nถ้า success = 0 ต่อเนื่อง 1+ นาที ให้ตรวจสอบ B2B Gateway และ Wallet service ทันที",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 372
+      },
+      "id": 2076,
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "third-party-pay-composite-transaction-count",
+          "url": "https://grafana-thanos.truemoney.com/d/000000213/third-party-pay-composite-transaction-count?orgId=3&refresh=10s"
+        }
+      ],
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "8.4.7",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(third_party_pay_composite_transaction_total{service=\"Balance-Payment\",status_code=\"200\",isv=\"010000000000292912477\"}[1m])) by (isv,service) ",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{service}} : {{isv}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "op": "lt",
+          "value": 1,
+          "visible": true
+        }
+      ],
+      "title": "7-Delivery - POS Online (7App) [ISV] Success = 0",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน refund สำหรับ 7-Delivery ISV ผ่าน B2B Gateway\n\nดูยังไง: refund สูงผิดปกติอาจบ่งชี้ปัญหาการ charge ซ้ำหรือ timeout ที่ทำให้ต้อง refund กลับ",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "payments-refund : "
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 380
+      },
+      "id": 2077,
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "third-party-pay-composite-transaction-count",
+          "url": "https://grafana-thanos.truemoney.com/d/000000213/third-party-pay-composite-transaction-count?orgId=3&refresh=10s"
+        }
+      ],
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "8.4.7",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum (increase(B2B_IN_GATEWAY_transaction_total{isv=\"010000000000292912477\",status_code=\"200 OK\",service=\"payments-refund\"}[1m])) by(status_code,service)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{service}} : {{isv}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "op": "gt",
+          "value": 5,
+          "visible": true
+        }
+      ],
+      "title": "7-Eleven Delivery Payments-Refund  > 5",
+      "transparent": true,
+      "type": "timeseries"
+    }
+  ]
+}

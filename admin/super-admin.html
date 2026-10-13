@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Admin — Centralize Platform</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/super-admin/super-admin.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content" id="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="zap"></i> Super Admin <span class="badge-super">PLATFORM</span></div>
+        <div class="page-sub">Team registry · feature approvals · super-admin only</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm" onclick="loadAll()"><i data-icon="refresh-cw"></i> Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content sa-page">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="zap"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Super Admin</div>
+          <h1>All Teams</h1>
+          <p>สร้าง / แก้ไข / ปิด team ทั้งหมด และอนุมัติคำขอ feature จาก team admin — เฉพาะ super_admin เท่านั้น</p>
+        </div>
+      </section>
+
+      <!-- ── Create Team (collapsed by default) ──────────────────────────── -->
+      <div class="sa-section" id="create-team-section">
+        <div class="create-bar" id="create-toggle" onclick="toggleCreatePanel()">
+          <div class="create-bar-icon">＋</div>
+          <div>
+            <div class="create-bar-text">Create new team</div>
+            <div class="create-bar-sub">Slug + name + description · default features included</div>
+          </div>
+          <div style="flex:1"></div>
+          <div class="create-bar-caret">▾</div>
+        </div>
+
+        <div class="create-panel" id="create-panel">
+          <div class="create-inner">
+            <div class="create-grid">
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Slug <span style="color:var(--orange)">*</span></label>
+                <input type="text" id="new-slug" class="form-control" placeholder="ops, infra, devops…" maxlength="32">
+                <small style="font-size:10px;color:var(--text-muted);">lowercase, no spaces</small>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Team Name <span style="color:var(--orange)">*</span></label>
+                <input type="text" id="new-name" class="form-control" placeholder="Operations Team">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Description</label>
+                <input type="text" id="new-desc" class="form-control" placeholder="optional">
+              </div>
+            </div>
+
+            <div class="create-actions">
+              <div style="display:flex;align-items:center;gap:14px;">
+                <div class="create-color-row">
+                  <div id="color-preview" class="color-preview" style="background:#6366F1;"></div>
+                  <input type="color" id="new-color" value="#6366F1"
+                         style="border:none;background:transparent;cursor:pointer;width:32px;height:32px;padding:0;"
+                         onchange="document.getElementById('color-preview').style.background=this.value">
+                </div>
+                <div class="create-hint">
+                  Includes <span style="color:var(--text);font-weight:600;">6 default features</span> · Dashboard, Board, Team Docs, SABai, Schedule, Learning
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="createTeam()" id="create-btn">Create team</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Teams grid ──────────────────────────────────────────────────── -->
+      <div class="sa-section">
+        <div class="sa-section-head">
+          <div class="sa-section-title">
+            All Teams
+            <span class="cnt" id="teams-count">—</span>
+          </div>
+        </div>
+        <div class="teams-grid" id="teams-grid">
+          <div class="sa-empty">Loading teams…</div>
+        </div>
+      </div>
+
+    </main><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<!-- ── Edit team modal ─────────────────────────────────────────────────── -->
+<div class="sa-modal-overlay" id="edit-modal">
+  <div class="sa-modal" id="edit-modal-inner" style="max-width:480px">
+    <h3 id="edit-modal-title"><i data-icon="pencil"></i> Edit Team</h3>
+    <input type="hidden" id="edit-team-id">
+    <input type="hidden" id="edit-team-slug">
+    <div class="form-group" style="margin-bottom:14px;">
+      <label class="form-label">Team Name</label>
+      <input type="text" id="edit-name" class="form-control">
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label class="form-label">Description</label>
+      <input type="text" id="edit-desc" class="form-control">
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label">Color</label>
+      <input type="color" id="edit-color" style="width:44px;height:32px;border:1px solid var(--border);border-radius:8px;padding:0;cursor:pointer;background:transparent;">
+    </div>
+
+    <!-- Dev sub-teams section — only visible when editing the dev team -->
+    <div id="edit-subteams-section" style="display:none;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap">
+        <div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#7c3aed;display:flex;align-items:center;gap:6px">
+          <i data-icon="code"></i> Dev Sub-teams
+          <span id="edit-subteams-count" style="font-family:monospace;font-size:10px;background:var(--bg);border:1px solid var(--border);padding:1px 7px;border-radius:999px;color:var(--text-muted)">—</span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="edit-new-subteam" class="form-control" placeholder="ชื่อทีมใหม่…"
+                 style="width:150px;font-size:12px;padding:5px 9px"
+                 onkeydown="if(event.key==='Enter')editAddSubteam()">
+          <button class="btn btn-primary btn-sm" onclick="editAddSubteam()">+ Add</button>
+        </div>
+      </div>
+      <div id="edit-subteams-chips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:32px">
+        <span style="color:var(--text-muted);font-size:12px">Loading…</span>
+      </div>
+    </div>
+
+    <div class="sa-modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveEdit()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+
+<script src="../assets/pages/admin/super-admin/super-admin.js"></script>
+</body>
+</html>

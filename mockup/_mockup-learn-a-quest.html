@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Learn Hero — Design A: Quest RPG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --orange:#F26419; --orange-light:#FB923C; --orange-dark:#EA580C;
+  --amber:#FBBF24;
+  --bg:#F5F6F8; --bg-card:#FFFFFF;
+  --text:#1C1C1E; --text-muted:#767676;
+  --border:#E5E5E5;
+  --font:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); font-family:var(--font); color:var(--text); font-size:12px; padding:32px}
+.container{max-width:1180px; margin:0 auto; display:flex; flex-direction:column; gap:22px}
+.hint{color:var(--text-muted); font-size:11px}
+
+/* ═══ QUEST CARD ═══ */
+.quest-hero{
+  position:relative; display:flex; align-items:center; gap:16px;
+  padding:14px 18px; border-radius:16px; overflow:hidden;
+  background:
+    radial-gradient(140% 200% at 100% 0%, rgba(251,191,36,.20), transparent 55%),
+    linear-gradient(135deg, rgba(242,100,25,.14), rgba(251,191,36,.10) 55%, rgba(242,100,25,.05));
+  border:1.5px solid rgba(242,100,25,.32);
+  box-shadow:0 4px 20px -8px rgba(242,100,25,.40);
+  animation: qhEnter .55s cubic-bezier(.22,.9,.32,1.1) both;
+}
+@keyframes qhEnter{ from{opacity:0; transform:translateY(-8px) scale(.985)} to{opacity:1; transform:none} }
+
+/* Shimmer sweep */
+.quest-hero::before{
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.12) 45%, transparent 60%);
+  transform:translateX(-100%); animation:qhShine 6s ease-in-out 1s infinite; pointer-events:none;
+}
+@keyframes qhShine{ 0%,15%{transform:translateX(-100%)} 45%,100%{transform:translateX(110%)} }
+
+/* Floating dot particles */
+.qh-dots{position:absolute; inset:0; pointer-events:none; overflow:hidden}
+.qh-dot{
+  position:absolute; width:5px; height:5px; border-radius:50%;
+  background:var(--amber); opacity:.6;
+  animation:qhFloat 4s ease-in-out infinite;
+}
+.qh-dot.d1{left:12%; top:80%; animation-delay:0s}
+.qh-dot.d2{left:34%; top:15%; animation-delay:1s; background:var(--orange)}
+.qh-dot.d3{left:60%; top:75%; animation-delay:2s}
+.qh-dot.d4{left:80%; top:20%; animation-delay:.5s; background:var(--orange)}
+.qh-dot.d5{left:92%; top:60%; animation-delay:1.5s}
+@keyframes qhFloat{
+  0%,100%{transform:translateY(0); opacity:.3}
+  50%{transform:translateY(-14px); opacity:.9}
+}
+
+/* ─── Mascot with level ring ─── */
+.qh-mascot-wrap{
+  position:relative; flex-shrink:0; width:74px; height:74px;
+  display:grid; place-items:center;
+}
+.qh-ring{
+  position:absolute; inset:0; border-radius:50%;
+  background:conic-gradient(var(--orange) 0deg, var(--orange) 216deg, rgba(0,0,0,.08) 216deg, rgba(0,0,0,.08) 360deg);
+  padding:3px;
+  animation:qhRingSpin 8s linear infinite;
+}
+@keyframes qhRingSpin{ to{transform:rotate(360deg)} }
+.qh-ring::after{
+  content:''; position:absolute; inset:3px; border-radius:50%; background:var(--bg-card);
+}
+.qh-mascot{
+  position:relative; z-index:2; width:56px; height:56px; border-radius:50%;
+  background:linear-gradient(135deg, var(--orange), var(--orange-light));
+  color:#fff; display:grid; place-items:center;
+  box-shadow:0 6px 12px -3px rgba(242,100,25,.55);
+  animation:qhBounce 2.4s ease-in-out infinite;
+}
+@keyframes qhBounce{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+.qh-mascot svg{width:32px; height:32px; stroke:#fff; fill:none; stroke-width:2}
+.qh-lvl{
+  position:absolute; bottom:-4px; right:-4px; z-index:3;
+  width:26px; height:26px; border-radius:50%;
+  background:linear-gradient(135deg, var(--amber), #F97316);
+  color:#7C2D12; font-size:11px; font-weight:800;
+  display:grid; place-items:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.4);
+  animation:qhLvlPop .8s ease-out .3s both;
+}
+@keyframes qhLvlPop{ from{transform:scale(0) rotate(-40deg)} to{transform:scale(1) rotate(0)} }
+
+/* Orbiting sparkles */
+.qh-orbit{position:absolute; inset:-2px; pointer-events:none}
+.qh-orb-item{
+  position:absolute; top:50%; left:50%; width:8px; height:8px;
+  transform-origin:0 0;
+  animation:qhOrbit 4s linear infinite;
+}
+.qh-orb-item::before{
+  content:'✦'; position:absolute; left:38px; top:-6px; font-size:12px;
+  color:var(--amber); text-shadow:0 0 6px rgba(251,191,36,.9);
+}
+.qh-orb-item.b{animation-delay:-1.3s} .qh-orb-item.b::before{color:var(--orange)}
+.qh-orb-item.c{animation-delay:-2.6s}
+@keyframes qhOrbit{ to{transform:rotate(360deg)} }
+
+/* ─── Body ─── */
+.qh-body{flex:1; min-width:0; display:flex; flex-direction:column; gap:5px}
+.qh-header{display:flex; align-items:center; gap:8px}
+.qh-badge{
+  font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+  color:#7C2D12; background:rgba(251,191,36,.28);
+  border:1px solid rgba(251,191,36,.55);
+  padding:2px 8px; border-radius:999px;
+}
+.qh-streak{
+  display:inline-flex; align-items:center; gap:3px;
+  font-size:10px; font-weight:800; color:#DC2626;
+  background:rgba(220,38,38,.1); padding:2px 8px; border-radius:999px;
+  border:1px solid rgba(220,38,38,.3);
+}
+.qh-streak .flame{
+  display:inline-block; animation:qhFlicker .8s ease-in-out infinite alternate;
+}
+@keyframes qhFlicker{
+  from{transform:scale(1) rotate(-3deg); filter:drop-shadow(0 0 2px rgba(251,146,60,.7))}
+  to{transform:scale(1.15) rotate(3deg); filter:drop-shadow(0 0 5px rgba(239,68,68,.9))}
+}
+.qh-title{font-size:14px; font-weight:800; letter-spacing:-.01em; line-height:1.25}
+.qh-title .accent{color:var(--orange)}
+
+/* XP bar */
+.qh-xp{display:flex; align-items:center; gap:10px; margin-top:2px}
+.qh-xp-track{
+  flex:1; max-width:260px; height:8px; border-radius:999px;
+  background:rgba(0,0,0,.08); overflow:hidden; position:relative;
+}
+.qh-xp-fill{
+  height:100%; width:60%; border-radius:999px;
+  background:linear-gradient(90deg, var(--amber), var(--orange), var(--orange-dark));
+  background-size:200% 100%;
+  box-shadow:0 0 10px rgba(242,100,25,.55);
+  animation:qhBarShift 3s ease-in-out infinite, qhXpFill 1.2s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes qhBarShift{ 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+@keyframes qhXpFill{ from{width:0%} }
+.qh-xp-lbl{font-size:10px; font-weight:800; color:var(--text-muted); white-space:nowrap; font-variant-numeric:tabular-nums}
+.qh-xp-lbl b{color:var(--orange); font-weight:800}
+
+/* Daily quest chips */
+.qh-quests{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px}
+.qh-quest{
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:10px; font-weight:700;
+  padding:3px 9px 3px 7px; border-radius:999px;
+  background:rgba(255,255,255,.65); border:1px solid var(--border);
+  color:var(--text);
+}
+.qh-quest .chk{
+  width:12px; height:12px; border-radius:50%; border:1.5px solid var(--border);
+  display:inline-grid; place-items:center; font-size:8px;
+}
+.qh-quest.done{background:rgba(34,197,94,.15); border-color:rgba(34,197,94,.45); color:#15803D}
+.qh-quest.done .chk{background:#16A34A; border-color:#16A34A; color:#fff}
+.qh-quest.active{background:rgba(251,191,36,.20); border-color:rgba(251,191,36,.55); color:#78350F}
+.qh-quest.active .chk{border-color:#F59E0B; background:rgba(251,191,36,.25); color:#F59E0B}
+.qh-quest.active .chk::after{
+  content:''; position:absolute; width:12px; height:12px; border-radius:50%;
+  border:1.5px solid var(--amber); animation:qhPulse 1.6s ease-out infinite;
+}
+@keyframes qhPulse{ 0%{opacity:.9; transform:scale(1)} 100%{opacity:0; transform:scale(2)} }
+
+/* CTA */
+.qh-cta{
+  flex-shrink:0; position:relative; overflow:hidden;
+  display:inline-flex; align-items:center; gap:6px;
+  padding:12px 18px; border-radius:12px;
+  background:linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color:#fff !important; font-size:12px; font-weight:800; letter-spacing:.02em;
+  text-decoration:none;
+  box-shadow:0 6px 16px -6px rgba(242,100,25,.7), inset 0 1px 0 rgba(255,255,255,.25);
+  transition:transform .15s, box-shadow .15s;
+}
+.qh-cta::before{
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.4) 50%, transparent 70%);
+  transform:translateX(-100%); animation:qhCtaShine 3s ease-in-out infinite;
+}
+@keyframes qhCtaShine{ 0%,30%{transform:translateX(-100%)} 55%,100%{transform:translateX(110%)} }
+.qh-cta:hover{transform:translateY(-1px); box-shadow:0 10px 22px -6px rgba(242,100,25,.85)}
+.qh-cta .arr{transition:transform .2s}
+.qh-cta:hover .arr{transform:translateX(3px)}
+.qh-cta .plus{
+  font-size:9px; font-weight:800; margin-left:4px; padding:2px 5px;
+  background:rgba(255,255,255,.25); border-radius:5px;
+  animation:qhPlus 2s ease-in-out infinite;
+}
+@keyframes qhPlus{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+</style>
+</head>
+<body>
+<div class="container">
+  <p class="hint">DESIGN A — <b>Quest RPG Card</b> — XP bar, level badge, streak fire, daily quests</p>
+
+  <!-- Card -->
+  <div class="quest-hero" data-mood="active">
+    <div class="qh-dots">
+      <span class="qh-dot d1"></span>
+      <span class="qh-dot d2"></span>
+      <span class="qh-dot d3"></span>
+      <span class="qh-dot d4"></span>
+      <span class="qh-dot d5"></span>
+    </div>
+
+    <!-- Mascot + level -->
+    <div class="qh-mascot-wrap">
+      <div class="qh-ring"></div>
+      <div class="qh-mascot">
+        <svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+      </div>
+      <div class="qh-lvl">7</div>
+      <div class="qh-orbit">
+        <span class="qh-orb-item"></span>
+        <span class="qh-orb-item b"></span>
+        <span class="qh-orb-item c"></span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="qh-body">
+      <div class="qh-header">
+        <span class="qh-badge">Level 7 · Learner</span>
+        <span class="qh-streak"><span class="flame">🔥</span> 12 day streak</span>
+      </div>
+      <div class="qh-title">
+        อีก <span class="accent">40 XP</span> ถึง Level 8! เก็บ quest วันนี้ให้ครบ
+      </div>
+      <div class="qh-xp">
+        <div class="qh-xp-track"><div class="qh-xp-fill"></div></div>
+        <span class="qh-xp-lbl"><b>260</b> / 300 XP</span>
+      </div>
+      <div class="qh-quests">
+        <span class="qh-quest done"><span class="chk">✓</span>อ่าน 1 บทเรียน</span>
+        <span class="qh-quest done"><span class="chk">✓</span>ทำ quiz ผ่าน</span>
+        <span class="qh-quest active" style="position:relative"><span class="chk"></span>ดู video 1 ตอน</span>
+        <span class="qh-quest"><span class="chk"></span>รีวิว flashcard</span>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <a class="qh-cta" href="#">
+      <span>ทำ quest ต่อ</span>
+      <span class="arr">→</span>
+      <span class="plus">+40 XP</span>
+    </a>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Org Chart — 4 Design Mockups</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Inter', sans-serif; background: #0c0c12; color: #fff; }
+
+  /* ── Tab switcher ───────────────────────────────────────── */
+  .switcher {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; gap: 6px;
+    padding: 12px 20px; background: rgba(8,8,16,.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,255,255,.07);
+  }
+  .switcher-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.35); letter-spacing: .07em; text-transform: uppercase; margin-right: 8px; }
+  .tab-btn {
+    padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    border: 1px solid rgba(255,255,255,.12); background: transparent; color: rgba(255,255,255,.45);
+    cursor: pointer; transition: all .2s;
+  }
+  .tab-btn.active { background: #f26419; border-color: #f26419; color: #fff; }
+  .tab-btn:hover:not(.active) { border-color: rgba(255,255,255,.3); color: rgba(255,255,255,.8); }
+
+  /* ── Panels ─────────────────────────────────────────────── */
+  .panel { display: none; padding-top: 60px; min-height: 100vh; }
+  .panel.active { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 40px 60px; }
+  .design-label {
+    font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+    color: rgba(255,255,255,.25); margin-bottom: 40px; text-align: center;
+  }
+  .design-label span { color: #f26419; }
+
+  /* ════════════════════════════════════════════════════════
+     DESIGN 1 — CRYSTALLINE  (Glassmorphism + Gradient lines)
+     ════════════════════════════════════════════════════════ */
+  .d1 { background: radial-gradient(ellipse 120% 80% at 50% 0%, rgba(242,100,25,.08) 0%, transparent 60%), #06060e; }
+
+  .d1-wrap { display: flex; flex-direction: column; align-items: center; gap: 0; width: 100%; max-width: 1100px; position: relative; }
+
+  /* Managers row */
+  .d1-mgrs { display: flex; gap: 24px; justify-content: center; }
+  .d1-mgr {
+    width: 180px; padding: 28px 20px 20px;
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    position: relative;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08);
+    transition: transform .25s, box-shadow .25s;
+  }
+  .d1-mgr:hover { transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,.5), 0 0 0 1px rgba(242,100,25,.3), inset 0 1px 0 rgba(255,255,255,.1); }
+  .d1-mgr-av {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: linear-gradient(135deg, rgba(242,100,25,.6), rgba(242,100,25,.2));
+    border: 2px solid rgba(242,100,25,.5);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 900; color: #f26419;
+    box-shadow: 0 0 24px rgba(242,100,25,.25);
+    flex-shrink: 0;
+  }
+  .d1-mgr-name { font-size: 13px; font-weight: 700; color: #fff; text-align: center; line-height: 1.3; }
+  .d1-mgr-nick { font-size: 11px; color: rgba(255,255,255,.35); }
+  .d1-mgr-badge {
+    padding: 3px 10px; border-radius: 20px; font-size: 9px; font-weight: 800; letter-spacing: .1em;
+    background: rgba(242,100,25,.15); color: #f26419; border: 1px solid rgba(242,100,25,.3);
+  }
+
+  /* SVG connector */
+  .d1-svg { width: 100%; overflow: visible; }
+
+  /* Team cards */
+  .d1-teams { display: flex; gap: 14px; justify-content: center; flex-wrap: nowrap; }
+  .d1-team {
+    width: 140px; padding: 18px 14px 14px;
+    background: rgba(255,255,255,.025);
+    border: 1px solid rgba(255,255,255,.07);
+    border-top: 2px solid var(--tc, #6366f1);
+    border-radius: 16px;
+    position: relative;
+    cursor: pointer;
+    transition: all .2s;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 20px rgba(0,0,0,.3);
+  }
+  .d1-team:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 36px rgba(0,0,0,.5), 0 0 0 1px var(--tc, #6366f1), 0 0 20px color-mix(in srgb, var(--tc) 20%, transparent);
+    background: rgba(255,255,255,.05);
+  }
+  .d1-team-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tc); box-shadow: 0 0 8px var(--tc); margin-bottom: 8px; }
+  .d1-team-name { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+  .d1-team-slug { font-size: 10px; color: rgba(255,255,255,.3); font-family: monospace; margin-bottom: 10px; }
+  .d1-team-count { font-size: 11px; color: rgba(255,255,255,.5); margin-bottom: 10px; }
+  .d1-avs { display: flex; }
+  .d1-av {
+    width: 22px; height: 22px; border-radius: 50%; margin-left: -5px;
+    background: var(--tc); border: 1.5px solid #06060e;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 7px; font-weight: 800; color: #fff;
+    flex-shrink: 0;
+  }
+  .d1-av:first-child { margin-left: 0; }
+
+
+  /* ════════════════════════════════════════════════════════
+     DESIGN 2 — MINIMAL NOIR  (Ultra-clean, hairline, open)
+     ════════════════════════════════════════════════════════ */
+  .d2 { background: #0d0d0d; }
+
+  .d2-wrap { display: flex; flex-direction: column; align-items: center; gap: 0; width: 100%; max-width: 1100px; position: relative; }
+
+  .d2-mgrs { display: flex; gap: 32px; justify-content: center; }
+  .d2-mgr {
+    width: 160px; padding: 24px 16px 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 12px;
+    transition: border-color .2s;
+    cursor: pointer;
+  }
+  .d2-mgr:hover { border-color: rgba(242,100,25,.4); }
+  .d2-mgr-av {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: #1a1a1a;
+    border: 1px solid rgba(255,255,255,.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 900; color: rgba(255,255,255,.5);
+    letter-spacing: -.03em;
+  }
+  .d2-mgr-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,.75); text-align: center; line-height: 1.35; }
+  .d2-mgr-nick { font-size: 10px; color: rgba(255,255,255,.25); }
+  .d2-mgr-badge {
+    font-size: 8.5px; font-weight: 700; letter-spacing: .12em;
+    color: rgba(255,255,255,.25); text-transform: uppercase;
+  }
+
+  .d2-teams { display: flex; gap: 10px; justify-content: center; }
+  .d2-team {
+    width: 130px; padding: 16px 12px;
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 10px; cursor: pointer;
+    transition: all .2s; position: relative;
+  }
+  .d2-team::before {
+    content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 2px; height: 0; background: var(--tc); border-radius: 2px;
+    transition: height .25s;
+  }
+  .d2-team:hover::before { height: 40%; }
+  .d2-team:hover { border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.02); }
+  .d2-team-name { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.7); margin-bottom: 2px; }
+  .d2-team-slug { font-size: 9px; color: rgba(255,255,255,.2); font-family: monospace; margin-bottom: 8px; }
+  .d2-team-count { font-size: 10px; color: rgba(255,255,255,.3); margin-bottom: 8px; }
+  .d2-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tc); opacity: .7; margin-bottom: 8px; }
+  .d2-avs { display: flex; flex-wrap: wrap; gap: 2px; }
+  .d2-av {
+    width: 18px; height: 18px; border-radius: 4px;
+    background: rgba(255,255,255,.06);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 6.5px; font-weight: 800; color: rgba(255,255,255,.4);
+  }
+
+
+  /* ════════════════════════════════════════════════════════
+     DESIGN 3 — OBSIDIAN GOLD  (Dark luxury + amber glow)
+     ════════════════════════════════════════════════════════ */
+  .d3 { background: #050507; }
+
+  .d3-wrap { display: flex; flex-direction: column; align-items: center; gap: 0; width: 100%; max-width: 1100px; }
+
+  .d3-mgrs { display: flex; gap: 28px; justify-content: center; }
+  .d3-mgr {
+    width: 176px; padding: 28px 20px 22px;
+    background: #0d0d10;
+    border: 1px solid rgba(201,168,76,.15);
+    border-radius: 18px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 0 40px rgba(201,168,76,.06), 0 8px 32px rgba(0,0,0,.6);
+    cursor: pointer; transition: all .25s;
+  }
+  .d3-mgr::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,.5), transparent);
+  }
+  .d3-mgr:hover {
+    border-color: rgba(201,168,76,.35);
+    box-shadow: 0 0 60px rgba(201,168,76,.1), 0 16px 48px rgba(0,0,0,.7);
+    transform: translateY(-3px);
+  }
+  .d3-mgr-av {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: linear-gradient(135deg, #1a1508, #100e06);
+    border: 1.5px solid rgba(201,168,76,.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 900; color: #c9a84c;
+    box-shadow: 0 0 20px rgba(201,168,76,.2), inset 0 1px 0 rgba(201,168,76,.1);
+  }
+  .d3-mgr-name { font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,.85); text-align: center; line-height: 1.3; }
+  .d3-mgr-nick { font-size: 10.5px; color: rgba(255,255,255,.3); }
+  .d3-mgr-badge {
+    padding: 3px 10px; border-radius: 20px; font-size: 8px; font-weight: 800; letter-spacing: .12em;
+    background: rgba(201,168,76,.1); color: #c9a84c; border: 1px solid rgba(201,168,76,.25);
+    text-transform: uppercase;
+  }
+
+  .d3-teams { display: flex; gap: 12px; justify-content: center; }
+  .d3-team {
+    width: 138px; padding: 16px 14px;
+    background: #0d0d10;
+    border: 1px solid rgba(255,255,255,.05);
+    border-radius: 14px; cursor: pointer;
+    position: relative; overflow: hidden;
+    transition: all .2s;
+    box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  }
+  .d3-team::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.02) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .d3-team-glow {
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--tc), transparent);
+    opacity: 0; transition: opacity .2s;
+  }
+  .d3-team:hover .d3-team-glow { opacity: 1; }
+  .d3-team:hover {
+    border-color: rgba(255,255,255,.1);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.06);
+  }
+  .d3-team-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tc); box-shadow: 0 0 10px var(--tc); margin-bottom: 10px; }
+  .d3-team-name { font-size: 12.5px; font-weight: 800; color: rgba(255,255,255,.8); margin-bottom: 2px; }
+  .d3-team-slug { font-size: 9px; color: rgba(255,255,255,.22); font-family: monospace; margin-bottom: 10px; }
+  .d3-team-count { font-size: 10px; color: rgba(255,255,255,.35); margin-bottom: 10px; }
+  .d3-avs { display: flex; }
+  .d3-av {
+    width: 20px; height: 20px; border-radius: 50%; margin-left: -5px;
+    background: rgba(255,255,255,.08); border: 1.5px solid #050507;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 6.5px; font-weight: 800; color: rgba(255,255,255,.5);
+  }
+  .d3-av:first-child { margin-left: 0; }
+
+
+  /* ════════════════════════════════════════════════════════
+     DESIGN 4 — NORDIC FLOW  (Bezier curves, clean modern)
+     ════════════════════════════════════════════════════════ */
+  .d4 { background: #0f1117; }
+
+  .d4-wrap { display: flex; flex-direction: column; align-items: center; gap: 0; width: 100%; max-width: 1100px; }
+
+  .d4-mgrs { display: flex; gap: 20px; justify-content: center; }
+  .d4-mgr {
+    width: 168px; padding: 22px 18px 18px;
+    background: #171b26;
+    border: 1.5px solid rgba(99,102,241,.2);
+    border-radius: 16px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    cursor: pointer; transition: all .2s;
+    box-shadow: 0 4px 20px rgba(0,0,0,.4);
+  }
+  .d4-mgr:hover {
+    border-color: rgba(242,100,25,.5);
+    background: #1c2030;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,.5), 0 0 0 4px rgba(242,100,25,.06);
+  }
+  .d4-mgr-av {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, rgba(242,100,25,.25), rgba(242,100,25,.05));
+    border: 2px solid rgba(242,100,25,.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 900; color: #f26419;
+  }
+  .d4-mgr-name { font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,.85); text-align: center; line-height: 1.3; }
+  .d4-mgr-nick { font-size: 10.5px; color: rgba(255,255,255,.3); }
+  .d4-mgr-badge {
+    padding: 3px 10px; border-radius: 6px; font-size: 8.5px; font-weight: 800; letter-spacing: .08em;
+    background: rgba(242,100,25,.12); color: #f87341; text-transform: uppercase;
+  }
+
+  /* Bezier SVG connector — drawn via JS */
+  .d4-svg-wrap { width: 100%; }
+
+  .d4-teams { display: flex; gap: 12px; justify-content: center; }
+  .d4-team {
+    width: 136px; padding: 0;
+    background: #171b26;
+    border: 1.5px solid rgba(255,255,255,.06);
+    border-radius: 14px; cursor: pointer;
+    overflow: hidden; transition: all .2s;
+    box-shadow: 0 4px 16px rgba(0,0,0,.4);
+  }
+  .d4-team-top { height: 4px; background: var(--tc); }
+  .d4-team-body { padding: 14px 13px; }
+  .d4-team:hover {
+    border-color: var(--tc);
+    transform: translateY(-5px);
+    box-shadow: 0 14px 36px rgba(0,0,0,.5), 0 0 0 3px color-mix(in srgb, var(--tc) 15%, transparent);
+  }
+  .d4-team-name { font-size: 12.5px; font-weight: 800; color: rgba(255,255,255,.85); margin-bottom: 2px; }
+  .d4-team-slug { font-size: 9px; color: rgba(255,255,255,.25); font-family: monospace; margin-bottom: 9px; }
+  .d4-team-count {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; color: rgba(255,255,255,.4); margin-bottom: 10px;
+  }
+  .d4-avs { display: flex; }
+  .d4-av {
+    width: 22px; height: 22px; border-radius: 50%; margin-left: -6px;
+    background: var(--tc); border: 2px solid #171b26;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 7px; font-weight: 800; color: #fff; opacity: .85;
+  }
+  .d4-av:first-child { margin-left: 0; }
+  .d4-av-more {
+    background: rgba(255,255,255,.08); color: rgba(255,255,255,.5);
+  }
+
+  /* connector spacer — real height so lines are visible */
+  .connector-gap {
+    width: 100%; display: block; position: relative;
+    height: 64px; flex-shrink: 0;
+  }
+  .connector-gap svg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    overflow: visible;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Tab Switcher ────────────────────────────────────────── -->
+<div class="switcher">
+  <span class="switcher-label">Design</span>
+  <button class="tab-btn active" onclick="show(1)">1 · Crystalline</button>
+  <button class="tab-btn" onclick="show(2)">2 · Minimal Noir</button>
+  <button class="tab-btn" onclick="show(3)">3 · Obsidian Gold</button>
+  <button class="tab-btn" onclick="show(4)">4 · Nordic Flow</button>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     PANEL 1 — CRYSTALLINE
+     ════════════════════════════════════════════════════════ -->
+<div class="panel d1 active" id="p1">
+  <div class="design-label">Design <span>01</span> — Crystalline · Glassmorphism + Gradient Lines</div>
+  <div class="d1-wrap">
+    <!-- Managers -->
+    <div class="d1-mgrs" id="d1-mgrs">
+      <div class="d1-mgr">
+        <div class="d1-mgr-av">CK</div>
+        <div class="d1-mgr-name">Chiraphong Khumkhrong</div>
+        <div class="d1-mgr-nick">(Art)</div>
+        <div class="d1-mgr-badge">Manager</div>
+      </div>
+      <div class="d1-mgr">
+        <div class="d1-mgr-av">TS</div>
+        <div class="d1-mgr-name">Tak Sutichaichottana</div>
+        <div class="d1-mgr-nick">(Tape)</div>
+        <div class="d1-mgr-badge">Manager</div>
+      </div>
+    </div>
+
+    <!-- Connector SVG -->
+    <div class="connector-gap">
+      <svg id="d1-svg" preserveAspectRatio="none"></svg>
+    </div>
+
+    <!-- Teams -->
+    <div class="d1-teams" id="d1-teams">
+      <div class="d1-team" style="--tc:#f26419">
+        <div class="d1-team-dot"></div>
+        <div class="d1-team-name">SM Team</div>
+        <div class="d1-team-slug">/sm</div>
+        <div class="d1-team-count">👥 16 คน</div>
+        <div class="d1-avs">
+          <div class="d1-av">CC</div><div class="d1-av">PP</div><div class="d1-av">SK</div>
+          <div class="d1-av" style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.4)">+13</div>
+        </div>
+      </div>
+      <div class="d1-team" style="--tc:#6366f1">
+        <div class="d1-team-dot"></div>
+        <div class="d1-team-name">SS Team</div>
+        <div class="d1-team-slug">/ss</div>
+        <div class="d1-team-count">👥 6 คน</div>
+        <div class="d1-avs">
+          <div class="d1-av">CC</div><div class="d1-av">PP</div><div class="d1-av">SK</div>
+          <div class="d1-av" style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.4)">+3</div>
+        </div>
+      </div>
+      <div class="d1-team" style="--tc:#22c55e">
+        <div class="d1-team-dot"></div>
+        <div class="d1-team-name">TS Team</div>
+        <div class="d1-team-slug">/ts</div>
+        <div class="d1-team-count">👥 4 คน</div>
+        <div class="d1-avs">
+          <div class="d1-av">AN</div><div class="d1-av">SW</div>
+        </div>
+      </div>
+      <div class="d1-team" style="--tc:#ef4444">
+        <div class="d1-team-dot"></div>
+        <div class="d1-team-name">FAS Team</div>
+        <div class="d1-team-slug">/fas</div>
+        <div class="d1-team-count">👥 9 คน</div>
+        <div class="d1-avs">
+          <div class="d1-av">AC</div><div class="d1-av">KN</div><div class="d1-av">WW</div>
+          <div class="d1-av" style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.4)">+6</div>
+        </div>
+      </div>
+      <div class="d1-team" style="--tc:#10b981">
+        <div class="d1-team-dot"></div>
+        <div class="d1-team-name">IM Team</div>
+        <div class="d1-team-slug">/im</div>
+        <div class="d1-team-count">👥 4 คน</div>
+        <div class="d1-avs">
+          <div class="d1-av">AM</div><div class="d1-av">NP</div>
+        </div>
+      </div>
+      <div class="d1-team" style="--tc:#64748b">
+        <div class="d1-team-dot"></div>
+        <div class="d1-team-name">CMT Team</div>
+        <div class="d1-team-slug">/cmt</div>
+        <div class="d1-team-count">👥 2 คน</div>
+        <div class="d1-avs">
+          <div class="d1-av">AV</div>
+        </div>
+      </div>
+      <div class="d1-team" style="--tc:#a855f7">
+        <div class="d1-team-dot"></div>
+        <div class="d1-team-name">SMART Team</div>
+        <div class="d1-team-slug">/smart</div>
+        <div class="d1-team-count">👥 1 คน</div>
+        <div class="d1-avs">
+          <div class="d1-av">ST</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     PANEL 2 — MINIMAL NOIR
+     ════════════════════════════════════════════════════════ -->
+<div class="panel d2" id="p2">
+  <div class="design-label">Design <span>02</span> — Minimal Noir · Hairline + Open Space</div>
+  <div class="d2-wrap">
+    <div class="d2-mgrs" id="d2-mgrs">
+      <div class="d2-mgr">
+        <div class="d2-mgr-av">CK</div>
+        <div class="d2-mgr-name">Chiraphong Khumkhrong</div>
+        <div class="d2-mgr-nick">(Art)</div>
+        <div class="d2-mgr-badge">Manager</div>
+      </div>
+      <div class="d2-mgr">
+        <div class="d2-mgr-av">TS</div>
+        <div class="d2-mgr-name">Tak Sutichaichottana</div>
+        <div class="d2-mgr-nick">(Tape)</div>
+        <div class="d2-mgr-badge">Manager</div>
+      </div>
+    </div>
+
+    <div class="connector-gap">
+      <svg id="d2-svg"></svg>
+    </div>
+
+    <div class="d2-teams" id="d2-teams">
+      <div class="d2-team" style="--tc:#f26419">
+        <div class="d2-dot"></div>
+        <div class="d2-team-name">SM Team</div>
+        <div class="d2-team-slug">/sm</div>
+        <div class="d2-team-count">16 คน</div>
+        <div class="d2-avs">
+          <div class="d2-av">CC</div><div class="d2-av">PP</div><div class="d2-av">SK</div>
+          <div class="d2-av">TP</div><div class="d2-av" style="color:rgba(255,255,255,.25)">+</div>
+        </div>
+      </div>
+      <div class="d2-team" style="--tc:#6366f1">
+        <div class="d2-dot"></div>
+        <div class="d2-team-name">SS Team</div>
+        <div class="d2-team-slug">/ss</div>
+        <div class="d2-team-count">6 คน</div>
+        <div class="d2-avs">
+          <div class="d2-av">CC</div><div class="d2-av">PP</div><div class="d2-av">SK</div>
+        </div>
+      </div>
+      <div class="d2-team" style="--tc:#22c55e">
+        <div class="d2-dot"></div>
+        <div class="d2-team-name">TS Team</div>
+        <div class="d2-team-slug">/ts</div>
+        <div class="d2-team-count">4 คน</div>
+        <div class="d2-avs">
+          <div class="d2-av">AN</div><div class="d2-av">SW</div>
+        </div>
+      </div>
+      <div class="d2-team" style="--tc:#ef4444">
+        <div class="d2-dot"></div>
+        <div class="d2-team-name">FAS Team</div>
+        <div class="d2-team-slug">/fas</div>
+        <div class="d2-team-count">9 คน</div>
+        <div class="d2-avs">
+          <div class="d2-av">AC</div><div class="d2-av">KN</div><div class="d2-av" style="color:rgba(255,255,255,.25)">+</div>
+        </div>
+      </div>
+      <div class="d2-team" style="--tc:#10b981">
+        <div class="d2-dot"></div>
+        <div class="d2-team-name">IM Team</div>
+        <div class="d2-team-slug">/im</div>
+        <div class="d2-team-count">4 คน</div>
+        <div class="d2-avs">
+          <div class="d2-av">AM</div><div class="d2-av">NP</div>
+        </div>
+      </div>
+      <div class="d2-team" style="--tc:#64748b">
+        <div class="d2-dot"></div>
+        <div class="d2-team-name">CMT</div>
+        <div class="d2-team-slug">/cmt</div>
+        <div class="d2-team-count">2 คน</div>
+        <div class="d2-avs">
+          <div class="d2-av">AV</div>
+        </div>
+      </div>
+      <div class="d2-team" style="--tc:#a855f7">
+        <div class="d2-dot"></div>
+        <div class="d2-team-name">SMART</div>
+        <div class="d2-team-slug">/smart</div>
+        <div class="d2-team-count">1 คน</div>
+        <div class="d2-avs">
+          <div class="d2-av">ST</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     PANEL 3 — OBSIDIAN GOLD
+     ════════════════════════════════════════════════════════ -->
+<div class="panel d3" id="p3">
+  <div class="design-label">Design <span>03</span> — Obsidian Gold · Dark Luxury</div>
+  <div class="d3-wrap">
+    <div class="d3-mgrs" id="d3-mgrs">
+      <div class="d3-mgr">
+        <div class="d3-mgr-av">CK</div>
+        <div class="d3-mgr-name">Chiraphong Khumkhrong</div>
+        <div class="d3-mgr-nick">(Art)</div>
+        <div class="d3-mgr-badge">Manager</div>
+      </div>
+      <div class="d3-mgr">
+        <div class="d3-mgr-av">TS</div>
+        <div class="d3-mgr-name">Tak Sutichaichottana</div>
+        <div class="d3-mgr-nick">(Tape)</div>
+        <div class="d3-mgr-badge">Manager</div>
+      </div>
+    </div>
+
+    <div class="connector-gap">
+      <svg id="d3-svg"></svg>
+    </div>
+
+    <div class="d3-teams" id="d3-teams">
+      <div class="d3-team" style="--tc:#f26419">
+        <div class="d3-team-glow"></div>
+        <div class="d3-team-dot"></div>
+        <div class="d3-team-name">SM Team</div>
+        <div class="d3-team-slug">/sm</div>
+        <div class="d3-team-count">16 คน</div>
+        <div class="d3-avs">
+          <div class="d3-av">CC</div><div class="d3-av">PP</div><div class="d3-av">SK</div>
+          <div class="d3-av" style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.35)">+</div>
+        </div>
+      </div>
+      <div class="d3-team" style="--tc:#6366f1">
+        <div class="d3-team-glow"></div>
+        <div class="d3-team-dot"></div>
+        <div class="d3-team-name">SS Team</div>
+        <div class="d3-team-slug">/ss</div>
+        <div class="d3-team-count">6 คน</div>
+        <div class="d3-avs">
+          <div class="d3-av">CC</div><div class="d3-av">PP</div><div class="d3-av">SK</div>
+        </div>
+      </div>
+      <div class="d3-team" style="--tc:#22c55e">
+        <div class="d3-team-glow"></div>
+        <div class="d3-team-dot"></div>
+        <div class="d3-team-name">TS Team</div>
+        <div class="d3-team-slug">/ts</div>
+        <div class="d3-team-count">4 คน</div>
+        <div class="d3-avs">
+          <div class="d3-av">AN</div><div class="d3-av">SW</div>
+        </div>
+      </div>
+      <div class="d3-team" style="--tc:#ef4444">
+        <div class="d3-team-glow"></div>
+        <div class="d3-team-dot"></div>
+        <div class="d3-team-name">FAS Team</div>
+        <div class="d3-team-slug">/fas</div>
+        <div class="d3-team-count">9 คน</div>
+        <div class="d3-avs">
+          <div class="d3-av">AC</div><div class="d3-av">KN</div><div class="d3-av" style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.35)">+</div>
+        </div>
+      </div>
+      <div class="d3-team" style="--tc:#10b981">
+        <div class="d3-team-glow"></div>
+        <div class="d3-team-dot"></div>
+        <div class="d3-team-name">IM Team</div>
+        <div class="d3-team-slug">/im</div>
+        <div class="d3-team-count">4 คน</div>
+        <div class="d3-avs">
+          <div class="d3-av">AM</div><div class="d3-av">NP</div>
+        </div>
+      </div>
+      <div class="d3-team" style="--tc:#64748b">
+        <div class="d3-team-glow"></div>
+        <div class="d3-team-dot"></div>
+        <div class="d3-team-name">CMT Team</div>
+        <div class="d3-team-slug">/cmt</div>
+        <div class="d3-team-count">2 คน</div>
+        <div class="d3-avs">
+          <div class="d3-av">AV</div>
+        </div>
+      </div>
+      <div class="d3-team" style="--tc:#a855f7">
+        <div class="d3-team-glow"></div>
+        <div class="d3-team-dot"></div>
+        <div class="d3-team-name">SMART</div>
+        <div class="d3-team-slug">/smart</div>
+        <div class="d3-team-count">1 คน</div>
+        <div class="d3-avs">
+          <div class="d3-av">ST</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     PANEL 4 — NORDIC FLOW
+     ════════════════════════════════════════════════════════ -->
+<div class="panel d4" id="p4">
+  <div class="design-label">Design <span>04</span> — Nordic Flow · Bezier Curves + Color Accents</div>
+  <div class="d4-wrap">
+    <div class="d4-mgrs" id="d4-mgrs">
+      <div class="d4-mgr">
+        <div class="d4-mgr-av">CK</div>
+        <div class="d4-mgr-name">Chiraphong Khumkhrong</div>
+        <div class="d4-mgr-nick">(Art)</div>
+        <div class="d4-mgr-badge">Manager</div>
+      </div>
+      <div class="d4-mgr">
+        <div class="d4-mgr-av">TS</div>
+        <div class="d4-mgr-name">Tak Sutichaichottana</div>
+        <div class="d4-mgr-nick">(Tape)</div>
+        <div class="d4-mgr-badge">Manager</div>
+      </div>
+    </div>
+
+    <div class="connector-gap">
+      <svg id="d4-svg"></svg>
+    </div>
+
+    <div class="d4-teams" id="d4-teams">
+      <div class="d4-team" style="--tc:#f26419">
+        <div class="d4-team-top"></div>
+        <div class="d4-team-body">
+          <div class="d4-team-name">SM Team</div>
+          <div class="d4-team-slug">/sm</div>
+          <div class="d4-team-count">👥 16 คน</div>
+          <div class="d4-avs">
+            <div class="d4-av">CC</div><div class="d4-av">PP</div><div class="d4-av">SK</div>
+            <div class="d4-av d4-av-more">+13</div>
+          </div>
+        </div>
+      </div>
+      <div class="d4-team" style="--tc:#6366f1">
+        <div class="d4-team-top"></div>
+        <div class="d4-team-body">
+          <div class="d4-team-name">SS Team</div>
+          <div class="d4-team-slug">/ss</div>
+          <div class="d4-team-count">👥 6 คน</div>
+          <div class="d4-avs">
+            <div class="d4-av">CC</div><div class="d4-av">PP</div><div class="d4-av">SK</div>
+          </div>
+        </div>
+      </div>
+      <div class="d4-team" style="--tc:#22c55e">
+        <div class="d4-team-top"></div>
+        <div class="d4-team-body">
+          <div class="d4-team-name">TS Team</div>
+          <div class="d4-team-slug">/ts</div>
+          <div class="d4-team-count">👥 4 คน</div>
+          <div class="d4-avs">
+            <div class="d4-av">AN</div><div class="d4-av">SW</div>
+          </div>
+        </div>
+      </div>
+      <div class="d4-team" style="--tc:#ef4444">
+        <div class="d4-team-top"></div>
+        <div class="d4-team-body">
+          <div class="d4-team-name">FAS Team</div>
+          <div class="d4-team-slug">/fas</div>
+          <div class="d4-team-count">👥 9 คน</div>
+          <div class="d4-avs">
+            <div class="d4-av">AC</div><div class="d4-av">KN</div><div class="d4-av d4-av-more">+6</div>
+          </div>
+        </div>
+      </div>
+      <div class="d4-team" style="--tc:#10b981">
+        <div class="d4-team-top"></div>
+        <div class="d4-team-body">
+          <div class="d4-team-name">IM Team</div>
+          <div class="d4-team-slug">/im</div>
+          <div class="d4-team-count">👥 4 คน</div>
+          <div class="d4-avs">
+            <div class="d4-av">AM</div><div class="d4-av">NP</div>
+          </div>
+        </div>
+      </div>
+      <div class="d4-team" style="--tc:#64748b">
+        <div class="d4-team-top"></div>
+        <div class="d4-team-body">
+          <div class="d4-team-name">CMT Team</div>
+          <div class="d4-team-slug">/cmt</div>
+          <div class="d4-team-count">👥 2 คน</div>
+          <div class="d4-avs">
+            <div class="d4-av">AV</div>
+          </div>
+        </div>
+      </div>
+      <div class="d4-team" style="--tc:#a855f7">
+        <div class="d4-team-top"></div>
+        <div class="d4-team-body">
+          <div class="d4-team-name">SMART</div>
+          <div class="d4-team-slug">/smart</div>
+          <div class="d4-team-count">👥 1 คน</div>
+          <div class="d4-avs">
+            <div class="d4-av">ST</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Tab switching ───────────────────────────────────────────
+const panels = document.querySelectorAll('.panel');
+const btns   = document.querySelectorAll('.tab-btn');
+
+function show(n) {
+  panels.forEach(p => p.classList.remove('active'));
+  btns.forEach(b => b.classList.remove('active'));
+  document.getElementById('p' + n).classList.add('active');
+  btns[n - 1].classList.add('active');
+  setTimeout(() => drawAll(), 60);
+}
+
+// ── SVG connector drawing ────────────────────────────────────
+function drawConnectors(svgId, mgrsId, teamsId, opts = {}) {
+  const svg    = document.getElementById(svgId);
+  const mgrsEl = document.getElementById(mgrsId);
+  const teamsEl= document.getElementById(teamsId);
+  if (!svg || !mgrsEl || !teamsEl) return;
+
+  const {
+    stroke = 'rgba(255,255,255,0.12)',
+    strokeWidth = 1,
+    bezier = false,
+    defs = '',
+  } = opts;
+
+  // Use the SVG container rect as coordinate reference
+  const ref   = svg.getBoundingClientRect();
+  const W     = ref.width  || 1000;
+  const H     = ref.height || 64;
+
+  // Manager card centers — bottom edge relative to SVG top
+  const mgrCenters = [...mgrsEl.children].map(el => {
+    const r = el.getBoundingClientRect();
+    return {
+      x: r.left + r.width  / 2 - ref.left,
+      y: r.bottom - ref.top,
+    };
+  });
+
+  // Team card centers — top edge relative to SVG top
+  const teamCenters = [...teamsEl.children].map(el => {
+    const r = el.getBoundingClientRect();
+    return {
+      x: r.left + r.width / 2 - ref.left,
+      y: r.top - ref.top,
+    };
+  });
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('width',  W);
+  svg.setAttribute('height', H);
+
+  if (!mgrCenters.length || !teamCenters.length) return;
+
+  let paths = defs;
+
+  const mgrY   = mgrCenters[0].y;          // bottom of manager cards
+  const teamY  = teamCenters[0].y;          // top of team cards
+  const midY   = mgrY + (teamY - mgrY) / 2; // halfway point
+
+  if (!bezier) {
+    // ── Elbow / right-angle style ──────────────────────────
+    const mgrX1 = mgrCenters[0].x;
+    const mgrX2 = mgrCenters[mgrCenters.length - 1].x;
+    const mgrMidX = (mgrX1 + mgrX2) / 2;
+
+    const tmX1 = teamCenters[0].x;
+    const tmX2 = teamCenters[teamCenters.length - 1].x;
+
+    // Horizontal bar across managers
+    if (mgrCenters.length > 1) {
+      paths += `<line x1="${mgrX1}" y1="${mgrY + 2}" x2="${mgrX2}" y2="${mgrY + 2}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linecap="round"/>`;
+    }
+    // Vertical trunk down to midY
+    paths += `<line x1="${mgrMidX}" y1="${mgrY + 2}" x2="${mgrMidX}" y2="${midY}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linecap="round"/>`;
+    // Horizontal rail across teams
+    if (teamCenters.length > 1) {
+      paths += `<line x1="${tmX1}" y1="${midY}" x2="${tmX2}" y2="${midY}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linecap="round"/>`;
+    }
+    // Vertical drop to each team
+    teamCenters.forEach(tc => {
+      paths += `<line x1="${tc.x}" y1="${midY}" x2="${tc.x}" y2="${tc.y - 2}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linecap="round"/>`;
+    });
+
+  } else {
+    // ── Smooth Bezier style ───────────────────────────────
+    const mgrMidX = (mgrCenters[0].x + mgrCenters[mgrCenters.length - 1].x) / 2;
+
+    // From each manager bottom → trunk midpoint
+    mgrCenters.forEach(mc => {
+      const d = `M ${mc.x} ${mc.y + 1} C ${mc.x} ${midY}, ${mgrMidX} ${mc.y + 6}, ${mgrMidX} ${midY}`;
+      paths += `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${strokeWidth}"/>`;
+    });
+    // From trunk → each team top
+    teamCenters.forEach(tc => {
+      const d = `M ${mgrMidX} ${midY} C ${mgrMidX} ${tc.y - 6}, ${tc.x} ${midY}, ${tc.x} ${tc.y - 1}`;
+      paths += `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${strokeWidth}"/>`;
+    });
+  }
+
+  svg.innerHTML = paths;
+}
+
+function drawAll() {
+  // D1 — gradient lines
+  drawConnectors('d1-svg', 'd1-mgrs', 'd1-teams', {
+    stroke: 'url(#g1)',
+    strokeWidth: 1.5,
+    defs: `<defs>
+      <linearGradient id="g1" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="rgba(242,100,25,.6)"/>
+        <stop offset="100%" stop-color="rgba(99,102,241,.3)"/>
+      </linearGradient>
+    </defs>`,
+  });
+
+  // D2 — hairline
+  drawConnectors('d2-svg', 'd2-mgrs', 'd2-teams', {
+    stroke: 'rgba(255,255,255,.08)',
+    strokeWidth: 0.75,
+  });
+
+  // D3 — gold lines
+  drawConnectors('d3-svg', 'd3-mgrs', 'd3-teams', {
+    stroke: 'rgba(201,168,76,.25)',
+    strokeWidth: 1,
+  });
+
+  // D4 — bezier curves
+  drawConnectors('d4-svg', 'd4-mgrs', 'd4-teams', {
+    stroke: 'rgba(99,102,241,.3)',
+    strokeWidth: 1.5,
+    bezier: true,
+  });
+}
+
+// Initial draw + redraw on resize
+window.addEventListener('resize', drawAll);
+drawAll();
+</script>
+</body>
+</html>

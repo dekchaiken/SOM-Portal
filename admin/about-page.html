@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit About SOM Page</title>
+  <link rel="icon" href="../favicon.ico">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/about-page/about-page.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="pencil"></i> Edit About SOM Page</div>
+        <div class="page-sub">แก้ไข Mission, Vision, Services, Contact</div>
+      </div>
+      <div class="topbar-actions" style="gap:8px">
+        <a href="../about-som.html" class="btn btn-outline btn-sm" target="_blank">
+          <i data-icon="eye"></i> Preview
+        </a>
+        <button class="btn btn-primary btn-sm" onclick="savePage()" id="save-btn">
+          <i data-icon="save"></i> Save Changes
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- Mission / Vision -->
+      <div class="ap-section">
+        <div class="ap-section-title"><i data-icon="target"></i> Mission &amp; Vision</div>
+        <div class="ap-row">
+          <div class="form-group">
+            <label class="form-label">Mission</label>
+            <textarea id="ap-mission" class="form-control" rows="4" placeholder="ทีม SOM มีหน้าที่…" style="resize:vertical"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Vision</label>
+            <textarea id="ap-vision" class="form-control" rows="4" placeholder="เราต้องการเป็น…" style="resize:vertical"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Services -->
+      <div class="ap-section">
+        <div class="ap-section-title"><i data-icon="layers"></i> Services / What We Do</div>
+        <div id="services-list"></div>
+        <button class="ap-add-btn" onclick="addService()">+ เพิ่ม Service</button>
+      </div>
+
+      <!-- Contacts -->
+      <div class="ap-section">
+        <div class="ap-section-title"><i data-icon="phone"></i> Contact Channels</div>
+        <div id="contacts-list"></div>
+        <button class="ap-add-btn" onclick="addContact()">+ เพิ่ม Contact</button>
+      </div>
+
+      <!-- Head of Tech Operations (manual, no account needed) -->
+      <div class="ap-section">
+        <div class="ap-section-title"><i data-icon="star"></i> Head of Tech Operations</div>
+        <div class="form-hint" style="margin-bottom:16px">
+          กรอกชื่อผู้บริหารสูงสุด — แสดงเป็น card พิเศษด้านบน Leadership section (ไม่ต้องมี account ในระบบ)
+          ถ้าไม่กรอกชื่อ จะไม่แสดง card นี้
+        </div>
+        <div class="ap-row">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">ชื่อ-นามสกุล <span style="color:#ef4444">*</span></label>
+            <input class="form-control" id="hop-name" placeholder="Peerawit Phuangkaeo">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">ชื่อเล่น</label>
+            <input class="form-control" id="hop-nickname" placeholder="Pete">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">ตำแหน่ง</label>
+            <input class="form-control" id="hop-position" placeholder="Head of Tech Operations">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Email</label>
+            <input class="form-control" id="hop-email" type="email" placeholder="name@ascendcorp.com">
+          </div>
+          <div class="form-group ap-row" style="margin:0;grid-column:1/-1">
+            <div>
+              <label class="form-label">Avatar URL <span style="font-weight:400;color:var(--text-muted)">(optional — URL ของรูปโปรไฟล์)</span></label>
+              <input class="form-control" id="hop-avatar" placeholder="https://...">
+            </div>
+            <div id="hop-preview" style="display:flex;align-items:center;gap:10px;padding-top:20px">
+              <!-- avatar preview populated by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Head of Tech Operations from system account (optional) -->
+      <div class="ap-section" style="display:none">
+        <div class="ap-section-title"><i data-icon="star"></i> Head — System Account (เลือกจาก super_viewer)</div>
+        <div id="head-manager-checks"></div>
+      </div>
+
+      <!-- Managers shown in Org Chart -->
+      <div class="ap-section">
+        <div class="ap-section-title"><i data-icon="shield"></i> SOM Managers</div>
+        <div class="form-hint" style="margin-bottom:12px">เลือก Manager ของ SOM ที่แสดงในหน้า About — ถ้าไม่เลือกใคร จะแสดงทุกคนที่มี role super_viewer (ยกเว้น Head)</div>
+        <div id="manager-checks"></div>
+      </div>
+
+      <!-- Org teams shown -->
+      <div class="ap-section">
+        <div class="ap-section-title"><i data-icon="git-branch"></i> ทีมที่แสดงใน Org Chart</div>
+        <div class="form-hint" style="margin-bottom:12px">เลือกทีมที่ต้องการแสดงในหน้า About</div>
+        <div id="org-team-checks"></div>
+      </div>
+
+      <!-- Team descriptions -->
+      <div class="ap-section">
+        <div class="ap-section-title"><i data-icon="file-text"></i> คำอธิบายแต่ละทีม (แสดงเมื่อกดดูทีม)</div>
+        <div id="team-descs-list"></div>
+      </div>
+
+      <!-- Team Info (KPI / Responsibilities / Contact / Tools) -->
+      <div class="ap-section">
+        <div class="ap-section-title"><i data-icon="info"></i> Team Information (KPI, Responsibilities, Contact, Tools)</div>
+        <div class="form-hint" style="margin-bottom:16px">
+          แก้ไขข้อมูลแต่ละทีมที่แสดงในหน้า About SOM Team — เลือกทีมด้านล่างเพื่อขยายดูช่องแก้ไข
+        </div>
+        <div id="team-info-accordion"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/about-page/about-page.js"></script>
+</body>
+</html>

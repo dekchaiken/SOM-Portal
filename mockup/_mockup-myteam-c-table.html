@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>My Team — Design C: Table + Sidepanel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#F26419; --orange-bg:#FFF4EE;
+  --bg:#F7F7F7; --bg-card:#FFFFFF; --bg-input:#F9F9F9;
+  --text:#1C1C1E; --text-muted:#767676;
+  --border:#E5E5E5;
+  --accent:#F26419; --accent-soft:rgba(242,100,25,.10); --accent-line:rgba(242,100,25,.35); --accent-glow:rgba(242,100,25,.20);
+  --font:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--font); font-size:12px; padding:24px 32px 80px}
+
+.page-title{font-size:18px; font-weight:800; margin:0}
+.badge-tag{display:inline-block; margin-left:8px; font-size:8.5px; font-weight:800; letter-spacing:.15em; padding:3px 8px; border-radius:4px; background:var(--accent-soft); color:var(--accent); vertical-align:middle}
+.page-sub{color:var(--text-muted); font-size:11px; margin-top:4px; margin-bottom:16px}
+
+.toolbar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:16px}
+.search{flex:1; min-width:240px; display:flex; align-items:center; gap:8px; background:var(--bg-input); border:1.5px solid var(--border); border-radius:8px; padding:8px 12px}
+.search input{flex:1; border:0; outline:0; background:transparent; font-family:var(--font); font-size:11.5px}
+.count-pill{padding:6px 10px; border-radius:6px; background:var(--accent-soft); color:var(--accent); font-size:10.5px; font-weight:700}
+
+.tbl-wrap{background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden}
+table{width:100%; border-collapse:collapse; font-size:11px}
+thead th{
+  text-align:left; font-size:8.5px; font-weight:800; text-transform:uppercase; letter-spacing:.1em;
+  color:var(--text-muted); padding:11px 14px; background:var(--bg-input); border-bottom:1px solid var(--border);
+  position:sticky; top:0;
+}
+tbody td{padding:12px 14px; border-bottom:1px solid var(--border); vertical-align:middle}
+tbody tr{cursor:pointer; transition:background .12s}
+tbody tr:hover{background:var(--accent-soft)}
+tbody tr.selected{background:var(--accent-soft); box-shadow:inset 3px 0 0 var(--accent)}
+tbody tr:last-child td{border-bottom:0}
+
+.cell-user{display:flex; align-items:center; gap:12px}
+.av{width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:#fff; flex-shrink:0; position:relative}
+.av .p{position:absolute; bottom:-1px; right:-1px; width:9px; height:9px; border-radius:50%; background:#22c55e; border:2px solid var(--bg-card)}
+.cn{font-weight:800; font-size:12px; line-height:1.2}
+.cnk{font-size:10px; color:var(--text-muted); margin-top:1px}
+.cnk .p{color:var(--accent); font-weight:700}
+
+.tag{font-size:8px; font-weight:800; padding:2.5px 7px; border-radius:3px; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap}
+.rb-admin{background:rgba(220,38,38,.12); color:#b91c1c}
+.rb-lead{background:rgba(147,51,234,.12); color:#7e22ce}
+.rb-user{background:var(--orange-bg); color:var(--orange)}
+.rb-dev{background:rgba(6,182,212,.12); color:#0891b2}
+.duty-on{background:rgba(34,197,94,.15); color:#15803d}
+.duty-off{background:var(--bg-input); color:var(--text-muted)}
+
+.mono{font-family:var(--font); color:var(--text)}
+.muted{color:var(--text-muted); font-style:italic; font-size:10.5px}
+.you-tag{font-size:7.5px; font-weight:800; letter-spacing:.15em; padding:2px 6px; border-radius:3px; background:var(--accent); color:#fff; text-transform:uppercase; margin-left:6px}
+
+/* ---- Sidepanel ---- */
+.overlay{position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:999; opacity:0; pointer-events:none; transition:opacity .2s}
+.overlay.on{opacity:1; pointer-events:auto}
+.panel{
+  position:fixed; top:0; right:0; bottom:0; width:440px; max-width:100vw; background:var(--bg-card);
+  border-left:1px solid var(--border); z-index:1000; transform:translateX(100%); transition:transform .25s cubic-bezier(.4,.0,.2,1);
+  display:flex; flex-direction:column; box-shadow:-8px 0 24px rgba(0,0,0,.1);
+}
+.panel.on{transform:translateX(0)}
+.p-head{position:relative; padding:20px 20px 16px}
+.p-head::after{content:''; position:absolute; left:20px; right:20px; bottom:0; height:1px; background:var(--border)}
+.p-close{position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:50%; border:1.5px solid var(--border); background:var(--bg-card); cursor:pointer; font-size:14px; color:var(--text-muted)}
+.p-close:hover{border-color:var(--accent-line); color:var(--accent)}
+.p-hero{display:flex; align-items:center; gap:14px; margin-top:8px}
+.p-av{width:66px; height:66px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; color:#fff; box-shadow:0 0 0 2px var(--accent-line), 0 6px 20px var(--accent-glow); position:relative}
+.p-av .p{position:absolute; bottom:2px; right:2px; width:12px; height:12px; border-radius:50%; background:#22c55e; border:2.5px solid var(--bg-card)}
+.p-hero .info .n{font-size:16px; font-weight:800}
+.p-hero .info .nk{font-size:11px; color:var(--text-muted); margin-top:2px}
+.p-hero .info .nk .p{color:var(--accent); font-weight:700}
+.p-hero .info .tags{margin-top:6px; display:flex; gap:6px}
+
+.p-body{flex:1; overflow-y:auto; padding:18px 20px 24px}
+.p-sec{margin-bottom:22px}
+.p-sec .lbl{font-size:8.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px; display:flex; align-items:center; gap:6px}
+.p-sec .lbl::before{content:''; width:14px; height:2px; background:var(--accent); border-radius:2px}
+.fld{margin-bottom:12px}
+.fld label{font-size:9.5px; font-weight:700; color:var(--text-muted); letter-spacing:.05em; text-transform:uppercase; display:block; margin-bottom:5px}
+.fld input, .fld select{
+  width:100%; padding:9px 12px; background:var(--bg-input); border:1.5px solid var(--border); border-radius:8px;
+  font-family:var(--font); font-size:11.5px; color:var(--text); outline:0; transition:all .15s;
+}
+.fld input:focus, .fld select:focus{border-color:var(--accent); background:var(--bg-card); box-shadow:0 0 0 3px var(--accent-glow)}
+.fld input[readonly]{background:var(--bg); color:var(--text-muted); cursor:not-allowed}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+
+.avatar-upload{display:flex; align-items:center; gap:12px; padding:10px; background:var(--bg-input); border:1.5px dashed var(--border); border-radius:8px; cursor:pointer}
+.avatar-upload:hover{border-color:var(--accent-line); background:var(--accent-soft)}
+.avatar-upload .u-ic{width:40px; height:40px; border-radius:8px; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:800}
+.avatar-upload .u-txt .t{font-size:11px; font-weight:700}
+.avatar-upload .u-txt .s{font-size:9.5px; color:var(--text-muted); margin-top:2px}
+
+.p-foot{border-top:1px solid var(--border); padding:14px 20px; display:flex; gap:10px}
+.btn{padding:10px 14px; border-radius:8px; border:1.5px solid var(--border); background:var(--bg-card); font-family:var(--font); font-size:11px; font-weight:800; cursor:pointer; transition:all .15s; letter-spacing:.03em}
+.btn.primary{background:var(--accent); color:#fff; border-color:var(--accent); flex:1}
+.btn.primary:hover{background:#d9550f}
+.btn.ghost:hover{border-color:var(--accent-line); color:var(--accent)}
+
+.hint{margin-top:20px; padding:10px 14px; border-radius:10px; background:var(--bg-card); border:1px dashed var(--border); font-size:10.5px; color:var(--text-muted); display:flex; gap:14px; flex-wrap:wrap}
+.hint b{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<h1 class="page-title">My Team <span class="badge-tag">Design C · Table + Sidepanel</span></h1>
+<div class="page-sub">table view + slide-in edit panel · เร็ว compact เหมาะกับ admin ที่ต้อง review หลายคน · คลิก row เพื่อดู/แก้</div>
+
+<div class="toolbar">
+  <div class="search"><span style="color:var(--text-muted)">⌕</span><input placeholder="ค้นหาชื่อ / nickname / เบอร์ ..."/></div>
+  <div class="count-pill">15 คนในตารางเวร</div>
+  <button class="btn primary" style="padding:8px 14px">+ Export CSV</button>
+</div>
+
+<div class="tbl-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:26%">User</th>
+        <th style="width:11%">Role</th>
+        <th style="width:19%">Email</th>
+        <th style="width:12%">Phone</th>
+        <th style="width:12%">TMN.ID</th>
+        <th style="width:12%">Internet</th>
+        <th style="width:8%">Duty</th>
+      </tr>
+    </thead>
+    <tbody id="tb"></tbody>
+  </table>
+</div>
+
+<div class="hint">
+  <b>UX note:</b>
+  <span>· <b>compact rows</b> เหมาะเวลาข้อมูลเยอะและ scan หากันเร็ว</span>
+  <span>· คลิก row → <b>Sidepanel</b> จาก edit ทางขวา (avatar upload, form ครบ)</span>
+  <span>· panel เปิดพร้อม state: <b>readonly</b> ถ้า record ไม่ใช่ของตัวเอง (user) / editable ทุกอย่างถ้า admin</span>
+  <span>· double-click row เปิด edit ตรงๆ ก็ได้</span>
+</div>
+
+<!-- Sidepanel -->
+<div class="overlay" id="overlay"></div>
+<div class="panel" id="panel">
+  <div class="p-head">
+    <button class="p-close" id="closeBtn">✕</button>
+    <div class="p-hero">
+      <div class="p-av" id="pav" style="background:#F26419">ชุม<span class="p"></span></div>
+      <div class="info">
+        <div class="n" id="pnm">Chumpon Khongmanee</div>
+        <div class="nk">"<span class="p" id="pnk">ชุม</span>"</div>
+        <div class="tags"><span class="tag rb-admin">SM Admin</span><span class="tag duty-on">On duty</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="p-body">
+
+    <div class="p-sec">
+      <div class="lbl">Profile Photo</div>
+      <div class="avatar-upload">
+        <div class="u-ic">⬆</div>
+        <div class="u-txt">
+          <div class="t">อัพโหลดรูปใหม่</div>
+          <div class="s">JPG/PNG · แนะนำ 400×400 · จะไปอัพเดต profile.html ด้วย</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-sec">
+      <div class="lbl">Identity <span style="color:var(--text-muted); font-weight:600; text-transform:none; letter-spacing:0; margin-left:6px">— แก้ได้เฉพาะ admin</span></div>
+      <div class="fld"><label>Full name</label><input value="Chumpon Khongmanee" readonly></div>
+      <div class="two">
+        <div class="fld"><label>Nickname</label><input value="ชุม"></div>
+        <div class="fld"><label>Role</label><select><option>SM Admin</option><option>SM Lead</option><option>SM User</option></select></div>
+      </div>
+    </div>
+
+    <div class="p-sec">
+      <div class="lbl">Contact <span style="color:var(--accent); font-weight:600; text-transform:none; letter-spacing:0; margin-left:6px">— editable</span></div>
+      <div class="fld"><label>Email</label><input value="chumpon.kho@ascendcorp.com" readonly></div>
+      <div class="fld"><label>Phone (มือถือ)</label><input value="081-234-5678" placeholder="เช่น 081-234-5678"></div>
+      <div class="fld"><label>TMN.ID / เบอร์ TrueMoney Wallet</label><input value="0812345678" placeholder="เช่น 0812345678"></div>
+    </div>
+
+    <div class="p-sec">
+      <div class="lbl">Internet Network</div>
+      <div class="fld"><label>เน็ตบ้าน (ISP)</label><input value="AIS Fiber 500/500" placeholder="เช่น AIS Fiber 500/500"></div>
+      <div class="fld"><label>เครือข่ายมือถือ</label><input value="AIS 5G" placeholder="เช่น AIS 5G / True 5G / DTAC"></div>
+    </div>
+  </div>
+  <div class="p-foot">
+    <button class="btn ghost" id="cancelBtn">Cancel</button>
+    <button class="btn primary">Save changes</button>
+  </div>
+</div>
+
+<script>
+const TEAM = [
+  {n:'Chumpon Khongmanee', nick:'ชุม',   role:'admin', email:'chumpon.kho@ascendcorp.com',  phone:'081-234-5678', tmn:'0812345678', net:'AIS Fiber 500 · AIS 5G', duty:'on',  me:false},
+  {n:'Warapon Leadlum',    nick:'เคน',   role:'dev',   email:'warapon.lea@ascendcorp.com',   phone:'089-111-2233', tmn:'0891112233', net:'True Gigabit · True 5G',  duty:'off', me:true},
+  {n:'Sakonwan Thoongkam', nick:'ออย',   role:'user',  email:'sakonwan.tho@ascendcorp.com',  phone:'080-345-6789', tmn:'0803456789', net:'3BB 300 · AIS',           duty:'on',  me:false},
+  {n:'Kanokwan Sri',       nick:'มิ้น',  role:'lead',  email:'kanokwan.sri@ascendcorp.com',  phone:'095-555-6677', tmn:'0955556677', net:'AIS Fiber 1000 · AIS 5G', duty:'off', me:false},
+  {n:'Pichaya Wongsakul',  nick:'ปุ๋ย',  role:'user',  email:'pichaya.won@ascendcorp.com',   phone:'',              tmn:'0821112222', net:'— · True',                duty:'off', me:false},
+  {n:'Thanaporn Boonprom', nick:'แนน',   role:'user',  email:'thanaporn.boo@ascendcorp.com', phone:'088-999-1122', tmn:'0889991122', net:'3BB 500 · DTAC',          duty:'on',  me:false},
+  {n:'Surachai Choochart', nick:'ต้น',   role:'user',  email:'surachai.cho@ascendcorp.com',  phone:'092-333-4455', tmn:'',            net:'True Gigabit · True',     duty:'off', me:false},
+  {n:'Nattapong Rakwong',  nick:'ปอนด์', role:'user',  email:'nattapong.rak@ascendcorp.com', phone:'084-777-8899', tmn:'0847778899', net:'AIS Fiber · AIS',         duty:'off', me:false},
+  {n:'Nithinan Petch',     nick:'นก',    role:'user',  email:'nithinan.pet@ascendcorp.com',  phone:'086-222-3344', tmn:'0862223344', net:'— · —',                   duty:'off', me:false},
+  {n:'Preecha Wattana',    nick:'ปรี',   role:'user',  email:'preecha.wat@ascendcorp.com',   phone:'090-444-5566', tmn:'0904445566', net:'True Gigabit · True 5G',  duty:'off', me:false},
+  {n:'Somchai Piyathong',  nick:'สม',    role:'user',  email:'somchai.piy@ascendcorp.com',   phone:'081-888-2211', tmn:'0818882211', net:'AIS Fiber · AIS',         duty:'off', me:false},
+  {n:'Wanida Kongkaew',    nick:'หวัน',  role:'user',  email:'wanida.kon@ascendcorp.com',    phone:'',              tmn:'',            net:'— · —',                   duty:'off', me:false},
+  {n:'Kittipong Manee',    nick:'กิต',   role:'user',  email:'kittipong.man@ascendcorp.com', phone:'083-121-3434', tmn:'0831213434', net:'3BB 300 · True',          duty:'on',  me:false},
+  {n:'Rungrudee Chomchai', nick:'รุ่ง',  role:'user',  email:'rungrudee.cho@ascendcorp.com', phone:'087-565-7878', tmn:'0875657878', net:'AIS Fiber 500 · AIS',     duty:'off', me:false},
+  {n:'Watchara Suksri',    nick:'อาร์',  role:'admin', email:'watchara.suk@ascendcorp.com',  phone:'081-987-6543', tmn:'0819876543', net:'True Gigabit · True 5G',  duty:'on',  me:false},
+];
+const roleMap = {admin:['rb-admin','Admin'], lead:['rb-lead','Lead'], user:['rb-user','User'], dev:['rb-dev','Dev']};
+const bgs = {admin:'#B91C1C', lead:'#7E22CE', user:'#F26419', dev:'#0891B2'};
+
+const tb = document.getElementById('tb');
+TEAM.forEach((m,i)=>{
+  const [rcls, rlbl] = roleMap[m.role];
+  const bg = bgs[m.role];
+  tb.insertAdjacentHTML('beforeend', `
+    <tr onclick="openPanel(${i})">
+      <td>
+        <div class="cell-user">
+          <div class="av" style="background:${bg}">${m.nick}<div class="p"></div></div>
+          <div>
+            <div class="cn">${m.n}${m.me?'<span class="you-tag">You</span>':''}</div>
+            <div class="cnk"><span class="p">"${m.nick}"</span></div>
+          </div>
+        </div>
+      </td>
+      <td><span class="tag ${rcls}">${rlbl}</span></td>
+      <td class="mono">${m.email}</td>
+      <td class="mono ${m.phone?'':'muted'}">${m.phone || '— ยังไม่ระบุ —'}</td>
+      <td class="mono ${m.tmn?'':'muted'}">${m.tmn || '— ยังไม่ระบุ —'}</td>
+      <td class="mono">${m.net}</td>
+      <td><span class="tag ${m.duty==='on'?'duty-on':'duty-off'}">${m.duty==='on'?'ON':'OFF'}</span></td>
+    </tr>
+  `);
+});
+
+const overlay = document.getElementById('overlay');
+const panel = document.getElementById('panel');
+function openPanel(i){
+  const m = TEAM[i];
+  const bg = bgs[m.role];
+  document.getElementById('pav').style.background = bg;
+  document.getElementById('pav').firstChild.textContent = m.nick;
+  document.getElementById('pnm').textContent = m.n;
+  document.getElementById('pnk').textContent = m.nick;
+  document.querySelectorAll('tbody tr').forEach((t,ix)=>t.classList.toggle('selected', ix===i));
+  overlay.classList.add('on');
+  panel.classList.add('on');
+}
+function close(){ overlay.classList.remove('on'); panel.classList.remove('on'); document.querySelectorAll('tbody tr').forEach(t=>t.classList.remove('selected')); }
+document.getElementById('closeBtn').onclick = close;
+document.getElementById('cancelBtn').onclick = close;
+overlay.onclick = close;
+</script>
+</body>
+</html>

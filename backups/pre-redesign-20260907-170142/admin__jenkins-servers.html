@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jenkins Servers — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .srv-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .srv-table th {
+      text-align:left; padding:10px 12px; background:var(--sidebar-bg);
+      color:var(--text-muted); font-weight:600; border-bottom:1px solid var(--border);
+    }
+    .srv-table td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    .srv-table tr:last-child td { border-bottom:none; }
+    .srv-table tr:hover td { background:var(--bg); }
+
+    .mode-badge {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700;
+    }
+    .mode-token  { background:rgba(22,163,74,.1);  color:#16a34a; border:1px solid rgba(22,163,74,.2); }
+    .mode-cookie { background:rgba(217,119,6,.1);  color:#d97706; border:1px solid rgba(217,119,6,.2); }
+
+    .url-cell { max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-muted); font-size:11px; }
+
+    /* Toggle */
+    .toggle { position:relative;width:32px;height:18px;background:var(--border);border-radius:20px;cursor:pointer;transition:background .2s;flex-shrink:0; }
+    .toggle.on { background:var(--orange); }
+    .toggle::after { content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2); }
+    .toggle.on::after { left:16px; }
+
+    /* Drag */
+    .drag-handle { cursor:grab;color:var(--text-muted);font-size:14px;padding:0 4px;user-select:none; }
+    .drag-handle:active { cursor:grabbing; }
+    tr.dragging { opacity:.4; }
+    tr.drag-over td { border-top:2px solid var(--orange); }
+
+    /* Test status */
+    .test-status { font-size:10px; font-weight:600; white-space:nowrap; }
+    .test-ok   { color:#16a34a; }
+    .test-fail { color:#dc2626; }
+    .test-spin { color:var(--text-muted); }
+
+    /* Modal */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1100; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex !important; opacity:1 !important; visibility:visible !important; }
+    .modal-box { background:#fff; border-radius:var(--radius-lg); width:540px; max-width:95vw; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.18); }
+    .modal-header { padding:18px 20px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .modal-title  { font-size:14px; font-weight:700; }
+    .modal-close  { background:none; border:none; font-size:18px; cursor:pointer; color:var(--text-muted); }
+    .modal-body   { padding:20px; overflow-y:auto; flex:1; }
+    .modal-footer { padding:14px 20px; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
+
+    .form-row   { margin-bottom:14px; }
+    .form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+    .form-label { display:block; font-size:11px; font-weight:600; color:var(--text-muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.5px; }
+    .form-input, .form-select { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-family:var(--font); font-size:12px; background:var(--bg); color:var(--text); box-sizing:border-box; transition:border-color .15s; }
+    .form-input:focus, .form-select:focus { outline:none; border-color:var(--orange); }
+    .form-textarea { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-family:var(--font); font-size:11px; background:var(--bg); color:var(--text); box-sizing:border-box; resize:vertical; min-height:72px; line-height:1.6; }
+    .form-textarea:focus { outline:none; border-color:var(--orange); }
+    .hint { font-size:10px; color:var(--text-muted); margin-top:3px; }
+    .divider { border:none; border-top:1px solid var(--border); margin:16px 0; }
+
+    /* Auth mode selector */
+    .mode-selector { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .mode-opt { border:2px solid var(--border); border-radius:10px; padding:10px 12px; cursor:pointer; transition:all .15s; position:relative; }
+    .mode-opt.selected { border-color:var(--orange); background:rgba(242,100,25,.04); }
+    .mode-opt-check { position:absolute; top:8px; right:8px; width:14px; height:14px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:7px; color:transparent; transition:all .15s; }
+    .mode-opt.selected .mode-opt-check { border-color:var(--orange); background:var(--orange); color:#fff; }
+    .mode-opt-icon  { font-size:16px; margin-bottom:3px; }
+    .mode-opt-label { font-size:12px; font-weight:700; }
+    .mode-opt-desc  { font-size:10px; color:var(--text-muted); margin-top:1px; }
+
+    .info-bar { display:flex; align-items:flex-start; gap:8px; padding:10px 14px; background:rgba(217,119,6,.05); border:1px solid rgba(217,119,6,.2); border-radius:10px; margin-bottom:16px; font-size:11px; color:#92400e; line-height:1.6; }
+    .empty-table { text-align:center; padding:40px; color:var(--text-muted); font-size:12px; }
+
+    .action-btn-group { display:flex; gap:6px; flex-wrap:wrap; }
+
+    /* Rules modal */
+    .rule-row {
+      display:flex; align-items:flex-start; gap:8px;
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:7px; padding:8px 10px;
+    }
+    .rule-type-badge {
+      display:inline-flex; align-items:center; padding:2px 7px;
+      border-radius:4px; font-size:10px; font-weight:700; flex-shrink:0; margin-top:1px;
+    }
+    .rule-type-ignore { background:#fee2e2; color:#dc2626; }
+    .rule-type-remark { background:rgba(37,99,235,.1); color:#2563eb; }
+    .rule-match-contains {
+      font-size:9px; padding:1px 5px; border-radius:3px;
+      background:rgba(217,119,6,.1); color:#d97706;
+    }
+    .form-textarea {
+      width:100%; padding:8px 10px; border:1px solid var(--border);
+      border-radius:var(--radius); font-family:var(--font); font-size:11px;
+      background:var(--bg); color:var(--text); box-sizing:border-box;
+      resize:vertical; min-height:80px; line-height:1.6;
+    }
+    .form-textarea:focus { outline:none; border-color:var(--orange); }
+
+    /* Job autocomplete */
+    .ac-wrap { position:relative; }
+    .ac-dropdown {
+      display:none; position:absolute; top:calc(100% + 3px); left:0; right:0;
+      background:#fff; border:1px solid var(--border); border-radius:8px;
+      box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:2000;
+      max-height:220px; overflow-y:auto; font-size:11px;
+    }
+    .ac-dropdown.open { display:block; }
+    .ac-item {
+      padding:7px 12px; cursor:pointer; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:8px; line-height:1.4;
+    }
+    .ac-item:last-child { border-bottom:none; }
+    .ac-item:hover, .ac-item.focused { background:rgba(242,100,25,.06); }
+    .ac-item mark { background:rgba(242,100,25,.22); color:var(--orange); border-radius:2px; font-weight:700; padding:0 1px; }
+    .ac-item-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .ac-item-folder { font-size:9px; color:var(--text-muted); flex-shrink:0; }
+    .ac-status { padding:8px 12px; font-size:11px; color:var(--text-muted); text-align:center; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">⊞ Jenkins Servers</div>
+        <div class="page-sub">จัดการ Jenkins credentials — token &amp; session cookie</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" data-action="add" onclick="openCreateModal()">+ Add Server</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark">⊞</div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Jenkins Servers</h1>
+          <p>จัดการ Jenkins credentials — API token &amp; session cookie · เก็บใน <code>data/jenkins_servers.json</code> ไม่ expose</p>
+        </div>
+      </section>
+
+      <div class="info-bar">
+        <span style="font-size:15px"><i data-icon="alert-triangle"></i></span>
+        <span>
+          Credentials เก็บใน <code>data/jenkins_servers.json</code> (ไม่ถูก expose ทาง browser) &nbsp;·&nbsp;
+          สำหรับ <strong>Cookie mode</strong>: อัปเดต <code>JSESSIONID</code> ใหม่จาก DevTools เมื่อ session หมดอายุ
+        </span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">⊞ All Jenkins Servers</span>
+          <span class="badge badge-gray" id="srv-count">—</span>
+        </div>
+        <div class="card-body" style="padding:0" id="table-container">
+          <div data-skel="table" data-rows="5"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══ Create / Edit Modal ═══ -->
+<div class="modal-overlay" id="modal-srv">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Add Jenkins Server</span>
+      <button class="modal-close" onclick="closeModal('modal-srv')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Basic info -->
+      <div class="form-row-2">
+        <div>
+          <label class="form-label">Display Name *</label>
+          <input class="form-input" id="f-display" type="text" placeholder="เช่น TMN-EKS, NANO-EKS">
+        </div>
+        <div>
+          <label class="form-label">Order</label>
+          <input class="form-input" id="f-order" type="number" min="1" placeholder="Auto">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Base URL *</label>
+        <input class="form-input" id="f-base-url" type="url" placeholder="https://jenkins.example.com">
+        <div class="hint">ไม่ต้องมี trailing slash — จะถูก trim อัตโนมัติ</div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Auth mode -->
+      <div class="form-row">
+        <label class="form-label">Auth Mode *</label>
+        <div class="mode-selector">
+          <div class="mode-opt selected" id="mode-opt-token" onclick="setAuthMode('token')">
+            <div class="mode-opt-check"><i data-icon="check"></i></div>
+            <div class="mode-opt-icon"><i data-icon="key"></i></div>
+            <div class="mode-opt-label">Token</div>
+            <div class="mode-opt-desc">API Token — มั่นคง ไม่หมดอายุ</div>
+          </div>
+          <div class="mode-opt" id="mode-opt-cookie" onclick="setAuthMode('cookie')">
+            <div class="mode-opt-check"><i data-icon="check"></i></div>
+            <div class="mode-opt-icon">🍪</div>
+            <div class="mode-opt-label">Cookie</div>
+            <div class="mode-opt-desc">JSESSIONID — SSO/Proxy Jenkins, หมดอายุได้</div>
+          </div>
+        </div>
+        <input type="hidden" id="f-auth-mode" value="token">
+      </div>
+
+      <hr class="divider">
+
+      <!-- Credentials -->
+      <div class="form-row-2">
+        <div>
+          <label class="form-label">Username</label>
+          <input class="form-input" id="f-auth-user" type="text" placeholder="เช่น warapon.lea">
+        </div>
+        <div>
+          <label class="form-label" id="token-label">API Token</label>
+          <input class="form-input" id="f-auth-token" type="text" placeholder="Jenkins API token">
+        </div>
+      </div>
+
+      <!-- Cookie area (visible when cookie mode) -->
+      <div class="form-row" id="cookie-row">
+        <label class="form-label">Cookie String <span style="font-weight:400;color:#d97706">(JSESSIONID อาจหมดอายุ)</span></label>
+        <textarea class="form-textarea" id="f-auth-cookie" placeholder="jenkins-timestamper-offset=-25200000; JSESSIONID.xxxx=nodeXXX; ..."></textarea>
+        <div class="hint">วาง cookie string จาก DevTools → Application → Cookies ทั้งบรรทัด</div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- IP Override (bypass DNS via CURLOPT_RESOLVE) -->
+      <div class="form-row">
+        <label class="form-label">IP Override <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+        <input class="form-input" id="f-ip-override" type="text" placeholder="เช่น 10.164.100.20 — เว้นว่าง = ใช้ DNS ตามปกติ">
+        <div class="hint">
+          ใช้เมื่อ SOM server resolve DNS ของ Jenkins ไม่ได้ (เช่นหลัง DRP). กรอก IP แล้ว cURL จะข้าม DNS ไปหา IP นี้ตรงๆ<br>
+          หา IP ได้จาก terminal บนเครื่องที่เข้า Jenkins ได้: <code>nslookup &lt;hostname จาก Base URL&gt;</code>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Status -->
+      <div class="form-row">
+        <label class="form-label">สถานะ</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+          <div class="toggle on" id="f-enabled-toggle" onclick="toggleEnabled()"></div>
+          <span id="f-enabled-label" style="font-size:12px">เปิดใช้งาน</span>
+        </div>
+        <input type="hidden" id="f-enabled" value="true">
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-srv')">Cancel</button>
+      <button class="btn btn-primary" id="modal-save-btn" data-action="write" onclick="saveServer()">Save Server</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Delete Confirm ═══ -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-header">
+      <span class="modal-title" style="color:#dc2626">Delete Server</span>
+      <button class="modal-close" onclick="closeModal('modal-delete')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text);margin:0">ต้องการลบ <strong id="delete-srv-name"></strong> ใช่ไหม?</p>
+      <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0">Batch Monitor จะไม่แสดง server นี้อีกต่อไป</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-delete')">Cancel</button>
+      <button class="btn" style="background:#dc2626;color:#fff" data-action="delete" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Job Rules Modal ═══ -->
+<div class="modal-overlay" id="modal-rules">
+  <div class="modal-box" style="width:680px">
+    <div class="modal-header">
+      <span class="modal-title" id="rules-modal-title"><i data-icon="clipboard"></i> Job Rules</span>
+      <button class="modal-close" onclick="closeModal('modal-rules')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" style="padding:0;display:flex;flex-direction:column;max-height:calc(90vh - 120px)">
+
+      <!-- Info -->
+      <div style="padding:9px 18px;background:rgba(242,100,25,.04);border-bottom:1px solid var(--border);font-size:11px;color:var(--text-muted);flex-shrink:0">
+        <strong style="color:#dc2626">ignore</strong> = ซ่อน job จาก Batch Monitor + Report &nbsp;·&nbsp;
+        <strong style="color:#2563eb">remark</strong> = แสดงใน Report พร้อม pre-fill remark อัตโนมัติ
+      </div>
+
+      <!-- Rules list (scrollable) -->
+      <div id="rules-list" style="flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:6px;min-height:80px"></div>
+
+      <!-- Add Rule form -->
+      <div style="padding:14px 18px;border-top:1px solid var(--border);background:var(--bg);flex-shrink:0" data-read-hide>
+        <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">+ เพิ่ม Rule</div>
+        <div style="display:grid;grid-template-columns:1fr 90px 90px;gap:8px;margin-bottom:7px">
+          <div class="ac-wrap">
+            <input class="form-input" id="r-pattern" type="text" placeholder="ชื่อ Job — พิมเพื่อค้นหาจาก Jenkins…"
+              autocomplete="off" oninput="onPatternInput()" onkeydown="onPatternKeydown(event)" onfocus="onPatternInput()">
+            <div class="ac-dropdown" id="ac-dropdown"></div>
+          </div>
+          <select class="form-select" id="r-match">
+            <option value="exact">Exact</option>
+            <option value="contains">Contains</option>
+          </select>
+          <select class="form-select" id="r-type" onchange="onRuleTypeChange()">
+            <option value="ignore">ignore</option>
+            <option value="remark">remark</option>
+            <option value="description">description</option>
+          </select>
+        </div>
+        <div id="r-remark-row" style="display:none;margin-bottom:7px">
+          <input class="form-input" id="r-remark" type="text" placeholder="Text">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" style="font-size:11px" onclick="toggleBulkImport()"><i data-icon="clipboard"></i> Bulk Import</button>
+          <button class="btn btn-primary" style="font-size:11px" onclick="rulesAddRule()">+ Add Rule</button>
+        </div>
+      </div>
+
+      <!-- Bulk Import (hidden by default) -->
+      <div id="bulk-area" style="display:none;padding:14px 18px;border-top:1px solid var(--border);background:var(--bg);flex-shrink:0" data-read-hide>
+        <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Bulk Import — วาง Job names (1 บรรทัด / 1 job)</div>
+        <textarea class="form-textarea" id="bulk-patterns" placeholder="job-name-1&#10;job-name-2&#10;job-name-3"></textarea>
+        <div style="display:grid;grid-template-columns:1fr 90px;gap:8px;margin-top:8px">
+          <input class="form-input" id="bulk-remark" type="text" placeholder="Remark text (เว้นว่างถ้า type = ignore)">
+          <select class="form-select" id="bulk-type">
+            <option value="ignore">ignore</option>
+            <option value="remark">remark</option>
+            <option value="description">description</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-ghost" style="font-size:11px" onclick="toggleBulkImport()">ยกเลิก</button>
+          <button class="btn btn-primary" style="font-size:11px" onclick="rulesBulkImport()"><i data-icon="arrow-down"></i> Import All</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span id="rules-count-label" style="font-size:11px;color:var(--text-muted)"></span>
+        <span id="rules-cache-status" style="font-size:10px;color:var(--text-muted)"></span>
+      </div>
+      <button class="btn btn-ghost" onclick="closeModal('modal-rules')">Done</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+  if (!Auth.requireAdmin()) {}
+  Layout.render('admin-jenkins');
+  // Toggle body[data-page-mode="read"] so add/edit/delete write buttons hide
+  // for teams that super_admin marked jenkins-servers as read-only.
+  if (typeof Auth !== 'undefined' && Auth.applyPageMode) Auth.applyPageMode('jenkins-servers');
+
+  let allServers = [];
+  let editingId  = null;
+  let deletingId = null;
+
+  // ─── Load ───────────────────────────────────────────────────────
+  async function loadServers() {
+    const container = document.getElementById('table-container');
+    container.innerHTML = Skeleton.table(5);
+
+    const res = await API.jenkinsServers.list();
+    if (!res?.ok) { container.innerHTML = '<div class="empty-table">โหลดข้อมูลไม่สำเร็จ</div>'; return; }
+
+    allServers = res.data.data || [];
+    document.getElementById('srv-count').textContent = `${allServers.length} servers`;
+
+    if (!allServers.length) {
+      container.innerHTML = '<div class="empty-table">ยังไม่มี Server — กด "+ Add Server"</div>';
+      return;
+    }
+
+    container.innerHTML = `
+      <table class="srv-table">
+        <thead><tr>
+          <th style="width:32px"></th>
+          <th>ชื่อ</th>
+          <th>Base URL</th>
+          <th style="width:90px">Auth Mode</th>
+          <th style="width:100px">Username</th>
+          <th style="width:70px">Status</th>
+          <th style="width:140px">Actions</th>
+        </tr></thead>
+        <tbody id="srv-tbody">
+          ${allServers.map(renderRow).join('')}
+        </tbody>
+      </table>`;
+
+    initDragSort();
+
+    // Event delegation
+    container.addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      if (btn.dataset.action === 'edit')   openEditModal(btn.dataset.id);
+      if (btn.dataset.action === 'delete') openDeleteModal(btn.dataset.id, btn.dataset.name);
+      if (btn.dataset.action === 'toggle') quickToggle(btn.dataset.id);
+      if (btn.dataset.action === 'test')   testConnection(btn.dataset.id, btn);
+      if (btn.dataset.action === 'rules')  openRulesModal(btn.dataset.id);
+    });
+  }
+
+  function renderRow(s) {
+    const modeHtml = s.auth_mode === 'cookie'
+      ? '<span class="mode-badge mode-cookie">🍪 Cookie</span>'
+      : '<span class="mode-badge mode-token"><i data-icon="key"></i> Token</span>';
+    const rulesCnt    = (s.job_rules || []).length;
+    const ignoreCnt   = (s.job_rules || []).filter(r => r.type === 'ignore').length;
+    const remarkCnt   = (s.job_rules || []).filter(r => r.type === 'remark').length;
+    const descCnt     = (s.job_rules || []).filter(r => r.type === 'description').length;
+    const rulesBadge  = rulesCnt > 0
+      ? `<span style="margin-left:4px;font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(37,99,235,.1);color:#2563eb">${ignoreCnt}<i data-icon="ban"></i> ${remarkCnt}<i data-icon="edit"></i>${descCnt ? ` ${descCnt}💬` : ''}</span>`
+      : '';
+    return `<tr data-id="${escHtml(s.id)}" draggable="true">
+      <td><span class="drag-handle" title="ลากเรียงลำดับ">⠿</span></td>
+      <td>
+        <div style="font-weight:600">${escHtml(s.display)}</div>
+        ${s.auth_mode === 'cookie' ? '<div style="font-size:10px;color:#d97706;margin-top:1px">⚠ Cookie expires periodically</div>' : ''}
+      </td>
+      <td>
+        <div class="url-cell" title="${escHtml(s.base_url)}">${escHtml(s.base_url)}</div>
+        ${s.ip_override ? `<div style="font-size:10px;color:#0891b2;margin-top:2px" title="Bypassing DNS via CURLOPT_RESOLVE">→ ${escHtml(s.ip_override)}</div>` : ''}
+      </td>
+      <td>${modeHtml}</td>
+      <td style="font-size:11px;color:var(--text-muted)">${escHtml(s.auth_user || '—')}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="toggle ${s.enabled !== false ? 'on' : ''}" data-action="toggle" data-read-hide data-id="${escHtml(s.id)}"></div>
+          <span style="font-size:10px;color:var(--text-muted)">${s.enabled !== false ? 'On' : 'Off'}</span>
+        </div>
+      </td>
+      <td>
+        <div class="action-btn-group">
+          <button class="btn btn-ghost" style="padding:4px 9px;font-size:10px" data-action="rules" data-id="${escHtml(s.id)}" title="จัดการ Job Rules"><i data-icon="clipboard"></i>${rulesBadge}</button>
+          <button class="btn btn-ghost" style="padding:4px 9px;font-size:10px" data-action="test"  data-id="${escHtml(s.id)}" title="Test Connection"><i data-icon="zap"></i> Test</button>
+          <button class="btn btn-ghost" style="padding:4px 9px;font-size:11px" data-action="edit"  data-id="${escHtml(s.id)}">Edit</button>
+          <button class="btn" style="padding:4px 9px;font-size:11px;background:#fee2e2;color:#dc2626;border:none" data-action="delete" data-id="${escHtml(s.id)}" data-name="${escHtml(s.display)}">Del</button>
+        </div>
+        <span class="test-status" id="test-${escHtml(s.id)}"></span>
+      </td>
+    </tr>`;
+  }
+
+  // ─── Test connection ─────────────────────────────────────────────
+  async function testConnection(id, btn) {
+    const statusEl = document.getElementById(`test-${id}`);
+    btn.disabled = true;
+    if (statusEl) { statusEl.className = 'test-status test-spin'; statusEl.textContent = ' Testing...'; }
+
+    const res = await API.jenkins.jobs(id, 'jobs[name]');
+
+    btn.disabled = false;
+    if (!statusEl) return;
+
+    if (res?.ok) {
+      const count = res.data.data?.jobs?.length ?? 0;
+      statusEl.className = 'test-status test-ok';
+      statusEl.innerHTML = ` <i data-icon="check"></i> OK (${count} jobs)`;
+    } else {
+      const msg = res?.data?.message || 'Failed';
+      statusEl.className = 'test-status test-fail';
+      statusEl.innerHTML = ` <i data-icon="x"></i> ${msg}`;
+    }
+    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 8000);
+  }
+
+  // ─── Quick toggle ────────────────────────────────────────────────
+  async function quickToggle(id) {
+    const s = allServers.find(x => x.id === id);
+    if (!s) return;
+    const next = s.enabled === false;
+    const res  = await API.jenkinsServers.update(id, { enabled: next });
+    if (!res?.ok) { Toast.error('อัปเดทไม่สำเร็จ'); return; }
+    s.enabled = next;
+    const row = document.querySelector(`tr[data-id="${CSS.escape(id)}"]`);
+    if (row) row.outerHTML = renderRow(s);
+    initDragSort();
+    Toast.success(next ? 'เปิดใช้งานแล้ว' : 'ปิดใช้งานแล้ว');
+  }
+
+  // ─── Drag sort ───────────────────────────────────────────────────
+  function initDragSort() {
+    const tbody = document.getElementById('srv-tbody');
+    if (!tbody) return;
+    let dragging = null;
+    tbody.querySelectorAll('tr[draggable]').forEach(row => {
+      row.addEventListener('dragstart', () => { dragging = row; setTimeout(() => row.classList.add('dragging'), 0); });
+      row.addEventListener('dragend', async () => {
+        row.classList.remove('dragging');
+        const rows = [...tbody.querySelectorAll('tr[data-id]')];
+        const ups  = rows.map((r, i) => {
+          const s = allServers.find(x => x.id === r.dataset.id);
+          if (s) s.order = i + 1;
+          return API.jenkinsServers.update(r.dataset.id, { order: i + 1 });
+        });
+        await Promise.all(ups);
+        dragging = null;
+        
+        // Re-render table to preserve data and event handlers
+        allServers.sort((a, b) => (a.order || 0) - (b.order || 0));
+        tbody.innerHTML = allServers.map(renderRow).join('');
+        initDragSort();
+      });
+      row.addEventListener('dragover', e => { e.preventDefault(); if (dragging && dragging !== row) { tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over')); row.classList.add('drag-over'); } });
+      row.addEventListener('drop', e => { e.preventDefault(); row.classList.remove('drag-over'); if (dragging && dragging !== row) { [...tbody.querySelectorAll('tr')].indexOf(dragging) < [...tbody.querySelectorAll('tr')].indexOf(row) ? row.after(dragging) : row.before(dragging); } });
+    });
+  }
+
+  // ─── Auth mode UI ────────────────────────────────────────────────
+  function setAuthMode(mode) {
+    document.getElementById('f-auth-mode').value = mode;
+    document.getElementById('mode-opt-token').classList.toggle('selected',  mode === 'token');
+    document.getElementById('mode-opt-cookie').classList.toggle('selected', mode === 'cookie');
+    document.getElementById('cookie-row').style.display = mode === 'cookie' ? '' : 'none';
+    document.getElementById('token-label').textContent  = mode === 'cookie' ? 'API Token (optional)' : 'API Token';
+  }
+
+  // ─── Modal helpers ───────────────────────────────────────────────
+  function openModal(id)  { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  function toggleEnabled() {
+    const cur  = document.getElementById('f-enabled').value === 'true';
+    const next = !cur;
+    document.getElementById('f-enabled').value = String(next);
+    document.getElementById('f-enabled-toggle').classList.toggle('on', next);
+    document.getElementById('f-enabled-label').textContent = next ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+  }
+
+  function resetForm() {
+    ['f-display','f-base-url','f-auth-user','f-auth-token','f-ip-override','f-order'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('f-auth-cookie').value = '';
+    document.getElementById('f-enabled').value = 'true';
+    document.getElementById('f-enabled-toggle').classList.add('on');
+    document.getElementById('f-enabled-label').textContent = 'เปิดใช้งาน';
+    setAuthMode('token');
+  }
+
+  function openCreateModal() {
+    editingId = null;
+    resetForm();
+    document.getElementById('modal-title').textContent = 'Add Jenkins Server';
+    document.getElementById('modal-save-btn').textContent = 'Save Server';
+    openModal('modal-srv');
+    setTimeout(() => document.getElementById('f-display').focus(), 80);
+  }
+
+  function openEditModal(id) {
+    const s = allServers.find(x => x.id === id);
+    if (!s) return;
+    editingId = id;
+
+    setAuthMode(s.auth_mode || 'token');
+    document.getElementById('f-display').value    = s.display   || '';
+    document.getElementById('f-base-url').value   = s.base_url  || '';
+    document.getElementById('f-auth-user').value  = s.auth_user || '';
+    document.getElementById('f-auth-token').value = s.auth_token|| '';
+    document.getElementById('f-auth-cookie').value= s.auth_cookie|| '';
+    document.getElementById('f-ip-override').value= s.ip_override|| '';
+    document.getElementById('f-order').value      = s.order ?? '';
+
+    const en = s.enabled !== false;
+    document.getElementById('f-enabled').value = String(en);
+    document.getElementById('f-enabled-toggle').classList.toggle('on', en);
+    document.getElementById('f-enabled-label').textContent = en ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+
+    document.getElementById('modal-title').textContent = `Edit — ${escHtml(s.display)}`;
+    document.getElementById('modal-save-btn').textContent = 'Save Changes';
+    openModal('modal-srv');
+  }
+
+  // ─── Save ────────────────────────────────────────────────────────
+  async function saveServer() {
+    const display   = document.getElementById('f-display').value.trim();
+    const base_url  = document.getElementById('f-base-url').value.trim();
+    const auth_mode = document.getElementById('f-auth-mode').value;
+    const auth_user = document.getElementById('f-auth-user').value.trim();
+    const auth_token= document.getElementById('f-auth-token').value.trim();
+    const auth_cookie=document.getElementById('f-auth-cookie').value.trim();
+    const ip_override=document.getElementById('f-ip-override').value.trim();
+    const orderVal  = document.getElementById('f-order').value;
+    const enabled   = document.getElementById('f-enabled').value === 'true';
+
+    if (!display)  { Toast.error('กรุณากรอกชื่อ'); return; }
+    if (!base_url) { Toast.error('กรุณากรอก Base URL'); return; }
+    if (auth_mode === 'token' && !auth_token) { Toast.error('กรุณากรอก API Token'); return; }
+    if (auth_mode === 'cookie' && !auth_cookie) { Toast.error('กรุณากรอก Cookie String'); return; }
+    if (ip_override && !/^(\d{1,3}\.){3}\d{1,3}$|^[0-9a-fA-F:]+$/.test(ip_override)) {
+      Toast.error('IP Override ต้องเป็น IPv4 หรือ IPv6 ที่ถูกต้อง'); return;
+    }
+
+    const payload = { display, base_url, auth_mode, auth_user, auth_token, auth_cookie, enabled, ip_override };
+    if (orderVal !== '') payload.order = parseInt(orderVal);
+
+    const btn = document.getElementById('modal-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
+    const res = editingId
+      ? await API.jenkinsServers.update(editingId, payload)
+      : await API.jenkinsServers.create(payload);
+
+    btn.disabled = false;
+    btn.textContent = editingId ? 'Save Changes' : 'Save Server';
+
+    if (!res?.ok) { Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด'); return; }
+
+    Toast.success(editingId ? 'แก้ไขเรียบร้อย' : 'เพิ่ม Server เรียบร้อย');
+    closeModal('modal-srv');
+    loadServers();
+  }
+
+  // ─── Delete ──────────────────────────────────────────────────────
+  function openDeleteModal(id, name) {
+    deletingId = id;
+    document.getElementById('delete-srv-name').textContent = name;
+    openModal('modal-delete');
+  }
+
+  async function confirmDelete() {
+    if (!deletingId) return;
+    const res = await API.jenkinsServers.delete(deletingId);
+    if (!res?.ok) { Toast.error(res?.data?.message || 'ลบไม่สำเร็จ'); return; }
+    Toast.success('ลบ Server เรียบร้อย');
+    closeModal('modal-delete');
+    deletingId = null;
+    loadServers();
+  }
+
+  // ─── Keyboard / overlay close ────────────────────────────────────
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') ['modal-srv','modal-delete','modal-rules'].forEach(id => closeModal(id));
+    if (e.key === 'Enter' && document.getElementById('modal-srv').classList.contains('open')) saveServer();
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // JOB RULES MODAL
+  // ═══════════════════════════════════════════════════════════
+  let rulesServerId = null;
+  let rulesBuffer   = [];
+
+  // ── Autocomplete state ────────────────────────────────────
+  const rulesJobCache  = {};   // { serverId: [] | 'loading' }
+  let   acFocusedIndex = -1;
+
+  function isFolderItem(job) {
+    return job.jobs !== undefined || (job._class || '').toLowerCase().includes('folder');
+  }
+
+  async function loadJobCache(serverId) {
+    if (rulesJobCache[serverId]) return;
+    rulesJobCache[serverId] = 'loading';
+    document.getElementById('rules-cache-status').textContent = '⏳ กำลังโหลด job list จาก Jenkins…';
+
+    // Re-use API.jenkins.jobs which calls the proxy
+    const res = await API.jenkins.jobs(serverId, 'jobs[name,_class,jobs[name,_class]]');
+    if (!res?.ok) {
+      rulesJobCache[serverId] = [];
+      document.getElementById('rules-cache-status').innerHTML = '<i data-icon="alert-triangle"></i> โหลด job list ไม่สำเร็จ';
+      return;
+    }
+    const topLevel = res.data.data?.jobs || [];
+    const flat = [];
+    for (const item of topLevel) {
+      if (isFolderItem(item) && item.jobs) {
+        item.jobs.forEach(j => { if (!isFolderItem(j)) flat.push({ name: j.name, folder: item.name }); });
+      } else if (!isFolderItem(item)) {
+        flat.push({ name: item.name, folder: '' });
+      }
+    }
+    rulesJobCache[serverId] = flat;
+    const cnt = flat.length;
+    document.getElementById('rules-cache-status').innerHTML = `<i data-icon="check"></i> โหลด ${cnt} jobs จาก Jenkins แล้ว — พิมเพื่อค้นหา`;
+  }
+
+  function onPatternInput() {
+    const q   = document.getElementById('r-pattern').value.trim();
+    const dd  = document.getElementById('ac-dropdown');
+    acFocusedIndex = -1;
+
+    const cache = rulesJobCache[rulesServerId];
+    if (!cache || cache === 'loading') {
+      dd.innerHTML = `<div class="ac-status">⏳ กำลังโหลด job list…</div>`;
+      dd.classList.add('open');
+      return;
+    }
+    if (!q) { dd.classList.remove('open'); return; }
+
+    const ql = q.toLowerCase();
+    const matches = cache.filter(j => j.name.toLowerCase().includes(ql)).slice(0, 12);
+
+    if (!matches.length) {
+      dd.innerHTML = `<div class="ac-status" style="color:#dc2626"><i data-icon="x-circle"></i> ไม่พบ job ที่ชื่อมี "${escHtml(q)}"</div>`;
+      dd.classList.add('open');
+      return;
+    }
+
+    dd.innerHTML = matches.map((j, i) => {
+      const lo  = j.name.toLowerCase();
+      const idx = lo.indexOf(ql);
+      const hl  = escHtml(j.name.substring(0, idx))
+                + `<mark>${escHtml(j.name.substring(idx, idx + q.length))}</mark>`
+                + escHtml(j.name.substring(idx + q.length));
+      const folder = j.folder ? `<span class="ac-item-folder"><i data-icon="folder"></i> ${escHtml(j.folder)}</span>` : '';
+      return `<div class="ac-item" data-name="${escHtml(j.name)}" data-idx="${i}" onmousedown="selectSuggestion('${escHtml(j.name).replace(/'/g,"\\'")}')">
+        <span class="ac-item-name">${hl}</span>${folder}
+      </div>`;
+    }).join('');
+    dd.classList.add('open');
+  }
+
+  function onPatternKeydown(e) {
+    const dd    = document.getElementById('ac-dropdown');
+    const items = dd.querySelectorAll('.ac-item');
+    if (!dd.classList.contains('open') || !items.length) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      acFocusedIndex = Math.min(acFocusedIndex + 1, items.length - 1);
+      items.forEach((el, i) => el.classList.toggle('focused', i === acFocusedIndex));
+      items[acFocusedIndex]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      acFocusedIndex = Math.max(acFocusedIndex - 1, 0);
+      items.forEach((el, i) => el.classList.toggle('focused', i === acFocusedIndex));
+      items[acFocusedIndex]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter' && acFocusedIndex >= 0) {
+      e.preventDefault();
+      const name = items[acFocusedIndex]?.dataset.name;
+      if (name) selectSuggestion(name);
+    } else if (e.key === 'Escape') {
+      closeDropdown();
+    }
+  }
+
+  function selectSuggestion(name) {
+    document.getElementById('r-pattern').value = name;
+    closeDropdown();
+    // Auto-set match to 'exact' since we picked from the real list
+    document.getElementById('r-match').value = 'exact';
+    document.getElementById('r-pattern').focus();
+  }
+
+  function closeDropdown() {
+    document.getElementById('ac-dropdown').classList.remove('open');
+    acFocusedIndex = -1;
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.ac-wrap')) closeDropdown();
+  });
+
+  function openRulesModal(id) {
+    const s = allServers.find(x => x.id === id);
+    if (!s) return;
+    rulesServerId = id;
+    rulesBuffer   = JSON.parse(JSON.stringify(s.job_rules || []));
+    document.getElementById('rules-modal-title').textContent = `📋 Job Rules — ${s.display}`;
+    // Reset form
+    document.getElementById('r-pattern').value   = '';
+    document.getElementById('r-type').value       = 'ignore';
+    document.getElementById('r-match').value      = 'exact';
+    document.getElementById('r-remark').value     = '';
+    document.getElementById('r-remark-row').style.display = 'none';
+    document.getElementById('bulk-area').style.display    = 'none';
+    closeDropdown();
+    // Cache status
+    const cached = rulesJobCache[id];
+    document.getElementById('rules-cache-status').textContent = cached && cached !== 'loading'
+      ? `✓ โหลด ${cached.length} jobs จาก Jenkins แล้ว — พิมเพื่อค้นหา`
+      : '';
+    renderRulesList();
+    openModal('modal-rules');
+    // Load job list in background (for autocomplete)
+    loadJobCache(id);
+    setTimeout(() => document.getElementById('r-pattern').focus(), 100);
+  }
+
+  function renderRulesList() {
+    const list      = document.getElementById('rules-list');
+    const ignoreCnt = rulesBuffer.filter(r => r.type === 'ignore').length;
+    const remarkCnt = rulesBuffer.filter(r => r.type === 'remark').length;
+    const descCnt   = rulesBuffer.filter(r => r.type === 'description').length;
+    document.getElementById('rules-count-label').textContent =
+      `${rulesBuffer.length} rules (${ignoreCnt} ignore · ${remarkCnt} remark · ${descCnt} description)`;
+
+    if (!rulesBuffer.length) {
+      list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">ยังไม่มี rule — เพิ่มด้านล่าง</div>';
+      return;
+    }
+
+    list.innerHTML = rulesBuffer.map((r, i) => {
+      const typeBadge = r.type === 'ignore'
+        ? '<span class="rule-type-badge rule-type-ignore">ignore</span>'
+        : r.type === 'description'
+        ? '<span class="rule-type-badge" style="background:rgba(22,163,74,.1);color:#15803d">description</span>'
+        : '<span class="rule-type-badge rule-type-remark">remark</span>';
+      const matchBadge = r.match === 'contains'
+        ? ' <span class="rule-match-contains">contains</span>' : '';
+      const subLine = ((r.type === 'remark' || r.type === 'description') && r.remark)
+        ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px">└─ "${escHtml(r.remark)}"</div>` : '';
+      return `<div class="rule-row">
+        <div style="flex-shrink:0;margin-top:1px">${typeBadge}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+               title="${escHtml(r.pattern)}">${escHtml(r.pattern)}${matchBadge}</div>
+          ${subLine}
+        </div>
+        <button class="btn" style="padding:3px 8px;font-size:10px;background:#fee2e2;color:#dc2626;border:none;flex-shrink:0"
+                data-action="delete" onclick="rulesDeleteRule(${i})">Del</button>
+      </div>`;
+    }).join('');
+  }
+
+  function onRuleTypeChange() {
+    const type = document.getElementById('r-type').value;
+    const row  = document.getElementById('r-remark-row');
+    const inp  = document.getElementById('r-remark');
+    row.style.display = (type === 'remark' || type === 'description') ? '' : 'none';
+    if (type === 'remark')      inp.placeholder = 'Remark text (จะแสดงใน Batch Report)';
+    if (type === 'description') inp.placeholder = 'Description (จะแสดงบนการ์ดใน Batch Monitor)';
+  }
+
+  async function rulesAddRule() {
+    const pattern = document.getElementById('r-pattern').value.trim();
+    const match   = document.getElementById('r-match').value;
+    const type    = document.getElementById('r-type').value;
+    const remark  = document.getElementById('r-remark').value.trim();
+    if (!pattern) { Toast.error('กรุณากรอก Pattern'); return; }
+    if ((type === 'remark' || type === 'description') && !remark) {
+      Toast.error(type === 'description' ? 'กรุณากรอก Description' : 'กรุณากรอก Remark text'); return;
+    }
+
+    const rule = { pattern, match, type };
+    if (type === 'remark' || type === 'description') rule.remark = remark;
+
+    rulesBuffer.push(rule);
+    if (await rulesSave()) {
+      document.getElementById('r-pattern').value = '';
+      document.getElementById('r-remark').value  = '';
+      renderRulesList();
+      document.getElementById('r-pattern').focus();
+    } else {
+      rulesBuffer.pop();
+    }
+  }
+
+  async function rulesDeleteRule(idx) {
+    const removed = rulesBuffer.splice(idx, 1);
+    if (!(await rulesSave())) {
+      rulesBuffer.splice(idx, 0, ...removed);
+      renderRulesList();
+    } else {
+      renderRulesList();
+    }
+  }
+
+  function toggleBulkImport() {
+    const area = document.getElementById('bulk-area');
+    const show = area.style.display === 'none';
+    area.style.display = show ? '' : 'none';
+    if (show) setTimeout(() => document.getElementById('bulk-patterns').focus(), 50);
+  }
+
+  async function rulesBulkImport() {
+    const text   = document.getElementById('bulk-patterns').value.trim();
+    const type   = document.getElementById('bulk-type').value;
+    const remark = document.getElementById('bulk-remark').value.trim();
+    if (!text) { Toast.error('กรุณาวาง Job names'); return; }
+    if ((type === 'remark' || type === 'description') && !remark) { Toast.error('กรุณากรอก Text'); return; }
+
+    const lines = text.split('\n')
+      .map(l => l.trim().replace(/^["']|["']$/g, ''))
+      .filter(Boolean);
+    if (!lines.length) { Toast.error('ไม่พบ Job name ที่ valid'); return; }
+
+    const newRules = lines.map(p => {
+      const r = { pattern: p, match: 'exact', type };
+      if (type === 'remark' || type === 'description') r.remark = remark;
+      return r;
+    });
+
+    rulesBuffer.push(...newRules);
+    if (await rulesSave()) {
+      document.getElementById('bulk-patterns').value = '';
+      document.getElementById('bulk-remark').value   = '';
+      document.getElementById('bulk-area').style.display = 'none';
+      renderRulesList();
+      Toast.success(`เพิ่ม ${newRules.length} rules เรียบร้อย`);
+    } else {
+      rulesBuffer.splice(-newRules.length);
+    }
+  }
+
+  async function rulesSave() {
+    if (!rulesServerId) return false;
+    const res = await API.jenkinsServers.update(rulesServerId, { job_rules: rulesBuffer });
+    if (!res?.ok) { Toast.error('บันทึกไม่สำเร็จ: ' + (res?.data?.message || '')); return false; }
+    const s = allServers.find(x => x.id === rulesServerId);
+    if (s) s.job_rules = JSON.parse(JSON.stringify(rulesBuffer));
+    // Re-render the row to update badge
+    const row = document.querySelector(`tr[data-id="${CSS.escape(rulesServerId)}"]`);
+    if (row) { row.outerHTML = renderRow(s); initDragSort(); }
+    return true;
+  }
+
+  loadServers();
+</script>
+</body>
+</html>

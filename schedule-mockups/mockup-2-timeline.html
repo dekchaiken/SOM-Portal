@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup 2 — Timeline / Gantt (Schedule)</title>
+<link rel="stylesheet" href="../assets/css/dark.css">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/ui-themes.css">
+<script src="../assets/js/theme.js"></script>
+<style>
+  :root {
+    --tl-hot:#ef4444; --tl-warn:#f59e0b; --tl-ok:#22c55e;
+    --tl-cool:#3b82f6; --tl-violet:#8b5cf6; --tl-orange:#f26419; --tl-amber:#f59e0b;
+    --tl-text-soft: color-mix(in srgb, var(--text-muted) 70%, transparent);
+    --tl-bg-subtle: color-mix(in srgb, var(--border) 40%, transparent);
+    --tl-day-w: 28px;
+  }
+
+  .page-wrap { padding:20px 24px; max-width:1600px; margin:0 auto; }
+  .mockup-banner {
+    background:linear-gradient(90deg, color-mix(in srgb, var(--tl-violet) 12%, var(--bg-card)), var(--bg-card));
+    border:1px solid var(--border); border-radius:12px; padding:10px 16px; font-size:12px;
+    color:var(--text-muted); margin-bottom:14px; display:flex; align-items:center; gap:10px;
+  }
+  .mockup-banner strong { color:var(--text); }
+
+  .tl-head {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+    padding:14px 20px; margin-bottom:14px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .tl-title { font-size:22px; font-weight:700; letter-spacing:-.02em; color:var(--text); }
+  .tl-sub   { font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .tl-nav { display:flex; align-items:center; gap:6px; }
+  .tl-nav-btn { width:32px; height:32px; border-radius:8px; background:var(--bg-card); border:1px solid var(--border); cursor:pointer; color:var(--text); font-weight:700; }
+  .tl-nav-btn:hover { background:var(--tl-violet); color:#fff; border-color:var(--tl-violet); }
+  .tl-month { font-size:14px; font-weight:700; padding:0 12px; min-width:150px; text-align:center; }
+
+  .tl-toggle {
+    display:inline-flex; padding:2px; background:var(--tl-bg-subtle); border-radius:8px; gap:2px;
+  }
+  .tl-toggle button {
+    background:transparent; border:none; padding:6px 12px; border-radius:6px;
+    font-size:11.5px; font-weight:600; color:var(--text-muted); cursor:pointer;
+  }
+  .tl-toggle button.active { background:var(--bg-card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+
+  /* Main timeline card */
+  .tl-card {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+    overflow:hidden; margin-bottom:14px;
+  }
+  .tl-scroll { overflow-x:auto; }
+
+  .tl-grid {
+    display:grid;
+    grid-template-columns:180px 1fr;
+  }
+  .tl-left-col { border-right:1px solid var(--border); background:color-mix(in srgb, var(--tl-bg-subtle) 40%, var(--bg-card)); }
+  .tl-right-col { position:relative; }
+
+  /* Header day cells */
+  .tl-day-hd {
+    display:grid;
+    grid-template-columns:repeat(31, var(--tl-day-w));
+    border-bottom:1px solid var(--border);
+    background:var(--tl-bg-subtle);
+    position:sticky; top:0; z-index:2;
+  }
+  .tl-day-cell {
+    text-align:center; padding:6px 0 5px; font-size:10.5px; color:var(--tl-text-soft);
+    font-weight:600; border-right:1px solid var(--border); font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  .tl-day-cell .dow { font-size:8.5px; opacity:.65; display:block; margin-top:1px; text-transform:uppercase; }
+  .tl-day-cell.weekend { color:var(--tl-cool); background:color-mix(in srgb, var(--tl-cool) 5%, transparent); }
+  .tl-day-cell.today { color:var(--tl-orange); background:color-mix(in srgb, var(--tl-orange) 12%, transparent); font-weight:800; }
+  .tl-day-cell.holiday { color:var(--tl-hot); }
+
+  /* Left col — person cell */
+  .tl-left-hd {
+    padding:0 14px; height:54px; display:flex; align-items:center; gap:10px;
+    border-bottom:1px solid var(--border); font-size:11.5px; font-weight:700; color:var(--tl-text-soft); text-transform:uppercase; letter-spacing:.05em;
+    background:var(--tl-bg-subtle);
+  }
+  .tl-person {
+    padding:0 14px; height:50px; display:flex; align-items:center; gap:10px;
+    border-bottom:1px solid var(--border);
+  }
+  .tl-person:last-child { border-bottom:none; }
+  .tl-person .av {
+    width:30px; height:30px; border-radius:9px; color:#fff; font-weight:800; font-size:10px;
+    display:grid; place-items:center; letter-spacing:-.02em; box-shadow:inset 0 -3px 6px rgba(0,0,0,.15); flex:none;
+  }
+  .tl-person .name { font-size:12.5px; font-weight:700; color:var(--text); line-height:1.15; }
+  .tl-person .name.me { color:var(--tl-orange); }
+  .tl-person .meta { font-size:10.5px; color:var(--tl-text-soft); }
+
+  /* Right col — bars area */
+  .tl-lane {
+    position:relative; height:50px; border-bottom:1px solid var(--border);
+    display:grid; grid-template-columns:repeat(31, var(--tl-day-w));
+  }
+  .tl-lane:last-child { border-bottom:none; }
+  .tl-lane-cell {
+    border-right:1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    position:relative;
+  }
+  .tl-lane-cell.weekend { background:color-mix(in srgb, var(--tl-cool) 3%, transparent); }
+  .tl-lane-cell.today { background:color-mix(in srgb, var(--tl-orange) 7%, transparent); }
+  .tl-lane-cell.holiday { background:color-mix(in srgb, var(--tl-hot) 5%, transparent); }
+
+  /* Shift bars stacked in a lane */
+  .tl-bar {
+    position:absolute; left:2px; right:2px;
+    border-radius:4px; padding:3px 4px 2px; font-size:9px; font-weight:700; color:#fff;
+    line-height:1.05; text-align:center; letter-spacing:.02em;
+    box-shadow:inset 0 -2px 4px rgba(0,0,0,.15);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .tl-bar.s1 { background:var(--tl-orange); }
+  .tl-bar.s2 { background:var(--tl-violet); }
+  .tl-bar.oc { background:var(--tl-amber); box-shadow:inset 0 -2px 4px rgba(0,0,0,.15), inset 0 0 0 1px rgba(255,255,255,.35); }
+  .tl-bar.oc2 { background:var(--tl-violet); box-shadow:inset 0 -2px 4px rgba(0,0,0,.15), inset 0 0 0 1px rgba(255,255,255,.35); }
+  .tl-bar.leave {
+    background:repeating-linear-gradient(45deg, color-mix(in srgb, var(--tl-text-soft) 45%, transparent), color-mix(in srgb, var(--tl-text-soft) 45%, transparent) 4px, transparent 4px, transparent 8px);
+    color:var(--text); text-decoration:line-through;
+  }
+
+  /* Below timeline: coverage + summary */
+  .tl-below-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:820px) { .tl-below-grid { grid-template-columns:1fr; } }
+
+  .tl-info {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:12px; overflow:hidden;
+  }
+  .tl-info-hd {
+    padding:10px 16px; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
+    font-weight:600; color:var(--tl-text-soft); background:var(--tl-bg-subtle);
+    border-bottom:1px solid var(--border);
+  }
+  .tl-info-body { padding:12px 16px; }
+
+  .tl-alert-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px dashed var(--border); font-size:12px; }
+  .tl-alert-row:last-child { border-bottom:none; }
+  .tl-alert-badge {
+    padding:2px 8px; border-radius:6px; font-size:10px; font-weight:700; letter-spacing:.03em;
+    background:color-mix(in srgb, var(--tl-hot) 15%, transparent); color:var(--tl-hot);
+  }
+  .tl-alert-badge.warn { background:color-mix(in srgb, var(--tl-warn) 15%, transparent); color:var(--tl-warn); }
+  .tl-alert-txt { flex:1; color:var(--text); }
+  .tl-alert-txt small { color:var(--tl-text-soft); }
+
+  .tl-workload { display:flex; flex-direction:column; gap:11px; }
+  .tl-wl-row { display:grid; grid-template-columns:110px 1fr auto; gap:10px; align-items:center; font-size:12px; }
+  .tl-wl-name { font-weight:600; color:var(--text); display:flex; align-items:center; gap:7px; }
+  .tl-wl-name .dot { width:10px; height:10px; border-radius:50%; }
+  .tl-wl-bar { height:7px; border-radius:4px; background:var(--tl-bg-subtle); overflow:hidden; position:relative; }
+  .tl-wl-bar > i { display:block; height:100%; border-radius:4px; }
+  .tl-wl-num { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:700; font-size:12px; }
+
+  .tl-legend {
+    display:flex; gap:14px; flex-wrap:wrap; padding:12px 16px;
+    background:var(--tl-bg-subtle); border-top:1px solid var(--border); font-size:11px;
+  }
+  .tl-legend-item { display:flex; align-items:center; gap:6px; }
+  .tl-legend-sw { width:16px; height:8px; border-radius:2px; }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="mockup-banner">
+    <strong>Mockup 2 · Timeline / Gantt</strong> — เขียนกลับ: แต่ละคน = 1 แถว, แท่งเวรเปน block ต่อวัน เห็น workload รายคนได้ทันที เหมาะสำหรับ lead ที่อยากเห็นว่าใครทำหนักไปเบาไป
+  </div>
+
+  <div class="tl-head">
+    <div>
+      <div class="tl-title">📅 Team Schedule · Timeline</div>
+      <div class="tl-sub">แต่ละแถว = 1 คน · แท่งสีตามชนิดเวร · เสาร์-อาทิตย์ กับวันหยุดขึ้นพื้นหลังต่าง</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap">
+      <div class="tl-toggle">
+        <button class="active">📊 Timeline</button>
+        <button>🗓 Grid</button>
+        <button>📋 List</button>
+      </div>
+      <div class="tl-nav">
+        <button class="tl-nav-btn">‹</button>
+        <div class="tl-month">August 2026</div>
+        <button class="tl-nav-btn">›</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tl-card">
+    <div class="tl-scroll">
+      <div class="tl-grid" id="tl-grid" style="min-width:1050px"></div>
+    </div>
+    <div class="tl-legend">
+      <div class="tl-legend-item"><span class="tl-legend-sw" style="background:var(--tl-orange)"></span> Shift#1 (day)</div>
+      <div class="tl-legend-item"><span class="tl-legend-sw" style="background:var(--tl-amber);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)"></span> Shift#1 On Call</div>
+      <div class="tl-legend-item"><span class="tl-legend-sw" style="background:var(--tl-violet)"></span> Shift#2 (night)</div>
+      <div class="tl-legend-item"><span class="tl-legend-sw" style="background:var(--tl-violet);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)"></span> Shift#2 On Call</div>
+      <div class="tl-legend-item"><span class="tl-legend-sw" style="background:repeating-linear-gradient(45deg,#999,#999 3px,transparent 3px,transparent 6px)"></span> Leave</div>
+      <div class="tl-legend-item"><span style="width:16px;height:16px;border-radius:4px;background:color-mix(in srgb, var(--tl-orange) 12%, transparent);display:inline-block"></span> Today</div>
+    </div>
+  </div>
+
+  <div class="tl-below-grid">
+    <div class="tl-info">
+      <div class="tl-info-hd">⚠️ COVERAGE ALERTS</div>
+      <div class="tl-info-body" id="tl-alerts"></div>
+    </div>
+    <div class="tl-info">
+      <div class="tl-info-hd">📊 WORKLOAD DISTRIBUTION</div>
+      <div class="tl-info-body"><div class="tl-workload" id="tl-workload"></div></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="sample-data.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const D = window.SCHED_SAMPLE;
+const DOW = ['SU','MO','TU','WE','TH','FR','SA'];
+
+function daysInHead() {
+  let cells = '';
+  for (let d = 1; d <= D.daysInMonth; d++) {
+    const dow = new Date(D.YEAR, D.MONTH - 1, d).getDay();
+    const isToday   = d === D.TODAY.day;
+    const isHoliday = D.holidays[d];
+    const isWeekend = dow === 0 || dow === 6;
+    const events = D.shifts[d].events || [];
+    const cls = [
+      isToday ? 'today' : '',
+      isHoliday ? 'holiday' : (isWeekend ? 'weekend' : ''),
+    ].filter(Boolean).join(' ');
+    const title = [isHoliday, ...events].filter(Boolean).join(' · ');
+    const evDot = events.length ? '<span style="display:block;width:4px;height:4px;border-radius:50%;background:var(--tl-cool);margin:0 auto 0"></span>' : '';
+    cells += `<div class="tl-day-cell ${cls}" title="${title}">${evDot}${d}<span class="dow">${DOW[dow]}</span></div>`;
+  }
+  return cells;
+}
+
+function cellClasses(d) {
+  const dow = new Date(D.YEAR, D.MONTH - 1, d).getDay();
+  const cls = [];
+  if (d === D.TODAY.day) cls.push('today');
+  else if (D.holidays[d]) cls.push('holiday');
+  else if (dow === 0 || dow === 6) cls.push('weekend');
+  return cls.join(' ');
+}
+
+// For each person, compute per-day bars using the multi-person data helpers
+function personBars(pid) {
+  const bars = {};
+  for (let d = 1; d <= D.daysInMonth; d++) {
+    const onLeave = (D.leaves[d] || []).includes(pid);
+    if (onLeave) { bars[d] = [{ kind:'leave', label:'ลา' }]; continue; }
+    const list = [];
+    if (D.isAssigned(d, 's1_tdpk', pid)) list.push({ kind:'s1', label:'S1·TDPK' });
+    if (D.isAssigned(d, 's1_wah',  pid)) list.push({ kind:'s1', label:'S1·W@H' });
+    if (D.isAssigned(d, 's1_oc',   pid)) list.push({ kind:'oc', label:'S1·OC' });
+    if (D.isAssigned(d, 's2_wah',  pid)) list.push({ kind:'s2', label:'S2·W@H' });
+    if (D.isAssigned(d, 's2_oc',   pid)) list.push({ kind:'oc2', label:'S2·OC' });
+    if (list.length) bars[d] = list;
+  }
+  return bars;
+}
+
+// ── Build the grid ─────────────────────────────────────────
+(function build() {
+  let left = `<div class="tl-left-hd">TEAM MEMBER</div>`;
+  let rightHead = `<div class="tl-day-hd">${daysInHead()}</div>`;
+  let rightLanes = '';
+
+  D.TEAM.forEach(p => {
+    left += `<div class="tl-person">
+      <div class="av" style="background:${p.color}">${p.short}</div>
+      <div>
+        <div class="name ${p.me ? 'me' : ''}">${p.name}</div>
+        <div class="meta">${p.me ? 'you' : ''}</div>
+      </div>
+    </div>`;
+
+    const bars = personBars(p.id);
+    let lane = '<div class="tl-lane">';
+    for (let d = 1; d <= D.daysInMonth; d++) {
+      const c = cellClasses(d);
+      const arr = bars[d] || [];
+      const barsHtml = arr.map((b, i) => {
+        const top = 4 + i * 12;
+        const h = 10;
+        return `<div class="tl-bar ${b.kind}" style="top:${top}px;height:${h}px;font-size:8px;line-height:1" title="${b.label}">${b.label}</div>`;
+      }).join('');
+      lane += `<div class="tl-lane-cell ${c}">${barsHtml}</div>`;
+    }
+    lane += '</div>';
+    rightLanes += lane;
+  });
+
+  $('tl-grid').innerHTML = `
+    <div class="tl-left-col">${left}</div>
+    <div class="tl-right-col">${rightHead}${rightLanes}</div>
+  `;
+})();
+
+// ── Coverage alerts ────────────────────────────────────────
+(function alerts() {
+  const rows = [];
+  Object.entries(D.gaps).forEach(([d, slots]) => {
+    slots.forEach(slot => {
+      rows.push(`<div class="tl-alert-row">
+        <span class="tl-alert-badge">GAP</span>
+        <div class="tl-alert-txt">Aug ${d} · ${D.SLOT_META[slot].label} unfilled<br><small>${D.holidays[d] ? 'falls on ' + D.holidays[d] : 'needs assignment'}</small></div>
+      </div>`);
+    });
+  });
+  // Add a soft warn about double-leave day
+  rows.push(`<div class="tl-alert-row">
+    <span class="tl-alert-badge warn">DOUBLE LEAVE</span>
+    <div class="tl-alert-txt">Aug 26 · 2 people on leave (Ann, Pond)<br><small>consider blocking further requests</small></div>
+  </div>`);
+  rows.push(`<div class="tl-alert-row">
+    <span class="tl-alert-badge warn">HOLIDAY</span>
+    <div class="tl-alert-txt">Aug 12 · วันแม่แห่งชาติ<br><small>1 slot gap → S1·TDPK not staffed</small></div>
+  </div>`);
+  $('tl-alerts').innerHTML = rows.join('');
+})();
+
+// ── Workload distribution ──────────────────────────────────
+(function wl() {
+  const stats = D.stats();
+  const max = Math.max(...stats.map(s => s.total));
+  $('tl-workload').innerHTML = stats.map(s => {
+    const pct = (s.total / max) * 100;
+    return `<div class="tl-wl-row">
+      <div class="tl-wl-name"><span class="dot" style="background:${s.color}"></span>${s.name}</div>
+      <div class="tl-wl-bar"><i style="width:${pct}%;background:${s.color}"></i></div>
+      <div class="tl-wl-num">${s.total}</div>
+    </div>`;
+  }).join('');
+})();
+</script>
+</body>
+</html>

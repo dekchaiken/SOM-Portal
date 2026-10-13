@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch Metadata — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/batch-meta/batch-meta.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="folder-open"></i> Batch Metadata</div>
+        <div class="page-sub">DEV-OWNER · Manual URL · SM Rerun — ดึงจาก Google Sheets</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openAddModal()">+ Add Sheet Config</button>
+      </div>
+    </header>
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="folder-open"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Batch Metadata</h1>
+          <p>DEV-OWNER · Manual URL · SM Rerun config — ดึงจาก Google Sheets · sync มาแสดงบน Batch Monitor</p>
+        </div>
+      </section>
+
+      <div class="info-bar">
+        <span style="font-size:15px"><i data-icon="info"></i></span>
+        <span>
+          แต่ละ Config ดึงข้อมูลจาก Google Sheet 1 tab — Sheet ต้อง Share เป็น <strong>"Anyone with the link can view"</strong><br>
+          กด <strong><i data-icon="refresh-cw"></i> Sync Now</strong> เพื่อดึงข้อมูลใหม่ · ข้อมูลจะแสดงบนการ์ดใน Batch Monitor อัตโนมัติ
+        </span>
+      </div>
+
+      <div id="configs-wrap">
+        <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12px">กำลังโหลด…</div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══ Add / Edit Modal ═══ -->
+<div class="modal-overlay" id="modal-cfg">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Add Sheet Config</span>
+      <button class="modal-close" onclick="closeModal('modal-cfg')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+
+      <div class="step-label">1 — ข้อมูล Sheet</div>
+      <div class="form-row">
+        <label class="form-label">Config Name *</label>
+        <input class="form-input" id="f-name" type="text" placeholder="เช่น TMN EKS Batch">
+      </div>
+      <div class="form-grid-2">
+        <div>
+          <label class="form-label">Google Sheet ID *</label>
+          <input class="form-input" id="f-sheet-id" type="text" placeholder="จาก URL: .../d/SHEET_ID/...">
+          <div class="hint">copy ส่วน ID จาก URL ของ Sheet</div>
+        </div>
+        <div>
+          <label class="form-label">GID (tab id)</label>
+          <input class="form-input" id="f-gid" type="text" placeholder="จาก URL หลัง #gid=">
+          <div class="hint">เว้นว่างถ้าใช้ tab แรก</div>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div>
+          <label class="form-label">Tab Name (อ้างอิง)</label>
+          <input class="form-input" id="f-tab-name" type="text" placeholder="เช่น AWS_EKS_jenkins-batch-eks-cicd">
+        </div>
+        <div>
+          <label class="form-label">Header Row (index 0-based)</label>
+          <input class="form-input" id="f-header-row" type="number" min="0" value="0">
+          <div class="hint">row ที่เป็น header — ปกติ 0 (row แรก)</div>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-ghost" style="font-size:11px" id="btn-load-headers" onclick="loadHeaders()"><i data-icon="search"></i> Load Headers (Auto)</button>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="togglePasteArea()"><i data-icon="clipboard"></i> Paste CSV</button>
+        <span id="header-status" style="font-size:11px;color:var(--text-muted)"></span>
+      </div>
+      <!-- Paste CSV fallback -->
+      <div id="paste-area" style="display:none;margin-bottom:14px">
+        <div class="hint" style="margin-bottom:6px">
+          <i data-icon="map-pin"></i> ใน Google Sheet → <strong>File → Download → CSV</strong> แล้ว paste ทั้งหมดด้านล่าง
+        </div>
+        <textarea id="csv-paste" style="width:100%;height:140px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:10px;font-family:monospace;background:var(--bg);color:var(--text);resize:vertical;box-sizing:border-box" placeholder="วาง CSV content ที่นี่…"></textarea>
+        <button class="btn btn-primary" style="font-size:11px;margin-top:6px" onclick="loadFromPaste()"><i data-icon="arrow-down"></i> Parse CSV</button>
+      </div>
+      <div id="preview-area" style="display:none;margin-bottom:14px">
+        <div class="hint" style="margin-bottom:6px"><i data-icon="map-pin"></i> ตัวเลขในวงเล็บ = column index (0-based) สำหรับ mapping</div>
+        <div class="preview-wrap" id="preview-tbl-wrap"></div>
+      </div>
+
+      <hr class="divider">
+      <div class="step-label">2 — Column Mapping</div>
+      <div id="col-map-dropdowns" style="display:none">
+        <div class="col-map-grid" id="col-map-grid"></div>
+      </div>
+      <div id="col-map-manual">
+        <div class="hint" style="margin-bottom:8px">กด "Load Headers" เพื่อเลือก column จาก dropdown — หรือกรอก index ด้านล่าง</div>
+        <div class="form-grid-3">
+          <div><label class="form-label">Batch Name col *</label><input class="form-input" id="f-col-batch" type="number" min="0" placeholder="0, 1, 2…"></div>
+          <div><label class="form-label">Batch URL col</label><input class="form-input" id="f-col-batchurl" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้ (ใช้ URL แทนชื่อ)"></div>
+          <div><label class="form-label">DEV-OWNER col</label><input class="form-input" id="f-col-owner" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้"></div>
+          <div><label class="form-label">Manual URL col</label><input class="form-input" id="f-col-manual" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้"></div>
+          <div><label class="form-label">SM Rerun col</label><input class="form-input" id="f-col-smrerun" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้"></div>
+          <div><label class="form-label">Etc/Comment col</label><input class="form-input" id="f-col-etc" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้"></div>
+          <div><label class="form-label">Category col</label><input class="form-input" id="f-col-category" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้"></div>
+          <div><label class="form-label">Parameter col</label><input class="form-input" id="f-col-parameter" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้"></div>
+          <div><label class="form-label">Note col</label><input class="form-input" id="f-col-note" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้"></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cfg')">Cancel</button>
+      <button class="btn btn-primary" id="modal-save-btn" onclick="saveConfig()">Save Config</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Sync (Paste CSV) Modal ═══ -->
+<div class="modal-overlay" id="modal-sync">
+  <div class="modal-box" style="width:600px">
+    <div class="modal-header">
+      <span class="modal-title"><i data-icon="refresh-cw"></i> Sync Entries</span>
+      <button class="modal-close" onclick="closeModal('modal-sync')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="info-bar" style="margin-bottom:14px">
+        <span style="font-size:15px"><i data-icon="map-pin"></i></span>
+        <span id="sync-modal-hint" style="font-size:11px"></span>
+      </div>
+      <div class="step-label">วิธี Export CSV จาก Google Sheets</div>
+      <div class="hint" style="margin-bottom:10px;line-height:1.8">
+        1. เปิด Google Sheet → เลือก Tab ที่ต้องการ<br>
+        2. <strong>File → Download → Comma Separated Values (.csv)</strong><br>
+        3. เปิดไฟล์ .csv ด้วย Text Editor / VS Code แล้ว Select All → Copy<br>
+        4. วาง (Paste) ด้านล่าง แล้วกด <strong>Sync</strong>
+      </div>
+      <label class="form-label">Paste CSV / TSV ที่นี่</label>
+      <textarea id="sync-csv-paste" style="width:100%;height:180px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:10px;font-family:monospace;background:var(--bg);color:var(--text);resize:vertical;box-sizing:border-box" placeholder="วาง CSV content ที่นี่…"></textarea>
+      <div id="sync-status" style="font-size:11px;margin-top:8px;min-height:18px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-sync')">Cancel</button>
+      <button class="btn btn-primary" onclick="doSync()"><i data-icon="refresh-cw"></i> Sync</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Delete Confirm ═══ -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-header">
+      <span class="modal-title" style="color:#dc2626">Delete Config</span>
+      <button class="modal-close" onclick="closeModal('modal-delete')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px">ต้องการลบ <strong id="del-name"></strong> ใช่ไหม?</p>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:6px">Entries ทั้งหมดของ config นี้จะถูกลบออกด้วย</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-delete')">Cancel</button>
+      <button class="btn" style="background:#dc2626;color:#fff;border:none" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/batch-meta/batch-meta.js"></script>
+</body>
+</html>

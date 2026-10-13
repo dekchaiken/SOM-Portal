@@ -1,0 +1,3365 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exams — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ── Cards (accent-border, chip-stats, no top line) ── */
+    .ex-grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fill, minmax(310px, 1fr)) }
+    .ex-card {
+      background:var(--panel-bg);
+      border:1.5px solid color-mix(in srgb, var(--ex-accent, var(--orange)) 32%, var(--border));
+      border-radius:14px;
+      padding:18px 20px; position:relative;
+      transition:border-color .18s ease, transform .18s ease, box-shadow .22s ease;
+      display:flex; flex-direction:column; gap:14px;
+    }
+    .ex-card::before { display:none } /* removed old top accent line */
+    .ex-card:hover {
+      border-color:var(--ex-accent, var(--orange));
+      transform:translateY(-3px);
+      box-shadow:
+        0 12px 32px color-mix(in srgb, var(--ex-accent, var(--orange)) 22%, transparent),
+        0 0 0 1px color-mix(in srgb, var(--ex-accent, var(--orange)) 55%, transparent);
+    }
+    .ex-card .top { display:flex; align-items:flex-start; gap:14px; margin:0 }
+    .ex-card .ico {
+      width:46px; height:46px; border-radius:12px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:24px; line-height:1;
+      background:color-mix(in srgb, var(--ex-accent, var(--orange)) 15%, transparent);
+      border:1px solid color-mix(in srgb, var(--ex-accent, var(--orange)) 35%, transparent);
+      color:var(--ex-accent, var(--orange));
+    }
+    .ex-card .ti {
+      font-weight:700; font-size:15px; line-height:1.35;
+      margin-bottom:5px; word-break:break-word;
+    }
+    .ex-card .sub {
+      font-size:12px; color:var(--text-muted); line-height:1.5;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
+    .ex-card .meta {
+      display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+      margin:0;
+    }
+    .ex-card .meta > span:not(.pill) {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:4px 11px; font-size:11.5px; color:var(--text-muted);
+      background:color-mix(in srgb, var(--ex-accent, var(--orange)) 9%, transparent);
+      border:1px solid color-mix(in srgb, var(--ex-accent, var(--orange)) 20%, transparent);
+      border-radius:999px;
+    }
+    .ex-card .meta b { color:var(--text); font-weight:700 }
+    .ex-card .actions {
+      margin-top:auto; padding-top:12px;
+      border-top:1px dashed color-mix(in srgb, var(--ex-accent, var(--orange)) 32%, transparent);
+      display:flex; gap:6px; align-items:center; flex-wrap:wrap;
+    }
+    .ex-card .actions .btn {
+      padding:6px 12px; font-size:11.5px; font-weight:600;
+      border-radius:7px; transition:.13s;
+    }
+
+    .pill { display:inline-block; font-size:10px; font-weight:700; padding:3px 9px; border-radius:999px; text-transform:uppercase; letter-spacing:.04em }
+    .pill-gray   { background:rgba(100,116,139,.18); color:#64748b }
+    .pill-orange { background:rgba(242,100,25,.2);   color:var(--orange) }
+    .pill-green  { background:rgba(16,185,129,.2);   color:#10b981 }
+    .pill-blue   { background:rgba(59,130,246,.2);   color:#3b82f6 }
+    .pill-red    { background:rgba(239,68,68,.18);   color:#ef4444 }
+
+    .modal.xl  { max-width:1080px }
+    .modal.lg  { max-width:860px }
+    .modal-overlay.active { display:flex }
+    .form-field { margin-bottom:10px }
+    .form-field label { display:block; font-size:10.5px; font-weight:600; color:var(--text-muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.04em }
+    .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+    @media (max-width:640px) { .form-grid-2 { grid-template-columns:1fr } }
+
+    /* Tab strip inside modal */
+    .ex-tabs { display:flex; gap:2px; border-bottom:1px solid var(--border); margin-bottom:14px; overflow-x:auto }
+    .ex-tab { padding:9px 14px; cursor:pointer; font-size:12px; font-weight:600; color:var(--text-muted); border-bottom:2px solid transparent; white-space:nowrap }
+    .ex-tab.active { color:var(--orange); border-bottom-color:var(--orange) }
+    .ex-pane { display:none } .ex-pane.active { display:block }
+
+    /* Preset chips */
+    .preset-row { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:14px }
+    @media (max-width:720px) { .preset-row { grid-template-columns:1fr 1fr } }
+    .preset-chip {
+      border:1px solid var(--border); border-radius:10px; padding:12px 14px; cursor:pointer;
+      background:var(--bg); transition:.13s;
+    }
+    .preset-chip:hover { border-color:var(--orange) }
+    .preset-chip.active { border-color:var(--orange); background:rgba(242,100,25,.08); box-shadow:inset 0 0 0 1px var(--orange) }
+    .preset-chip .pn { font-weight:700; font-size:13px }
+    .preset-chip .pd { font-size:11px; color:var(--text-muted); line-height:1.4; margin-top:4px }
+
+    /* Tier section */
+    .tier-section {
+      border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:12px;
+      background:var(--bg);
+    }
+    .tier-section h4 {
+      margin:0 0 4px; font-size:13px; display:flex; align-items:center; gap:8px;
+    }
+    .tier-section .tier-desc { font-size:11px; color:var(--text-muted); margin-bottom:10px; line-height:1.5 }
+
+    .feat-row {
+      display:grid; grid-template-columns:1fr; gap:8px; padding:14px 16px;
+      border:1px solid var(--border); border-radius:10px; margin-bottom:10px;
+      background:var(--panel-bg);
+      transition:.15s;
+    }
+    .feat-row:hover { border-color:rgba(242,100,25,.3) }
+    .feat-row.on { border-color:var(--orange); background:rgba(242,100,25,.04) }
+    .feat-head { display:flex; align-items:center; gap:12px }
+    .feat-toggle { position:relative; width:40px; height:22px; flex-shrink:0 }
+    .feat-toggle input { display:none }
+    .feat-toggle .slider { position:absolute; inset:0; background:var(--border); border-radius:22px; cursor:pointer; transition:.2s }
+    .feat-toggle .slider::before {
+      content:''; position:absolute; left:2px; top:2px; width:18px; height:18px;
+      background:#fff; border-radius:50%; transition:.2s;
+      box-shadow:0 1px 3px rgba(0,0,0,.2);
+    }
+    .feat-toggle input:checked + .slider { background:var(--orange) }
+    .feat-toggle input:checked + .slider::before { transform:translateX(18px) }
+    .feat-name { font-weight:700; font-size:13px; flex:1; line-height:1.3 }
+    .feat-desc { font-size:11.5px; color:var(--text-muted); line-height:1.55; margin-left:52px }
+    .feat-config {
+      margin-left:52px; padding:14px 16px; background:var(--bg); border-radius:10px;
+      display:none; gap:14px; flex-direction:column;
+      border:1px solid var(--border);
+    }
+    .feat-row.on .feat-config { display:flex }
+    .feat-config-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px }
+    @media (max-width:560px) { .feat-config-grid { grid-template-columns:1fr } }
+    .feat-config label {
+      font-size:11px; color:var(--text); font-weight:600;
+      display:block; margin-bottom:6px;
+    }
+    .feat-config input, .feat-config select {
+      width:100%; padding:9px 12px; font-size:13px;
+      border-radius:8px; border:1px solid var(--border);
+      background:var(--panel-bg); color:var(--text);
+      transition:.13s;
+    }
+    .feat-config input:focus, .feat-config select:focus {
+      outline:none; border-color:var(--orange);
+      box-shadow:0 0 0 3px rgba(242,100,25,.12);
+    }
+    .feat-hint {
+      font-size:10.5px; color:var(--text-muted); line-height:1.5;
+      margin-top:6px; font-style:italic;
+    }
+    .feat-preview {
+      grid-column:1/-1;
+      padding:10px 14px; border-radius:8px;
+      background:rgba(242,100,25,.06); border:1px dashed rgba(242,100,25,.35);
+      font-size:12px; color:var(--text); line-height:1.6;
+    }
+    .feat-preview b { color:var(--orange); font-weight:800 }
+    .feat-preview .tp-lbl {
+      display:inline-block; font-size:9.5px; font-weight:800;
+      padding:2px 7px; border-radius:4px; margin-right:6px;
+      background:var(--orange); color:#fff; letter-spacing:.04em;
+    }
+
+    /* Course-prerequisite picker — escape global .feat-config input/label styles */
+    #cm-exam-courses { padding:8px !important }
+    #cm-exam-courses label {
+      display:flex !important; align-items:center; gap:10px;
+      font-size:13px !important; font-weight:500 !important;
+      color:var(--text); margin:0 !important; padding:7px 10px;
+      border-radius:6px; cursor:pointer;
+      transition:background .12s;
+    }
+    #cm-exam-courses label:hover { background:rgba(242,100,25,.06) }
+    #cm-exam-courses input[type=checkbox] {
+      width:16px !important; height:16px !important;
+      padding:0 !important; margin:0 !important;
+      flex-shrink:0; accent-color:var(--orange);
+      cursor:pointer;
+    }
+    #cm-exam-courses .cm-course-icon { font-size:18px; flex-shrink:0 }
+    #cm-exam-courses .cm-course-title { flex:1; line-height:1.3 }
+    #cm-exam-courses .cm-course-draft {
+      font-size:10px; color:var(--text-muted);
+      padding:2px 6px; border:1px solid var(--border); border-radius:4px;
+      flex-shrink:0;
+    }
+
+    /* Round X button (used in choices, strat list, question delete) */
+    .icon-x {
+      width:30px; height:30px; flex-shrink:0;
+      border-radius:8px; border:1px solid var(--border);
+      background:var(--panel-bg); color:var(--text-muted);
+      cursor:pointer; font-size:16px; line-height:1;
+      display:inline-flex; align-items:center; justify-content:center;
+      transition:.13s;
+    }
+    .icon-x:hover {
+      border-color:#ef4444; background:rgba(239,68,68,.08);
+      color:#ef4444;
+    }
+    .icon-x.lg { width:34px; height:34px; font-size:18px }
+
+    /* Question builder */
+    .qb {
+      border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:14px;
+      background:var(--panel-bg);
+      transition:.13s;
+    }
+    .qb:hover { border-color:rgba(242,100,25,.35); box-shadow:0 4px 14px rgba(0,0,0,.08) }
+    .qb-head {
+      display:flex; gap:10px; align-items:center; margin-bottom:14px;
+      padding-bottom:12px; border-bottom:1px dashed var(--border);
+    }
+    .qb-num {
+      background:var(--orange); color:#fff; font-weight:700; font-size:12px;
+      min-width:28px; height:28px; padding:0 8px; border-radius:14px;
+      display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .qb-cat {
+      flex:1; min-width:0; max-width:240px;
+      padding:7px 12px; font-size:12px;
+      border-radius:7px; border:1px solid var(--border);
+      background:var(--bg);
+    }
+    .qb-cat:focus { outline:none; border-color:var(--orange) }
+
+    .qb-type-select {
+      padding:6px 10px; font-size:12px; font-weight:600;
+      border-radius:7px; border:1px solid var(--border);
+      background:rgba(59,130,246,.1); color:#3b82f6;
+      cursor:pointer; transition:.13s;
+      max-width:160px;
+    }
+    .qb-type-select:hover { border-color:#3b82f6 }
+    .qb-type-select:focus { outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15) }
+
+    .qb-prompt-wrap { margin-bottom:14px }
+    .qb-prompt-wrap label {
+      display:block; font-size:11px; font-weight:600; color:var(--text-muted);
+      margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em;
+    }
+    .qb-prompt {
+      width:100%; padding:11px 14px; font-size:14px; line-height:1.5;
+      border-radius:8px; border:1px solid var(--border);
+      background:var(--bg); color:var(--text);
+      resize:vertical; min-height:60px; font-family:var(--font);
+      transition:.13s;
+    }
+    .qb-prompt:focus { outline:none; border-color:var(--orange); box-shadow:0 0 0 3px rgba(242,100,25,.1) }
+
+    /* Optional image attached to a question (e.g. network diagram for the
+       7-Eleven exam). Kept collapsed until the admin uploads something. */
+    .qb-image-wrap { margin-bottom:14px }
+    .qb-image-wrap label {
+      display:block; font-size:11px; font-weight:600; color:var(--text-muted);
+      margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em;
+    }
+    .qb-image-empty {
+      display:flex; align-items:center; gap:12px;
+      padding:12px 14px; border:1.5px dashed var(--border); border-radius:8px;
+      background:var(--bg); cursor:pointer; transition:.13s;
+    }
+    .qb-image-empty:hover {
+      border-color:var(--orange); background:rgba(242,100,25,.04);
+    }
+    .qb-image-empty .ic { font-size:22px; opacity:.55 }
+    .qb-image-empty .lbl {
+      flex:1; font-size:12px; color:var(--text-muted);
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .qb-image-empty .lbl b { color:var(--text); font-size:12.5px }
+    .qb-image-empty.uploading {
+      pointer-events:none; opacity:.6;
+    }
+    .qb-image-preview {
+      position:relative; display:inline-block;
+      border:1px solid var(--border); border-radius:8px; overflow:hidden;
+      background:#fff; max-width:100%;
+    }
+    .qb-image-preview img {
+      display:block; max-width:100%; max-height:180px; height:auto;
+    }
+    .qb-image-preview .qb-img-actions {
+      position:absolute; top:6px; right:6px; display:flex; gap:4px;
+    }
+    .qb-image-preview .qb-img-actions button {
+      background:rgba(0,0,0,.7); color:#fff; border:none;
+      width:26px; height:26px; border-radius:6px; cursor:pointer;
+      font-size:12px; display:flex; align-items:center; justify-content:center;
+      transition:background .13s;
+    }
+    .qb-image-preview .qb-img-actions button:hover { background:#ef4444 }
+    /* Uploading overlay — dark scrim + spinner over the local preview */
+    .qb-image-preview.qb-image-uploading img { filter:brightness(.5) }
+    .qb-upload-overlay {
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      flex-direction:column; gap:8px; color:#fff; font-size:11px; font-weight:700;
+      letter-spacing:.03em;
+    }
+    .qb-upload-spinner {
+      width:26px; height:26px; border-radius:50%;
+      border:3px solid rgba(255,255,255,.25); border-top-color:#fff;
+      animation:qbSpin .7s linear infinite;
+    }
+    @keyframes qbSpin { to { transform:rotate(360deg); } }
+
+    .qb-choices-label {
+      display:block; font-size:11px; font-weight:600; color:var(--text-muted);
+      margin-bottom:8px; text-transform:uppercase; letter-spacing:.04em;
+    }
+    .qb-choice {
+      display:flex; gap:10px; align-items:center; margin-bottom:8px;
+      padding:8px 10px; border-radius:8px;
+      background:var(--bg); border:1px solid var(--border);
+      transition:.13s;
+    }
+    .qb-choice:hover { border-color:rgba(242,100,25,.4) }
+    .qb-choice.is-correct { border-color:#10b981; background:rgba(16,185,129,.06) }
+    .qb-choice .corr {
+      width:36px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    }
+    .qb-choice .corr input {
+      width:18px; height:18px; cursor:pointer; accent-color:#10b981;
+    }
+    .qb-choice .qb-letter {
+      width:24px; flex-shrink:0; text-align:center;
+      font-size:12px; font-weight:700; color:var(--text-muted);
+    }
+    .qb-choice input[type=text] {
+      flex:1; padding:9px 12px; font-size:13.5px;
+      border-radius:7px; border:1px solid var(--border);
+      background:var(--panel-bg); color:var(--text);
+    }
+    .qb-choice input[type=text]:focus { outline:none; border-color:var(--orange) }
+    .qb-add-choice {
+      margin-top:4px; padding:8px 14px; font-size:12px; font-weight:600;
+      border-radius:8px; border:1px dashed var(--border);
+      background:transparent; color:var(--text-muted); cursor:pointer;
+      transition:.13s;
+    }
+    .qb-add-choice:hover { border-color:var(--orange); color:var(--orange); background:rgba(242,100,25,.04) }
+
+    .qb-tf { display:flex; gap:12px; margin-top:6px }
+    .qb-tf label {
+      flex:1; padding:14px; border-radius:10px; cursor:pointer;
+      border:2px solid var(--border); text-align:center;
+      font-weight:700; font-size:14px; transition:.13s;
+      background:var(--bg);
+      display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .qb-tf label:hover { border-color:var(--orange) }
+    .qb-tf label.selected { border-color:#10b981; background:rgba(16,185,129,.08); color:#10b981 }
+    .qb-tf input { display:none }
+
+    .qb-explain {
+      margin-top:12px; padding-top:12px; border-top:1px dashed var(--border);
+    }
+    .qb-explain label {
+      display:block; font-size:11px; font-weight:600; color:var(--text-muted);
+      margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em;
+    }
+    .qb-explain input {
+      width:100%; padding:9px 12px; font-size:13px;
+      border-radius:7px; border:1px solid var(--border);
+      background:var(--bg); color:var(--text);
+    }
+    .qb-explain input:focus { outline:none; border-color:var(--orange) }
+
+    .strat-row {
+      display:flex; gap:10px; align-items:center; margin-bottom:8px;
+    }
+    .strat-row input { padding:9px 12px; font-size:13px; border-radius:7px; border:1px solid var(--border); background:var(--panel-bg) }
+    .strat-row input:focus { outline:none; border-color:var(--orange) }
+
+    /* Add-question bar (sticks at bottom of Questions pane) */
+    .qb-add-bar {
+      margin-top:18px; padding:18px; border-radius:12px;
+      background:linear-gradient(135deg, rgba(242,100,25,.05), rgba(16,185,129,.04));
+      border:1px dashed rgba(242,100,25,.3);
+    }
+    .qb-add-bar-label {
+      font-size:12px; font-weight:700; color:var(--text-muted);
+      margin-bottom:10px; text-align:center; letter-spacing:.04em;
+    }
+    .qb-add-bar-buttons {
+      display:grid; gap:8px; grid-template-columns:repeat(4, 1fr);
+    }
+    @media (max-width:640px) { .qb-add-bar-buttons { grid-template-columns:1fr 1fr } }
+    .qb-add-btn {
+      padding:12px 14px; font-size:13px; font-weight:600;
+      border-radius:10px; border:1px solid var(--border);
+      background:var(--panel-bg); color:var(--text);
+      cursor:pointer; transition:.13s;
+      display:flex; align-items:center; justify-content:center; gap:6px;
+    }
+    .qb-add-btn:hover {
+      border-color:var(--orange); background:rgba(242,100,25,.08);
+      color:var(--orange); transform:translateY(-1px);
+      box-shadow:0 3px 10px rgba(242,100,25,.15);
+    }
+
+    /* Modal close button override (round, less intrusive) */
+    .modal-overlay .modal-close {
+      width:34px; height:34px; border-radius:50%;
+      border:1px solid var(--border); background:transparent;
+      color:var(--text-muted); font-size:20px; line-height:1;
+      cursor:pointer; transition:.13s;
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:0;
+    }
+    .modal-overlay .modal-close:hover {
+      border-color:#ef4444; background:rgba(239,68,68,.08);
+      color:#ef4444;
+      transform:rotate(90deg);
+    }
+
+    .empty {
+      text-align:center; padding:60px 20px; color:var(--text-muted);
+      border:1px dashed var(--border); border-radius:12px;
+    }
+    .empty .icon { font-size:40px; margin-bottom:8px; opacity:.55 }
+
+    .stat-grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); margin-bottom:18px }
+    .stat-tile {
+      background:var(--panel-bg); border:1px solid var(--border); border-radius:10px; padding:14px 18px;
+    }
+    .stat-tile .n { font-size:26px; font-weight:700; line-height:1 }
+    .stat-tile .l { font-size:10.5px; color:var(--text-muted); margin-top:6px; text-transform:uppercase; letter-spacing:.05em }
+    .stat-tile.orange .n { color:var(--orange) }
+    .stat-tile.green  .n { color:#10b981 }
+    .stat-tile.blue   .n { color:#3b82f6 }
+    .stat-tile.gray   .n { color:#94a3b8 }
+
+    .att-table { width:100%; border-collapse:collapse; font-size:12px }
+    .att-table th, .att-table td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--border) }
+    .att-table th { font-size:10px; text-transform:uppercase; color:var(--text-muted); letter-spacing:.05em; background:var(--bg) }
+    .att-table tr:hover { background:rgba(255,255,255,.02) }
+
+    /* ════════════════════════════════════════════════════════
+       BLOCKS.SO-INSPIRED PAGE HERO + SECTION LABEL
+       ════════════════════════════════════════════════════════ */
+    :root {
+      --accent:      #f26419;
+      --accent-soft: rgba(242,100,25,.10);
+      --accent-line: rgba(242,100,25,.35);
+      --accent-glow: rgba(242,100,25,.18);
+    }
+    .page-hero {
+      position:relative; overflow:hidden;
+      border:1px solid var(--border); border-radius:14px;
+      padding:22px 26px; margin-bottom:18px;
+      background:var(--panel-bg);
+      display:flex; align-items:center; gap:16px;
+    }
+    .page-hero::before {
+      content:''; position:absolute; top:0; right:0; width:260px; height:130px;
+      background-image:radial-gradient(circle, var(--accent-line) 1px, transparent 1px);
+      background-size:14px 14px;
+      mask-image:linear-gradient(225deg, black 0%, transparent 70%);
+      -webkit-mask-image:linear-gradient(225deg, black 0%, transparent 70%);
+      opacity:.5; pointer-events:none;
+    }
+    .page-hero::after {
+      content:''; position:absolute; bottom:-40px; left:-40px; width:200px; height:200px;
+      background:radial-gradient(circle, var(--accent-glow) 0%, transparent 65%);
+      pointer-events:none;
+    }
+    .page-hero-mark {
+      width:50px; height:50px; border-radius:12px; flex-shrink:0; position:relative; z-index:1;
+      display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(135deg, var(--accent-soft), transparent);
+      border:1px solid var(--accent-line);
+      color:var(--accent);
+      font-size:22px; line-height:1; font-weight:700;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.5);
+    }
+    .page-hero-body { flex:1; min-width:0; position:relative; z-index:1 }
+    .page-hero-eyebrow {
+      font-size:10.5px; font-weight:700; color:var(--accent);
+      text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px;
+    }
+    .page-hero h1 { margin:0 0 4px; font-size:19px; font-weight:700; letter-spacing:-.015em }
+    .page-hero p  { margin:0; color:var(--text-muted); font-size:12.5px; line-height:1.6; max-width:680px }
+
+    .page-section-label {
+      display:flex; align-items:center; gap:8px;
+      font-size:10.5px; font-weight:700; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.08em;
+      margin-bottom:12px;
+    }
+    .page-section-label::before {
+      content:''; width:5px; height:5px; border-radius:50%; background:var(--accent);
+      box-shadow:0 0 0 3px var(--accent-soft);
+    }
+    .page-section-label .count {
+      margin-left:auto;
+      font-size:10.5px; font-weight:700; color:var(--text-muted);
+      background:var(--border); padding:2px 8px; border-radius:999px;
+      letter-spacing:0; text-transform:none;
+    }
+
+    /* ════════════════════════════════════════════════════════
+       ATTEMPTS MODAL — blocks.so redesign
+       ════════════════════════════════════════════════════════ */
+    .att-hero {
+      position:relative; overflow:hidden;
+      border:1px solid var(--border); border-radius:12px;
+      padding:18px 22px; margin-bottom:16px;
+      background:var(--panel-bg);
+    }
+    .att-hero::before {
+      content:''; position:absolute; top:0; right:0; width:240px; height:120px;
+      background-image:radial-gradient(circle, var(--accent-line) 1px, transparent 1px);
+      background-size:14px 14px;
+      mask-image:linear-gradient(225deg, black 0%, transparent 70%);
+      -webkit-mask-image:linear-gradient(225deg, black 0%, transparent 70%);
+      opacity:.5; pointer-events:none;
+    }
+    .att-hero-title {
+      font-size:13px; font-weight:700; margin-bottom:14px;
+      display:flex; align-items:center; gap:8px;
+      position:relative; z-index:1;
+    }
+    .att-hero-title::before {
+      content:''; width:5px; height:5px; border-radius:50%; background:var(--accent);
+      box-shadow:0 0 0 3px var(--accent-soft);
+    }
+    .att-stats {
+      display:grid; grid-template-columns:repeat(auto-fit, minmax(120px,1fr));
+      gap:1px; background:var(--border);
+      border:1px solid var(--border); border-radius:10px; overflow:hidden;
+      position:relative; z-index:1;
+    }
+    .att-stat-cell { background:var(--panel-bg); padding:14px 16px }
+    .att-stat-cell .n { font-size:22px; font-weight:800; line-height:1; font-variant-numeric:tabular-nums }
+    .att-stat-cell .l { font-size:10px; color:var(--text-muted); margin-top:5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600 }
+    .att-stat-cell.accent .n { color:var(--accent) }
+    .att-stat-cell.green  .n { color:#10b981 }
+    .att-stat-cell.red    .n { color:#ef4444 }
+    .att-stat-cell.blue   .n { color:#3b82f6 }
+
+    /* Filter chips */
+    .att-filter {
+      display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap;
+      align-items:center;
+    }
+    .att-filter-label {
+      font-size:10.5px; font-weight:700; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.06em; margin-right:6px;
+    }
+    .att-chip {
+      padding:5px 11px; border-radius:999px;
+      border:1px solid var(--border); background:var(--bg);
+      font-size:11.5px; font-weight:600; color:var(--text-muted);
+      cursor:pointer; transition:.14s; display:inline-flex; align-items:center; gap:5px;
+    }
+    .att-chip:hover { border-color:var(--accent); color:var(--text) }
+    .att-chip.active { background:var(--accent-soft); border-color:var(--accent); color:var(--accent) }
+    .att-chip .ct {
+      background:var(--border); padding:0 6px; border-radius:999px;
+      font-size:10px; min-width:18px; text-align:center;
+    }
+    .att-chip.active .ct { background:var(--accent); color:#fff }
+    .att-filter-actions { margin-left:auto; display:flex; gap:6px }
+
+    /* Attempt cards */
+    .att-list { display:flex; flex-direction:column; gap:10px }
+    .att-card {
+      position:relative; overflow:hidden;
+      border:1px solid var(--border); border-radius:12px;
+      background:var(--panel-bg); padding:14px 16px;
+      transition:border-color .15s, box-shadow .15s, transform .12s;
+    }
+    .att-card:hover {
+      border-color:var(--accent-line);
+      box-shadow:0 4px 14px rgba(0,0,0,.06);
+    }
+    .att-card.expanded { border-color:var(--accent); box-shadow:0 4px 18px var(--accent-glow) }
+    .att-card-row {
+      display:grid; grid-template-columns:auto 1fr auto auto;
+      gap:14px; align-items:center;
+    }
+    .att-avatar {
+      width:40px; height:40px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(135deg, var(--accent-soft), transparent);
+      border:1px solid var(--accent-line);
+      color:var(--accent); font-weight:800; font-size:13.5px;
+    }
+    .att-card.passed   .att-avatar { background:linear-gradient(135deg, rgba(16,185,129,.16), transparent); border-color:rgba(16,185,129,.40); color:#10b981 }
+    .att-card.failed   .att-avatar { background:linear-gradient(135deg, rgba(239,68,68,.14), transparent);   border-color:rgba(239,68,68,.38);  color:#ef4444 }
+    .att-card.in_progress .att-avatar { background:linear-gradient(135deg, rgba(245,158,11,.16), transparent); border-color:rgba(245,158,11,.40); color:#f59e0b }
+    .att-user-block { min-width:0 }
+    .att-user-name { font-weight:700; font-size:13.5px; letter-spacing:-.005em; margin-bottom:3px }
+    .att-user-meta { font-size:11px; color:var(--text-muted); line-height:1.4; display:flex; gap:10px; flex-wrap:wrap }
+    .att-user-meta .sep { opacity:.5 }
+    .att-score {
+      text-align:right; flex-shrink:0;
+    }
+    .att-score-pct {
+      font-size:22px; font-weight:800; line-height:1;
+      font-variant-numeric:tabular-nums; letter-spacing:-.01em;
+    }
+    .att-score-pct .pct { font-size:13px; opacity:.55; vertical-align:top }
+    .att-score-tag {
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:10px; font-weight:700; padding:3px 8px; border-radius:999px;
+      margin-top:5px; text-transform:uppercase; letter-spacing:.04em;
+    }
+    .att-card.passed   .att-score-pct { color:#10b981 }
+    .att-card.failed   .att-score-pct { color:#ef4444 }
+    .att-card.passed   .att-score-tag { background:rgba(16,185,129,.15); color:#10b981 }
+    .att-card.failed   .att-score-tag { background:rgba(239,68,68,.15);  color:#ef4444 }
+    .att-card.in_progress .att-score-tag { background:rgba(245,158,11,.15); color:#f59e0b }
+    .att-card.in_progress .att-score-pct { color:#f59e0b; font-size:14px; font-weight:600 }
+    .att-actions { display:flex; gap:4px; align-items:center; flex-shrink:0 }
+    .att-icon-btn {
+      width:32px; height:32px; border-radius:8px;
+      border:1px solid var(--border); background:transparent;
+      color:var(--text-muted); cursor:pointer; font-size:14px;
+      display:inline-flex; align-items:center; justify-content:center;
+      transition:.13s;
+    }
+    .att-icon-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft) }
+    .att-icon-btn.danger:hover { border-color:#ef4444; color:#ef4444; background:rgba(239,68,68,.08) }
+
+    /* Violation chips */
+    .att-violations {
+      display:flex; gap:5px; flex-wrap:wrap; margin-top:10px;
+      padding-top:10px; border-top:1px dashed var(--border);
+    }
+    .att-vchip {
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:999px;
+      background:rgba(239,68,68,.10); color:#ef4444;
+      border:1px solid rgba(239,68,68,.22);
+    }
+    .att-vchip .ic { font-size:11px }
+    .att-vchip.warn  { background:rgba(245,158,11,.10); color:#f59e0b; border-color:rgba(245,158,11,.22) }
+
+    /* Timeline drawer (events) */
+    .att-timeline {
+      margin-top:14px; padding-top:14px; border-top:1px dashed var(--border);
+      max-height:0; overflow:hidden; opacity:0;
+      transition:max-height .25s ease, opacity .2s ease;
+    }
+    .att-card.expanded .att-timeline {
+      /* Enough to reveal the wrapper — the event list itself scrolls internally,
+         so this only needs to fit header + list container (~30px chrome + list). */
+      max-height:640px; opacity:1;
+    }
+    .att-timeline-title {
+      font-size:10.5px; font-weight:700; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .att-timeline-title::before {
+      content:''; width:5px; height:5px; border-radius:50%; background:var(--accent);
+      box-shadow:0 0 0 3px var(--accent-soft);
+    }
+    /* Push expand button to the right end of the title row */
+    .att-timeline-title .tl-expand {
+      margin-left:auto;
+      background:transparent; border:1px solid var(--border);
+      color:var(--text-muted); font-size:10px; font-weight:700;
+      padding:3px 9px; border-radius:6px; cursor:pointer;
+      letter-spacing:.03em; transition:.15s;
+    }
+    .att-timeline-title .tl-expand:hover {
+      border-color:var(--orange); color:var(--orange);
+      background:rgba(242,100,25,.08);
+    }
+    /* Scrollable event list — the inline drawer stays compact, but long lists
+       (e.g. 200+ events for a heavy anti-cheat attempt) scroll internally
+       instead of stretching the card off screen. Fullscreen button shows all. */
+    .att-event-list {
+      position:relative; padding-left:22px;
+      max-height:520px; overflow-y:auto;
+      /* Room for the timeline vertical bar on the left */
+      padding-right:4px;
+    }
+    .att-event-list::before {
+      content:''; position:absolute; left:6px; top:8px; bottom:8px;
+      width:2px; background:var(--border); border-radius:1px;
+    }
+    .att-event {
+      position:relative; padding:7px 0 7px 4px;
+      font-size:12px; line-height:1.5;
+    }
+    .att-event::before {
+      content:''; position:absolute; left:-22px; top:11px;
+      width:14px; height:14px; border-radius:50%;
+      background:var(--bg); border:2px solid var(--border);
+    }
+    .att-event.security::before { border-color:#ef4444; background:rgba(239,68,68,.14) }
+    .att-event.consent::before  { border-color:#8b5cf6; background:rgba(139,92,246,.14) }
+    .att-event.submit::before   { border-color:#10b981; background:rgba(16,185,129,.14) }
+    .att-event.start::before    { border-color:#3b82f6; background:rgba(59,130,246,.14) }
+    .att-event.action::before   { border-color:var(--accent); background:var(--accent-soft) }
+    .att-event-row1 {
+      display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    }
+    .att-event-label { font-weight:600; color:var(--text) }
+    .att-event-ts { font-size:10.5px; color:var(--text-muted); font-variant-numeric:tabular-nums }
+    .att-event-vcount {
+      font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:999px;
+      background:rgba(239,68,68,.14); color:#ef4444;
+    }
+    .att-event-data {
+      font-size:11px; color:var(--text-muted); margin-top:3px;
+      font-family:'JetBrains Mono', ui-monospace, monospace;
+      word-break:break-word;
+    }
+    .att-event-data b { color:var(--text); font-weight:700 }
+
+    /* Fullscreen timeline modal — reused view of the same events but full-size,
+       with a summary counter row and no height cap. */
+    #tl-modal .modal { width:min(880px, 96vw); max-height:92vh }
+    #tl-modal .modal-body { padding:0 }
+    .tl-modal-summary {
+      display:flex; gap:10px; flex-wrap:wrap;
+      padding:14px 18px; border-bottom:1px solid var(--border);
+      background:var(--bg); font-size:11px;
+    }
+    .tl-modal-summary .chip {
+      display:inline-flex; align-items:center; gap:5px;
+      padding:4px 10px; border-radius:999px;
+      background:var(--panel-bg); border:1px solid var(--border);
+      font-weight:700; color:var(--text);
+    }
+    .tl-modal-summary .chip.danger  { color:#ef4444; border-color:rgba(239,68,68,.30); background:rgba(239,68,68,.06) }
+    .tl-modal-summary .chip.warn    { color:#f59e0b; border-color:rgba(245,158,11,.30); background:rgba(245,158,11,.06) }
+    .tl-modal-summary .chip.success { color:#10b981; border-color:rgba(16,185,129,.30); background:rgba(16,185,129,.06) }
+    .tl-modal-list {
+      padding:16px 22px 22px;
+      max-height:calc(92vh - 130px); overflow-y:auto;
+    }
+
+    .att-empty {
+      text-align:center; padding:50px 20px; color:var(--text-muted);
+      border:1.5px dashed var(--border); border-radius:12px;
+    }
+    .att-empty .icon { font-size:36px; margin-bottom:8px; opacity:.45 }
+
+    @media (max-width:640px) {
+      .att-card-row { grid-template-columns:auto 1fr; gap:10px }
+      .att-score { grid-column:2; text-align:left; margin-top:8px }
+      .att-actions { grid-column:1 / -1; justify-content:flex-end; margin-top:8px }
+    }
+
+    /* ════════════════════════════════════════════════════════
+       REPORT MODAL — clean blocks.so-style report view
+       ════════════════════════════════════════════════════════ */
+    #rep-modal .modal-header { gap:8px; }
+
+    .rep-hero {
+      position:relative; overflow:hidden;
+      border:1px solid var(--border); border-radius:14px;
+      background:var(--panel-bg);
+      padding:18px 22px; margin-bottom:18px;
+      display:flex; align-items:center; gap:16px;
+    }
+    .rep-hero::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+      background:var(--rep-accent, var(--accent));
+    }
+    .rep-hero-ico {
+      width:48px; height:48px; border-radius:12px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:24px;
+      background:color-mix(in srgb, var(--rep-accent, var(--accent)) 14%, transparent);
+      color:var(--rep-accent, var(--accent));
+    }
+    .rep-hero-body { flex:1; min-width:0 }
+    .rep-hero-eyebrow {
+      font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.1em;
+      color:var(--text-muted); margin-bottom:4px;
+    }
+    .rep-hero-body h2 { margin:0; font-size:18px; font-weight:700; letter-spacing:-.005em }
+    .rep-hero-body p  { margin:4px 0 0; font-size:12px; color:var(--text-muted) }
+    .rep-hero-meta {
+      display:flex; gap:6px 12px; flex-wrap:wrap; margin-top:8px;
+      font-size:11px; color:var(--text-muted);
+    }
+    .rep-hero-meta b { color:var(--text); font-weight:700 }
+
+    .rep-section-label {
+      font-size:10.5px; font-weight:800; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.08em;
+      margin:18px 0 10px; display:flex; align-items:center; gap:8px;
+    }
+    .rep-section-label::before {
+      content:''; width:5px; height:5px; border-radius:50%; background:var(--accent);
+      box-shadow:0 0 0 3px var(--accent-soft);
+    }
+    .rep-section-label .ct {
+      margin-left:auto; font-size:10px; color:var(--text-muted);
+      background:var(--bg); border:1px solid var(--border); border-radius:999px;
+      padding:2px 8px;
+    }
+
+    /* KPI tiles — primary stats */
+    .rep-kpis {
+      display:grid; gap:10px; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
+      margin-bottom:18px;
+    }
+    .rep-kpi {
+      border:1px solid var(--border); border-radius:12px; padding:14px 16px;
+      background:var(--panel-bg);
+      position:relative; overflow:hidden;
+    }
+    .rep-kpi .n {
+      font-size:24px; font-weight:800; line-height:1;
+      font-variant-numeric:tabular-nums; letter-spacing:-.015em;
+    }
+    .rep-kpi .n .u { font-size:13px; opacity:.55; vertical-align:top; margin-left:2px }
+    .rep-kpi .l {
+      font-size:10px; color:var(--text-muted); margin-top:6px;
+      text-transform:uppercase; letter-spacing:.05em; font-weight:700;
+    }
+    .rep-kpi .sub { font-size:11px; color:var(--text-muted); margin-top:3px }
+    .rep-kpi.accent .n { color:var(--accent) }
+    .rep-kpi.green  .n { color:#10b981 }
+    .rep-kpi.red    .n { color:#ef4444 }
+    .rep-kpi.blue   .n { color:#3b82f6 }
+    .rep-kpi.amber  .n { color:#f59e0b }
+
+    /* 2-col grid for distribution + timeline */
+    .rep-grid-2 {
+      display:grid; gap:14px; grid-template-columns:1fr 1fr; margin-bottom:18px;
+    }
+    @media (max-width:780px) { .rep-grid-2 { grid-template-columns:1fr } }
+
+    .rep-card {
+      border:1px solid var(--border); border-radius:12px; padding:16px 18px;
+      background:var(--panel-bg);
+    }
+    .rep-card-head {
+      font-size:11px; font-weight:700; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .rep-card-head .sub { margin-left:auto; font-size:10.5px; font-weight:600 }
+
+    /* Distribution bars */
+    .rep-bars { display:flex; flex-direction:column; gap:10px }
+    .rep-bar-row { display:grid; grid-template-columns:60px 1fr 38px; gap:10px; align-items:center }
+    .rep-bar-label { font-size:11px; color:var(--text-muted); font-weight:600; font-variant-numeric:tabular-nums }
+    .rep-bar-track {
+      position:relative; height:18px; background:var(--bg);
+      border-radius:6px; overflow:hidden; border:1px solid var(--border);
+    }
+    .rep-bar-fill {
+      position:absolute; left:0; top:0; bottom:0;
+      background:linear-gradient(90deg, var(--bar-color, var(--accent)), color-mix(in srgb, var(--bar-color, var(--accent)) 65%, transparent));
+      border-radius:5px; transition:width .35s ease;
+      min-width:3px;
+    }
+    .rep-bar-count {
+      font-size:12px; font-weight:700; text-align:right;
+      font-variant-numeric:tabular-nums; color:var(--text);
+    }
+
+    /* Timeline mini sparkline */
+    .rep-spark {
+      display:flex; align-items:flex-end; gap:2px;
+      height:90px; padding:6px 4px; background:var(--bg);
+      border:1px solid var(--border); border-radius:8px;
+    }
+    .rep-spark-bar {
+      flex:1; min-width:0; background:var(--accent);
+      border-radius:2px 2px 0 0; opacity:.78;
+      transition:opacity .15s, transform .15s;
+      position:relative;
+    }
+    .rep-spark-bar:hover { opacity:1; transform:scaleY(1.04); transform-origin:bottom }
+    .rep-spark-bar.zero { background:var(--border); opacity:.35 }
+    .rep-spark-meta {
+      display:flex; justify-content:space-between; margin-top:8px;
+      font-size:10px; color:var(--text-muted); font-variant-numeric:tabular-nums;
+    }
+
+    /* Leaderboard table */
+    .rep-table-wrap {
+      border:1px solid var(--border); border-radius:12px; overflow:hidden;
+      background:var(--panel-bg);
+    }
+    .rep-table { width:100%; border-collapse:collapse; font-size:12.5px }
+    .rep-table th, .rep-table td {
+      padding:11px 14px; text-align:left;
+      border-bottom:1px solid var(--border);
+      vertical-align:middle;
+    }
+    .rep-table tbody tr:last-child td { border-bottom:none }
+    .rep-table th {
+      font-size:10px; text-transform:uppercase; letter-spacing:.06em;
+      color:var(--text-muted); background:var(--bg); font-weight:800;
+      position:sticky; top:0;
+    }
+    .rep-table th.right, .rep-table td.right { text-align:right; font-variant-numeric:tabular-nums }
+    .rep-table tbody tr { transition:background .12s }
+    .rep-table tbody tr:hover { background:color-mix(in srgb, var(--accent) 6%, transparent) }
+    .rep-rank {
+      display:inline-flex; width:24px; height:24px; border-radius:50%;
+      align-items:center; justify-content:center; font-size:11px; font-weight:800;
+      background:var(--bg); color:var(--text-muted); border:1px solid var(--border);
+    }
+    .rep-rank.gold   { background:linear-gradient(135deg,#fbbf24,#f59e0b); color:#fff; border-color:transparent }
+    .rep-rank.silver { background:linear-gradient(135deg,#cbd5e1,#94a3b8); color:#fff; border-color:transparent }
+    .rep-rank.bronze { background:linear-gradient(135deg,#fdba74,#c2410c); color:#fff; border-color:transparent }
+    .rep-user {
+      display:flex; align-items:center; gap:10px;
+    }
+    .rep-avatar {
+      width:30px; height:30px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(135deg, var(--accent-soft), transparent);
+      border:1px solid var(--accent-line);
+      color:var(--accent); font-weight:800; font-size:11.5px;
+    }
+    .rep-user-name { font-weight:600; letter-spacing:-.005em }
+    .rep-score-pill {
+      display:inline-block; padding:3px 10px; border-radius:999px;
+      font-size:11.5px; font-weight:800; font-variant-numeric:tabular-nums;
+      background:var(--bg); border:1px solid var(--border);
+    }
+    .rep-score-pill.pass { background:rgba(16,185,129,.13); color:#10b981; border-color:rgba(16,185,129,.30) }
+    .rep-score-pill.fail { background:rgba(239,68,68,.10);  color:#ef4444; border-color:rgba(239,68,68,.28) }
+    .rep-score-pill.idle { color:var(--text-muted) }
+    .rep-status-pill {
+      display:inline-block; padding:2px 8px; border-radius:999px;
+      font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em;
+    }
+    .rep-status-pill.passed      { background:rgba(16,185,129,.13); color:#10b981 }
+    .rep-status-pill.failed      { background:rgba(239,68,68,.10);  color:#ef4444 }
+    .rep-status-pill.in_progress { background:rgba(245,158,11,.13); color:#f59e0b }
+    .rep-status-pill.never       { background:var(--bg); color:var(--text-muted); border:1px dashed var(--border) }
+
+    /* Question heatmap rows */
+    .rep-qrow {
+      display:grid; grid-template-columns:1fr 110px 110px; gap:12px;
+      align-items:center; padding:10px 14px;
+      border-bottom:1px solid var(--border); font-size:12.5px;
+    }
+    .rep-qrow:last-child { border-bottom:none }
+    .rep-qrow:hover { background:color-mix(in srgb, var(--accent) 4%, transparent) }
+    .rep-q-prompt { color:var(--text); line-height:1.4 }
+    .rep-q-prompt .cat {
+      display:inline-block; font-size:10px; font-weight:700;
+      color:var(--accent); background:var(--accent-soft);
+      padding:2px 7px; border-radius:999px; margin-right:6px;
+    }
+    .rep-q-rate {
+      position:relative; height:8px; background:var(--bg);
+      border:1px solid var(--border); border-radius:4px; overflow:hidden;
+    }
+    .rep-q-rate-fill {
+      position:absolute; left:0; top:0; bottom:0; border-radius:3px;
+      background:linear-gradient(90deg, var(--q-color, #10b981), color-mix(in srgb, var(--q-color, #10b981) 70%, transparent));
+    }
+    .rep-q-rate-label {
+      font-size:11.5px; font-weight:800; font-variant-numeric:tabular-nums;
+      text-align:right; color:var(--q-color, var(--text));
+    }
+    .rep-q-asked {
+      font-size:10.5px; color:var(--text-muted);
+      text-align:right; font-variant-numeric:tabular-nums;
+    }
+
+    /* Empty state */
+    .rep-empty {
+      text-align:center; padding:60px 20px; color:var(--text-muted);
+      border:1.5px dashed var(--border); border-radius:12px;
+    }
+    .rep-empty .icon { font-size:42px; margin-bottom:10px; opacity:.45 }
+
+    /* Print — show only modal body, hide everything else */
+    @media print {
+      body * { visibility:hidden !important; }
+      #rep-modal, #rep-modal * { visibility:visible !important; }
+      #rep-modal { position:absolute !important; left:0; top:0; width:100%; background:#fff !important; }
+      #rep-modal .modal {
+        max-width:100% !important; border:none !important; box-shadow:none !important;
+        background:#fff !important; color:#000 !important;
+      }
+      #rep-modal .modal-header button,
+      #rep-modal .modal-close,
+      .rep-table tbody tr:hover { background:transparent !important }
+      #rep-modal .rep-card, #rep-modal .rep-hero, #rep-modal .rep-kpi, #rep-modal .rep-table-wrap {
+        background:#fff !important; color:#000 !important; border-color:#ccc !important;
+      }
+    }
+
+    @media (max-width:640px) {
+      .rep-qrow { grid-template-columns:1fr 90px; }
+      .rep-q-asked { display:none }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="edit"></i> Exams</div>
+        <div class="page-sub">ระบบข้อสอบประจำปี / certification — แยกจาก quiz ในคอร์สเรียน</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" id="btn-create">+ New Exam</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="edit"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Exams</h1>
+          <p>ระบบข้อสอบประจำปี / certification — กำหนด anti-cheat tier, policy &amp; consent, และดู audit timeline ของผู้สอบ</p>
+        </div>
+      </section>
+
+      <div class="stat-grid" id="stats">
+        <div data-skel="list" data-rows="1"></div>
+      </div>
+
+      <div class="page-section-label">
+        Exams
+        <span class="count" id="grid-count">·</span>
+      </div>
+
+      <div id="grid" class="ex-grid">
+        <div data-skel="list" data-rows="3"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═════ Editor modal ═════ -->
+<div class="modal-overlay" id="editor-modal">
+  <div class="modal xl">
+    <div class="modal-header">
+      <h3 id="editor-title">New Exam</h3>
+      <button class="modal-close" data-close>×</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="ex-tabs">
+        <div class="ex-tab active" data-pane="info"><i data-icon="clipboard"></i> Info</div>
+        <div class="ex-tab" data-pane="config"><i data-icon="settings"></i> Security & Config</div>
+        <div class="ex-tab" data-pane="questions"><i data-icon="help-circle"></i> Questions</div>
+      </div>
+
+      <!-- ── Info pane ── -->
+      <div class="ex-pane active" data-pane="info">
+        <div class="form-grid-2">
+          <div class="form-field full">
+            <label>Title *</label>
+            <input type="text" id="f-title" class="form-control" placeholder="SM Annual Exam 2026">
+          </div>
+          <div class="form-field full">
+            <label>Subtitle</label>
+            <input type="text" id="f-subtitle" class="form-control" placeholder="ข้อสอบความรู้ทั่วไปทีม SM ประจำปี">
+          </div>
+          <div class="form-field full">
+            <label>Description</label>
+            <textarea id="f-description" class="form-control" rows="3" placeholder="คำอธิบาย / กติกา"></textarea>
+          </div>
+          <div class="form-field">
+            <label>Icon</label>
+            <input type="text" id="f-icon" class="form-control" placeholder="📝" value="📝">
+          </div>
+          <div class="form-field">
+            <label>Color</label>
+            <input type="color" id="f-color" class="form-control" value="#f26419" style="height:38px; padding:2px">
+          </div>
+          <div class="form-field">
+            <label>Pass Score (%)</label>
+            <input type="number" id="f-pass" class="form-control" min="0" max="100" value="70">
+          </div>
+          <div class="form-field">
+            <label>Status</label>
+            <select id="f-status" class="form-control">
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+          <div class="form-field" style="grid-column:1/-1">
+            <label style="display:flex; gap:8px; align-items:center; cursor:pointer">
+              <input type="checkbox" id="f-popular" style="width:16px; height:16px">
+              <span><i data-icon="flame"></i> ข้อสอบยอดฮิต (แสดง badge "POPULAR" ที่ card)</span>
+            </label>
+          </div>
+          <div class="form-field" id="f-shared-row" style="grid-column:1/-1">
+            <label style="display:flex; gap:8px; align-items:center; cursor:pointer">
+              <input type="checkbox" id="f-shared" style="width:16px; height:16px">
+              <span><i data-icon="globe"></i> <b>Share ข้ามทีม</b> — ทีมอื่นเห็นและทำข้อสอบได้ (attempts + events แยกตามทีมผู้ทำ; question pool อยู่กับเจ้าของ)</span>
+            </label>
+            <div id="f-shared-note" style="font-size:11px; color:var(--text-muted); margin-top:4px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Config pane ── -->
+      <div class="ex-pane" data-pane="config">
+
+        <div style="margin-bottom:8px; font-size:12px; color:var(--text-muted)">
+          เลือก preset แล้วปรับ toggle/ค่าด้านล่างได้ ถ้าแก้แม้แต่อันเดียวจะกลายเป็น Custom อัตโนมัติ
+        </div>
+
+        <div class="preset-row" id="preset-row">
+          <div class="preset-chip" data-preset="basic">
+            <div class="pn">Basic</div>
+            <div class="pd">Tier 1 ทั้งหมด — สุ่มข้อ/ตัวเลือก, จำกัดจำนวนครั้ง, จำกัดเวลา</div>
+          </div>
+          <div class="preset-chip" data-preset="standard">
+            <div class="pn">Standard <i data-icon="star"></i></div>
+            <div class="pd">Tier 1 + 2 — ทีละข้อ, watermark, ตรวจการสลับแท็บ (แนะนำ)</div>
+          </div>
+          <div class="preset-chip" data-preset="strict">
+            <div class="pn">Strict</div>
+            <div class="pd">Tier 1 + 2 + 3 — fullscreen lock, disable copy/paste, anomaly detection</div>
+          </div>
+          <div class="preset-chip" data-preset="custom">
+            <div class="pn">Custom</div>
+            <div class="pd">เลือกเอง</div>
+          </div>
+        </div>
+
+        <!-- ── Tier 1 ── -->
+        <div class="tier-section">
+          <h4><i data-icon="target"></i> Tier 1 — Foundation</h4>
+          <div class="tier-desc">รากฐานความเป็นธรรม — ลดโอกาสลอกด้วยการสุ่มและจำกัดเวลา/จำนวนครั้ง</div>
+
+          <div class="feat-row" data-feat="pool">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="pool.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Question Pool — สุ่มจากคลังข้อสอบ</div>
+            </div>
+            <div class="feat-desc">มีข้อสอบในคลัง N ข้อ แต่สุ่มแสดงให้ผู้สอบแค่บางข้อ คนละข้อกัน</div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div><label>จำนวนที่แสดง (0 = ทั้งหมด)</label><input type="number" class="form-control" data-cfg="pool.total_show" min="0"></div>
+                <div><label>สุ่มแบบแบ่งหมวด</label>
+                  <select class="form-control" data-cfg="pool.stratified">
+                    <option value="false">ไม่ — สุ่มจากทุกข้อรวมกัน</option>
+                    <option value="true">ใช่ — สุ่มจากแต่ละหมวดให้ครบ</option>
+                  </select>
+                </div>
+              </div>
+              <div id="strat-cats" style="display:none">
+                <label>Categories (name : count)</label>
+                <div id="strat-list"></div>
+                <button class="btn btn-secondary btn-sm" type="button" id="strat-add">+ เพิ่มหมวด</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="feat-row" data-feat="shuffle_questions">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="shuffle_questions.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Shuffle Questions — สลับลำดับข้อ</div>
+            </div>
+            <div class="feat-desc">ลำดับข้อต่างกันต่อคน ทำให้คนนั่งข้างกันไม่เจอข้อเดียวกันพร้อมกัน</div>
+          </div>
+
+          <div class="feat-row" data-feat="shuffle_choices">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="shuffle_choices.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Shuffle Choices — สลับลำดับตัวเลือก</div>
+            </div>
+            <div class="feat-desc">ตัวเลือก A B C D สลับตำแหน่งต่อคน (ไม่กระทบ True/False และ Short Answer)</div>
+          </div>
+
+          <div class="feat-row" data-feat="attempts">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="attempts.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Attempt Limit — จำกัดจำนวนครั้ง</div>
+            </div>
+            <div class="feat-desc">กำหนดได้ว่าทำได้กี่ครั้ง และต้องเว้นเวลาเท่าไหร่ก่อนทำใหม่</div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div><label>จำนวนครั้งสูงสุด (0 = ไม่จำกัด)</label><input type="number" class="form-control" data-cfg="attempts.max" min="0"></div>
+                <div><label>Cooldown (นาที)</label><input type="number" class="form-control" data-cfg="attempts.cooldown_minutes" min="0"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="feat-row" data-feat="time_limit">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="time_limit.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Time Limit — จำกัดเวลา</div>
+            </div>
+            <div class="feat-desc">หมดเวลาแล้วระบบจะส่งข้อสอบให้อัตโนมัติ บีบให้ไม่มีเวลาแชร์คำตอบ</div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div><label>โหมด</label>
+                  <select class="form-control" data-cfg="time_limit.mode">
+                    <option value="total">จำกัดทั้งข้อสอบ</option>
+                    <option value="per_question">จำกัดต่อข้อ</option>
+                    <option value="both">ทั้งสองอย่าง</option>
+                  </select>
+                </div>
+                <div><label>เวลาทั้งข้อสอบ (นาที)</label><input type="number" class="form-control" data-cfg="time_limit.total_minutes" min="0"></div>
+                <div><label>เวลาต่อข้อ (วินาที)</label><input type="number" class="form-control" data-cfg="time_limit.per_question_seconds" min="0"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Policy / Consent ── -->
+        <div class="tier-section">
+          <h4><i data-icon="file-text"></i> Policy &amp; Consent — ข้อตกลงก่อนเริ่มสอบ</h4>
+          <div class="tier-desc">แสดงนโยบาย/ข้อชี้แจงก่อนผู้สอบเริ่มทำ เช่น "ใช้คะแนนเป็นเกณฑ์ประเมิน" — เปิดหรือไม่ก็ได้</div>
+
+          <div class="feat-row" data-feat="policy">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="policy.enabled"><span class="slider"></span></label>
+              <div class="feat-name">เปิดใช้ Policy / คำยินยอม</div>
+            </div>
+            <div class="feat-desc">ผู้สอบจะเห็นกล่องนโยบายม่วงระหว่างกติกาและปุ่ม "เริ่มสอบ" ถ้าตั้งบังคับติ๊ก ปุ่มจะ disable จนกว่าจะติ๊ก</div>
+            <div class="feat-config">
+              <div style="margin-bottom:10px">
+                <label>หัวข้อ</label>
+                <input type="text" class="form-control" data-cfg="policy.title" placeholder="เช่น ข้อตกลงและคำยินยอม">
+              </div>
+              <div style="margin-bottom:10px">
+                <label>เนื้อหา (รองรับ HTML)</label>
+                <textarea class="form-control" data-cfg="policy.content" rows="8"
+                          style="font-family:var(--font); font-size:12.5px; line-height:1.6; resize:vertical"
+                          placeholder="<p>เนื้อหา...</p>&#10;<ul><li>ข้อ 1</li><li>ข้อ 2</li></ul>"></textarea>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:4px">
+                  <i data-icon="lightbulb"></i> ใช้ <code>&lt;p&gt;</code>, <code>&lt;ul&gt;</code>, <code>&lt;li&gt;</code>, <code>&lt;b&gt;</code>, <code>&lt;h4&gt;</code>, <code>&lt;strong&gt;</code> ได้ตามปกติ
+                </div>
+              </div>
+              <div class="feat-config-grid">
+                <div>
+                  <label>บังคับติ๊กยินยอม</label>
+                  <select class="form-control" data-cfg="policy.require_consent">
+                    <option value="true">ใช่ — ต้องติ๊กถึงเริ่มสอบได้</option>
+                    <option value="false">ไม่ — โชว์อย่างเดียว</option>
+                  </select>
+                </div>
+                <div>
+                  <label>ข้อความ checkbox</label>
+                  <input type="text" class="form-control" data-cfg="policy.consent_label"
+                         placeholder="ฉันรับทราบและยินยอมตามเงื่อนไขข้างต้น">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tier 2 ── -->
+        <div class="tier-section">
+          <h4><i data-icon="shield"></i> Tier 2 — Deterrents</h4>
+          <div class="tier-desc">ตัวยับยั้ง — ทำให้การลอกหรือส่งต่อข้อสอบทำได้ยากขึ้น</div>
+
+          <div class="feat-row" data-feat="one_at_a_time">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="one_at_a_time.enabled"><span class="slider"></span></label>
+              <div class="feat-name">One Question At A Time — แสดงทีละข้อ</div>
+            </div>
+            <div class="feat-desc">ผู้สอบเห็นทีละข้อ ทำให้ถ่ายรูปรวบรวมข้อยาก / ส่งต่อข้อสอบทำได้ยาก</div>
+            <div class="feat-config">
+              <div><label>อนุญาตให้ย้อนกลับ</label>
+                <select class="form-control" data-cfg="one_at_a_time.allow_back">
+                  <option value="true">ใช่ — กดย้อนได้</option>
+                  <option value="false">ไม่ — ผ่านไปแล้วผ่านเลย</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="feat-row" data-feat="tab_detection">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="tab_detection.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Tab Switch Detection — ตรวจการสลับแท็บ</div>
+            </div>
+            <div class="feat-desc">
+              ตรวจจับว่าผู้สอบสลับไปแท็บอื่น/หน้าต่างอื่นกี่ครั้ง — นับสะสมตลอด attempt (ไม่รีเซ็ตรายข้อ)
+            </div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div>
+                  <label>อนุญาตให้สลับได้กี่ครั้ง</label>
+                  <input type="number" class="form-control" data-cfg="tab_detection.max_violations" min="0">
+                  <div class="feat-hint">0 = ไม่จำกัด (แค่บันทึก log) · ตัวอย่าง: 3 = สลับได้ 3 ครั้ง ครั้งที่ 4 จะเข้าสู่ action ด้านขวา</div>
+                </div>
+                <div>
+                  <label>เมื่อเกินโควตา จะทำอะไร</label>
+                  <select class="form-control" data-cfg="tab_detection.action" onchange="renderTabDetectionPreview()">
+                    <option value="log">🔇 log อย่างเดียว — ผู้สอบไม่รู้เรื่อง</option>
+                    <option value="warn">เตือนผู้สอบ — โชว์ pop-up ไม่มีผลกับคะแนน</option>
+                    <option value="penalty">หักคะแนน — ตัดคะแนนตอนส่งตามค่าด้านล่าง</option>
+                    <option value="force_submit">บังคับส่งข้อสอบทันที — จบเกมทันทีที่เกินโควตา</option>
+                  </select>
+                </div>
+                <div>
+                  <label>หักคะแนน (%) — เฉพาะโหมด penalty</label>
+                  <input type="number" class="form-control" data-cfg="tab_detection.penalty_pct" min="0" max="100" oninput="renderTabDetectionPreview()">
+                  <div class="feat-hint">ตัวอย่าง: 10 = คะแนนสุดท้ายจะโดนหัก 10% เมื่อผู้สอบสลับเกินโควตา</div>
+                </div>
+                <div>
+                  <label><i data-icon="ban"></i> สลับต่อข้อได้กี่ครั้ง (per-question)</label>
+                  <input type="number" class="form-control" data-cfg="tab_detection.per_question_max" min="0" oninput="renderTabDetectionPreview()">
+                  <div class="feat-hint">
+                    0 = ปิด · <b>ค่าแนะนำ 3</b> = ในข้อเดียวสลับได้ 3 ครั้ง ครั้งที่ 4 ระบบ<b>ล็อกข้อนั้น</b> ทำต่อไม่ได้และกลับมาแก้ไม่ได้ (ต้องใช้ร่วมกับ <b>One-at-a-time</b> ถึงจะได้ผล)
+                  </div>
+                </div>
+              </div>
+
+              <!-- Live preview panel — updates as admin changes settings, so what
+                   the config actually does is never ambiguous. Also mirrors the
+                   text shown to the user in the pre-exam agreement. -->
+              <div id="tabdet-preview" class="feat-preview"></div>
+            </div>
+          </div>
+
+          <div class="feat-row" data-feat="watermark">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="watermark.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Watermark — ลายน้ำชื่อผู้สอบบนหน้าจอ</div>
+            </div>
+            <div class="feat-desc">ทับชื่อผู้สอบแบบโปร่งใสบนหน้าจอ ถ่ายรูปแชร์จะติดชื่อไปด้วย</div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div><label>ความเข้ม (0–1)</label><input type="number" class="form-control" data-cfg="watermark.opacity" min="0" max="1" step="0.05"></div>
+                <div><label>ข้อความ ({username}, {email})</label><input type="text" class="form-control" data-cfg="watermark.text"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="feat-row" data-feat="exam_window">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="exam_window.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Exam Window — ช่วงเวลาที่เปิดให้สอบ</div>
+            </div>
+            <div class="feat-desc">เปิดให้เข้าสอบเฉพาะช่วงเวลาที่กำหนด ทุกคนเริ่มพร้อมกัน → คุยกันแทบไม่ทัน</div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div><label>เริ่ม</label><input type="datetime-local" class="form-control" data-cfg="exam_window.start"></div>
+                <div><label>สิ้นสุด</label><input type="datetime-local" class="form-control" data-cfg="exam_window.end"></div>
+                <div><label>Synchronized</label>
+                  <select class="form-control" data-cfg="exam_window.synchronized">
+                    <option value="false">ไม่ — เริ่มเมื่อกดเริ่มในช่วงเวลานี้</option>
+                    <option value="true">ใช่ — ทุกคนเริ่มที่เวลาเริ่ม</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="feat-row" data-feat="lazy_fetch">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="lazy_fetch.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Lazy Fetch — โหลดข้อสอบทีละข้อ</div>
+            </div>
+            <div class="feat-desc">ไม่โหลดข้อสอบทั้งชุดมาที่ client ตั้งแต่แรก — กด "ข้อถัดไป" ค่อยขอจาก server</div>
+          </div>
+
+          <div class="feat-row" data-feat="course_prereq">
+            <div class="feat-head">
+              <div class="feat-name" style="margin-left:2px"><i data-icon="book-open"></i> Course Prerequisites — ต้องผ่านคอร์สเรียนก่อน</div>
+            </div>
+            <div class="feat-desc">เลือกคอร์สที่ผู้สอบ <b>ต้องเรียนจบทุก phase</b> ก่อนจึงจะเปิดให้ทำข้อสอบนี้ได้ (ไม่เลือก = ไม่ล็อก) — ดึงจากระบบ Learning</div>
+            <div class="feat-config" style="display:block">
+              <div id="cm-exam-courses"
+                   style="display:flex; flex-direction:column; gap:6px; padding:10px; border:1px solid var(--border); border-radius:6px; background:var(--bg); max-height:200px; overflow:auto">
+                <div style="font-size:11px; color:var(--text-muted)">กำลังโหลด…</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tier 3 ── -->
+        <div class="tier-section">
+          <h4><i data-icon="lock"></i> Tier 3 — Strict</h4>
+          <div class="tier-desc">ระดับเข้ม — สำหรับการสอบที่ต้องการความเข้มงวดสูง อาจกดดันผู้สอบ</div>
+
+          <div class="feat-row" data-feat="fullscreen_lock">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="fullscreen_lock.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Fullscreen Lock — บังคับ fullscreen</div>
+            </div>
+            <div class="feat-desc">บังคับให้ทำข้อสอบในโหมด fullscreen หลุดออกจะถูกบันทึก</div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div><label>อนุญาตให้หลุด (ครั้ง)</label><input type="number" class="form-control" data-cfg="fullscreen_lock.max_violations" min="0"></div>
+                <div><label>เมื่อเกิน</label>
+                  <select class="form-control" data-cfg="fullscreen_lock.action">
+                    <option value="log">บันทึก log</option>
+                    <option value="warn">เตือน</option>
+                    <option value="penalty">หักคะแนน</option>
+                    <option value="force_submit">บังคับส่ง</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="feat-row" data-feat="disable_copy_paste">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="disable_copy_paste.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Disable Copy / Paste / Right-click</div>
+            </div>
+            <div class="feat-desc">ป้องกันการคัดลอกข้อสอบ (กันได้แค่ระดับนึง คนเก่งจริงเลี่ยงได้ แต่เป็น deterrent)</div>
+          </div>
+
+          <div class="feat-row" data-feat="anomaly_detection">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="anomaly_detection.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Anomaly Detection — ตรวจจับพฤติกรรมผิดปกติ</div>
+            </div>
+            <div class="feat-desc">flag คนทำเร็วผิดปกติ หรือสองคนตอบเหมือนกันเป๊ะ ให้แอดมินรีวิว</div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div><label>เร็วผิดปกติ (วิ/ข้อ)</label><input type="number" class="form-control" data-cfg="anomaly_detection.speed_threshold_seconds" min="0"></div>
+                <div><label>ความเหมือนเกิน (0–1)</label><input type="number" class="form-control" data-cfg="anomaly_detection.similarity_threshold" min="0" max="1" step="0.05"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Result visibility ── -->
+        <div class="tier-section">
+          <h4><i data-icon="eye"></i> Result Visibility</h4>
+          <div class="tier-desc">หลังส่งข้อสอบ ผู้สอบจะเห็นอะไรบ้าง</div>
+          <div class="feat-config-grid">
+            <div><label>แสดงผล</label>
+              <select class="form-control" data-cfg="show_results.mode">
+                <option value="after_submit">หลังกดส่งทันที</option>
+                <option value="after_window">หลังหมดช่วงเวลาสอบ</option>
+                <option value="never">ไม่แสดง (admin ดูเท่านั้น)</option>
+              </select>
+            </div>
+            <div><label>เปิดเฉลย</label>
+              <select class="form-control" data-cfg="show_results.show_answers">
+                <option value="false">ไม่ — ไม่แสดงคำตอบที่ถูก</option>
+                <option value="true">ใช่ — แสดงคำตอบที่ถูก</option>
+              </select>
+            </div>
+            <div><label>เปิดคำอธิบาย</label>
+              <select class="form-control" data-cfg="show_results.show_explains">
+                <option value="false">ไม่</option>
+                <option value="true">ใช่</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── Questions pane ── -->
+      <div class="ex-pane" data-pane="questions">
+        <div style="margin-bottom:14px; display:flex; align-items:center; padding:10px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border)">
+          <span style="font-size:13px; font-weight:600"><i data-icon="clipboard"></i> รายการคำถาม</span>
+          <span style="margin-left:auto; font-size:12px; color:var(--text-muted)" id="q-count">0 ข้อ</span>
+        </div>
+        <div id="qb-list"></div>
+        <div class="qb-add-bar">
+          <div class="qb-add-bar-label">+ เพิ่มคำถามใหม่</div>
+          <div class="qb-add-bar-buttons">
+            <button class="qb-add-btn" type="button" data-add="single"><i data-icon="edit"></i> Single choice</button>
+            <button class="qb-add-btn" type="button" data-add="multi"><i data-icon="check"></i> Multi choice</button>
+            <button class="qb-add-btn" type="button" data-add="truefalse"><i data-icon="activity"></i> True / False</button>
+            <button class="qb-add-btn" type="button" data-add="short"><i data-icon="pencil"></i> Short answer</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close>ยกเลิก</button>
+      <button class="btn btn-primary" id="btn-save"><i data-icon="save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════ Attempts modal ═════ -->
+<div class="modal-overlay" id="att-modal">
+  <div class="modal lg">
+    <div class="modal-header">
+      <h3 id="att-title">Attempts</h3>
+      <div style="display:flex;gap:6px;align-items:center;margin-left:auto">
+        <button class="btn btn-ghost btn-sm" onclick="openReminderModalFromAttempts()" title="ส่ง Reminder เข้า Google Chat" style="color:#4285F4;font-weight:600"><i data-icon="bell"></i> Reminder</button>
+        <button class="modal-close" data-close-att>×</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="att-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════ Report modal ═════ -->
+<div class="modal-overlay" id="rep-modal">
+  <div class="modal xl">
+    <div class="modal-header">
+      <h3 id="rep-title"><i data-icon="trending-up"></i> Report</h3>
+      <div style="display:flex; gap:6px; align-items:center; margin-left:auto;">
+        <button class="btn btn-ghost btn-sm" onclick="openReminderModal()" title="ส่ง Reminder เข้า Google Chat" style="color:#4285F4;font-weight:600"><i data-icon="bell"></i> Reminder</button>
+        <button class="btn btn-ghost btn-sm" onclick="reportExportCsv()" title="Export CSV"><i data-icon="inbox"></i> CSV</button>
+        <button class="btn btn-ghost btn-sm" onclick="reportPrint()" title="พิมพ์รายงาน"><i data-icon="printer"></i> Print</button>
+        <button class="btn btn-ghost btn-sm" onclick="reportCopySummary()" title="คัดลอกสรุป"><i data-icon="clipboard"></i> Copy</button>
+        <button class="modal-close" data-close-rep>×</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="rep-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════ Exam Reminder modal (Google Chat) ═════ -->
+<div class="modal-overlay" id="rem-modal">
+  <div class="modal lg">
+    <div class="modal-header">
+      <h3><i data-icon="bell"></i> Exam Reminder</h3>
+      <button class="modal-close" onclick="closeReminderModal()">×</button>
+    </div>
+    <div class="modal-body" style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <!-- LEFT: target + message + webhook -->
+      <div>
+        <div class="form-group">
+          <label class="form-label"><i data-icon="edit"></i> ข้อสอบ</label>
+          <div id="rem-exam-title" style="font-size:14px;font-weight:600;padding:8px 12px;background:var(--bg);border-radius:8px">—</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i data-icon="target"></i> ผู้รับ Reminder</label>
+          <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+            <button type="button" class="btn btn-ghost btn-sm" id="rem-tab-not" onclick="switchReminderTab('not_attempted')" style="flex:1;min-width:120px"><i data-icon="ban"></i> ยังไม่ได้ทำ (<span id="rem-not-count">0</span>)</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="rem-tab-failed" onclick="switchReminderTab('failed')" style="flex:1;min-width:120px"><i data-icon="x-circle"></i> ทำแล้วไม่ผ่าน (<span id="rem-failed-count">0</span>)</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="rem-tab-custom" onclick="switchReminderTab('custom')" style="flex:1;min-width:120px"><i data-icon="pencil"></i> เลือกเอง</button>
+          </div>
+          <div id="rem-target-list" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px;font-size:12px;background:var(--bg)"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i data-icon="message-circle"></i> ข้อความเพิ่มเติม (ไม่บังคับ)</label>
+          <textarea id="rem-message" class="form-control" rows="2" placeholder="เช่น กรุณาทำข้อสอบภายในสัปดาห์นี้" oninput="renderReminderPreview()"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i data-icon="calendar"></i> Deadline (ไม่บังคับ)</label>
+          <input type="text" id="rem-deadline" class="form-control" placeholder="31 ก.ค. 2026" oninput="renderReminderPreview()">
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i data-icon="link"></i> Webhook URL(s) — 1 URL ต่อบรรทัด</label>
+          <textarea id="rem-webhooks" class="form-control" rows="3" placeholder="เว้นว่าง = ใช้ default จาก System Settings" style="font-family:monospace;font-size:11px"></textarea>
+          <div class="form-hint" id="rem-webhook-hint" style="margin-top:4px">—</div>
+        </div>
+      </div>
+      <!-- RIGHT: card preview -->
+      <div>
+        <label class="form-label"><i data-icon="eye"></i> Preview (การ์ดที่จะยิงเข้า Chat)</label>
+        <div id="rem-preview" style="background:#f8fafc;color:#111;border:1px solid #e2e8f0;border-radius:10px;padding:14px;font-family:'Google Sans','Helvetica',sans-serif;font-size:13px;line-height:1.55;max-height:520px;overflow-y:auto;min-height:220px">
+          <div style="color:#94a3b8;text-align:center;padding:60px 0">กำลังโหลด preview…</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div id="rem-result" style="flex:1;font-size:12px"></div>
+      <button class="btn btn-ghost" onclick="closeReminderModal()">Cancel</button>
+      <button class="btn btn-primary" id="rem-send-btn" onclick="sendReminder()">
+        <span id="rem-send-text"><i data-icon="upload"></i> ส่ง Reminder</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Fullscreen Timeline modal — spawned from the "⛶ ขยาย" button on each
+     attempt's inline timeline. Shows the same event data at full size with a
+     summary chip row on top so investigating an attempt with many events is not
+     cramped into the compact card. -->
+<div class="modal-overlay" id="tl-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="tl-modal-title"><i data-icon="calendar"></i> Timeline</h3>
+      <div style="display:flex; gap:6px; align-items:center; margin-left:auto;">
+        <button class="modal-close" onclick="closeTimelineModal()">×</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="tl-modal-summary" id="tl-modal-summary"></div>
+      <div class="tl-modal-list" id="tl-modal-list"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/js/maintenance.js"></script>
+<script>
+if (!Auth.requireAuth()) {}
+if (!['super_admin','sm_admin','dev_sm'].includes(Auth.getUser()?.role)) {
+  Toast.error('Admin only'); setTimeout(() => location.replace('../dashboard.html'), 800);
+}
+Layout.render('admin');
+
+// ═══════════════ State ═══════════════
+let exams = [];
+let editing = null;          // currently editing exam (or null = new)
+let editConfig = null;       // config object being edited
+let editPreset = 'standard';
+let editQuestions = [];
+let _allCourses = null;      // cached course list for prereq picker (loaded lazily)
+let editCoursePrereqs = [];  // selected course IDs in the current editor session
+
+// ═══════════════ Load + render ═══════════════
+async function load() {
+  const res = await API.exams.list();
+  if (!res?.ok) { Toast.error('โหลด exams ไม่สำเร็จ'); return; }
+  exams = res.data?.data || [];
+  renderStats();
+  renderGrid();
+}
+
+function renderStats() {
+  const total = exams.length;
+  const pub   = exams.filter(e => e.status === 'published').length;
+  const draft = exams.filter(e => e.status === 'draft').length;
+  const subs  = exams.reduce((a,e) => a + (e.attempts_submitted || 0), 0);
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-tile orange"><div class="n">${total}</div><div class="l">Total</div></div>
+    <div class="stat-tile green"><div class="n">${pub}</div><div class="l">Published</div></div>
+    <div class="stat-tile gray"><div class="n">${draft}</div><div class="l">Drafts</div></div>
+    <div class="stat-tile blue"><div class="n">${subs}</div><div class="l">Submissions</div></div>
+  `;
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  const countEl = document.getElementById('grid-count');
+  if (countEl) countEl.textContent = `${exams.length} exam${exams.length === 1 ? '' : 's'}`;
+  if (!exams.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+      <div class="icon"><i data-icon="edit"></i></div>
+      <div>ยังไม่มีข้อสอบ — กด "+ New Exam" เพื่อสร้าง</div>
+    </div>`;
+    return;
+  }
+  const myTeam = Auth.getTeam();
+  grid.innerHTML = exams.map(e => {
+    const statusPill = ({
+      draft:     '<span class="pill pill-gray">Draft</span>',
+      published: '<span class="pill pill-green">Published</span>',
+      archived:  '<span class="pill pill-red">Archived</span>',
+    })[e.status] || '';
+    const presetPill = e.preset === 'strict' ? 'pill-red'
+                     : e.preset === 'standard' ? 'pill-orange'
+                     : e.preset === 'basic' ? 'pill-blue' : 'pill-gray';
+    const isShared   = !!e.shared;
+    const owner      = e.owner_team || '';
+    const iOwn       = !isShared || owner === myTeam;
+    const readOnly   = isShared && !iOwn;
+    const sharedPill = isShared
+      ? (iOwn
+          ? '<span class="pill pill-blue" title="ทีมของคุณเป็นเจ้าของ shared exam นี้"><i data-icon="globe"></i> Shared</span>'
+          : `<span class="pill pill-gray" title="Shared exam จากทีม ${escHtml(owner)}"><i data-icon="globe"></i> จาก ${escHtml(owner)}</span>`)
+      : '';
+    const editBtn = readOnly
+      ? `<button class="btn btn-ghost btn-sm" disabled title="แก้ไขได้เฉพาะทีมเจ้าของ (${escHtml(owner)})" style="opacity:.5"><i data-icon="eye"></i> ดู</button>`
+      : `<button class="btn btn-ghost btn-sm" onclick="openEdit('${e.id}')"><i data-icon="pencil"></i> แก้ไข</button>`;
+    const delBtn = readOnly
+      ? ''
+      : `<button class="btn btn-ghost btn-sm" onclick="delExam('${e.id}','${escHtml(e.title).replaceAll(`'`,'&#39;')}')" style="color:#ef4444; margin-left:auto"><i data-icon="trash"></i> ลบ</button>`;
+    return `
+      <div class="ex-card" style="--ex-accent:${escHtml(e.cover_color || '#f26419')}">
+        <div class="top">
+          <div class="ico">${renderIcon(e.icon, '<i data-icon="edit"></i>')}</div>
+          <div style="flex:1; min-width:0">
+            <div class="ti">${escHtml(e.title)}</div>
+            <div class="sub">${escHtml(e.subtitle || e.description || '')}</div>
+          </div>
+        </div>
+        <div class="meta">
+          ${statusPill}
+          ${sharedPill}
+          <span class="pill ${presetPill}">${escHtml(e.preset || 'custom')}</span>
+          <span><i data-icon="clipboard"></i> <b>${e.questions_count}</b> ข้อ</span>
+          <span><i data-icon="check"></i> <b>${e.pass_score}%</b></span>
+          <span><i data-icon="upload"></i> <b>${e.attempts_submitted || 0}</b></span>
+          ${(e.attempts_in_progress > 0) ? `<span style="background:color-mix(in srgb, var(--orange) 15%, transparent); border-color:color-mix(in srgb, var(--orange) 40%, transparent); color:var(--orange)"><i data-icon="circle"></i> <b>${e.attempts_in_progress}</b> active</span>` : ''}
+        </div>
+        <div class="actions">
+          ${editBtn}
+          <button class="btn btn-ghost btn-sm" onclick="openAttempts('${e.id}','${escHtml(e.title).replaceAll(`'`,'&#39;')}')"><i data-icon="bar-chart"></i> ผลสอบ</button>
+          <button class="btn btn-ghost btn-sm" onclick="openReport('${e.id}','${escHtml(e.title).replaceAll(`'`,'&#39;')}')"><i data-icon="trending-up"></i> Report</button>
+          ${delBtn}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════ Editor ═══════════════
+async function ensureCoursesLoaded() {
+  if (_allCourses) return _allCourses;
+  const res = await API.courses.listCourses();
+  _allCourses = res?.ok ? (res.data?.data || []) : [];
+  return _allCourses;
+}
+
+async function renderCoursePrereqPicker() {
+  const wrap = document.getElementById('cm-exam-courses');
+  const courses = await ensureCoursesLoaded();
+  if (!courses.length) {
+    wrap.innerHTML = '<div style="font-size:11px; color:var(--text-muted); padding:8px">ยังไม่มีคอร์สในระบบ — สร้างคอร์สที่ admin/courses.html ก่อน</div>';
+    return;
+  }
+  const selected = new Set(editCoursePrereqs);
+  const knownIds = new Set(courses.map(c => c.id));
+  const orphans = editCoursePrereqs.filter(id => !knownIds.has(id));
+  const orphanHtml = orphans.map(id => `
+    <label style="border:1px solid var(--danger,#e5484d); background:rgba(229,72,77,.08)">
+      <input type="checkbox" value="${escHtml(id)}" checked onchange="toggleCoursePrereq(this)">
+      <span class="cm-course-icon"><i data-icon="alert-triangle"></i></span>
+      <span class="cm-course-title" style="color:var(--danger,#e5484d)">${escHtml(id)} — คอร์สนี้ไม่อยู่ในระบบแล้ว (untick เพื่อลบ)</span>
+    </label>
+  `).join('');
+  wrap.innerHTML = orphanHtml + courses.map(c => `
+    <label>
+      <input type="checkbox" value="${escHtml(c.id)}" ${selected.has(c.id) ? 'checked' : ''}
+             onchange="toggleCoursePrereq(this)">
+      <span class="cm-course-icon">${renderIcon(c.icon)}</span>
+      <span class="cm-course-title">${escHtml(c.title)}</span>
+      ${c.published === false ? '<span class="cm-course-draft">draft</span>' : ''}
+    </label>
+  `).join('');
+  if (window.Icons?.render) window.Icons.render(wrap);
+}
+
+function toggleCoursePrereq(cb) {
+  const id = cb.value;
+  if (cb.checked) {
+    if (!editCoursePrereqs.includes(id)) editCoursePrereqs.push(id);
+  } else {
+    editCoursePrereqs = editCoursePrereqs.filter(x => x !== id);
+  }
+}
+
+function newExam() {
+  editing = null;
+  editPreset = 'standard';
+  editQuestions = [];
+  editCoursePrereqs = [];
+  document.getElementById('editor-title').textContent = 'New Exam';
+  document.getElementById('f-title').value = '';
+  document.getElementById('f-subtitle').value = '';
+  document.getElementById('f-description').value = '';
+  document.getElementById('f-icon').value = '<i data-icon="edit"></i>';
+  document.getElementById('f-color').value = '#f26419';
+  document.getElementById('f-pass').value = 70;
+  document.getElementById('f-status').value = 'draft';
+  document.getElementById('f-popular').checked = false;
+  applySharedToggleUI(null);
+  applyPreset('standard');
+  renderCoursePrereqPicker();
+  switchPane('info');
+  document.getElementById('editor-modal').classList.add('active');
+}
+
+// Wire the "🌐 Share ข้ามทีม" toggle: enabled when the current team owns
+// the exam (or when creating a new one). Foreign shared exams open in a
+// disabled state to match the API guard's behaviour.
+function applySharedToggleUI(e) {
+  const chk  = document.getElementById('f-shared');
+  const row  = document.getElementById('f-shared-row');
+  const note = document.getElementById('f-shared-note');
+  const myTeam = Auth.getTeam();
+  chk.checked = !!(e?.shared);
+  const isNew = !e;
+  const owner = e?.owner_team || myTeam;
+  const iOwn  = !e?.shared || owner === myTeam;
+  chk.disabled = !isNew && !iOwn;
+  row.style.opacity = chk.disabled ? '.55' : '1';
+  if (!isNew && e?.shared && owner !== myTeam) {
+    note.textContent = `Shared exam นี้เป็นของทีม "${owner}" — ทีมของคุณทำได้ แต่แก้ไขไม่ได้`;
+  } else if (!isNew && e?.shared) {
+    note.textContent = 'Untick ถ้าต้องการยกเลิกการแชร์ — ทีมอื่นจะไม่เห็นทันทีเมื่อกดบันทึก (attempts ที่ทีมอื่นทำไปแล้วยังอยู่)';
+  } else {
+    note.textContent = 'เมื่อ tick แล้วบันทึก ข้อสอบจะขึ้นในลิสต์ของทุกทีม — course prerequisite ต้องเป็น shared course เท่านั้น';
+  }
+}
+
+async function openEdit(id) {
+  const res = await API.exams.get(id);
+  if (!res?.ok) return Toast.error('โหลด exam ไม่สำเร็จ');
+  const e = res.data?.data;
+  editing = e;
+  editPreset = e.preset || 'custom';
+  editQuestions = (e.questions || []).map(q => ({ ...q }));
+  editCoursePrereqs = Array.isArray(e.course_prerequisites) ? [...e.course_prerequisites] : [];
+  document.getElementById('editor-title').innerHTML = '<i data-icon="pencil"></i> Edit Exam';
+  document.getElementById('f-title').value = e.title || '';
+  document.getElementById('f-subtitle').value = e.subtitle || '';
+  document.getElementById('f-description').value = e.description || '';
+  document.getElementById('f-icon').value = e.icon || '<i data-icon="edit"></i>';
+  document.getElementById('f-color').value = e.cover_color || '#f26419';
+  // Use `??` not `||` — `0` is a valid pass_score meaning "no threshold, keep any score".
+  // With `||` the field would silently reset to 70 every time admin opens the edit modal.
+  document.getElementById('f-pass').value = e.pass_score ?? 70;
+  document.getElementById('f-status').value = e.status || 'draft';
+  document.getElementById('f-popular').checked = !!e.is_popular;
+  applySharedToggleUI(e);
+  setPresetActive(editPreset);
+  editConfig = JSON.parse(JSON.stringify(e.config || {}));
+  applyConfigToUI();
+  renderCoursePrereqPicker();
+  renderQuestions();
+  switchPane('info');
+  document.getElementById('editor-modal').classList.add('active');
+}
+
+function switchPane(name) {
+  document.querySelectorAll('.ex-tab').forEach(t => t.classList.toggle('active', t.dataset.pane === name));
+  document.querySelectorAll('.ex-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === name));
+}
+document.querySelectorAll('.ex-tab').forEach(t => t.addEventListener('click', () => switchPane(t.dataset.pane)));
+
+// Close
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => {
+  document.getElementById('editor-modal').classList.remove('active');
+}));
+document.querySelectorAll('[data-close-att]').forEach(b => b.addEventListener('click', () => {
+  document.getElementById('att-modal').classList.remove('active');
+}));
+document.querySelectorAll('[data-close-rep]').forEach(b => b.addEventListener('click', () => {
+  document.getElementById('rep-modal').classList.remove('active');
+}));
+
+document.getElementById('btn-create').addEventListener('click', newExam);
+
+// ═══════════════ Preset & config UI ═══════════════
+function setPresetActive(name) {
+  document.querySelectorAll('.preset-chip').forEach(c => c.classList.toggle('active', c.dataset.preset === name));
+  editPreset = name;
+}
+
+document.querySelectorAll('.preset-chip').forEach(c => {
+  c.addEventListener('click', () => applyPreset(c.dataset.preset));
+});
+
+async function applyPreset(name) {
+  setPresetActive(name);
+  if (name === 'custom') {
+    // keep current config
+    if (!editConfig) {
+      const r = await API.exams.preset('basic');
+      editConfig = r?.data?.data?.config || {};
+    }
+  } else {
+    const r = await API.exams.preset(name);
+    editConfig = r?.data?.data?.config || {};
+  }
+  applyConfigToUI();
+}
+
+function getCfgPath(path) {
+  return path.split('.').reduce((o,k) => (o ? o[k] : undefined), editConfig);
+}
+function setCfgPath(path, val) {
+  const parts = path.split('.');
+  let o = editConfig;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (!o[parts[i]] || typeof o[parts[i]] !== 'object') o[parts[i]] = {};
+    o = o[parts[i]];
+  }
+  o[parts[parts.length - 1]] = val;
+}
+
+function applyConfigToUI() {
+  document.querySelectorAll('[data-cfg]').forEach(el => {
+    const path = el.dataset.cfg;
+    const v = getCfgPath(path);
+    if (el.type === 'checkbox') {
+      el.checked = !!v;
+    } else if (el.type === 'datetime-local') {
+      el.value = v ? String(v).slice(0, 16) : '';
+    } else if (el.tagName === 'SELECT') {
+      el.value = (v === true ? 'true' : v === false ? 'false' : (v ?? ''));
+    } else {
+      el.value = (v ?? '');
+    }
+  });
+  // Toggle "on" class for feat-rows
+  document.querySelectorAll('.feat-row').forEach(r => {
+    const cb = r.querySelector('input[type=checkbox][data-cfg$=".enabled"]');
+    if (cb) r.classList.toggle('on', cb.checked);
+  });
+  // stratified visibility
+  const strat = getCfgPath('pool.stratified');
+  document.getElementById('strat-cats').style.display = strat ? '' : 'none';
+  renderStratList();
+  renderTabDetectionPreview();
+}
+
+// Rebuild the "with these settings, X will happen" preview under Tab Detection.
+// Uses live DOM values (not saved config) so admin sees the effect of unsaved edits.
+function renderTabDetectionPreview() {
+  const box = document.getElementById('tabdet-preview');
+  if (!box) return;
+  const enabled = document.querySelector('[data-cfg="tab_detection.enabled"]')?.checked;
+  if (!enabled) {
+    box.innerHTML = `<span class="tp-lbl">OFF</span>ปิดใช้งาน — ระบบจะไม่นับหรือแจ้งเตือนการสลับแท็บใด ๆ`;
+    return;
+  }
+  const max     = Number(document.querySelector('[data-cfg="tab_detection.max_violations"]')?.value || 0);
+  const action  = document.querySelector('[data-cfg="tab_detection.action"]')?.value || 'log';
+  const penalty = Number(document.querySelector('[data-cfg="tab_detection.penalty_pct"]')?.value || 0);
+  const perQ    = Number(document.querySelector('[data-cfg="tab_detection.per_question_max"]')?.value || 0);
+  const oneAtATime = !!document.querySelector('[data-cfg="one_at_a_time.enabled"]')?.checked;
+
+  const quotaText = max > 0
+    ? `ผู้สอบสลับแท็บได้ <b>${max} ครั้ง</b> — ครั้งที่ <b>${max + 1}</b>`
+    : 'ทุกครั้งที่สลับแท็บ (ไม่มีโควตา)';
+
+  const actionText = ({
+    log:          'ระบบ<b>บันทึก log</b> อย่างเดียว ผู้สอบไม่รู้ตัว ไม่มีผลกับคะแนน',
+    warn:         'ระบบ<b>โชว์ pop-up เตือน</b>ผู้สอบว่าสลับแท็บ ไม่มีผลกับคะแนน',
+    penalty:      `ระบบ<b>หักคะแนน ${penalty}%</b>ตอนส่งข้อสอบ (สอบเสร็จก่อนถึงจะหัก)`,
+    force_submit: 'ระบบ<b>บังคับส่งข้อสอบทันที</b> จบเกมทันทีที่เกินโควตา',
+  })[action] || 'บันทึก log อย่างเดียว';
+
+  let html = `<span class="tp-lbl">PREVIEW</span><b>[Exam-wide]</b> ${quotaText} จะ${actionText}`;
+
+  if (perQ > 0) {
+    if (oneAtATime) {
+      html += `<br><span class="tp-lbl" style="background:#ef4444">PER-Q</span>ในข้อเดียวสลับแท็บได้ <b>${perQ} ครั้ง</b> — ครั้งที่ <b>${perQ + 1}</b> ระบบ<b>ล็อกข้อนั้น</b> ให้เลื่อนไปข้อถัดไปทันที (กลับมาแก้ไม่ได้ · คะแนนข้อนั้น = 0)`;
+    } else {
+      html += `<br><span class="tp-lbl" style="background:#f59e0b">WARN</span>ตั้ง per-question ไว้ <b>${perQ}</b> แต่ยัง<b>ไม่ได้เปิด One-at-a-time</b> — feature นี้จะไม่ทำงาน กรุณาเปิดใน card ด้านบน`;
+    }
+  }
+
+  box.innerHTML = html;
+}
+
+function readUIToConfig() {
+  document.querySelectorAll('[data-cfg]').forEach(el => {
+    const path = el.dataset.cfg;
+    let v;
+    if (el.type === 'checkbox') v = el.checked;
+    else if (el.type === 'number') v = el.value === '' ? 0 : Number(el.value);
+    else if (el.tagName === 'SELECT') {
+      v = el.value;
+      if (v === 'true')  v = true;
+      if (v === 'false') v = false;
+    } else v = el.value;
+    setCfgPath(path, v);
+  });
+  // categories from strat list
+  const cats = [];
+  document.querySelectorAll('#strat-list .strat-row').forEach(r => {
+    const name = r.querySelector('[data-strat=name]').value.trim();
+    const cnt  = Number(r.querySelector('[data-strat=count]').value || 0);
+    if (name) cats.push({ name, count: cnt });
+  });
+  setCfgPath('pool.categories', cats);
+}
+
+function renderStratList() {
+  const wrap = document.getElementById('strat-list');
+  const cats = getCfgPath('pool.categories') || [];
+  wrap.innerHTML = cats.map((c, i) => `
+    <div class="strat-row">
+      <input type="text" data-strat="name"  placeholder="ชื่อหมวด เช่น Networking" value="${escHtml(c.name)}" style="flex:2">
+      <input type="number" data-strat="count" placeholder="จำนวน" value="${c.count}" min="0" style="flex:1">
+      <button class="icon-x" onclick="rmStrat(${i})" title="ลบหมวดนี้">×</button>
+    </div>`).join('');
+}
+function rmStrat(i) {
+  readUIToConfig();
+  const cats = getCfgPath('pool.categories') || [];
+  cats.splice(i, 1);
+  setCfgPath('pool.categories', cats);
+  renderStratList();
+}
+document.getElementById('strat-add').addEventListener('click', () => {
+  readUIToConfig();
+  const cats = getCfgPath('pool.categories') || [];
+  cats.push({ name: '', count: 0 });
+  setCfgPath('pool.categories', cats);
+  renderStratList();
+});
+
+// Any change in cfg fields → mark Custom + re-toggle row state
+document.addEventListener('input', (e) => {
+  if (!e.target.matches('[data-cfg]')) return;
+  if (editPreset !== 'custom') setPresetActive('custom');
+  // Toggle .on
+  if (e.target.matches('input[type=checkbox][data-cfg$=".enabled"]')) {
+    e.target.closest('.feat-row')?.classList.toggle('on', e.target.checked);
+  }
+  if (e.target.matches('[data-cfg="pool.stratified"]')) {
+    document.getElementById('strat-cats').style.display = (e.target.value === 'true') ? '' : 'none';
+  }
+  if (e.target.matches('[data-cfg^="tab_detection."]') ||
+      e.target.matches('[data-cfg="one_at_a_time.enabled"]')) {
+    renderTabDetectionPreview();
+  }
+});
+
+// ═══════════════ Question builder ═══════════════
+document.querySelectorAll('[data-add]').forEach(b => {
+  b.addEventListener('click', () => addQuestion(b.dataset.add));
+});
+
+function addQuestion(type) {
+  const q = { id: 'q_' + Math.random().toString(36).slice(2,10), type, prompt: '', explain: '', category: '' };
+  if (type === 'single')    { q.choices = ['', '', '', '']; q.answer = 0; }
+  if (type === 'multi')     { q.choices = ['', '', '', '']; q.answer = []; }
+  if (type === 'truefalse') { q.answer = true; }
+  if (type === 'short')     { q.answer = ''; q.match_mode = 'exact'; q.case_sensitive = false; }
+  editQuestions.push(q);
+  renderQuestions();
+}
+
+// Resolve an image path that was stored relative to the app root. On
+// admin/exams.html the current pathname includes /admin/, so a bare relative
+// URL like "uploads/courses/7eleven/x.png" would resolve to /admin/uploads/...
+// — wrong. Prepend the detected app base instead. API_BASE is defined by
+// api.js; strip the trailing "/api" to get the app root.
+function resolveAssetUrl(path) {
+  if (!path) return '';
+  if (/^(https?:)?\/\//i.test(path)) return path;
+  if (path.startsWith('/'))          return path;
+  const base = API_BASE.replace(/\/api$/, '');
+  return base + '/' + path.replace(/^\.?\/*/, '');
+}
+
+function renderQuestions() {
+  const list = document.getElementById('qb-list');
+  document.getElementById('q-count').textContent = `${editQuestions.length} ข้อ`;
+  if (!editQuestions.length) {
+    list.innerHTML = `<div class="empty"><div class="icon">❓</div><div>ยังไม่มีข้อสอบ — กดปุ่มด้านบนเพื่อเพิ่ม</div></div>`;
+    return;
+  }
+  list.innerHTML = editQuestions.map((q, i) => qbCardHtml(q, i)).join('');
+}
+
+const TYPE_LABELS = {
+  single:    '📝 Single choice',
+  multi:     '☑️ Multi choice',
+  truefalse: '⚖️ True / False',
+  short:     '✏️ Short answer',
+};
+
+function qbCardHtml(q, i) {
+
+  let body = '';
+  if (q.type === 'single' || q.type === 'multi') {
+    body = `
+      <div class="qb-choices-label">ตัวเลือก ${q.type === 'single' ? '(เลือก 1 ข้อที่ถูก)' : '(ติ๊กข้อที่ถูก ได้หลายข้อ)'}</div>
+      ${(q.choices || []).map((ch, j) => {
+        const correct = isChoiceCorrect(q, j);
+        const letter = String.fromCharCode(65 + j);
+        return `
+        <div class="qb-choice ${correct ? 'is-correct' : ''}">
+          <span class="corr">
+            <input type="${q.type === 'single' ? 'radio' : 'checkbox'}"
+                   name="qcorr_${i}"
+                   ${correct ? 'checked' : ''}
+                   title="ติ๊กถ้าข้อนี้ถูก"
+                   onchange="setQAnswer(${i}, ${j}, this.checked)">
+          </span>
+          <span class="qb-letter">${letter}</span>
+          <input type="text" placeholder="ตัวเลือก ${letter}" value="${escHtml(ch)}" oninput="setQChoice(${i}, ${j}, this.value)">
+          <button class="icon-x" onclick="rmQChoice(${i}, ${j})" title="ลบตัวเลือกนี้">×</button>
+        </div>`;
+      }).join('')}
+      <button class="qb-add-choice" type="button" onclick="addQChoice(${i})">+ เพิ่มตัวเลือก</button>
+    `;
+  } else if (q.type === 'truefalse') {
+    body = `
+      <div class="qb-choices-label">เลือกคำตอบที่ถูก</div>
+      <div class="qb-tf">
+        <label class="${q.answer === true ? 'selected' : ''}">
+          <input type="radio" name="tf_${i}" ${q.answer === true ? 'checked' : ''} onchange="setQAnswer(${i}, true)">
+          ✓ True
+        </label>
+        <label class="${q.answer === false ? 'selected' : ''}">
+          <input type="radio" name="tf_${i}" ${q.answer === false ? 'checked' : ''} onchange="setQAnswer(${i}, false)">
+          ✗ False
+        </label>
+      </div>
+    `;
+  } else if (q.type === 'short') {
+    const accepted = Array.isArray(q.answer) ? q.answer.join(' | ') : (q.answer || '');
+    body = `
+      <div class="feat-config-grid" style="margin-top:0">
+        <div>
+          <label>คำตอบที่รับได้ (คั่นด้วย <code>|</code> ถ้ามีหลายคำ)</label>
+          <input type="text" class="qb-prompt" style="min-height:auto; padding:9px 12px; font-size:13px"
+                 placeholder="เช่น 3 | สาม | three"
+                 value="${escHtml(accepted)}" oninput="setQShortAns(${i}, this.value)">
+        </div>
+        <div>
+          <label>โหมดเทียบ</label>
+          <select onchange="setQ(${i},'match_mode',this.value)" style="padding:9px 12px; font-size:13px; width:100%; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text)">
+            ${['exact','contains','regex'].map(m => `<option value="${m}" ${q.match_mode===m?'selected':''}>${m}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label>Case sensitive</label>
+          <select onchange="setQ(${i},'case_sensitive',this.value==='true')" style="padding:9px 12px; font-size:13px; width:100%; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text)">
+            <option value="false" ${!q.case_sensitive?'selected':''}>ไม่ — ตัวพิมพ์ใหญ่/เล็กเหมือนกัน</option>
+            <option value="true"  ${q.case_sensitive?'selected':''}>ใช่ — ต้องตรงเป๊ะ</option>
+          </select>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="qb">
+      <div class="qb-head">
+        <div class="qb-num">ข้อ ${i + 1}</div>
+        <select class="qb-type-select" onchange="changeQType(${i}, this.value)" title="เปลี่ยนประเภทคำถาม">
+          ${Object.entries(TYPE_LABELS).map(([k,v]) =>
+            `<option value="${k}" ${q.type===k?'selected':''}>${v}</option>`
+          ).join('')}
+        </select>
+        <input type="text" class="qb-cat" placeholder="หมวด (สำหรับ stratified)"
+               value="${escHtml(q.category || '')}"
+               oninput="setQ(${i},'category',this.value)">
+        <button class="icon-x lg" onclick="rmQuestion(${i})" title="ลบข้อนี้" style="margin-left:auto">×</button>
+      </div>
+      <div class="qb-prompt-wrap">
+        <label>โจทย์</label>
+        <textarea class="qb-prompt" placeholder="พิมพ์โจทย์ที่นี่…" oninput="setQ(${i},'prompt',this.value)">${escHtml(q.prompt || '')}</textarea>
+      </div>
+      <div class="qb-image-wrap">
+        <label>รูปประกอบ (optional) — ใช้สำหรับ diagram / screenshot ที่คำถามอ้างถึง</label>
+        ${q.image
+          ? `<div class="qb-image-preview">
+              <img src="${escHtml(resolveAssetUrl(q.image))}" alt="Question image">
+              <div class="qb-img-actions">
+                <button onclick="removeQImage(${i})" title="ลบรูป">×</button>
+              </div>
+            </div>`
+          : `<label class="qb-image-empty" for="q-img-input-${i}">
+              <span class="ic">📷</span>
+              <span class="lbl">
+                <b>คลิกเพื่ออัปโหลดรูป</b>
+                <span>JPG · PNG · GIF · WEBP · สูงสุด 5MB</span>
+              </span>
+              <input type="file" id="q-img-input-${i}" accept="image/*" style="display:none"
+                     onchange="uploadQImage(${i}, this)">
+            </label>`
+        }
+      </div>
+      ${body}
+      <div class="qb-explain">
+        <label>คำอธิบาย <span style="font-weight:400; text-transform:none; color:var(--text-muted)">(แสดงให้ผู้สอบหลังสอบเสร็จ ถ้าเปิด show explains)</span></label>
+        <input type="text" placeholder="เช่น เพราะว่า..." value="${escHtml(q.explain || '')}" oninput="setQ(${i},'explain',this.value)">
+      </div>
+    </div>`;
+}
+function isChoiceCorrect(q, j) {
+  if (q.type === 'single') return Number(q.answer) === j;
+  if (q.type === 'multi')  return Array.isArray(q.answer) && q.answer.includes(j);
+  return false;
+}
+function setQ(i, key, val)            { editQuestions[i][key] = val; }
+function setQChoice(i, j, val)        { editQuestions[i].choices[j] = val; }
+
+// ── Question image upload / remove ──────────────────────────
+// The upload endpoint is api/upload.php — we send scope=exam-images so it
+// lands in uploads/exam-images/ instead of the board folder.
+async function uploadQImage(i, inputEl) {
+  const file = inputEl.files?.[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    Toast.error('ไฟล์ใหญ่เกิน 5MB'); return;
+  }
+  if (!file.type.startsWith('image/')) {
+    Toast.error('เลือกไฟล์รูปภาพเท่านั้น (JPG/PNG/GIF/WEBP)'); return;
+  }
+
+  // ── Show instant local preview using object URL ────────────────
+  //    Admin can see what they picked BEFORE upload finishes — no wait staring.
+  //    We swap to the server URL once the response comes back.
+  const localUrl = URL.createObjectURL(file);
+  const wrap = inputEl.closest('.qb-image-wrap');
+  if (wrap) {
+    wrap.innerHTML = `
+      <label>รูปประกอบ (optional) — ใช้สำหรับ diagram / screenshot ที่คำถามอ้างถึง</label>
+      <div class="qb-image-preview qb-image-uploading">
+        <img src="${localUrl}" alt="Uploading…">
+        <div class="qb-upload-overlay">
+          <div class="qb-upload-spinner"></div>
+          <div class="qb-upload-text">กำลังอัปโหลด...</div>
+        </div>
+      </div>
+    `;
+  }
+
+  const fd = new FormData();
+  fd.append('image', file);
+  fd.append('scope', 'exam-images');
+
+  const res = await API.upload('/upload.php', fd);
+
+  // Release the local object URL — we're switching to the server URL now
+  URL.revokeObjectURL(localUrl);
+
+  if (!res?.ok) {
+    Toast.error(res?.data?.message || 'อัปโหลดไม่สำเร็จ');
+    renderQuestions();   // roll UI back to drop-zone
+    return;
+  }
+  editQuestions[i].image = res.data?.data?.url || '';
+  if (editPreset !== 'custom') setPresetActive('custom');
+  Toast.success('อัปโหลดสำเร็จ');
+  renderQuestions();
+}
+
+function removeQImage(i) {
+  if (!editQuestions[i].image) return;
+  delete editQuestions[i].image;
+  if (editPreset !== 'custom') setPresetActive('custom');
+  renderQuestions();
+}
+
+function addQChoice(i)                { editQuestions[i].choices.push(''); renderQuestions(); }
+function rmQChoice(i, j) {
+  editQuestions[i].choices.splice(j, 1);
+  if (editQuestions[i].type === 'single') {
+    if (editQuestions[i].answer >= editQuestions[i].choices.length) editQuestions[i].answer = 0;
+  } else if (editQuestions[i].type === 'multi') {
+    editQuestions[i].answer = (editQuestions[i].answer || []).filter(x => x !== j).map(x => x > j ? x - 1 : x);
+  }
+  renderQuestions();
+}
+function setQAnswer(i, jOrBool, checked) {
+  const q = editQuestions[i];
+  if (q.type === 'single')    q.answer = jOrBool;
+  else if (q.type === 'truefalse') q.answer = jOrBool;
+  else if (q.type === 'multi') {
+    const arr = new Set(Array.isArray(q.answer) ? q.answer : []);
+    if (checked) arr.add(jOrBool); else arr.delete(jOrBool);
+    q.answer = [...arr].sort((a,b)=>a-b);
+  }
+}
+function setQShortAns(i, val) {
+  const arr = val.split('|').map(s => s.trim()).filter(Boolean);
+  editQuestions[i].answer = arr.length > 1 ? arr : (arr[0] || '');
+}
+function rmQuestion(i) { editQuestions.splice(i, 1); renderQuestions(); }
+
+// Change question type while preserving prompt/category/explain
+function changeQType(i, newType) {
+  const q = editQuestions[i];
+  if (!q || q.type === newType) return;
+
+  // Remember preserved fields
+  const preserved = {
+    id:       q.id,
+    prompt:   q.prompt   || '',
+    category: q.category || '',
+    explain:  q.explain  || '',
+  };
+
+  // Try to carry over choices/answer when sensible
+  let carriedChoices = q.choices ? [...q.choices] : null;
+
+  const next = { ...preserved, type: newType };
+
+  if (newType === 'single') {
+    next.choices = carriedChoices && carriedChoices.length >= 2
+                   ? carriedChoices
+                   : ['', '', '', ''];
+    // If old type was multi, take first selected as answer
+    if (q.type === 'multi' && Array.isArray(q.answer) && q.answer.length) {
+      next.answer = q.answer[0];
+    } else {
+      next.answer = 0;
+    }
+  } else if (newType === 'multi') {
+    next.choices = carriedChoices && carriedChoices.length >= 2
+                   ? carriedChoices
+                   : ['', '', '', ''];
+    if (q.type === 'single' && typeof q.answer === 'number') {
+      next.answer = [q.answer];
+    } else {
+      next.answer = [];
+    }
+  } else if (newType === 'truefalse') {
+    next.answer = (q.type === 'truefalse') ? !!q.answer : true;
+  } else if (newType === 'short') {
+    next.answer = '';
+    next.match_mode = q.match_mode || 'exact';
+    next.case_sensitive = !!q.case_sensitive;
+  }
+
+  editQuestions[i] = next;
+  renderQuestions();
+  Toast.success(`เปลี่ยนเป็น ${TYPE_LABELS[newType]} แล้ว`);
+}
+
+// ═══════════════ Save ═══════════════
+document.getElementById('btn-save').addEventListener('click', async () => {
+  readUIToConfig();
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { Toast.error('Title required'); switchPane('info'); return; }
+  if (!editQuestions.length) { Toast.error('ต้องมีข้อสอบอย่างน้อย 1 ข้อ'); switchPane('questions'); return; }
+
+  const payload = {
+    title,
+    subtitle:    document.getElementById('f-subtitle').value.trim(),
+    description: document.getElementById('f-description').value.trim(),
+    icon:        document.getElementById('f-icon').value.trim() || '📝',
+    cover_color: document.getElementById('f-color').value,
+    // `.value` is a string; "0" is truthy so `|| 70` doesn't corrupt it — but
+    // "" (empty field) would fall back to 70. Preserve intent: empty → 0.
+    pass_score:  Number(document.getElementById('f-pass').value) || 0,
+    status:      document.getElementById('f-status').value,
+    preset:      editPreset,
+    is_popular:  document.getElementById('f-popular').checked,
+    shared:      document.getElementById('f-shared').checked,
+    config:      editConfig,
+    questions:   editQuestions,
+    course_prerequisites: [...editCoursePrereqs],
+  };
+
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  const res = editing
+    ? await API.exams.update(editing.id, payload)
+    : await API.exams.create(payload);
+  btn.disabled = false;
+  if (!res?.ok) return Toast.error(res?.data?.message || 'Save failed');
+  Toast.success('บันทึกแล้ว');
+  document.getElementById('editor-modal').classList.remove('active');
+  load();
+});
+
+// ═══════════════ Delete ═══════════════
+async function delExam(id, title) {
+  if (!await confirmDialog(`การลบจะทำให้ข้อมูล attempt ของผู้สอบถูกลบไปด้วย — กู้คืนไม่ได้\n\nลบ "${title}" ?`, 'ลบข้อสอบ')) return;
+  const res = await API.exams.delete(id);
+  if (!res?.ok) return Toast.error(res?.data?.message || 'Delete failed');
+  Toast.success('ลบแล้ว');
+  load();
+}
+
+// ═══════════════ Attempts viewer ═══════════════
+// ═══════════════ Attempts modal (redesigned) ═══════════════
+let _attemptsAll = [];
+let _attemptsExamId = null;
+let _attemptsExamTitle = '';
+let _attemptsFilter = 'all';
+// Not-attempted set derived from /exams/report — needed so 📊 ผลสอบ can show
+// the "ยังไม่ได้ทำ" chip + user list without needing to also open 📈 Report.
+let _attemptsNotAttempted = [];
+let _attemptsEligibleCount = 0;
+let _attemptsExamPassScore = 70;
+
+function initials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  return (parts[0]?.[0] || '') + (parts[1]?.[0] || '');
+}
+
+function duration(startISO, endISO) {
+  if (!startISO || !endISO) return null;
+  const s = new Date(startISO).getTime();
+  const e = new Date(endISO).getTime();
+  if (!s || !e || e < s) return null;
+  const sec = Math.round((e - s) / 1000);
+  const mm = Math.floor(sec / 60), ss = sec % 60;
+  return `${mm} น. ${ss} วิ`;
+}
+
+async function openAttempts(id, title) {
+  _attemptsExamId = id;
+  _attemptsExamTitle = title;
+  _attemptsFilter = 'all';
+  document.getElementById('att-title').textContent = '📊 ผลสอบ — ' + title;
+  document.getElementById('att-body').innerHTML = '<div data-skel="list" data-rows="3"></div>';
+  document.getElementById('att-modal').classList.add('active');
+
+  // Load attempts + report side-by-side. Report gives us the not-attempted list
+  // that isn't derivable from attempts.json alone (users who never touched the
+  // exam have no attempts record).
+  const [attRes, repRes] = await Promise.all([
+    API.exams.listAttempts(id),
+    API.exams.report(id),
+  ]);
+  if (!attRes?.ok) {
+    document.getElementById('att-body').innerHTML =
+      '<div class="att-empty"><div class="icon">⚠️</div><div>โหลดไม่สำเร็จ</div></div>';
+    return;
+  }
+  _attemptsAll = attRes.data?.data || [];
+  const rep = repRes?.data?.data || {};
+  _attemptsNotAttempted   = rep.not_attempted || [];
+  _attemptsEligibleCount  = rep.overview?.eligible_users ?? _attemptsAll.length;
+  _attemptsExamPassScore  = rep.exam?.pass_score ?? 70;
+  renderAttempts();
+}
+
+function renderAttempts() {
+  const rows = _attemptsAll;
+  const body = document.getElementById('att-body');
+
+  // Aggregate stats — always computed so the hero + filter chips still show
+  // even when nobody has attempted the exam yet.
+  const total = rows.length;
+  const submitted = rows.filter(r => r.status === 'submitted');
+  const passed = submitted.filter(r => r.passed).length;
+  const failed = submitted.length - passed;
+  const inProgress = rows.filter(r => r.status === 'in_progress').length;
+  const avgScore = submitted.length
+    ? Math.round(submitted.reduce((s, r) => s + (r.score || 0), 0) / submitted.length)
+    : 0;
+  const passRate = submitted.length ? Math.round(passed / submitted.length * 100) : 0;
+  const notCount = _attemptsNotAttempted.length;
+  const eligible = _attemptsEligibleCount;
+  // "ทำแล้ว" = unique users who have at least one attempt (any status).
+  // This is different from `total` (which counts attempts, not people).
+  const uniqueAttemptUsers = new Set(rows.map(r => r.user_id)).size;
+
+  // Filter
+  const filter = _attemptsFilter;
+  let filtered = rows;
+  if (filter === 'passed') filtered = rows.filter(r => r.status === 'submitted' && r.passed);
+  else if (filter === 'failed') filtered = rows.filter(r => r.status === 'submitted' && !r.passed);
+  else if (filter === 'in_progress') filtered = rows.filter(r => r.status === 'in_progress');
+
+  // Special view: "🚫 ยังไม่ได้ทำ" renders user chips instead of attempt cards
+  const notAttemptedListHtml = filter === 'not_attempted' ? `
+    <div class="att-list">
+      ${notCount === 0
+        ? `<div class="att-empty"><div class="icon">🎉</div><div>ทุกคน (${eligible} คน) ทำข้อสอบครบแล้ว</div></div>`
+        : `<div style="padding:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px">
+             <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">รายชื่อผู้ที่ยังไม่ได้เริ่มทำข้อสอบนี้ — อิงจาก users.json ของทีมนี้ ที่ <code>exam_include ≠ false</code></div>
+             <div style="display:flex;flex-wrap:wrap;gap:8px">
+               ${_attemptsNotAttempted.map(u => `
+                 <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:20px;font-size:12px">
+                   <div style="width:24px;height:24px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${escHtml((u.name || '?').charAt(0).toUpperCase())}</div>
+                   <span>${escHtml(u.name)}</span>
+                   ${u.email ? `<span style="color:var(--text-muted);font-size:10px">${escHtml(u.email)}</span>` : ''}
+                 </div>`).join('')}
+             </div>
+             <div style="margin-top:16px;text-align:center">
+               <button class="btn btn-primary" onclick="openReminderModalFromAttempts()" style="font-size:12px">🔔 ส่ง Reminder เข้า Google Chat</button>
+             </div>
+           </div>`}
+    </div>` : `
+    <div class="att-list">
+      ${filtered.length === 0
+        ? '<div class="att-empty"><div class="icon">🔍</div><div>ไม่มี attempt ที่ตรงตัวกรอง</div></div>'
+        : filtered.map(a => attemptCardHtml(a)).join('')}
+    </div>`;
+
+  body.innerHTML = `
+    <div class="att-hero">
+      <div class="att-hero-title">ภาพรวม</div>
+      <div class="att-stats">
+        <div class="att-stat-cell accent"><div class="n">${eligible}</div><div class="l">Eligible ทั้งหมด</div></div>
+        <div class="att-stat-cell green"><div class="n">${uniqueAttemptUsers}</div><div class="l">ทำแล้ว</div></div>
+        <div class="att-stat-cell" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25)"><div class="n" style="color:#ef4444">${notCount}</div><div class="l">ยังไม่ได้ทำ</div></div>
+        <div class="att-stat-cell blue"><div class="n">${inProgress}</div><div class="l">กำลังทำ</div></div>
+        <div class="att-stat-cell"><div class="n">${passRate}<span style="font-size:14px;opacity:.6">%</span></div><div class="l">Pass Rate</div></div>
+        <div class="att-stat-cell"><div class="n">${avgScore}<span style="font-size:14px;opacity:.6">%</span></div><div class="l">คะแนนเฉลี่ย</div></div>
+      </div>
+    </div>
+
+    <div class="att-filter">
+      <span class="att-filter-label">กรอง</span>
+      <span class="att-chip ${filter==='all'?'active':''}" onclick="filterAttempts('all')">ทำแล้ว (attempts) <span class="ct">${total}</span></span>
+      <span class="att-chip ${filter==='passed'?'active':''}" onclick="filterAttempts('passed')">ผ่าน <span class="ct">${passed}</span></span>
+      <span class="att-chip ${filter==='failed'?'active':''}" onclick="filterAttempts('failed')">ไม่ผ่าน <span class="ct">${failed}</span></span>
+      <span class="att-chip ${filter==='in_progress'?'active':''}" onclick="filterAttempts('in_progress')">กำลังทำ <span class="ct">${inProgress}</span></span>
+      <span class="att-chip ${filter==='not_attempted'?'active':''}" style="${filter==='not_attempted' ? 'background:rgba(239,68,68,.15);border-color:#ef4444;color:#ef4444' : 'color:#ef4444'}" onclick="filterAttempts('not_attempted')">🚫 ยังไม่ได้ทำ <span class="ct">${notCount}</span></span>
+      <div class="att-filter-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openReminderModalFromAttempts()" style="color:#4285F4;font-weight:600">🔔 Reminder</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetAllAttempts('${_attemptsExamId}')" style="color:#ef4444"><i data-icon="trash"></i> ลบทั้งหมด</button>
+      </div>
+    </div>
+
+    ${notAttemptedListHtml}
+  `;
+}
+
+function attemptCardHtml(a) {
+  const status = a.status === 'submitted' ? (a.passed ? 'passed' : 'failed') : 'in_progress';
+  const tagText = status === 'passed' ? '✓ ผ่าน' : status === 'failed' ? '✗ ไม่ผ่าน' : '● กำลังทำ';
+  const v = a.violations || {};
+  const violationChips = Object.entries(v)
+    .filter(([_, n]) => n > 0)
+    .map(([k, n]) => {
+      const map = {
+        tab_switch: { ic: '🚪', label: 'สลับแท็บ' },
+        blur:       { ic: '💫', label: 'หน้าจอเสียโฟกัส' },
+        fullscreen_exit: { ic: '🖥', label: 'ออก fullscreen' },
+        copy:       { ic: '📋', label: 'พยายาม copy' },
+        paste:      { ic: '📎', label: 'พยายาม paste' },
+      };
+      const m = map[k] || { ic: '⚠️', label: k };
+      return `<span class="att-vchip"><span class="ic">${m.ic}</span>${m.label} ×${n}</span>`;
+    }).join('');
+
+  const dur = duration(a.started_at, a.submitted_at);
+  const scoreDisplay = a.status === 'submitted'
+    ? `<div class="att-score-pct">${a.score}<span class="pct">%</span></div>`
+    : `<div class="att-score-pct">—</div>`;
+
+  return `
+    <div class="att-card ${status}" data-att-id="${a.id}">
+      <div class="att-card-row">
+        <div class="att-avatar">${escHtml(initials(a.user_name || a.user_id))}</div>
+        <div class="att-user-block">
+          <div class="att-user-name">${escHtml(a.user_name || a.user_id)}</div>
+          <div class="att-user-meta">
+            <span>🕒 เริ่ม ${a.started_at ? fmtDate(a.started_at) : '-'}</span>
+            ${a.submitted_at ? `<span class="sep">·</span><span>ส่ง ${fmtDate(a.submitted_at)}</span>` : ''}
+            ${dur ? `<span class="sep">·</span><span>⏱ ${dur}</span>` : ''}
+            ${a.auto_submitted ? `<span class="sep">·</span><span style="color:#f59e0b">⚙ ระบบบังคับส่ง</span>` : ''}
+          </div>
+        </div>
+        <div class="att-score">
+          ${scoreDisplay}
+          <div class="att-score-tag">${tagText}</div>
+        </div>
+        <div class="att-actions">
+          <button class="att-icon-btn" onclick="toggleTimeline('${a.id}')" title="ดู timeline">📅</button>
+          <button class="att-icon-btn danger" onclick="resetAttempt('${a.id}','${escHtml(a.user_name||'').replaceAll(`'`,'&#39;')}','${_attemptsExamId}')" title="ลบ attempt นี้"><i data-icon="trash"></i></button>
+        </div>
+      </div>
+      ${violationChips ? `<div class="att-violations">${violationChips}</div>` : ''}
+      <div class="att-timeline" id="att-timeline-${a.id}">
+        <div class="att-timeline-title">Timeline (กำลังโหลด…)</div>
+      </div>
+    </div>
+  `;
+}
+
+function filterAttempts(f) {
+  _attemptsFilter = f;
+  renderAttempts();
+}
+
+// Cache events per attempt so the fullscreen modal can reuse what the inline
+// drawer already fetched — avoids a second network round-trip when admin
+// clicks ⛶ to expand.
+const _timelineCache = new Map();
+
+function _tlEventClass(t) {
+  if (['tab_switch','blur','focus','fullscreen_exit','paste','copy','devtools','question_skipped'].includes(t)) return 'security';
+  if (t === 'policy_consent') return 'consent';
+  if (t === 'attempt_submit' || t === 'attempt_auto_submit') return 'submit';
+  if (t === 'attempt_start') return 'start';
+  return 'action';
+}
+function _tlFmtData(e) {
+  const d = e.data || {};
+  const bits = [];
+  if (d.q_index !== undefined) bits.push(`ข้อ <b>${d.q_index}</b>`);
+  if (d.score !== undefined) bits.push(`คะแนน <b>${d.score}%</b>`);
+  if (d.passed !== undefined) bits.push(`<b>${d.passed ? 'ผ่าน' : 'ไม่ผ่าน'}</b>`);
+  if (d.duration_sec) {
+    const mm = Math.floor(d.duration_sec/60), ss = d.duration_sec%60;
+    bits.push(`ใช้เวลา <b>${mm}น ${ss}ว</b>`);
+  }
+  if (d.questions_picked) bits.push(`<b>${d.questions_picked}</b> ข้อ`);
+  if (d.correct_count !== undefined) bits.push(`ถูก <b>${d.correct_count}/${d.total_count}</b>`);
+  if (d.reason) bits.push(d.reason);
+  return bits.join(' · ');
+}
+function _tlRenderEventList(events) {
+  return events.map(e => `
+    <div class="att-event ${_tlEventClass(e.type)}">
+      <div class="att-event-row1">
+        <span class="att-event-label">${escHtml(e.label || e.type)}</span>
+        ${e.violation_count ? `<span class="att-event-vcount">×${e.violation_count}</span>` : ''}
+        <span class="att-event-ts">${fmtDateTime(e.ts)}</span>
+      </div>
+      ${_tlFmtData(e) ? `<div class="att-event-data">${_tlFmtData(e)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+async function toggleTimeline(attId) {
+  const card = document.querySelector(`.att-card[data-att-id="${attId}"]`);
+  if (!card) return;
+  const wasOpen = card.classList.contains('expanded');
+  // Close all others
+  document.querySelectorAll('.att-card.expanded').forEach(c => c.classList.remove('expanded'));
+  if (wasOpen) return;
+
+  card.classList.add('expanded');
+  const tl = card.querySelector(`#att-timeline-${attId}`);
+  tl.innerHTML = '<div class="att-timeline-title">Timeline (กำลังโหลด…)</div>';
+
+  const res = await API.exams.attemptEvents(attId);
+  if (!res?.ok) {
+    tl.innerHTML = '<div class="att-timeline-title">Timeline</div><div style="color:var(--text-muted); font-size:12px">โหลด events ไม่สำเร็จ</div>';
+    return;
+  }
+  const events = res.data?.data?.events || [];
+  if (!events.length) {
+    tl.innerHTML = '<div class="att-timeline-title">Timeline</div><div style="color:var(--text-muted); font-size:12px">ไม่มี events</div>';
+    return;
+  }
+
+  // Cache for the fullscreen modal so it can reuse without re-fetching.
+  const userName = card.querySelector('.att-user-name')?.textContent || '';
+  _timelineCache.set(attId, { events, userName });
+
+  tl.innerHTML = `
+    <div class="att-timeline-title">
+      Timeline (${events.length} events)
+      <button class="tl-expand" onclick="openTimelineModal('${attId}')" title="ขยายเต็มจอ">⛶ ขยาย</button>
+    </div>
+    <div class="att-event-list">
+      ${_tlRenderEventList(events)}
+    </div>
+  `;
+}
+
+function openTimelineModal(attId) {
+  const cached = _timelineCache.get(attId);
+  if (!cached) return;
+  const { events, userName } = cached;
+
+  // Summary chips — group events by category so admin can see anti-cheat
+  // count at a glance before scrolling.
+  const counts = { security: 0, submit: 0, consent: 0, start: 0, action: 0 };
+  events.forEach(e => { counts[_tlEventClass(e.type)]++; });
+
+  const chips = [];
+  chips.push(`<span class="chip">📅 <b>${events.length}</b> events</span>`);
+  if (counts.security)  chips.push(`<span class="chip danger">⚠️ Security <b>${counts.security}</b></span>`);
+  if (counts.submit)    chips.push(`<span class="chip success">✓ Submit <b>${counts.submit}</b></span>`);
+  if (counts.consent)   chips.push(`<span class="chip">📝 Consent <b>${counts.consent}</b></span>`);
+  if (counts.start)     chips.push(`<span class="chip">▶ Start <b>${counts.start}</b></span>`);
+  if (counts.action)    chips.push(`<span class="chip">• Action <b>${counts.action}</b></span>`);
+
+  document.getElementById('tl-modal-title').textContent   = `📅 Timeline — ${userName}`;
+  document.getElementById('tl-modal-summary').innerHTML   = chips.join('');
+  document.getElementById('tl-modal-list').innerHTML      = `<div class="att-event-list" style="max-height:none">${_tlRenderEventList(events)}</div>`;
+  document.getElementById('tl-modal').classList.add('active');
+}
+
+function closeTimelineModal() {
+  document.getElementById('tl-modal').classList.remove('active');
+}
+
+// Close on backdrop click and Escape (mirrors modal patterns elsewhere in this file)
+document.getElementById('tl-modal').addEventListener('click', e => {
+  if (e.target.id === 'tl-modal') closeTimelineModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('tl-modal').classList.contains('active')) {
+    closeTimelineModal();
+  }
+});
+
+function fmtDateTime(s) {
+  try {
+    const d = new Date(s);
+    return d.toLocaleString('th-TH', { hour:'2-digit', minute:'2-digit', second:'2-digit', day:'2-digit', month:'short' });
+  } catch { return s; }
+}
+
+async function resetAttempt(attemptId, userName, examId) {
+  if (!await confirmDialog(`ลบ attempt ของ "${userName}" ?`, 'Reset Attempt')) return;
+  const res = await API.exams.resetAttempt(attemptId);
+  if (!res?.ok) return Toast.error(res?.data?.message || 'Reset failed');
+  Toast.success('ลบแล้ว');
+  openAttempts(examId, document.getElementById('att-title').textContent.replace(/^📊 Attempts — /, ''));
+  load();
+}
+
+async function resetAllAttempts(examId) {
+  if (!await confirmDialog('จะลบ attempts ทั้งหมดของข้อสอบนี้ — ผู้สอบทุกคน กู้คืนไม่ได้', 'Reset ทั้งหมด')) return;
+  const res = await API.exams.resetExamAttempts(examId);
+  if (!res?.ok) return Toast.error(res?.data?.message || 'Reset failed');
+  Toast.success(`ลบแล้ว (${res.data?.data?.removed || 0} attempt)`);
+  document.getElementById('att-modal').classList.remove('active');
+  load();
+}
+
+function fmtDate(s) {
+  try { return new Date(s).toLocaleString('th-TH', { dateStyle:'short', timeStyle:'short' }); }
+  catch { return s; }
+}
+
+// ═══════════════ Report (per-exam analytics) ═══════════════
+let _report = null;
+
+async function openReport(examId, title) {
+  document.getElementById('rep-title').textContent = '📈 Report — ' + title;
+  document.getElementById('rep-body').innerHTML = '<div data-skel="list" data-rows="3"></div>';
+  document.getElementById('rep-modal').classList.add('active');
+
+  const res = await API.exams.report(examId);
+  if (!res?.ok) {
+    document.getElementById('rep-body').innerHTML =
+      '<div class="rep-empty"><div class="icon">⚠️</div><div>โหลด report ไม่สำเร็จ</div></div>';
+    return;
+  }
+  _report = res.data?.data || null;
+  renderReport();
+}
+
+function fmtDur(sec) {
+  sec = Math.max(0, Math.round(sec || 0));
+  if (sec < 60) return sec + ' วินาที';
+  const m = Math.floor(sec / 60), s = sec % 60;
+  if (m < 60) return `${m} น. ${s} วิ`;
+  const h = Math.floor(m / 60), mm = m % 60;
+  return `${h} ชม. ${mm} น.`;
+}
+
+function fmtDateOnly(s) {
+  try { return new Date(s).toLocaleDateString('th-TH', { month:'short', day:'numeric' }); }
+  catch { return s; }
+}
+
+function repInitials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase();
+}
+
+function renderReport() {
+  const r = _report;
+  if (!r) return;
+  const body = document.getElementById('rep-body');
+  const ex   = r.exam;
+  const ov   = r.overview;
+  const accent = ex.cover_color || '#f26419';
+
+  // ─── Empty state — no attempts at all ───
+  if (ov.total_attempts === 0) {
+    body.innerHTML = `
+      <div class="rep-hero" style="--rep-accent:${escHtml(accent)}">
+        <div class="rep-hero-ico">${renderIcon(ex.icon, '<i data-icon="trending-up"></i>')}</div>
+        <div class="rep-hero-body">
+          <div class="rep-hero-eyebrow">Report · Snapshot · ${escHtml(new Date().toLocaleString('th-TH', {dateStyle:'medium', timeStyle:'short'}))}</div>
+          <h2>${escHtml(ex.title)}</h2>
+          <p>${ex.questions_count} ข้อ · ${ex.pass_score > 0 ? `เกณฑ์ผ่าน ${ex.pass_score}%` : 'ไม่มีเกณฑ์ผ่าน'}</p>
+        </div>
+      </div>
+      <div class="rep-empty">
+        <div class="icon">📭</div>
+        <div>ยังไม่มีคนทำข้อสอบนี้ — กลับมาดูภายหลังครับ</div>
+      </div>`;
+    return;
+  }
+
+  // ─── Hero ───
+  const heroHtml = `
+    <div class="rep-hero" style="--rep-accent:${escHtml(accent)}">
+      <div class="rep-hero-ico">${renderIcon(ex.icon, '<i data-icon="trending-up"></i>')}</div>
+      <div class="rep-hero-body">
+        <div class="rep-hero-eyebrow">Report · Snapshot · ${escHtml(new Date().toLocaleString('th-TH', {dateStyle:'medium', timeStyle:'short'}))}</div>
+        <h2>${escHtml(ex.title)}</h2>
+        <p>${ex.questions_count} ข้อ · ${ex.pass_score > 0 ? `เกณฑ์ผ่าน <b>${ex.pass_score}%</b>` : '<b>ไม่มีเกณฑ์ผ่าน</b>'}</p>
+        <div class="rep-hero-meta">
+          ${ov.first_attempt_at ? `<span>📅 เริ่มมีคนทำ <b>${escHtml(fmtDate(ov.first_attempt_at))}</b></span>` : ''}
+          ${ov.last_attempt_at  ? `<span>·</span><span>🕒 ล่าสุด <b>${escHtml(fmtDate(ov.last_attempt_at))}</b></span>` : ''}
+        </div>
+      </div>
+    </div>`;
+
+  // ─── KPI tiles ───
+  const kpisHtml = `
+    <div class="rep-kpis">
+      <div class="rep-kpi accent">
+        <div class="n">${ov.unique_users}</div>
+        <div class="l">ผู้เข้าสอบ</div>
+        <div class="sub">${ov.total_attempts} ครั้งทั้งหมด</div>
+      </div>
+      <div class="rep-kpi green">
+        <div class="n">${ov.passed}</div>
+        <div class="l">ผ่าน</div>
+        <div class="sub">${ov.pass_rate}% pass rate</div>
+      </div>
+      <div class="rep-kpi red">
+        <div class="n">${ov.failed}</div>
+        <div class="l">ไม่ผ่าน</div>
+        <div class="sub">${ov.submitted} ส่งทั้งหมด</div>
+      </div>
+      <div class="rep-kpi blue">
+        <div class="n">${ov.avg_score}<span class="u">%</span></div>
+        <div class="l">เฉลี่ย</div>
+        <div class="sub">median ${ov.median_score}% · ดีสุด ${ov.max_score}%</div>
+      </div>
+      <div class="rep-kpi amber">
+        <div class="n">${fmtDur(ov.avg_duration_sec).replace(/\s.+$/,'')}<span class="u">${fmtDur(ov.avg_duration_sec).split(' ').slice(1).join(' ')}</span></div>
+        <div class="l">เวลาเฉลี่ย</div>
+        <div class="sub">ต่อ attempt</div>
+      </div>
+      ${ov.in_progress > 0 ? `
+        <div class="rep-kpi amber">
+          <div class="n">${ov.in_progress}</div>
+          <div class="l">กำลังทำ</div>
+          <div class="sub">ยังไม่ส่ง</div>
+        </div>` : ''}
+      ${ov.total_violations > 0 ? `
+        <div class="rep-kpi red">
+          <div class="n">${ov.total_violations}</div>
+          <div class="l">Violations</div>
+          <div class="sub">รวมทุกประเภท</div>
+        </div>` : ''}
+    </div>`;
+
+  // ─── Score distribution ───
+  const maxBucket = Math.max(1, ...r.distribution.map(b => b.count));
+  const bucketColor = ['#ef4444','#f97316','#eab308','#3b82f6','#10b981'];
+  const distHtml = `
+    <div class="rep-card">
+      <div class="rep-card-head">📊 Score Distribution <span class="sub">${ov.submitted} attempts ที่ส่งแล้ว</span></div>
+      <div class="rep-bars">
+        ${r.distribution.map((b, i) => `
+          <div class="rep-bar-row">
+            <div class="rep-bar-label">${b.label}</div>
+            <div class="rep-bar-track">
+              <div class="rep-bar-fill" style="--bar-color:${bucketColor[i]}; width:${(b.count / maxBucket * 100).toFixed(1)}%"></div>
+            </div>
+            <div class="rep-bar-count">${b.count}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+
+  // ─── Timeline sparkline (last 30 days) ───
+  const tl = r.timeline;
+  const tlMax = Math.max(1, ...tl.map(d => d.count));
+  const tlTotal = tl.reduce((s, d) => s + d.count, 0);
+  const tlHtml = `
+    <div class="rep-card">
+      <div class="rep-card-head">🕒 Activity — 30 วันหลัง <span class="sub">${tlTotal} submissions</span></div>
+      <div class="rep-spark">
+        ${tl.map(d => `
+          <div class="rep-spark-bar ${d.count === 0 ? 'zero' : ''}"
+               style="height:${d.count === 0 ? 4 : Math.max(4, d.count / tlMax * 100)}%"
+               title="${d.date} — ${d.count} attempts"></div>
+        `).join('')}
+      </div>
+      <div class="rep-spark-meta">
+        <span>${fmtDateOnly(tl[0]?.date)}</span>
+        <span>${fmtDateOnly(tl[tl.length-1]?.date)}</span>
+      </div>
+    </div>`;
+
+  // ─── Leaderboard ───
+  const lbRows = r.leaderboard.map((u, i) => {
+    const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+    const statusLabel = ({passed:'PASSED', failed:'FAILED', in_progress:'IN PROGRESS', never:'NEVER'})[u.status] || u.status;
+    const bestScoreCell = u.best_score === null
+      ? `<span class="rep-score-pill idle">—</span>`
+      : `<span class="rep-score-pill ${u.best_passed ? 'pass' : 'fail'}">${u.best_score}%</span>`;
+    const latestScoreCell = u.latest_score === null
+      ? `<span style="color:var(--text-muted)">—</span>`
+      : `${u.latest_score}%`;
+    return `
+      <tr>
+        <td><span class="rep-rank ${rankClass}">${i+1}</span></td>
+        <td>
+          <div class="rep-user">
+            <div class="rep-avatar">${escHtml(repInitials(u.user_name))}</div>
+            <div>
+              <div class="rep-user-name">${escHtml(u.user_name)}</div>
+              <div style="font-size:10.5px; color:var(--text-muted)">${u.last_attempted_at ? 'ทำล่าสุด ' + fmtDate(u.last_attempted_at) : '—'}</div>
+            </div>
+          </div>
+        </td>
+        <td class="right">${u.attempts}</td>
+        <td class="right">${bestScoreCell}</td>
+        <td class="right">${latestScoreCell}</td>
+        <td class="right">${u.total_duration_sec > 0 ? fmtDur(u.total_duration_sec) : '—'}</td>
+        <td class="right">${u.violations_total > 0 ? `<span style="color:#ef4444">${u.violations_total}</span>` : '0'}</td>
+        <td class="right"><span class="rep-status-pill ${u.status}">${statusLabel}</span></td>
+      </tr>`;
+  }).join('');
+
+  const lbHtml = `
+    <div class="rep-section-label">
+      🏆 Leaderboard
+      <span class="ct">${r.leaderboard.length} คน</span>
+    </div>
+    <div class="rep-table-wrap">
+      <table class="rep-table">
+        <thead>
+          <tr>
+            <th style="width:50px">#</th>
+            <th>ผู้สอบ</th>
+            <th class="right">Attempts</th>
+            <th class="right">Best</th>
+            <th class="right">Latest</th>
+            <th class="right">Time</th>
+            <th class="right">Violations</th>
+            <th class="right">Status</th>
+          </tr>
+        </thead>
+        <tbody>${lbRows}</tbody>
+      </table>
+    </div>`;
+
+  // ─── Question heatmap ───
+  const qHtml = r.questions.length ? `
+    <div class="rep-section-label">
+      🎯 Question Analytics
+      <span class="ct">เรียงข้อยากที่สุดก่อน</span>
+    </div>
+    <div class="rep-table-wrap">
+      ${r.questions.map(q => {
+        const rate = q.correct_rate;
+        const color = q.asked === 0 ? '#94a3b8'
+                    : rate < 40 ? '#ef4444'
+                    : rate < 70 ? '#f59e0b'
+                    : '#10b981';
+        return `
+          <div class="rep-qrow">
+            <div class="rep-q-prompt">
+              ${q.category ? `<span class="cat">${escHtml(q.category)}</span>` : ''}
+              ${escHtml(q.prompt || '(ไม่มี prompt)')}
+            </div>
+            <div>
+              <div class="rep-q-rate">
+                <div class="rep-q-rate-fill" style="--q-color:${color}; width:${rate}%"></div>
+              </div>
+              <div class="rep-q-rate-label" style="--q-color:${color}; margin-top:4px">
+                ${q.asked === 0 ? 'ไม่ได้สุ่ม' : rate + '%'}
+              </div>
+            </div>
+            <div class="rep-q-asked">${q.asked > 0 ? `${q.correct}/${q.asked}` : '—'}</div>
+          </div>`;
+      }).join('')}
+    </div>` : '';
+
+  // ─── Not-attempted section ───
+  const na = r.not_attempted || [];
+  const naHtml = na.length ? `
+    <div class="rep-section-label" style="margin-top:20px">
+      🚫 ยังไม่ได้ทำข้อสอบ
+      <span class="ct" style="background:rgba(239,68,68,.12);color:#ef4444">${na.length} คน</span>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto;font-size:11px" onclick="openReminderModal()">🔔 ส่ง Reminder ทั้งหมด</button>
+    </div>
+    <div class="rep-table-wrap" style="padding:10px">
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${na.map(u => `
+          <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:20px;font-size:12px">
+            <div style="width:22px;height:22px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${escHtml((u.name || '?').charAt(0).toUpperCase())}</div>
+            <span>${escHtml(u.name)}</span>
+          </div>`).join('')}
+      </div>
+    </div>` : (r.overview.eligible_users > 0 ? `
+    <div class="rep-section-label" style="margin-top:20px">
+      🎉 ทุกคนทำข้อสอบครบแล้ว
+      <span class="ct" style="background:rgba(16,185,129,.12);color:#10b981">${r.overview.eligible_users}/${r.overview.eligible_users}</span>
+    </div>` : '');
+
+  body.innerHTML = heroHtml + kpisHtml +
+    `<div class="rep-grid-2">${distHtml}${tlHtml}</div>` +
+    naHtml + lbHtml + qHtml;
+}
+
+// ─── Export CSV (leaderboard) ───
+function reportExportCsv() {
+  const r = _report;
+  if (!r) return;
+  const rows = [
+    ['Rank','Name','Attempts','Best Score','Latest Score','Time (sec)','Violations','Status','Last Attempt']
+  ];
+  r.leaderboard.forEach((u, i) => {
+    rows.push([
+      i + 1,
+      u.user_name,
+      u.attempts,
+      u.best_score ?? '',
+      u.latest_score ?? '',
+      u.total_duration_sec,
+      u.violations_total,
+      u.status,
+      u.last_attempted_at || '',
+    ]);
+  });
+  const csv = rows.map(r => r.map(cell => {
+    const s = String(cell ?? '');
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }).join(',')).join('\n');
+  const blob = new Blob(['﻿' + csv], { type:'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const safeTitle = (r.exam.title || 'exam').replace(/[^\w\-]+/g, '_');
+  a.download = `report_${safeTitle}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  Toast.success('ดาวน์โหลด CSV แล้ว');
+}
+
+function reportPrint() {
+  window.print();
+}
+
+async function reportCopySummary() {
+  const r = _report;
+  if (!r) return;
+  const ov = r.overview;
+  const md = [
+    `# ${r.exam.title}`,
+    ``,
+    `📅 _${new Date().toLocaleString('th-TH', {dateStyle:'medium', timeStyle:'short'})}_`,
+    ``,
+    `## ภาพรวม`,
+    `- ผู้สอบ: **${ov.unique_users}** คน (${ov.total_attempts} attempts)`,
+    `- ผ่าน: **${ov.passed}** / ไม่ผ่าน: **${ov.failed}** — pass rate **${ov.pass_rate}%**`,
+    `- คะแนนเฉลี่ย: **${ov.avg_score}%** (median ${ov.median_score}%, min ${ov.min_score}%, max ${ov.max_score}%)`,
+    `- เวลาเฉลี่ยต่อ attempt: **${fmtDur(ov.avg_duration_sec)}**`,
+    ov.total_violations > 0 ? `- Violations: **${ov.total_violations}**` : '',
+    ``,
+    `## Leaderboard`,
+    `| # | ผู้สอบ | Best | Latest | Status |`,
+    `|---|---|---|---|---|`,
+    ...r.leaderboard.map((u, i) => `| ${i+1} | ${u.user_name} | ${u.best_score ?? '—'}% | ${u.latest_score ?? '—'}% | ${u.status} |`),
+  ].filter(Boolean).join('\n');
+  try {
+    await navigator.clipboard.writeText(md);
+    Toast.success('คัดลอกสรุป (markdown) แล้ว');
+  } catch (e) {
+    Toast.error('คัดลอกไม่สำเร็จ');
+  }
+}
+
+window.openEdit = openEdit;
+window.delExam = delExam;
+window.openAttempts = openAttempts;
+window.openReport = openReport;
+window.reportExportCsv = reportExportCsv;
+window.reportPrint = reportPrint;
+window.reportCopySummary = reportCopySummary;
+
+// ═════ Exam Reminder Modal ═════
+const RemState = {
+  examId:       null,
+  examTitle:    '',
+  target:       'not_attempted',
+  notAttempted: [],
+  failed:       [],
+  selectedIds:  new Set(),
+  defaultWebhooks: [],
+  examUrl:      '',
+};
+
+// Called from 📈 Report modal — uses the already-loaded _report object
+async function openReminderModal() {
+  if (!_report) { Toast.warning('ต้องเปิดหน้า Report ของข้อสอบก่อน'); return; }
+  return _openReminderModalWith({
+    examId:    _report.exam.id,
+    examTitle: _report.exam.title,
+    examIcon:  _report.exam.icon || '📝',
+  });
+}
+
+// Called from 📊 ผลสอบ modal — uses the state captured in openAttempts()
+async function openReminderModalFromAttempts() {
+  if (!_attemptsExamId) { Toast.warning('ยังไม่ได้เปิดหน้าผลสอบ'); return; }
+  return _openReminderModalWith({
+    examId:    _attemptsExamId,
+    examTitle: _attemptsExamTitle,
+    examIcon:  '📝',
+  });
+}
+
+async function _openReminderModalWith({examId, examTitle, examIcon}) {
+  RemState.examId       = examId;
+  RemState.examTitle    = examTitle;
+  RemState.notAttempted = [];
+  RemState.failed       = [];
+  RemState.target       = 'not_attempted';
+  RemState.selectedIds  = new Set();
+
+  document.getElementById('rem-exam-title').textContent = `${examIcon} ${examTitle}`;
+  document.getElementById('rem-not-count').textContent    = 0;
+  document.getElementById('rem-failed-count').textContent = 0;
+  document.getElementById('rem-message').value  = '';
+  document.getElementById('rem-deadline').value = '';
+  document.getElementById('rem-webhooks').value = '';
+  document.getElementById('rem-result').innerHTML = '';
+
+  // Single round-trip fetches both candidate lists + webhooks + exam URL.
+  await refreshReminderPreview();
+  switchReminderTab('not_attempted');
+  Modal.open('rem-modal');
+}
+function closeReminderModal() { Modal.close('rem-modal'); }
+
+function switchReminderTab(tab) {
+  RemState.target = tab;
+  const setBtn = (id, active) => {
+    const el = document.getElementById(id);
+    el.classList.toggle('btn-primary', active);
+    el.classList.toggle('btn-ghost',   !active);
+  };
+  setBtn('rem-tab-not',    tab === 'not_attempted');
+  setBtn('rem-tab-failed', tab === 'failed');
+  setBtn('rem-tab-custom', tab === 'custom');
+
+  // Reset the checkbox selection when entering custom mode so admins start
+  // from a clean slate (previously we'd carry over the not_attempted set
+  // and quietly pre-check everyone).
+  if (tab === 'custom') RemState.selectedIds = new Set();
+
+  renderReminderTargetList();
+  renderReminderPreview();
+}
+
+function renderReminderTargetList() {
+  const el = document.getElementById('rem-target-list');
+  if (RemState.target === 'not_attempted' || RemState.target === 'failed') {
+    const list = RemState.target === 'failed' ? RemState.failed : RemState.notAttempted;
+    if (!list.length) {
+      const empty = RemState.target === 'failed'
+        ? '🎉 ไม่มีคนที่สอบไม่ผ่าน'
+        : '🎉 ทุกคนทำข้อสอบครบแล้ว';
+      el.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:20px">${empty}</div>`;
+      return;
+    }
+    el.innerHTML = list.map(u =>
+      `<div style="padding:4px 8px;color:var(--text)">• ${escHtml(u.name)}</div>`
+    ).join('');
+    // In fixed-target mode, all are selected implicitly
+    RemState.selectedIds = new Set(list.map(u => u.user_id));
+  } else {
+    // Custom mode: pick from union of both "needs reminder" buckets.
+    // Sending to already-passed users doesn't make sense so they're not shown.
+    const seen = new Set();
+    const candidates = [];
+    [...RemState.notAttempted, ...RemState.failed].forEach(u => {
+      if (seen.has(u.user_id)) return;
+      seen.add(u.user_id);
+      candidates.push(u);
+    });
+    if (!candidates.length) {
+      el.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px">ไม่มี user ที่ต้องเตือน</div>';
+      return;
+    }
+    el.innerHTML = candidates.map(u => {
+      const checked = RemState.selectedIds.has(u.user_id) ? 'checked' : '';
+      const badge = RemState.failed.some(f => f.user_id === u.user_id)
+        ? '<span style="font-size:10px;color:#ef4444;margin-left:4px">❌ ไม่ผ่าน</span>'
+        : '<span style="font-size:10px;color:var(--text-muted);margin-left:4px">🚫 ยังไม่ได้ทำ</span>';
+      return `<label style="display:flex;align-items:center;gap:8px;padding:4px 8px;cursor:pointer">
+        <input type="checkbox" data-uid="${escHtml(u.user_id)}" ${checked} style="accent-color:var(--orange)">
+        <span>${escHtml(u.name)}</span>${badge}
+      </label>`;
+    }).join('');
+    el.querySelectorAll('input[type=checkbox]').forEach(cb => {
+      cb.addEventListener('change', e => {
+        const uid = e.target.dataset.uid;
+        if (e.target.checked) RemState.selectedIds.add(uid);
+        else                  RemState.selectedIds.delete(uid);
+        renderReminderPreview();
+      });
+    });
+  }
+}
+
+async function refreshReminderPreview() {
+  const p = new URLSearchParams({
+    exam_id: RemState.examId,
+    action:  'preview',
+    target:  'not_attempted',
+    extra_message: document.getElementById('rem-message').value.trim(),
+    deadline:      document.getElementById('rem-deadline').value.trim(),
+  });
+  const res = await API.get(`/exams/reminder.php?${p.toString()}`);
+  const d = res?.data?.data || {};
+  RemState.defaultWebhooks = d.default_webhooks || [];
+  RemState.notAttempted    = d.not_attempted_list || [];
+  RemState.failed          = d.failed_list        || [];
+  RemState.examUrl         = d.exam_url || '';
+  document.getElementById('rem-not-count').textContent    = RemState.notAttempted.length;
+  document.getElementById('rem-failed-count').textContent = RemState.failed.length;
+  updateReminderWebhookHint();
+  renderReminderPreview(d.card);
+}
+
+function updateReminderWebhookHint() {
+  const n = RemState.defaultWebhooks.length;
+  document.getElementById('rem-webhook-hint').innerHTML = n > 0
+    ? `พบ default ใน System Settings แล้ว <strong>${n}</strong> URL — จะใช้ค่านั้นถ้าเว้นว่าง`
+    : `⚠️ ยังไม่มี default — กรุณากรอกที่นี่ หรือตั้งที่ <a href="./system-settings.html" style="color:var(--orange)">System Settings</a>`;
+}
+
+// Renders the preview card. Called client-side each time inputs change —
+// uses the last card returned by refreshReminderPreview() and just swaps
+// names/message/deadline inline (no round-trip needed for those).
+function renderReminderPreview(cardFromServer) {
+  const el = document.getElementById('rem-preview');
+  const src = RemState.target === 'failed'
+    ? RemState.failed
+    : RemState.target === 'custom'
+      ? [...RemState.notAttempted, ...RemState.failed].filter(u => RemState.selectedIds.has(u.user_id))
+      : RemState.notAttempted;
+  // De-dupe (custom source unions both lists so a user could appear twice)
+  const seen = new Set();
+  const names = [];
+  src.forEach(u => { if (!seen.has(u.user_id)) { seen.add(u.user_id); names.push(u.name); } });
+  const msg      = document.getElementById('rem-message').value.trim();
+  const deadline = document.getElementById('rem-deadline').value.trim();
+  const passScore = _report?.exam?.pass_score ?? _attemptsExamPassScore ?? 70;
+
+  const targetLabel = RemState.target === 'failed'
+    ? '❌ ทำแล้วแต่ยังไม่ผ่าน'
+    : RemState.target === 'custom'
+      ? '✏️ ผู้รับที่เลือกเอง'
+      : '🚫 ยังไม่ได้ทำข้อสอบ';
+  const emptyLabel = RemState.target === 'failed'
+    ? '<i>ไม่มีคนที่สอบไม่ผ่าน 🎉</i>'
+    : RemState.target === 'custom'
+      ? '<i>ยังไม่ได้เลือกใคร</i>'
+      : '<i>ทุกคนทำข้อสอบครบแล้ว 🎉</i>';
+
+  const shown = names.slice(0, 15);
+  const overflow = names.length - shown.length;
+  const nameList = shown.length
+    ? shown.map(n => `• ${escHtml(n)}`).join('<br>') + (overflow > 0 ? `<br><span style="color:#94a3b8">…และอีก ${overflow} คน</span>` : '')
+    : emptyLabel;
+
+  const chipParts = [`<b>PASS SCORE</b> · <span style="color:#F26419">${passScore}%</span>`];
+  if (deadline) chipParts.push(`<b>Deadline</b> · <span style="color:#F26419">${escHtml(deadline)}</span>`);
+
+  const urlBlock = RemState.examUrl ? `
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;color:#64748b;letter-spacing:.05em;margin-bottom:2px">🔗 EXAM LINK</div>
+      <a href="${escHtml(RemState.examUrl)}" target="_blank" style="color:#1d4ed8;word-break:break-all;font-size:12px">${escHtml(RemState.examUrl)}</a>
+    </div>` : '';
+
+  el.innerHTML = `
+    <div style="border-bottom:1px solid #e2e8f0;padding-bottom:10px;margin-bottom:10px;display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;border-radius:50%;background:#F26419;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px">🔔</div>
+      <div>
+        <div style="font-weight:700;font-size:14px">🔔 Exam Reminder</div>
+        <div style="font-size:11px;color:#64748b">SOM-Portal · Reminder</div>
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;color:#64748b;letter-spacing:.05em;margin-bottom:2px">📑 PENDING EXAM</div>
+      <div style="font-weight:700">${escHtml(RemState.examTitle)}</div>
+    </div>
+    <div style="margin-bottom:10px;padding:8px 10px;background:#f1f5f9;border-radius:6px;font-size:12px">
+      ${chipParts.join('&nbsp;&nbsp;·&nbsp;&nbsp;')}
+    </div>
+    ${urlBlock}
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0">
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;color:#64748b;letter-spacing:.05em;margin-bottom:4px">👤 ${escHtml(targetLabel)} (${names.length} คน)</div>
+      <div style="line-height:1.7">${nameList}</div>
+    </div>
+    ${msg ? `<hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0">
+      <div>
+        <div style="font-size:10px;color:#64748b;letter-spacing:.05em;margin-bottom:4px">📝 ADMIN MESSAGE</div>
+        <div style="line-height:1.6">${escHtml(msg).replace(/\n/g,'<br>')}</div>
+      </div>` : ''}
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0">
+    <div style="font-size:11px;color:#94a3b8">🕐 SOM-Portal · ${new Date().toLocaleDateString('th-TH')} · Reminder</div>
+  `;
+}
+
+async function sendReminder() {
+  let names;
+  if (RemState.target === 'failed') {
+    names = RemState.failed;
+  } else if (RemState.target === 'custom') {
+    // Selection may reference either bucket — pick from the union
+    const pool = [...RemState.notAttempted, ...RemState.failed];
+    const seen = new Set();
+    names = pool.filter(u => {
+      if (seen.has(u.user_id) || !RemState.selectedIds.has(u.user_id)) return false;
+      seen.add(u.user_id);
+      return true;
+    });
+  } else {
+    names = RemState.notAttempted;
+  }
+  if (!names.length) { Toast.warning('ไม่มีผู้รับ reminder'); return; }
+
+  const btn  = document.getElementById('rem-send-btn');
+  const text = document.getElementById('rem-send-text');
+  btn.disabled = true; text.textContent = '⏳ กำลังส่ง...';
+
+  const webhookRaw = document.getElementById('rem-webhooks').value.trim();
+  const webhooks = webhookRaw ? webhookRaw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean) : [];
+
+  const res = await API.post('/exams/reminder.php?action=send', {
+    exam_id:       RemState.examId,
+    target:        RemState.target,
+    user_ids:      RemState.target === 'custom' ? [...RemState.selectedIds] : [],
+    extra_message: document.getElementById('rem-message').value.trim(),
+    deadline:      document.getElementById('rem-deadline').value.trim(),
+    chat_webhook_urls: webhooks,
+  });
+
+  btn.disabled = false; text.textContent = '📤 ส่ง Reminder';
+  const box = document.getElementById('rem-result');
+  if (res?.ok) {
+    const d = res.data?.data || {};
+    box.innerHTML = `<span style="color:#10b981">✓ ยิงสำเร็จ ${d.sent}/${d.webhook_count} webhook — ${d.resolved_names?.length || 0} ชื่อ</span>`;
+    Toast.success(res.data?.message || 'ส่ง reminder สำเร็จ');
+    setTimeout(closeReminderModal, 1500);
+  } else {
+    box.innerHTML = `<span style="color:#ef4444">✗ ${escHtml(res?.data?.message || 'ส่งไม่สำเร็จ')}</span>`;
+    Toast.error(res?.data?.message || 'ส่ง reminder ไม่สำเร็จ');
+  }
+}
+
+// Live message/deadline refresh: they only affect the client-side preview
+// (server preview is not called again on every keystroke — only the initial fetch)
+document.addEventListener('input', e => {
+  if (e.target && (e.target.id === 'rem-message' || e.target.id === 'rem-deadline')) {
+    renderReminderPreview();
+  }
+});
+
+window.openReminderModal             = openReminderModal;
+window.openReminderModalFromAttempts = openReminderModalFromAttempts;
+window.closeReminderModal            = closeReminderModal;
+window.switchReminderTab             = switchReminderTab;
+window.renderReminderPreview         = renderReminderPreview;
+window.sendReminder                  = sendReminder;
+window.resetAttempt = resetAttempt;
+window.resetAllAttempts = resetAllAttempts;
+window.filterAttempts = filterAttempts;
+window.toggleTimeline = toggleTimeline;
+window.openTimelineModal = openTimelineModal;
+window.closeTimelineModal = closeTimelineModal;
+window.renderTabDetectionPreview = renderTabDetectionPreview;
+window.uploadQImage = uploadQImage;
+window.removeQImage = removeQImage;
+window.setQ = setQ;
+window.setQChoice = setQChoice;
+window.addQChoice = addQChoice;
+window.rmQChoice = rmQChoice;
+window.setQAnswer = setQAnswer;
+window.setQShortAns = setQShortAns;
+window.rmQuestion = rmQuestion;
+window.rmStrat = rmStrat;
+window.changeQType = changeQType;
+
+load();
+</script>
+</body>
+</html>

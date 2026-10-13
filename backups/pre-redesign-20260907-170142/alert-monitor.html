@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alert Monitor — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="assets/css/dev-badge.css">
+  <style>
+    /* ══════════════════════════════════════════════════════════════
+       Alert Monitor — blocks.so / shadcn palette
+       Scoped to .am-wrap so nothing leaks to other pages.
+       ══════════════════════════════════════════════════════════════ */
+    .am-wrap {
+      --bg-card:      #ffffff;
+      --border:       #e4e4e7;
+      --text:         #09090b;
+      --text-muted:   #71717a;
+
+      --am-bg-subtle: #fafafa;
+      --am-bg-hero:   #f8fafc;
+      --am-hover:     rgba(9,9,11,.04);
+      --am-r-card:    14px;
+      --am-r-input:   8px;
+      --am-r-tag:     6px;
+      --am-shadow:    0 1px 2px rgba(9,9,11,.04);
+      --am-shadow-lg: 0 8px 24px -12px rgba(9,9,11,.10);
+
+      --am-c-monitoring: #3b82f6;
+      --am-c-batch:      #f59e0b;
+      --am-c-other:      #71717a;
+      --am-c-up:         #ef4444;
+      --am-c-down:       #16a34a;
+      --am-c-heat:       #f26419;  /* accent orange for heatmap */
+      --am-c-y1:         #dc2626;  /* year band A */
+      --am-c-y2:         #f97316;  /* year band B */
+      --am-c-y3:         #eab308;  /* year band C */
+
+      color: var(--text);
+    }
+    html[data-theme="dark"] .am-wrap {
+      --bg-card:      #0a0a0a;
+      --border:       #27272a;
+      --text:         #fafafa;
+      --text-muted:   #a1a1aa;
+      --am-bg-subtle: #18181b;
+      --am-bg-hero:   #0f172a;
+      --am-hover:     rgba(255,255,255,.05);
+      --am-shadow:    none;
+      --am-shadow-lg: 0 8px 24px -12px rgba(0,0,0,.5);
+
+      --am-c-monitoring: #60a5fa;
+      --am-c-batch:      #fbbf24;
+      --am-c-other:      #a1a1aa;
+      --am-c-up:         #f87171;
+      --am-c-down:       #4ade80;
+      --am-c-heat:       #fb923c;
+      --am-c-y1:         #f87171;
+      --am-c-y2:         #fb923c;
+      --am-c-y3:         #facc15;
+    }
+
+    .am-wrap * { box-sizing: border-box; }
+
+    /* ── HERO ─────────────────────────────────────────────────────── */
+    .am-hero {
+      position: relative; overflow: hidden;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--am-r-card);
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      box-shadow: var(--am-shadow-lg);
+    }
+    .am-hero::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(90% 140% at 0% 0%, color-mix(in srgb, var(--am-c-monitoring) 10%, transparent), transparent 45%),
+        radial-gradient(70% 120% at 100% 0%, color-mix(in srgb, var(--am-c-heat) 8%, transparent), transparent 50%);
+      pointer-events: none;
+    }
+    .am-hero-top {
+      position: relative;
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .am-hero-title {
+      display: flex; align-items: center; gap: 14px;
+    }
+    .am-hero-icon {
+      width: 46px; height: 46px; border-radius: 12px;
+      display: grid; place-items: center;
+      background: color-mix(in srgb, var(--am-c-monitoring) 12%, transparent);
+      color: var(--am-c-monitoring);
+      flex-shrink: 0;
+    }
+    .am-hero-icon svg { width: 24px; height: 24px; }
+    .am-hero-title h1 {
+      margin: 0;
+      font-size: 22px; font-weight: 700; letter-spacing: -.025em;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .am-hero-sub {
+      margin-top: 2px; font-size: 12.5px; color: var(--text-muted);
+    }
+    .am-team-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 3px 10px;
+      background: color-mix(in srgb, var(--am-c-monitoring) 12%, transparent);
+      color: var(--am-c-monitoring);
+      border-radius: 999px; font-size: 11px; font-weight: 600;
+      letter-spacing: .01em;
+    }
+    .am-team-pill::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+      background: currentColor;
+      animation: amPulse 2.4s ease-in-out infinite;
+    }
+    @keyframes amPulse { 0%,100%{opacity:.35} 50%{opacity:1} }
+
+    .am-hero-actions {
+      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+    }
+    .am-sync-hint {
+      font-size: 11.5px; color: var(--text-muted);
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px;
+      background: var(--am-bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+    }
+    .am-sync-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--am-c-down);
+    }
+    .am-sync-dot.syncing { background: var(--am-c-batch); animation: amPulse 1.2s ease-in-out infinite; }
+    .am-sync-dot.error   { background: var(--am-c-up); }
+    .am-sync-dot.idle    { background: var(--text-muted); opacity: .4; }
+
+    .am-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; font-size: 12px; font-weight: 600;
+      letter-spacing: -.005em; text-decoration: none;
+      border: 1px solid var(--border); border-radius: var(--am-r-input);
+      background: var(--bg-card); color: var(--text);
+      cursor: pointer; font-family: inherit;
+      transition: background .12s, border-color .12s, box-shadow .12s, transform .06s;
+    }
+    .am-btn:hover  { background: var(--am-hover); }
+    .am-btn:active { transform: translateY(.5px); }
+    .am-btn.primary {
+      background: var(--text); color: var(--bg-card); border-color: var(--text);
+    }
+    .am-btn.primary:hover { opacity: .9; }
+    .am-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .am-btn .spinner {
+      width: 12px; height: 12px; border: 2px solid currentColor;
+      border-top-color: transparent; border-radius: 50%;
+      animation: amSpin .7s linear infinite;
+    }
+    @keyframes amSpin { to { transform: rotate(360deg); } }
+
+    /* Hero stats — 3 mini KPIs inside hero */
+    .am-hero-stats {
+      position: relative;
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 720px) { .am-hero-stats { grid-template-columns: 1fr; } }
+    .am-hero-stat {
+      padding: 12px 16px;
+      background: color-mix(in srgb, var(--am-bg-subtle) 60%, transparent);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .am-hero-stat .lbl {
+      font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
+      color: var(--text-muted); font-weight: 600;
+    }
+    .am-hero-stat .val {
+      font-size: 22px; font-weight: 700; letter-spacing: -.02em;
+      font-feature-settings: 'tnum' 1, 'cv11' 1;
+    }
+    .am-hero-stat .sub {
+      font-size: 11.5px; color: var(--text-muted);
+    }
+
+    /* ── Progress bar ─────────────────────────────────────────────── */
+    .am-progress {
+      display: none; align-items: center; gap: 10px;
+      padding: 10px 14px; margin-bottom: 16px;
+      background: color-mix(in srgb, var(--am-c-batch) 8%, transparent);
+      border: 1px solid color-mix(in srgb, var(--am-c-batch) 20%, var(--border));
+      border-radius: var(--am-r-input);
+      font-size: 11.5px; color: var(--text);
+    }
+    .am-progress.visible { display: flex; }
+    .am-progress .bar { flex: 1; height: 4px; background: var(--am-bg-subtle); border-radius: 2px; overflow: hidden; }
+    .am-progress .fill { height: 100%; background: var(--am-c-batch); transition: width .3s ease; }
+
+    /* ── Year selector ───────────────────────────────────────────── */
+    .am-year-bar {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .am-year-lbl {
+      font-size: 10.5px; color: var(--text-muted);
+      letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
+    }
+    .am-year-tabs {
+      display: inline-flex; gap: 4px;
+      background: var(--am-bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 4px;
+    }
+    .am-year-tab {
+      padding: 7px 16px; font-size: 12.5px; font-weight: 700;
+      letter-spacing: -.005em;
+      border: none; border-radius: 7px;
+      background: transparent; color: var(--text-muted);
+      cursor: pointer; font-family: inherit;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: background .12s, color .12s;
+      font-feature-settings: 'tnum' 1;
+    }
+    .am-year-tab sup {
+      font-size: 10px; font-weight: 600;
+      padding: 1px 6px; border-radius: 999px;
+      background: color-mix(in srgb, var(--text-muted) 15%, transparent);
+      color: var(--text-muted);
+      vertical-align: baseline; top: 0;
+    }
+    .am-year-tab:hover { color: var(--text); }
+    .am-year-tab.active {
+      background: var(--bg-card); color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+    .am-year-tab.active sup {
+      background: color-mix(in srgb, var(--am-c-monitoring) 18%, transparent);
+      color: var(--am-c-monitoring);
+    }
+
+    /* ── KPI grid ─────────────────────────────────────────────────── */
+    .am-kpi-grid {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px; margin-bottom: 20px;
+    }
+    @media (max-width: 900px) { .am-kpi-grid { grid-template-columns: 1fr 1fr; } }
+    .am-kpi {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--am-r-card); padding: 18px 20px;
+      box-shadow: var(--am-shadow);
+      display: flex; flex-direction: column; gap: 8px;
+      position: relative; overflow: hidden;
+    }
+    .am-kpi::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--_accent, var(--am-c-monitoring)); opacity: .8;
+    }
+    .am-kpi.total   { --_accent: var(--text); }
+    .am-kpi.monitor { --_accent: var(--am-c-monitoring); }
+    .am-kpi.batch   { --_accent: var(--am-c-batch); }
+    .am-kpi.delta   { --_accent: var(--am-c-down); }
+    .am-kpi-lbl {
+      font-size: 10.5px; color: var(--text-muted);
+      letter-spacing: .06em; text-transform: uppercase; font-weight: 600;
+    }
+    .am-kpi-val {
+      font-size: 30px; font-weight: 700; line-height: 1.05;
+      letter-spacing: -.03em;
+      font-feature-settings: 'tnum' 1, 'cv11' 1;
+    }
+    .am-kpi-sub {
+      font-size: 11.5px; color: var(--text-muted);
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .am-kpi-sub .up   { color: var(--am-c-up);   font-weight: 700; }
+    .am-kpi-sub .down { color: var(--am-c-down); font-weight: 700; }
+
+    /* ── Mid grid (chart + analysis) ─────────────────────────────── */
+    .am-mid-grid {
+      display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 20px;
+    }
+    @media (max-width: 900px) { .am-mid-grid { grid-template-columns: 1fr; } }
+    .am-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--am-r-card); padding: 18px 20px;
+      box-shadow: var(--am-shadow);
+    }
+    .am-card h3 {
+      font-size: 12px; letter-spacing: .05em; text-transform: uppercase;
+      font-weight: 700; color: var(--text-muted); margin: 0 0 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px;
+    }
+    .am-chart-wrap { position: relative; height: 260px; }
+    .am-legend {
+      display: flex; gap: 14px; flex-wrap: wrap;
+      font-size: 11.5px; color: var(--text-muted);
+      margin-top: 10px;
+    }
+    .am-legend .dot {
+      width: 10px; height: 10px; border-radius: 3px;
+      display: inline-block; margin-right: 6px; vertical-align: -1px;
+    }
+    .am-legend .dot.monitor { background: var(--am-c-monitoring); }
+    .am-legend .dot.batch   { background: var(--am-c-batch); }
+    .am-legend .dot.other   { background: var(--am-c-other); }
+
+    .am-analysis { display: flex; flex-direction: column; gap: 8px; font-size: 13px; line-height: 1.55; padding: 0; margin: 0; }
+    .am-analysis li {
+      list-style: none; padding: 9px 12px;
+      background: var(--am-bg-subtle); border: 1px solid var(--border);
+      border-radius: var(--am-r-input);
+    }
+    .am-analysis li.emphasis {
+      background: color-mix(in srgb, var(--am-c-monitoring) 8%, transparent);
+      border-color: color-mix(in srgb, var(--am-c-monitoring) 18%, var(--border));
+    }
+    .am-analysis li b {
+      color: var(--text); font-weight: 700;
+      font-feature-settings: 'tnum' 1;
+    }
+
+    /* ── Compare panel ────────────────────────────────────────────── */
+    .am-compare-controls {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      font-size: 12px;
+    }
+    .am-compare-controls select {
+      padding: 6px 10px; font-size: 12px; font-weight: 600;
+      border: 1px solid var(--border); border-radius: var(--am-r-input);
+      background: var(--bg-card); color: var(--text);
+      font-family: inherit; cursor: pointer;
+    }
+    .am-compare-controls .vs {
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      letter-spacing: .1em; text-transform: uppercase;
+    }
+    .am-compare-body { margin-top: 16px; }
+    .am-compare-empty {
+      padding: 30px 20px; text-align: center; color: var(--text-muted); font-size: 12.5px;
+    }
+    .am-compare-grid {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px; margin-bottom: 12px;
+    }
+    @media (max-width: 720px) { .am-compare-grid { grid-template-columns: 1fr; } }
+    .am-compare-side {
+      padding: 14px; border: 1px solid var(--border); border-radius: 10px;
+      background: var(--am-bg-subtle);
+    }
+    .am-compare-side .lbl {
+      font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
+      color: var(--text-muted); font-weight: 700; margin-bottom: 8px;
+    }
+    .am-compare-side .val {
+      font-size: 24px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 8px;
+      font-feature-settings: 'tnum' 1;
+    }
+    .am-compare-side .cats { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+    .am-compare-side .cats .row { display: flex; justify-content: space-between; }
+    .am-compare-side .cats .row b { font-weight: 700; font-feature-settings: 'tnum' 1; }
+
+    .am-compare-delta-strip {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px; margin-bottom: 14px;
+    }
+    @media (max-width: 720px) { .am-compare-delta-strip { grid-template-columns: 1fr 1fr; } }
+    .am-cd {
+      padding: 12px 14px; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: 10px;
+    }
+    .am-cd .lbl {
+      font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase;
+      color: var(--text-muted); font-weight: 600; margin-bottom: 4px;
+    }
+    .am-cd .row1 { font-size: 15px; font-weight: 700; font-feature-settings: 'tnum' 1; }
+    .am-cd .row2 { font-size: 11.5px; margin-top: 2px; font-feature-settings: 'tnum' 1; }
+    .am-cd .row2 .up { color: var(--am-c-up); font-weight: 700; }
+    .am-cd .row2 .down { color: var(--am-c-down); font-weight: 700; }
+
+    .am-cmp-lists {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 720px) { .am-cmp-lists { grid-template-columns: 1fr; } }
+    .am-cmp-list {
+      border: 1px solid var(--border); border-radius: 10px;
+      background: var(--am-bg-subtle);
+      overflow: hidden;
+    }
+    .am-cmp-list h4 {
+      margin: 0; padding: 10px 14px;
+      font-size: 11px; font-weight: 700; letter-spacing: .04em;
+      text-transform: uppercase; color: var(--text-muted);
+      border-bottom: 1px solid var(--border); background: var(--bg-card);
+    }
+    .am-cmp-list ul { list-style: none; margin: 0; padding: 6px; }
+    .am-cmp-list li {
+      padding: 8px 10px; font-size: 12px;
+      display: flex; align-items: center; gap: 8px;
+      border-radius: 6px;
+    }
+    .am-cmp-list li:hover { background: var(--am-hover); }
+    .am-cmp-list li .txt {
+      flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .am-cmp-list li .n {
+      font-weight: 700; font-feature-settings: 'tnum' 1; font-size: 12px;
+    }
+    .am-cmp-list li .n.up   { color: var(--am-c-up); }
+    .am-cmp-list li .n.down { color: var(--am-c-down); }
+
+    /* ── Heatmap Hour × Month ─────────────────────────────────────── */
+    .am-heatmap-card { margin-bottom: 20px; }
+    .am-heatmap-scroll {
+      overflow-x: auto;
+      border: 1px solid var(--border); border-radius: 10px;
+    }
+    .am-heatmap {
+      border-collapse: collapse; width: 100%;
+      font-size: 12px;
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    }
+    .am-heatmap th, .am-heatmap td {
+      padding: 6px 10px; text-align: center;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      font-feature-settings: 'tnum' 1;
+    }
+    .am-heatmap th:last-child, .am-heatmap td:last-child { border-right: none; }
+    .am-heatmap tbody tr:last-child td { border-bottom: none; }
+    /* Corner + hour column */
+    .am-heatmap th.corner, .am-heatmap th.hour-col {
+      position: sticky; left: 0;
+      background: color-mix(in srgb, var(--am-c-monitoring) 10%, var(--bg-card));
+      color: var(--am-c-monitoring); font-weight: 700;
+      z-index: 2;
+      min-width: 52px;
+      border-right: 2px solid var(--border);
+    }
+    /* Year super-header */
+    .am-heatmap th.year-band {
+      color: #fff; font-weight: 800; letter-spacing: .04em;
+      padding: 8px 6px; font-size: 12.5px;
+    }
+    .am-heatmap th.year-band.y-0 { background: var(--am-c-y1); }
+    .am-heatmap th.year-band.y-1 { background: var(--am-c-y2); }
+    .am-heatmap th.year-band.y-2 { background: var(--am-c-y3); }
+    /* Month header */
+    .am-heatmap th.month-col {
+      background: var(--am-bg-subtle);
+      color: var(--text-muted); font-weight: 700; font-size: 11px;
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    /* Grand total row/col */
+    .am-heatmap th.total-col, .am-heatmap td.total-col {
+      background: color-mix(in srgb, var(--am-c-heat) 12%, var(--bg-card));
+      color: var(--am-c-heat); font-weight: 800;
+      border-left: 2px solid var(--border);
+    }
+    .am-heatmap tr.grand-total th, .am-heatmap tr.grand-total td {
+      background: color-mix(in srgb, var(--am-c-heat) 15%, var(--bg-card));
+      color: var(--am-c-heat); font-weight: 800;
+      font-size: 12.5px;
+      border-top: 2px solid var(--border);
+    }
+    .am-heatmap tr.grand-total td.total-col {
+      background: color-mix(in srgb, var(--am-c-heat) 25%, var(--bg-card));
+    }
+    /* Cell — colour intensity via inline --i */
+    .am-heatmap td.cell {
+      background: color-mix(in srgb, var(--am-c-heat) calc(var(--i, 0) * 60%), var(--bg-card));
+      color: var(--text);
+      transition: background .12s;
+    }
+    .am-heatmap td.cell:hover { outline: 2px solid var(--am-c-monitoring); outline-offset: -2px; }
+
+    /* ── Top 10 ───────────────────────────────────────────────────── */
+    .am-top {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--am-r-card); box-shadow: var(--am-shadow);
+      overflow: hidden;
+    }
+    .am-top-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; gap: 12px; flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+    }
+    .am-top-head h3 {
+      font-size: 12px; letter-spacing: .05em; text-transform: uppercase;
+      font-weight: 700; color: var(--text-muted); margin: 0;
+    }
+    .am-top-tabs {
+      display: inline-flex; gap: 4px;
+      background: var(--am-bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 3px;
+    }
+    .am-top-tab {
+      padding: 4px 12px; font-size: 11px; font-weight: 600;
+      border: none; border-radius: 5px;
+      background: transparent; color: var(--text-muted);
+      cursor: pointer; font-family: inherit;
+    }
+    .am-top-tab.active {
+      background: var(--bg-card); color: var(--text);
+      box-shadow: 0 1px 2px rgba(0,0,0,.06);
+    }
+    .am-top-month-strip {
+      padding: 8px 20px; border-bottom: 1px solid var(--border);
+      background: var(--am-bg-subtle);
+      display: none; align-items: center; gap: 6px;
+      overflow-x: auto;
+    }
+    .am-top-month-strip.visible { display: flex; }
+    .am-top-month-strip .mp {
+      padding: 4px 10px; font-size: 11.5px; font-weight: 600;
+      border: 1px solid var(--border); border-radius: 999px;
+      background: var(--bg-card); color: var(--text-muted);
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+    .am-top-month-strip .mp.active {
+      background: var(--text); color: var(--bg-card); border-color: var(--text);
+    }
+    .am-table {
+      width: 100%; border-collapse: collapse; font-size: 13px;
+    }
+    .am-table th {
+      text-align: left; padding: 10px 20px;
+      font-size: 10.5px; font-weight: 600; letter-spacing: .05em;
+      color: var(--text-muted); text-transform: uppercase;
+      background: var(--am-bg-subtle);
+      border-bottom: 1px solid var(--border);
+    }
+    .am-table td {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .am-table tbody tr:last-child td { border-bottom: none; }
+    .am-table tbody tr:hover { background: var(--am-hover); }
+    .am-rank {
+      width: 22px; height: 22px; border-radius: 50%;
+      display: inline-grid; place-items: center;
+      background: var(--am-bg-subtle); border: 1px solid var(--border);
+      font-size: 11px; font-weight: 700; font-feature-settings: 'tnum' 1;
+    }
+    .am-rank.top3 { background: var(--text); color: var(--bg-card); border-color: var(--text); }
+    .am-title-cell { max-width: 480px; }
+    .am-title-cell b { display: block; font-weight: 600; color: var(--text); }
+    .am-title-cell small {
+      display: block; font-size: 10.5px; color: var(--text-muted); margin-top: 2px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .am-cat-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: var(--am-r-tag);
+      font-size: 10.5px; font-weight: 600; letter-spacing: .01em;
+    }
+    .am-cat-tag.monitoring { color: var(--am-c-monitoring); background: color-mix(in srgb, var(--am-c-monitoring) 12%, transparent); }
+    .am-cat-tag.batch      { color: var(--am-c-batch);      background: color-mix(in srgb, var(--am-c-batch) 12%, transparent); }
+    .am-cat-tag.other      { color: var(--am-c-other);      background: color-mix(in srgb, var(--am-c-other) 14%, transparent); }
+    .am-count-val { font-weight: 700; font-size: 14px; font-feature-settings: 'tnum' 1; }
+    .am-spark { display: inline-block; width: 90px; height: 26px; vertical-align: middle; }
+    .am-trend {
+      font-size: 11px; font-weight: 700;
+      font-feature-settings: 'tnum' 1;
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 2px 8px; border-radius: var(--am-r-tag);
+    }
+    .am-trend.up   { color: var(--am-c-up);   background: color-mix(in srgb, var(--am-c-up) 10%, transparent); }
+    .am-trend.down { color: var(--am-c-down); background: color-mix(in srgb, var(--am-c-down) 10%, transparent); }
+    .am-trend.flat { color: var(--text-muted); background: var(--am-bg-subtle); }
+
+    /* ── Skeleton loading ─────────────────────────────────────────── */
+    .am-skel {
+      background: linear-gradient(90deg, var(--am-bg-subtle) 25%, var(--am-hover) 50%, var(--am-bg-subtle) 75%);
+      background-size: 200% 100%;
+      animation: amShimmer 1.4s ease-in-out infinite;
+      border-radius: 6px; color: transparent;
+    }
+    @keyframes amShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+    .am-empty {
+      padding: 40px 20px; text-align: center;
+      color: var(--text-muted); font-size: 13px;
+    }
+    .am-empty h4 { font-size: 15px; color: var(--text); margin: 0 0 8px; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Alert Monitor</div>
+        <div class="page-sub">Service Monitoring — SM · JSM Ops alerts summary</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="am-wrap">
+
+        <!-- ── HERO ─────────────────────────────────────────── -->
+        <section class="am-hero">
+          <div class="am-hero-top">
+            <div class="am-hero-title">
+              <span class="am-hero-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </span>
+              <div>
+                <h1>Alert Monitor <span class="am-team-pill">Service Monitoring - SM</span></h1>
+                <div class="am-hero-sub">สรุป &amp; วิเคราะห์ JSM Ops alerts รายเดือน · pulled from acm-opscenter</div>
+              </div>
+            </div>
+            <div class="am-hero-actions">
+              <span class="am-sync-hint" id="am-sync-hint">
+                <span class="am-sync-dot idle" id="am-sync-dot"></span>
+                <span id="am-sync-text">รอ sync</span>
+              </span>
+              <button class="am-btn primary" id="am-btn-refresh">
+                <span id="am-refresh-icon">↻</span> รีเฟรช
+              </button>
+              <a class="am-btn" href="admin/alert-monitor-config.html" id="am-btn-config" style="display:none"><i data-icon="settings"></i> Config</a>
+            </div>
+          </div>
+          <div class="am-hero-stats" id="am-hero-stats">
+            <div class="am-hero-stat">
+              <span class="lbl">Alerts (ปีนี้)</span>
+              <span class="val am-skel" id="am-hs-total">·····</span>
+              <span class="sub" id="am-hs-total-sub">alerts</span>
+            </div>
+            <div class="am-hero-stat">
+              <span class="lbl">Months tracked</span>
+              <span class="val am-skel" id="am-hs-months">····</span>
+              <span class="sub" id="am-hs-months-sub">months</span>
+            </div>
+            <div class="am-hero-stat">
+              <span class="lbl">Last synced</span>
+              <span class="val am-skel" id="am-hs-sync">····</span>
+              <span class="sub" id="am-hs-sync-sub">from JSM</span>
+            </div>
+          </div>
+        </section>
+
+        <div class="am-progress" id="am-progress">
+          <span id="am-progress-label">กำลัง sync ข้อมูลย้อนหลัง...</span>
+          <div class="bar"><div class="fill" id="am-progress-fill" style="width:0%"></div></div>
+          <span id="am-progress-pct" style="font-family: ui-monospace, monospace; min-width: 40px; text-align:right">0%</span>
+        </div>
+
+        <!-- ── Year selector ────────────────────────────────── -->
+        <div class="am-year-bar">
+          <span class="am-year-lbl">Year</span>
+          <div class="am-year-tabs" id="am-year-tabs">
+            <span class="am-skel" style="height:32px; width:200px; display:inline-block; border-radius:7px"></span>
+          </div>
+        </div>
+
+        <!-- ── KPI cards ─────────────────────────────────────── -->
+        <div class="am-kpi-grid">
+          <div class="am-kpi total">
+            <span class="am-kpi-lbl">รวม (เดือนล่าสุด)</span>
+            <span class="am-kpi-val am-skel" id="am-kpi-total">·····</span>
+            <span class="am-kpi-sub" id="am-kpi-total-sub"></span>
+          </div>
+          <div class="am-kpi monitor">
+            <span class="am-kpi-lbl">Monitoring</span>
+            <span class="am-kpi-val am-skel" id="am-kpi-mon">·····</span>
+            <span class="am-kpi-sub" id="am-kpi-mon-sub"></span>
+          </div>
+          <div class="am-kpi batch">
+            <span class="am-kpi-lbl">Batch</span>
+            <span class="am-kpi-val am-skel" id="am-kpi-batch">·····</span>
+            <span class="am-kpi-sub" id="am-kpi-batch-sub"></span>
+          </div>
+          <div class="am-kpi delta">
+            <span class="am-kpi-lbl">Δ vs เดือนก่อน</span>
+            <span class="am-kpi-val am-skel" id="am-kpi-delta">·····</span>
+            <span class="am-kpi-sub" id="am-kpi-delta-sub"></span>
+          </div>
+        </div>
+
+        <!-- ── Chart + analysis ──────────────────────────────── -->
+        <div class="am-mid-grid">
+          <div class="am-card">
+            <h3>Alerts รายเดือน (Monitoring / Batch / Other)</h3>
+            <div class="am-chart-wrap"><canvas id="am-chart-monthly"></canvas></div>
+            <div class="am-legend">
+              <span><span class="dot monitor"></span>Monitoring</span>
+              <span><span class="dot batch"></span>Batch</span>
+              <span><span class="dot other"></span>Other</span>
+            </div>
+          </div>
+          <div class="am-card">
+            <h3>วิเคราะห์อัตโนมัติ</h3>
+            <ul class="am-analysis" id="am-analysis">
+              <li class="am-skel" style="height:60px">·</li>
+              <li class="am-skel" style="height:40px">·</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ── Compare 2 months ─────────────────────────────── -->
+        <div class="am-card" style="margin-bottom:20px">
+          <h3>
+            เปรียบเทียบ 2 เดือน
+            <span class="am-compare-controls">
+              <select id="am-cmp-a"></select>
+              <span class="vs">vs</span>
+              <select id="am-cmp-b"></select>
+              <button class="am-btn primary" id="am-cmp-btn">Compare</button>
+            </span>
+          </h3>
+          <div class="am-compare-body" id="am-compare-body">
+            <div class="am-compare-empty">เลือก 2 เดือนแล้วกด <b>Compare</b> เพื่อดูสรุปการเปลี่ยนแปลง</div>
+          </div>
+        </div>
+
+        <!-- ── Heatmap Hour × Month ─────────────────────────── -->
+        <div class="am-card am-heatmap-card">
+          <h3>Alerts รายชั่วโมง × เดือน</h3>
+          <div class="am-heatmap-scroll" id="am-heatmap-scroll">
+            <div class="am-skel" style="height:400px"></div>
+          </div>
+        </div>
+
+        <!-- ── Top 10 ───────────────────────────────────────── -->
+        <div class="am-top">
+          <div class="am-top-head">
+            <h3>Top 10 Alerts</h3>
+            <div class="am-top-tabs" id="am-top-tabs">
+              <button class="am-top-tab active" data-view="all">รวมทั้งช่วง</button>
+              <button class="am-top-tab" data-view="per-month">แยกรายเดือน</button>
+              <button class="am-top-tab" data-view="high-freq">≥20 ครั้ง/เดือน</button>
+            </div>
+            <span class="meta" id="am-top-meta" style="font-size:11px;color:var(--text-muted);font-family:ui-monospace,monospace;flex-basis:100%;text-align:right"></span>
+          </div>
+          <div class="am-top-month-strip" id="am-top-month-strip"></div>
+          <table class="am-table">
+            <thead>
+              <tr>
+                <th style="width:32px">#</th>
+                <th>Alert Title</th>
+                <th style="width:110px">Category</th>
+                <th style="width:80px; text-align:right">Count</th>
+                <th style="width:110px" id="am-top-trend-th">Trend</th>
+                <th style="width:70px; text-align:right" id="am-top-delta-th">Δ</th>
+              </tr>
+            </thead>
+            <tbody id="am-top-body">
+              <tr><td colspan="6"><div class="am-skel" style="height:180px"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="assets/js/alert-monitor.js"></script>
+<script>
+  Auth.requireAuth();
+  Layout.render('alert-monitor');
+  AlertMonitor.init();
+</script>
+
+</body>
+</html>

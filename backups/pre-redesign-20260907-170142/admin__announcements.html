@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Announcements — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ── Layout: 2-col (form + preview | list) ── */
+    .ann-layout {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .ann-layout { grid-template-columns: 1fr; }
+    }
+
+    /* ── Left column ── */
+    .ann-left { display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Form card ── */
+    .form-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+    }
+    .form-card-hd {
+      padding: 13px 18px; border-bottom: 1px solid var(--border);
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      letter-spacing: .06em; text-transform: uppercase;
+    }
+    .form-card-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Type selector ── */
+    .type-row {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px;
+    }
+    .type-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 8px 4px; border-radius: 8px; cursor: pointer;
+      border: 1.5px solid var(--border); background: var(--bg);
+      transition: border-color .14s, background .14s;
+      font-family: var(--font); font-size: 9px; font-weight: 800;
+      letter-spacing: .06em; color: var(--text-muted);
+    }
+    .type-btn .tb-symbol { font-size: 14px; line-height: 1; }
+    .type-btn:hover { background: rgba(255,255,255,.04); }
+    .type-btn.active { color: var(--tc, #fff); background: var(--tb, transparent); border-color: var(--tc, var(--border)); }
+
+    /* ── Field ── */
+    .f-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px;
+    }
+    .f-input, .f-ta {
+      width: 100%; background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 8px; padding: 8px 11px; font-size: 12px;
+      color: var(--text); font-family: var(--font); outline: none;
+      transition: border-color .15s;
+    }
+    .f-input:focus, .f-ta:focus { border-color: var(--orange); }
+    .f-ta { resize: vertical; min-height: 70px; }
+
+    /* ── Preview card ── */
+    .preview-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+    }
+    .preview-hd {
+      padding: 11px 16px; border-bottom: 1px solid var(--border);
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      letter-spacing: .08em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .preview-hd::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #22c55e; }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    @keyframes glow-blink {
+      0%,100% { opacity:1; box-shadow: 0 0 6px #f26419, 0 0 14px rgba(242,100,25,.5); }
+      50%      { opacity:.3; box-shadow: none; }
+    }
+
+    /* Preview: ticker strip — matches real ticker */
+    .prev-ticker {
+      display: flex; align-items: stretch;
+      height: 34px;
+      background: #0d0f14;
+      border-top: 1px solid rgba(242,100,25,.25);
+      border-bottom: 1px solid rgba(0,0,0,.5);
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+      font-size: 11px; overflow: hidden;
+      position: relative;
+      box-shadow: 0 2px 12px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    /* left accent stripe */
+    .prev-ticker::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+      background: linear-gradient(to bottom, #f26419, rgba(242,100,25,.2));
+    }
+
+    .prev-ticker-label {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 14px 0 18px;
+      background: linear-gradient(90deg, rgba(242,100,25,.18) 0%, rgba(242,100,25,.06) 100%);
+      border-right: 1px solid rgba(242,100,25,.18);
+      color: #f26419; font-weight: 900;
+      font-size: 9px; letter-spacing: .14em;
+      white-space: nowrap; flex-shrink: 0;
+      text-shadow: 0 0 12px rgba(242,100,25,.5);
+    }
+    .prev-ticker-blink {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #f26419;
+      box-shadow: 0 0 6px #f26419, 0 0 12px rgba(242,100,25,.4);
+      animation: glow-blink 1.2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    .prev-ticker-count {
+      background: rgba(242,100,25,.2);
+      border: 1px solid rgba(242,100,25,.3);
+      color: #f26419; border-radius: 10px;
+      font-size: 8.5px; font-weight: 900;
+      padding: 0 5px; line-height: 16px;
+      min-width: 16px; text-align: center;
+    }
+    .prev-ticker-body {
+      flex: 1; display: flex; align-items: center;
+      padding: 0 16px; gap: 8px; overflow: hidden;
+    }
+    .prev-type-tag {
+      font-size: 8.5px; font-weight: 900; letter-spacing: .1em;
+      padding: 2px 6px; border-radius: 3px; flex-shrink: 0;
+      border: 1px solid transparent; line-height: 1.5;
+    }
+    .prev-ticker-sep {
+      color: rgba(242,100,25,.3); font-size: 10px; flex-shrink: 0;
+    }
+    .prev-ticker-text {
+      color: rgba(220,230,255,.85); font-weight: 700;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      flex: 1;
+    }
+    .prev-ticker-ts {
+      display: flex; align-items: center;
+      padding: 0 14px 0 12px;
+      border-left: 1px solid rgba(255,255,255,.05);
+      color: rgba(255,255,255,.2); font-size: 9.5px;
+      letter-spacing: .05em; flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    @keyframes live-pulse {
+      0%,100% { opacity:1; box-shadow: 0 0 5px #22c55e; }
+      50%      { opacity:.4; box-shadow: none; }
+    }
+
+    /* Preview: terminal card — matches real ann-card */
+    .prev-card-inner {
+      background: #0a0c10;
+      border-radius: 10px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,.07);
+      box-shadow: 0 4px 24px rgba(0,0,0,.5), 0 0 0 1px rgba(242,100,25,.08);
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+      margin: 12px 14px;
+    }
+    .prev-card-chrome {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 13px;
+      background: #111318;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      position: relative;
+    }
+    .prev-chrome-dots { display: flex; gap: 5px; align-items: center; }
+    .prev-chrome-dot { width: 9px; height: 9px; border-radius: 50%; }
+    .prev-chrome-dot.r { background: #ff5f57; }
+    .prev-chrome-dot.y { background: #febc2e; }
+    .prev-chrome-dot.g { background: #28c840; }
+    .prev-chrome-label {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      font-size: 8.5px; font-weight: 700; letter-spacing: .1em;
+      color: rgba(255,255,255,.25);
+    }
+    .prev-live {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 8px; color: rgba(255,255,255,.2); letter-spacing: .06em;
+    }
+    .prev-live-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #22c55e; box-shadow: 0 0 5px #22c55e;
+      animation: live-pulse 2s ease-in-out infinite;
+    }
+    .prev-terminal {
+      padding: 12px 14px; background: #0a0c10;
+      position: relative;
+    }
+    .prev-terminal::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);
+      pointer-events: none;
+    }
+    .prev-term-line {
+      display: flex; align-items: baseline; gap: 8px;
+      font-size: 11px; color: rgba(200,220,255,.75); line-height: 1.75;
+      position: relative; z-index: 1;
+    }
+    .prev-term-prompt { color: rgba(242,100,25,.5); user-select: none; font-size: 10px; }
+    .prev-term-badge {
+      font-size: 8.5px; font-weight: 900; padding: 2px 6px;
+      border-radius: 3px; flex-shrink: 0; border: 1px solid transparent;
+    }
+    .prev-cursor {
+      display: inline-block; width: 7px; height: 12px;
+      background: #f26419; margin-left: 2px;
+      vertical-align: text-bottom; border-radius: 1px;
+      animation: blink .8s step-end infinite;
+    }
+    .prev-footer {
+      padding: 6px 14px; border-top: 1px solid rgba(255,255,255,.05);
+      font-size: 9px; color: rgba(255,255,255,.18);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .prev-footer-path { color: rgba(242,100,25,.4); }
+    .prev-footer-cmd  { color: rgba(255,255,255,.25); }
+
+    /* ── Right column: list ── */
+    .ann-right {}
+    .list-hd {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .list-title {
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      letter-spacing: .06em; text-transform: uppercase;
+    }
+
+    .ann-list { display: flex; flex-direction: column; gap: 6px; }
+    .ann-row {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 14px; border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      transition: border-color .14s;
+    }
+    .ann-row:hover { border-color: rgba(255,255,255,.12); }
+    .ann-row.is-pinned { border-left: 2.5px solid var(--orange); }
+
+    .ann-badge {
+      font-size: 8.5px; font-weight: 800; letter-spacing: .06em;
+      padding: 3px 7px; border-radius: 4px; flex-shrink: 0;
+      margin-top: 2px; white-space: nowrap;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    .ann-body { flex: 1; min-width: 0; }
+    .ann-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+    .ann-msg   { font-size: 11px; color: var(--text-muted); line-height: 1.55; }
+    .ann-meta  { font-size: 9.5px; color: var(--text-muted); margin-top: 5px; opacity: .65; }
+    .ann-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; margin-top: 1px; }
+    .pin-btn {
+      font-size: 13px; cursor: pointer; opacity: .3;
+      background: none; border: none; padding: 2px; line-height: 1;
+      transition: opacity .14s;
+    }
+    .pin-btn.on { opacity: 1; }
+    .pin-btn:hover { opacity: .75; }
+    .exp-tag {
+      font-size: 9px; padding: 1px 6px; border-radius: 4px;
+      background: rgba(239,68,68,.1); color: #ef4444;
+      border: 1px solid rgba(239,68,68,.18);
+    }
+
+    /* Preview popup animations */
+    @keyframes ann-pop-shimmer {
+      0%, 100% { background-position: 0% 0%; }
+      50%      { background-position: 100% 0%; }
+    }
+    @keyframes prev-mascot-bob {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-3px); }
+    }
+    @keyframes prev-mascot-blink {
+      0%, 92%, 100% { transform: scaleY(1); }
+      94%, 98%      { transform: scaleY(.1); }
+    }
+    @keyframes prev-mascot-leaf {
+      0%, 100% { transform: rotate(-3deg); }
+      50%      { transform: rotate(8deg); }
+    }
+    #prev-popup-mascot svg { width: 100%; height: 100%; overflow: visible;
+      animation: prev-mascot-bob 3s ease-in-out infinite; }
+    #prev-popup-mascot .pm-eye { transform-origin: center; animation: prev-mascot-blink 4s ease-in-out infinite; }
+    #prev-popup-mascot .pm-leaf { transform-origin: 50px 22px; animation: prev-mascot-leaf 2.4s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="megaphone"></i> Announcements</div>
+        <div class="page-sub">ประกาศบน Dashboard — แสดงทันทีที่ login เข้ามา</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadList()" style="font-size:11px">↺ Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="megaphone"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Announcements</h1>
+          <p>ประกาศบน Dashboard — แสดงทันทีที่ user login เข้ามา · กำหนดวันหมดอายุ และระดับความสำคัญ</p>
+        </div>
+      </section>
+
+      <div class="ann-layout">
+
+        <!-- ── LEFT: Form + Preview ── -->
+        <div class="ann-left">
+
+          <!-- Form -->
+          <div class="form-card">
+            <div class="form-card-hd">New Announcement</div>
+            <div class="form-card-body">
+
+              <!-- Type -->
+              <div>
+                <div class="f-label">Type</div>
+                <div class="type-row" id="type-row"></div>
+              </div>
+
+              <!-- Title -->
+              <div>
+                <div class="f-label">Title <span style="opacity:.5;font-weight:400;text-transform:none">(short summary)</span></div>
+                <input class="f-input" id="f-title" type="text"
+                  placeholder="e.g. Jenkins Batch Down"
+                  oninput="updatePreview()">
+              </div>
+
+              <!-- Message -->
+              <div>
+                <div class="f-label">Message</div>
+                <textarea class="f-ta" id="f-msg"
+                  placeholder="รายละเอียดประกาศ..."
+                  oninput="updatePreview()"></textarea>
+              </div>
+
+              <!-- Display mode -->
+              <div>
+                <div class="f-label">แสดงที่ไหน</div>
+                <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px" id="display-row">
+                  <button class="type-btn" id="disp-both"   onclick="selectDisplay('both')"   style="--tc:#f26419;--tb:rgba(242,100,25,.14)">
+                    <span class="tb-symbol">⊞</span>ทั้งคู่
+                  </button>
+                  <button class="type-btn" id="disp-ticker" onclick="selectDisplay('ticker')" style="--tc:#38bdf8;--tb:rgba(56,189,248,.14)">
+                    <span class="tb-symbol"><i data-icon="play"></i></span>Ticker
+                  </button>
+                  <button class="type-btn" id="disp-card"   onclick="selectDisplay('card')"   style="--tc:#22c55e;--tb:rgba(34,197,94,.14)">
+                    <span class="tb-symbol">▣</span>Card
+                  </button>
+                  <button class="type-btn" id="disp-popup"  onclick="selectDisplay('popup')"  style="--tc:#a855f7;--tb:rgba(168,85,247,.14)">
+                    <span class="tb-symbol"><i data-icon="circle"></i></span>Popup
+                  </button>
+                  <button class="type-btn" id="disp-promo"  onclick="selectDisplay('promo')"  style="--tc:#f26419;--tb:rgba(242,100,25,.14)">
+                    <span class="tb-symbol">◈</span>Promo
+                  </button>
+                  <button class="type-btn" id="disp-all"    onclick="selectDisplay('all')"    style="--tc:#ec4899;--tb:rgba(236,72,153,.14)">
+                    <span class="tb-symbol"><i data-icon="sparkles"></i></span>All
+                  </button>
+                </div>
+              </div>
+
+              <!-- Popup CTA (shown only when display includes popup) -->
+              <div id="popup-cta-wrap" style="display:none;border:1px dashed var(--border);border-radius:10px;padding:11px 13px;display:flex;flex-direction:column;gap:10px;background:rgba(168,85,247,.04)">
+                <div style="font-size:9.5px;font-weight:800;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase"><i data-icon="circle"></i> Popup Settings <span style="opacity:.5;font-weight:400;text-transform:none;letter-spacing:0">— optional CTA</span></div>
+                <div>
+                  <div class="f-label">CTA Label</div>
+                  <input class="f-input" id="f-cta-label" type="text" placeholder="เช่น เริ่มใช้งาน, ดูเพิ่มเติม" oninput="updatePreview()">
+                </div>
+                <div>
+                  <div class="f-label">CTA URL</div>
+                  <input class="f-input" id="f-cta-url" type="url" placeholder="https://... หรือ ./analytics.html" oninput="updatePreview()">
+                </div>
+              </div>
+
+              <!-- Promo card fields (shown only when display = promo / all) -->
+              <div id="promo-fields" style="display:none;border:1px dashed var(--border);border-radius:10px;padding:11px 13px;flex-direction:column;gap:10px;background:rgba(242,100,25,.04)">
+                <div style="font-size:9.5px;font-weight:800;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase">◈ Promo card <span style="opacity:.5;font-weight:400;text-transform:none;letter-spacing:0">— แถบ carousel บน Dashboard · ใช้ปุ่มจาก CTA ด้านบน</span></div>
+                <div style="display:flex;gap:10px">
+                  <div style="width:96px"><div class="f-label">Icon (emoji)</div><input class="f-input" id="f-icon" type="text" maxlength="4" placeholder="📈" oninput="updatePreview()"></div>
+                  <div style="flex:1"><div class="f-label">Badge <span style="opacity:.5;font-weight:400;text-transform:none">(optional)</span></div><input class="f-input" id="f-badge" type="text" placeholder="ใหม่" oninput="updatePreview()"></div>
+                </div>
+              </div>
+
+              <!-- Options row -->
+              <div>
+                <div class="f-label">Expires at <span style="opacity:.5;font-weight:400;text-transform:none">(optional)</span></div>
+                <input class="f-input" id="f-expires" type="datetime-local">
+              </div>
+
+              <!-- Submit -->
+              <button class="btn btn-primary" onclick="submitAnn()" id="submit-btn"
+                style="font-size:11.5px;font-weight:700">
+                <i data-icon="megaphone"></i> Broadcast
+              </button>
+
+            </div>
+          </div>
+
+          <!-- Live preview -->
+          <div class="preview-card">
+            <div class="preview-hd">Live Preview — ที่ user จะเห็นบน Dashboard</div>
+
+            <!-- Ticker preview -->
+            <div class="prev-ticker">
+              <div class="prev-ticker-label">
+                <div class="prev-ticker-blink"></div>
+                BROADCAST
+                <span class="prev-ticker-count" id="prev-ticker-count">1</span>
+              </div>
+              <div class="prev-ticker-body">
+                <span id="prev-type-tag" class="prev-type-tag">◆ INFO</span>
+                <span class="prev-ticker-sep">◆</span>
+                <span class="prev-ticker-text" id="prev-ticker-text">ชื่อประกาศจะปรากฏที่นี่...</span>
+              </div>
+              <div class="prev-ticker-ts" id="prev-clock">--:--:--</div>
+            </div>
+
+            <!-- Terminal card preview (shown when display=card or both) -->
+            <div id="prev-card-wrap">
+              <div class="prev-card-inner">
+                <div class="prev-card-chrome">
+                  <div class="prev-chrome-dots">
+                    <div class="prev-chrome-dot r"></div>
+                    <div class="prev-chrome-dot y"></div>
+                    <div class="prev-chrome-dot g"></div>
+                  </div>
+                  <div class="prev-chrome-label">SYSTEM BROADCAST</div>
+                  <div class="prev-live"><div class="prev-live-dot"></div>LIVE</div>
+                </div>
+                <div class="prev-terminal">
+                  <div class="prev-term-line">
+                    <span class="prev-term-prompt">~/ann $</span>
+                    <span class="prev-term-badge" id="prev-term-badge">◆ INFO</span>
+                    <span id="prev-term-text" style="flex:1">ข้อความจะพิมพ์ออกมาแบบ typewriter...</span>
+                    <span class="prev-cursor"></span>
+                  </div>
+                </div>
+                <div class="prev-footer">
+                  <span class="prev-footer-path">~/centralize-sm</span>
+                  <span class="prev-footer-cmd">tail -f announcements.log</span>
+                  <span class="prev-cursor"></span>
+                </div>
+              </div>
+            </div>
+            <div id="prev-no-pin" style="padding:12px 16px;font-size:10.5px;color:var(--text-muted);text-align:center;display:none">
+              เลือก <strong>Card</strong>, <strong>ทั้งคู่</strong> หรือ <strong>All</strong> เพื่อแสดง terminal card บน Dashboard
+            </div>
+
+            <!-- Popup preview (white/orange minimal — with mini mascot) -->
+            <div id="prev-popup-wrap" style="display:none;padding:12px 14px 16px;border-top:1px solid var(--border);background:repeating-linear-gradient(45deg,rgba(255,255,255,.015),rgba(255,255,255,.015) 6px,transparent 6px,transparent 12px)">
+              <div style="font-size:9px;font-weight:800;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;text-align:center"><i data-icon="circle"></i> Popup overlay preview</div>
+              <div id="prev-popup-box" style="position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,.25),0 0 0 1px rgba(242,100,25,.08);max-width:340px;margin:0 auto">
+                <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#f26419,#f59e0b,#f26419);background-size:200% 100%;animation:ann-pop-shimmer 3s ease-in-out infinite"></div>
+                <div style="position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:radial-gradient(circle,rgba(242,100,25,.16) 0%,transparent 70%);pointer-events:none"></div>
+                <div style="position:absolute;top:8px;right:10px;width:22px;height:22px;border-radius:6px;color:var(--text-muted);font-size:13px;display:flex;align-items:center;justify-content:center;z-index:3"><i data-icon="x"></i></div>
+                <div style="padding:22px 22px 14px;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;z-index:2">
+                  <div id="prev-popup-mascot" style="width:74px;height:74px;margin-bottom:10px"></div>
+                  <div id="prev-popup-tag" style="font-size:8.5px;font-weight:900;letter-spacing:.12em;padding:2.5px 8px;border-radius:4px;margin-bottom:8px;font-family:'JetBrains Mono',monospace;border:1px solid">◆ INFO</div>
+                  <div id="prev-popup-title" style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:6px;line-height:1.35;word-break:break-word">ชื่อประกาศจะปรากฏที่นี่</div>
+                  <div id="prev-popup-msg" style="font-size:11.5px;color:var(--text-muted);line-height:1.6;white-space:pre-wrap;word-break:break-word;max-height:100px;overflow:hidden">ข้อความ popup จะแสดงที่นี่...</div>
+                </div>
+                <div id="prev-popup-cta-wrap" style="display:none;padding:2px 22px 14px;position:relative;z-index:2">
+                  <div id="prev-popup-cta" style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px 14px;background:linear-gradient(135deg,#f26419 0%,#f59e0b 100%);color:#fff;border-radius:10px;font-size:11.5px;font-weight:800;box-shadow:0 3px 10px rgba(242,100,25,.3)">เริ่มใช้งาน <span style="font-size:13px">→</span></div>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 16px 12px;border-top:1px solid var(--border);background:var(--bg);font-size:10px;color:var(--text-muted);position:relative;z-index:2">
+                  <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:11px;height:11px;border:1.5px solid var(--text-muted);border-radius:3px"></span>ไม่ต้องแสดงอีกในวันนี้</span>
+                  <span style="color:var(--text-muted);font-weight:600">ปิด</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Promo preview (dashboard carousel card) -->
+            <div id="prev-promo-wrap" style="display:none;padding:12px 14px 16px;border-top:1px solid var(--border)">
+              <div style="font-size:9px;font-weight:800;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;text-align:center">◈ Dashboard promo preview</div>
+              <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:1.5px solid rgba(242,100,25,.3);background:linear-gradient(135deg,rgba(242,100,25,.14),rgba(251,191,36,.09) 55%,rgba(242,100,25,.05))">
+                <div id="prev-promo-icon" style="width:44px;height:44px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(255,255,255,.5);border:1px solid rgba(242,100,25,.25)"><i data-icon="trending-up"></i></div>
+                <div style="flex:1;min-width:0">
+                  <span id="prev-promo-badge" style="display:none;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#f26419;background:rgba(242,100,25,.12);padding:2px 8px;border-radius:999px"></span>
+                  <div id="prev-promo-title" style="font-size:14px;font-weight:800;color:var(--text);margin-top:3px">ชื่อ promo</div>
+                  <div id="prev-promo-msg" style="font-size:11.5px;color:var(--text-muted);margin-top:2px;line-height:1.5">ข้อความ...</div>
+                </div>
+                <div id="prev-promo-cta" style="flex-shrink:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(135deg,#f26419,#fb923c);white-space:nowrap">เปิด →</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── RIGHT: List ── -->
+        <div class="ann-right">
+          <div class="list-hd">
+            <div class="list-title">Active · <span id="ann-count">—</span></div>
+            <label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="show-all" onchange="loadList()" style="accent-color:var(--orange)">
+              Show all (incl. expired)
+            </label>
+          </div>
+          <div class="ann-list" id="ann-list">
+            <div style="text-align:center;padding:40px;color:var(--text-muted);font-size:11px">Loading...</div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);align-items:center;justify-content:center">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;width:460px;max-width:94vw;box-shadow:0 24px 64px rgba(0,0,0,.5)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--border)">
+      <span style="font-size:11.5px;font-weight:700;color:var(--text)">Edit Announcement</span>
+      <button onclick="closeEdit()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;line-height:1"><i data-icon="x"></i></button>
+    </div>
+    <div style="padding:18px;display:flex;flex-direction:column;gap:13px">
+      <input type="hidden" id="edit-id">
+      <div>
+        <div class="f-label">Type</div>
+        <div class="type-row" id="edit-type-row"></div>
+      </div>
+      <div>
+        <div class="f-label">แสดงที่ไหน</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px">
+          <button class="type-btn" id="edit-disp-both"   onclick="selectDisplay('both',true)"   style="--tc:#f26419;--tb:rgba(242,100,25,.14)"><span class="tb-symbol">⊞</span>ทั้งคู่</button>
+          <button class="type-btn" id="edit-disp-ticker" onclick="selectDisplay('ticker',true)" style="--tc:#38bdf8;--tb:rgba(56,189,248,.14)"><span class="tb-symbol"><i data-icon="play"></i></span>Ticker</button>
+          <button class="type-btn" id="edit-disp-card"   onclick="selectDisplay('card',true)"   style="--tc:#22c55e;--tb:rgba(34,197,94,.14)"><span class="tb-symbol">▣</span>Card</button>
+          <button class="type-btn" id="edit-disp-popup"  onclick="selectDisplay('popup',true)"  style="--tc:#a855f7;--tb:rgba(168,85,247,.14)"><span class="tb-symbol"><i data-icon="circle"></i></span>Popup</button>
+          <button class="type-btn" id="edit-disp-promo"  onclick="selectDisplay('promo',true)"  style="--tc:#f26419;--tb:rgba(242,100,25,.14)"><span class="tb-symbol">◈</span>Promo</button>
+          <button class="type-btn" id="edit-disp-all"    onclick="selectDisplay('all',true)"    style="--tc:#ec4899;--tb:rgba(236,72,153,.14)"><span class="tb-symbol"><i data-icon="sparkles"></i></span>All</button>
+        </div>
+      </div>
+      <div id="edit-popup-cta-wrap" style="display:none;border:1px dashed var(--border);border-radius:10px;padding:11px 13px;flex-direction:column;gap:10px;background:rgba(168,85,247,.04)">
+        <div style="font-size:9.5px;font-weight:800;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase"><i data-icon="circle"></i> Popup CTA</div>
+        <div>
+          <div class="f-label">CTA Label</div>
+          <input class="f-input" id="edit-cta-label" type="text" placeholder="เช่น เริ่มใช้งาน">
+        </div>
+        <div>
+          <div class="f-label">CTA URL</div>
+          <input class="f-input" id="edit-cta-url" type="url" placeholder="https://... หรือ ./analytics.html">
+        </div>
+      </div>
+      <div id="edit-promo-fields" style="display:none;border:1px dashed var(--border);border-radius:10px;padding:11px 13px;flex-direction:column;gap:10px;background:rgba(242,100,25,.04)">
+        <div style="font-size:9.5px;font-weight:800;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase">◈ Promo card — ใช้ปุ่มจาก CTA ด้านบน</div>
+        <div style="display:flex;gap:10px">
+          <div style="width:96px"><div class="f-label">Icon</div><input class="f-input" id="edit-icon" type="text" maxlength="4" placeholder="📈"></div>
+          <div style="flex:1"><div class="f-label">Badge</div><input class="f-input" id="edit-badge" type="text" placeholder="ใหม่"></div>
+        </div>
+      </div>
+      <div>
+        <div class="f-label">Title</div>
+        <input class="f-input" id="edit-title" type="text">
+      </div>
+      <div>
+        <div class="f-label">Message</div>
+        <textarea class="f-ta" id="edit-msg" style="min-height:80px"></textarea>
+      </div>
+      <div>
+        <div class="f-label">Expires at</div>
+        <input class="f-input" id="edit-expires" type="datetime-local">
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:2px">
+        <button class="btn btn-ghost btn-sm" onclick="closeEdit()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveEdit()">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('admin');
+
+// ── Type definitions ──────────────────────────────────────────────────────────
+const TYPES = [
+  { id:'alert',   label:'ALERT',   color:'#ef4444', bg:'rgba(239,68,68,.14)',  symbol:'<i data-icon="x"></i>' },
+  { id:'warn',    label:'WARN',    color:'#f59e0b', bg:'rgba(245,158,11,.14)', symbol:'▲' },
+  { id:'info',    label:'INFO',    color:'#38bdf8', bg:'rgba(56,189,248,.14)', symbol:'◆' },
+  { id:'notice',  label:'NOTICE',  color:'#f26419', bg:'rgba(242,100,25,.14)', symbol:'●' },
+  { id:'success', label:'SUCCESS', color:'#22c55e', bg:'rgba(34,197,94,.14)',  symbol:'<i data-icon="check"></i>' },
+];
+
+let _selType     = 'info';
+let _editSelType = 'info';
+let _selDisplay  = 'both';
+let _editDisplay = 'both';
+
+// ── Type row builder ──────────────────────────────────────────────────────────
+function buildTypeRow(containerId, selected, onSelect) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = TYPES.map(t => `
+    <button class="type-btn ${t.id === selected ? 'active' : ''}"
+      style="--tc:${t.color};--tb:${t.bg}"
+      onclick="${onSelect}('${t.id}','${containerId}')">
+      <span class="tb-symbol">${t.symbol}</span>
+      ${t.label}
+    </button>`).join('');
+}
+
+function selectType(id, gridId) {
+  if (gridId === 'type-row')      _selType     = id;
+  if (gridId === 'edit-type-row') _editSelType = id;
+  document.querySelectorAll(`#${gridId} .type-btn`).forEach(b => {
+    const active = b.textContent.trim().startsWith(TYPES.find(t => t.id === id)?.symbol || '');
+    b.classList.toggle('active', b.textContent.includes(TYPES.find(t=>t.id===id)?.label || '~~~'));
+  });
+  // Re-render for cleanliness
+  buildTypeRow(gridId, id, gridId === 'type-row' ? 'selectType' : 'selectEditType');
+  if (gridId === 'type-row') updatePreview();
+}
+
+function selectEditType(id, gridId) { selectType(id, gridId); }
+
+buildTypeRow('type-row',      'info', 'selectType');
+buildTypeRow('edit-type-row', 'info', 'selectEditType');
+
+// ── Display mode ──────────────────────────────────────────────────────────────
+const DISPLAY_MODES = ['both','ticker','card','popup','promo','all'];
+function selectDisplay(mode, isEdit) {
+  if (isEdit) _editDisplay = mode;
+  else        _selDisplay  = mode;
+  const prefix = isEdit ? 'edit-disp-' : 'disp-';
+  DISPLAY_MODES.forEach(m => {
+    const btn = document.getElementById(prefix + m);
+    if (!btn) return;
+    btn.classList.toggle('active', m === mode);
+  });
+  // CTA fields — shared by popup + promo (+ all)
+  const cta = document.getElementById(isEdit ? 'edit-popup-cta-wrap' : 'popup-cta-wrap');
+  if (cta) cta.style.display = (mode === 'popup' || mode === 'promo' || mode === 'all') ? 'flex' : 'none';
+  // Promo icon/badge fields — promo + all
+  const promo = document.getElementById(isEdit ? 'edit-promo-fields' : 'promo-fields');
+  if (promo) promo.style.display = (mode === 'promo' || mode === 'all') ? 'flex' : 'none';
+  if (!isEdit) updatePreview();
+}
+selectDisplay('both', false);
+selectDisplay('both', true);
+
+// ── Live preview ──────────────────────────────────────────────────────────────
+let _prevClockTimer = null;
+function _startPrevClock() {
+  clearInterval(_prevClockTimer);
+  function tick() {
+    const el = document.getElementById('prev-clock');
+    if (el) el.textContent = new Date().toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+  }
+  tick();
+  _prevClockTimer = setInterval(tick, 1000);
+}
+_startPrevClock();
+
+function updatePreview() {
+  const t      = TYPES.find(x => x.id === _selType) || TYPES[2];
+  const title  = document.getElementById('f-title').value.trim() || 'ชื่อประกาศจะปรากฏที่นี่...';
+  const msg    = document.getElementById('f-msg').value.trim()   || 'ข้อความจะพิมพ์ออกมาแบบ typewriter...';
+  // Ticker type badge (symbol + label + border like real ticker)
+  const tag = document.getElementById('prev-type-tag');
+  tag.textContent      = t.symbol + ' ' + t.label;
+  tag.style.background = t.bg;
+  tag.style.color      = t.color;
+  tag.style.borderColor = t.color + '33';
+
+  // Ticker text
+  const display = title + (msg && msg !== title ? '  —  ' + msg.slice(0, 55) + (msg.length > 55 ? '…' : '') : '');
+  document.getElementById('prev-ticker-text').textContent = display;
+
+  // Terminal card badge
+  const badge = document.getElementById('prev-term-badge');
+  badge.textContent      = t.label;
+  badge.style.background = t.bg;
+  badge.style.color      = t.color;
+  badge.style.borderColor = t.color + '33';
+
+  const rawTitle  = document.getElementById('f-title').value.trim();
+  const rawMsg    = document.getElementById('f-msg').value.trim();
+  const termText  = rawTitle
+    ? rawTitle + (rawMsg ? '  —  ' + rawMsg : '')
+    : (rawMsg || 'ข้อความจะพิมพ์ออกมาแบบ typewriter...');
+  document.getElementById('prev-term-text').textContent = termText.slice(0, 80) + (termText.length > 80 ? '…' : '');
+
+  // Show/hide based on display mode
+  const showTicker = _selDisplay === 'ticker' || _selDisplay === 'both' || _selDisplay === 'all';
+  const showCard   = _selDisplay === 'card'   || _selDisplay === 'both' || _selDisplay === 'all';
+  const showPopup  = _selDisplay === 'popup'  || _selDisplay === 'all';
+  const showPromo  = _selDisplay === 'promo'  || _selDisplay === 'all';
+  document.querySelector('.prev-ticker').style.display       = showTicker ? '' : 'none';
+  document.getElementById('prev-card-wrap').style.display    = showCard   ? '' : 'none';
+  document.getElementById('prev-no-pin').style.display       = (showCard || showTicker || showPopup || showPromo) ? 'none' : '';
+  document.getElementById('prev-popup-wrap').style.display   = showPopup  ? '' : 'none';
+  document.getElementById('prev-promo-wrap').style.display   = showPromo  ? '' : 'none';
+
+  if (showPromo) {
+    const rawTitle = document.getElementById('f-title').value.trim();
+    const rawMsg   = document.getElementById('f-msg').value.trim();
+    const icon     = document.getElementById('f-icon')?.value.trim() || '<i data-icon="megaphone"></i>';
+    const badge    = document.getElementById('f-badge')?.value.trim() || '';
+    const ctaLabel = document.getElementById('f-cta-label')?.value.trim() || 'เปิด';
+    document.getElementById('prev-promo-icon').textContent  = icon;
+    document.getElementById('prev-promo-title').textContent = rawTitle || 'ชื่อ promo';
+    document.getElementById('prev-promo-msg').textContent   = rawMsg || 'ข้อความโปรโมท...';
+    document.getElementById('prev-promo-cta').innerHTML     = esc(ctaLabel) + ' →';
+    const badgeEl = document.getElementById('prev-promo-badge');
+    if (badge) { badgeEl.style.display = 'inline-block'; badgeEl.textContent = badge; }
+    else badgeEl.style.display = 'none';
+  }
+
+  if (showPopup) {
+    const mascotEl = document.getElementById('prev-popup-mascot');
+    if (mascotEl && !mascotEl.dataset.injected) {
+      mascotEl.innerHTML = MASCOT_SVG;
+      mascotEl.dataset.injected = '1';
+    }
+
+    const popTag = document.getElementById('prev-popup-tag');
+    popTag.textContent      = t.symbol + ' ' + t.label;
+    popTag.style.background = t.bg;
+    popTag.style.color      = t.color;
+    popTag.style.borderColor = t.color + '44';
+
+    const rawTitle = document.getElementById('f-title').value.trim();
+    const rawMsg   = document.getElementById('f-msg').value.trim();
+    document.getElementById('prev-popup-title').textContent = rawTitle || 'ชื่อประกาศจะปรากฏที่นี่';
+    document.getElementById('prev-popup-msg').textContent = rawMsg || 'ข้อความ popup จะแสดงที่นี่...';
+
+    const ctaLabel = document.getElementById('f-cta-label')?.value.trim();
+    const ctaUrl   = document.getElementById('f-cta-url')?.value.trim();
+    const ctaWrap  = document.getElementById('prev-popup-cta-wrap');
+    if (ctaLabel && ctaUrl) {
+      ctaWrap.style.display = '';
+      document.getElementById('prev-popup-cta').innerHTML = esc(ctaLabel) + ' <span style="font-size:13px">→</span>';
+    } else {
+      ctaWrap.style.display = 'none';
+    }
+  }
+}
+
+// Mini mascot SVG for admin preview (matches runtime)
+const MASCOT_SVG = `
+<svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="pm-body" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#ffb066"/>
+      <stop offset="55%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </radialGradient>
+  </defs>
+  <g class="pm-leaf">
+    <rect x="49" y="14" width="2.5" height="10" fill="#15803d" rx="1.2"/>
+    <ellipse cx="55" cy="18" rx="7" ry="3.2" fill="#22c55e" transform="rotate(25 55 18)"/>
+  </g>
+  <ellipse cx="18" cy="62" rx="6" ry="11" fill="#d97706"/>
+  <ellipse cx="82" cy="62" rx="6" ry="11" fill="#d97706"/>
+  <ellipse cx="50" cy="60" rx="34" ry="36" fill="url(#pm-body)"/>
+  <ellipse cx="36" cy="42" rx="11" ry="7" fill="rgba(255,255,255,.35)"/>
+  <ellipse cx="38" cy="40" rx="4" ry="2.5" fill="rgba(255,255,255,.6)"/>
+  <ellipse cx="30" cy="68" rx="5" ry="3.5" fill="rgba(255,99,99,.45)"/>
+  <ellipse cx="70" cy="68" rx="5" ry="3.5" fill="rgba(255,99,99,.45)"/>
+  <g class="pm-eye"><ellipse cx="40" cy="56" rx="4" ry="5" fill="#2a1810"/><circle cx="41.5" cy="54" r="1.4" fill="#fff"/></g>
+  <g class="pm-eye"><ellipse cx="60" cy="56" rx="4" ry="5" fill="#2a1810"/><circle cx="61.5" cy="54" r="1.4" fill="#fff"/></g>
+  <path d="M 41 72 Q 50 80 59 72" stroke="#2a1810" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  <path d="M 47 76 Q 50 78 53 76" fill="#ff7878"/>
+</svg>`;
+
+updatePreview();
+
+// ── Submit ────────────────────────────────────────────────────────────────────
+async function submitAnn() {
+  const msg = document.getElementById('f-msg').value.trim();
+  if (!msg) { Toast.error('กรุณากรอก Message'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'Sending...';
+
+  const res = await API.post('/announcements/index.php', {
+    type:            _selType,
+    title:           document.getElementById('f-title').value.trim(),
+    message:         msg,
+    display:         _selDisplay,
+    icon:            document.getElementById('f-icon').value.trim(),
+    badge:           document.getElementById('f-badge').value.trim(),
+    popup_cta_label: document.getElementById('f-cta-label').value.trim(),
+    popup_cta_url:   document.getElementById('f-cta-url').value.trim(),
+    expires_at:      document.getElementById('f-expires').value || null,
+  });
+
+  btn.disabled = false; btn.innerHTML = '<i data-icon="megaphone"></i> Broadcast';
+  if (!res?.ok) { Toast.error(res?.data?.message || 'ส่งไม่ได้'); return; }
+
+  Toast.success('Broadcast แล้ว <i data-icon="check"></i>');
+  document.getElementById('f-title').value     = '';
+  document.getElementById('f-msg').value       = '';
+  document.getElementById('f-expires').value   = '';
+  document.getElementById('f-cta-label').value = '';
+  document.getElementById('f-cta-url').value   = '';
+  document.getElementById('f-icon').value      = '';
+  document.getElementById('f-badge').value     = '';
+  _selType = 'info';
+  _selDisplay = 'both';
+  buildTypeRow('type-row', 'info', 'selectType');
+  selectDisplay('both', false);
+  updatePreview();
+  loadList();
+}
+
+// ── List ──────────────────────────────────────────────────────────────────────
+async function loadList() {
+  const all = document.getElementById('show-all').checked;
+  const res = await API.get('/announcements/index.php' + (all ? '?all=1' : ''));
+  if (!res?.ok) { Toast.error('โหลดไม่ได้'); return; }
+  const items = res.data.data || [];
+  document.getElementById('ann-count').textContent = items.length + ' item' + (items.length !== 1 ? 's' : '');
+  renderList(items);
+}
+
+function renderList(items) {
+  const el = document.getElementById('ann-list');
+  if (!items.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:11px">ยังไม่มีประกาศ<br><span style="opacity:.5">กรอกฟอร์มด้านซ้ายเพื่อ Broadcast</span></div>';
+    return;
+  }
+  el.innerHTML = items.map(a => {
+    const t = TYPES.find(x => x.id === a.type) || TYPES[2];
+    const now = new Date().toISOString();
+    const expired = a.expires_at && a.expires_at < now;
+    return `
+      <div class="ann-row ${a.pinned ? 'is-pinned' : ''}">
+        <span class="ann-badge" style="background:${t.bg};color:${t.color}">${t.symbol} ${t.label}</span>
+        <div class="ann-body">
+          <div class="ann-title">${a.pinned ? '<span style="color:var(--orange)">📌</span> ' : ''}${esc(a.title || '(no title)')}</div>
+          <div class="ann-msg">${esc(a.message)}</div>
+          <div class="ann-meta">
+            ${esc(a.created_by_name || '—')} · ${fmtDt(a.created_at)}
+            ${!a.active ? '<span style="opacity:.5"> · inactive</span>' : ''}
+            ${a.expires_at ? `<span class="exp-tag" style="margin-left:4px">${expired ? '⌛ Expired' : '⏱ ' + fmtDt(a.expires_at)}</span>` : ''}
+          </div>
+        </div>
+        <div class="ann-actions">
+          ${dispBadge(a.display)}
+          <button class="btn btn-ghost btn-sm" onclick='openEdit(${JSON.stringify(a)})'
+            style="font-size:10px">Edit</button>
+          <button class="btn btn-ghost btn-sm" onclick="delAnn('${a.id}')"
+            style="font-size:10px;color:#ef4444;border-color:rgba(239,68,68,.25)">Del</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+function dispBadge(display) {
+  const map = {
+    both:   { label:'⊞ ทั้งคู่', c:'#f26419', bg:'rgba(242,100,25,.12)' },
+    ticker: { label:'<i data-icon="play"></i> Ticker',  c:'#38bdf8', bg:'rgba(56,189,248,.12)' },
+    card:   { label:'▣ Card',    c:'#22c55e', bg:'rgba(34,197,94,.12)'  },
+    popup:  { label:'<i data-icon="circle"></i> Popup',   c:'#a855f7', bg:'rgba(168,85,247,.12)' },
+    promo:  { label:'◈ Promo',   c:'#f26419', bg:'rgba(242,100,25,.12)' },
+    all:    { label:'<i data-icon="sparkles"></i> All',     c:'#ec4899', bg:'rgba(236,72,153,.12)' },
+  };
+  const d = map[display] || map.both;
+  return `<span style="font-size:8.5px;font-weight:800;padding:2px 7px;border-radius:4px;background:${d.bg};color:${d.c};font-family:'JetBrains Mono',monospace;letter-spacing:.05em;white-space:nowrap">${d.label}</span>`;
+}
+
+async function delAnn(id) {
+  if (!confirm('ลบประกาศนี้?')) return;
+  const res = await API.request('DELETE', `/announcements/index.php?id=${id}`);
+  if (!res?.ok) { Toast.error('ลบไม่ได้'); return; }
+  Toast.success('ลบแล้ว'); loadList();
+}
+
+// ── Edit ──────────────────────────────────────────────────────────────────────
+function openEdit(a) {
+  document.getElementById('edit-id').value        = a.id;
+  document.getElementById('edit-title').value     = a.title  || '';
+  document.getElementById('edit-msg').value       = a.message || '';
+  document.getElementById('edit-expires').value   = a.expires_at ? a.expires_at.slice(0,16) : '';
+  document.getElementById('edit-cta-label').value = a.popup_cta_label || '';
+  document.getElementById('edit-cta-url').value   = a.popup_cta_url   || '';
+  document.getElementById('edit-icon').value      = a.icon  || '';
+  document.getElementById('edit-badge').value     = a.badge || '';
+  _editSelType = a.type || 'info';
+  _editDisplay = a.display || (a.pinned ? 'both' : 'ticker');
+  buildTypeRow('edit-type-row', _editSelType, 'selectEditType');
+  selectDisplay(_editDisplay, true);
+  const m = document.getElementById('edit-modal');
+  m.style.display = 'flex';
+}
+
+function closeEdit() { document.getElementById('edit-modal').style.display = 'none'; }
+
+async function saveEdit() {
+  const id = document.getElementById('edit-id').value;
+  const res = await API.request('PUT', `/announcements/index.php?id=${id}`, {
+    type:            _editSelType,
+    title:           document.getElementById('edit-title').value.trim(),
+    message:         document.getElementById('edit-msg').value.trim(),
+    display:         _editDisplay,
+    icon:            document.getElementById('edit-icon').value.trim(),
+    badge:           document.getElementById('edit-badge').value.trim(),
+    popup_cta_label: document.getElementById('edit-cta-label').value.trim(),
+    popup_cta_url:   document.getElementById('edit-cta-url').value.trim(),
+    expires_at:      document.getElementById('edit-expires').value || null,
+  });
+  if (!res?.ok) { Toast.error('บันทึกไม่ได้'); return; }
+  Toast.success('Saved <i data-icon="check"></i>'); closeEdit(); loadList();
+}
+
+document.getElementById('edit-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('edit-modal')) closeEdit();
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmtDt(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+
+loadList();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Incident Launcher — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  <link rel="stylesheet" href="./assets/pages/incident-launcher/incident-launcher.css" data-page-css>
+  <link rel="stylesheet" href="./assets/pages/incident-launcher/wizard.css?v=20260923-11">
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">
+          <span class="il-title-pulse"></span>
+          Incident Launcher
+        </div>
+        <div class="page-sub">1-click สร้าง War Room · แจ้ง Jira · แจ้งทีม · ส่ง Email Partner ในคราวเดียว</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="admin/incident-launcher-config.html" class="il-config-btn" id="il-config-btn" style="display:none" title="ตั้งค่า Webhook / Templates / Partner Groups">
+          <i data-icon="settings"></i>
+          <span>ตั้งค่า</span>
+        </a>
+        <button type="button" class="il-history-btn" onclick="IL.showHistory()" title="ประวัติ Incident">
+          <i data-icon="clock"></i>
+          <span>ประวัติ</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content il-lp-page">
+
+      <!-- ── Hero section ────────────────────────────────────── -->
+      <div class="il-lp-hero">
+        <div class="il-lp-eyebrow"><span class="il-lp-dot"></span> SM Team · Automation</div>
+        <h1 class="il-lp-h1"><em>Incident</em> Launcher</h1>
+        <p class="il-lp-tagline">1-Click สร้าง War Room · แจ้ง Jira · แจ้งทีม · ขึ้น MA · วิเคราะห์ Impact<br>ทำงาน 9 steps อัตโนมัติในคราวเดียว ตั้งแต่ต้นจนจบ incident</p>
+        <div class="il-lp-stats">
+          <div class="il-lp-stat"><div class="il-lp-stat-val">9</div><div class="il-lp-stat-lbl">Auto Steps</div></div>
+          <div class="il-lp-sep"></div>
+          <div class="il-lp-stat"><div class="il-lp-stat-val">&lt;60s</div><div class="il-lp-stat-lbl">Launch Time</div></div>
+          <div class="il-lp-sep"></div>
+          <div class="il-lp-stat"><div class="il-lp-stat-val">Live</div><div class="il-lp-stat-lbl">Prometheus</div></div>
+          <div class="il-lp-sep"></div>
+          <div class="il-lp-stat"><div class="il-lp-stat-val">Auto</div><div class="il-lp-stat-lbl">Jira + MA</div></div>
+        </div>
+      </div>
+
+      <!-- ── Case Picker ────────────────────────────────────── -->
+      <div class="il-cp-section">
+        <div class="il-cp-header">
+          <div class="il-cp-title">
+            <span class="il-cp-title-dot"></span>
+            เลือกประเภท Incident
+          </div>
+          <div class="il-cp-hint">เลือก case แล้วระบบจะเตรียม MA · Channels · Partners ให้อัตโนมัติ</div>
+        </div>
+        <div class="il-case-grid" id="il-case-grid">
+          <!-- rendered by JS -->
+          <div class="il-case-empty">
+            <i data-icon="loader"></i>
+            กำลังโหลด cases…
+          </div>
+        </div>
+      </div>
+
+      <!-- hidden inputs kept for JS compat -->
+      <div style="display:none">
+        <div id="il-mode-row"></div>
+        <div id="il-layout" class="il-layout--single"></div>
+        <div id="il-ma-cards"></div>
+        <div id="il-tags"></div>
+        <div id="il-partner-wrap"><input id="il-partner-input" type="email"></div>
+        <input id="il-title" type="hidden" value="">
+        <input id="il-service" type="hidden" value="">
+        <input id="il-time" type="hidden">
+        <input id="il-reporter" type="hidden" value="">
+        <input id="il-chat-url" type="hidden" value="">
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Config Modal -->
+<div class="il-modal-overlay" id="il-config-modal" style="display:none" onclick="if(event.target===this)IL.closeConfig()">
+  <div class="il-modal">
+    <div class="il-modal-header">
+      <span><i data-icon="settings"></i> ตั้งค่า Incident Launcher</span>
+      <button type="button" onclick="IL.closeConfig()"><i data-icon="x"></i></button>
+    </div>
+    <div class="il-modal-body">
+      <div class="il-field">
+        <label class="il-label">Google Chat Webhook URL (default)</label>
+        <input id="il-cfg-webhook" class="il-input" type="url" placeholder="https://chat.googleapis.com/v1/spaces/.../messages?key=...">
+        <div class="il-field-hint">ถ้าว่าง การ Notify Chat จะ skip ไป</div>
+      </div>
+      <div class="il-field">
+        <label class="il-label">Default Partner Emails <span class="il-label-hint">(คั่นด้วย comma)</span></label>
+        <input id="il-cfg-partners" class="il-input" type="text" placeholder="partner1@example.com, partner2@example.com">
+      </div>
+      <div class="il-field">
+        <label class="il-label">Jira Issue Type สำหรับ Incident</label>
+        <input id="il-cfg-jira-type" class="il-input" type="text" placeholder="Incident" value="Incident">
+      </div>
+    </div>
+    <div class="il-modal-footer">
+      <button type="button" class="il-btn il-btn--secondary" onclick="IL.closeConfig()">ยกเลิก</button>
+      <button type="button" class="il-btn il-btn--primary" onclick="IL.saveConfig()">
+        <i data-icon="save"></i> บันทึก
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Launch Console — fixed bottom panel ══ -->
+<div class="il-console" id="il-console">
+  <!-- Header bar (always visible when open) -->
+  <div class="il-console-header" id="il-console-header" onclick="IL.toggleConsole()">
+    <div class="il-console-header-left">
+      <div class="il-console-pulse" id="il-console-pulse"></div>
+      <span class="il-console-title" id="il-console-title">Launch Console</span>
+      <span class="il-console-subtitle" id="il-console-subtitle"></span>
+    </div>
+    <div class="il-console-header-right">
+      <div class="il-console-progress-mini" id="il-console-progress-mini">
+        <div class="il-console-progress-fill" id="il-console-progress-fill"></div>
+      </div>
+      <span class="il-console-pct" id="il-console-pct">0%</span>
+      <button type="button" class="il-console-chevron" id="il-console-chevron" title="ย่อ/ขยาย">
+        <i data-icon="chevron-down"></i>
+      </button>
+      <button type="button" class="il-console-close" id="il-console-close" onclick="event.stopPropagation();IL.closeConsole()" title="ปิด" style="display:none">
+        <i data-icon="x"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Body (collapsible) -->
+  <div class="il-console-body" id="il-console-body">
+    <div class="il-console-steps" id="il-console-steps">
+      <!-- populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Impact Summary Modal -->
+<div class="il-modal-overlay" id="il-impact-modal" style="display:none" onclick="if(event.target===this)IL.closeImpact()">
+  <div class="il-modal il-modal--wide il-modal--tall" style="max-width:860px">
+    <div class="il-modal-header">
+      <span><i data-icon="bar-chart-2"></i> Impact Summary — <span id="il-impact-range" style="color:var(--text-muted);font-size:11px"></span></span>
+      <button type="button" onclick="IL.closeImpact()"><i data-icon="x"></i></button>
+    </div>
+    <div class="il-modal-body" id="il-impact-body">
+      <div class="il-loading-hint"><i data-icon="loader"></i> กำลัง query Prometheus…</div>
+    </div>
+    <div class="il-modal-footer">
+      <button type="button" class="il-btn il-btn--secondary" onclick="IL.closeImpact()">ปิด</button>
+      <button type="button" class="il-btn il-btn--ghost" id="il-impact-copy-btn" onclick="IL.copyImpactReport()" style="display:none">
+        <i data-icon="copy"></i> Copy Report
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Jenkins Build Modal -->
+<div class="il-modal-overlay" id="il-jenkins-modal" style="display:none" onclick="if(event.target===this)IL.closeJenkinsModal()">
+  <div class="il-modal il-modal--wide">
+    <div class="il-modal-header">
+      <span><i data-icon="settings"></i> <span id="il-jenkins-modal-title">Build with Parameters</span></span>
+      <button type="button" onclick="IL.closeJenkinsModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="il-modal-body il-jenkins-body" id="il-jenkins-params">
+      <div class="il-loading-hint"><i data-icon="loader"></i> กำลังโหลด parameters…</div>
+    </div>
+    <div class="il-modal-footer">
+      <button type="button" class="il-btn il-btn--secondary" onclick="IL.closeJenkinsModal()">ยกเลิก</button>
+      <button type="button" class="il-btn il-btn--primary" id="il-jenkins-build-btn" onclick="IL.triggerJenkinsBuild()">
+        <i data-icon="play"></i> Build
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Escalate as Incident Modal -->
+<div class="il-modal-overlay" id="il-escalate-modal" style="display:none" onclick="if(event.target===this)IL.closeEscalate()">
+  <div class="il-modal il-modal--wide il-modal--tall">
+    <div class="il-modal-header">
+      <span><i data-icon="arrow-up-circle"></i> Escalate as Incident — <span id="il-esc-ticket-key" style="color:var(--accent)"></span></span>
+      <button type="button" onclick="IL.closeEscalate()"><i data-icon="x"></i></button>
+    </div>
+    <div class="il-modal-body" id="il-escalate-body">
+      <div class="il-esc-form">
+        <div class="il-esc-row">
+          <label class="il-esc-label">Summary <span class="il-required">*</span></label>
+          <input id="il-esc-summary" class="il-input" type="text">
+        </div>
+        <div class="il-esc-row">
+          <label class="il-esc-label">Template Subject <span class="il-esc-hint">เลือก template หรือพิมพ์เอง</span></label>
+          <input id="il-esc-subject" class="il-input" type="text" placeholder="เช่น Service XX, XX are unavailable">
+          <div class="il-esc-tpl-btns">
+            <button type="button" class="il-esc-tpl-btn" onclick="IL._escFill('subject','Fund-in is unavailable')">Fund-in</button>
+            <button type="button" class="il-esc-tpl-btn" onclick="IL._escFill('subject','Mobile Top-up, VAS Top-up are unavailable')">Top-up</button>
+            <button type="button" class="il-esc-tpl-btn" onclick="IL._escFill('subject','Login service is unavailable')">Login</button>
+          </div>
+        </div>
+        <div class="il-esc-row-2col">
+          <div class="il-esc-row">
+            <label class="il-esc-label">TH Severity</label>
+            <select id="il-esc-sev" class="il-input">
+              <option value="">None</option>
+              <option value="P1">P1</option>
+              <option value="P2">P2</option>
+              <option value="P3">P3</option>
+              <option value="P4">P4</option>
+            </select>
+          </div>
+          <div class="il-esc-row">
+            <label class="il-esc-label">Transaction Impact</label>
+            <select id="il-esc-tx-impact" class="il-input">
+              <option value="">None</option>
+              <option value="Full outage">Full outage</option>
+              <option value="Partial outage">Partial outage</option>
+              <option value="Degraded performance">Degraded performance</option>
+            </select>
+          </div>
+        </div>
+        <div class="il-esc-row">
+          <label class="il-esc-label">Business Unit Impacted</label>
+          <input id="il-esc-bu" class="il-input" type="text" placeholder="เช่น TrueMoney, Ascend Insurance">
+        </div>
+        <div class="il-esc-row">
+          <label class="il-esc-label">TH Service Impacted <span class="il-esc-hint">คั่นด้วย comma</span></label>
+          <input id="il-esc-svc" class="il-input" type="text" placeholder="เช่น Login, Fund-in, Mobile Topup">
+        </div>
+        <div class="il-esc-row">
+          <label class="il-esc-label">TH Channel / Component <span class="il-esc-hint">คั่นด้วย comma</span></label>
+          <input id="il-esc-channel" class="il-input" type="text" placeholder="เช่น TrueMoney App, 7-ELEVEN, LAZADA">
+        </div>
+        <div class="il-esc-row">
+          <label class="il-esc-label">Detected by</label>
+          <input id="il-esc-detected" class="il-input" type="text" value="Service Monitoring (SM)">
+        </div>
+        <div class="il-esc-row">
+          <label class="il-esc-label">Action / Solution</label>
+          <input id="il-esc-action" class="il-input" type="text" placeholder="Escalated to xxx support team.">
+          <div class="il-esc-tpl-btns">
+            <button type="button" class="il-esc-tpl-btn" onclick="IL._escFill('action','Escalated to xxx support team, they are investigating.')">Investigating</button>
+            <button type="button" class="il-esc-tpl-btn" onclick="IL._escFill('action','Escalated to concern team to investigate.')">Escalated</button>
+            <button type="button" class="il-esc-tpl-btn" onclick="IL._escFill('action','Recovered by xxx support team.')">Recovered</button>
+          </div>
+        </div>
+        <div class="il-esc-row-2col">
+          <div class="il-esc-row">
+            <label class="il-esc-label">Fault Start (Date &amp; Time)</label>
+            <input id="il-esc-fault-start" class="il-input" type="datetime-local" step="60">
+          </div>
+          <div class="il-esc-row">
+            <label class="il-esc-label">Receive Confirm Incident</label>
+            <input id="il-esc-confirm-time" class="il-input" type="datetime-local" step="60">
+          </div>
+        </div>
+        <div class="il-esc-row-2col">
+          <div class="il-esc-row">
+            <label class="il-esc-label">Next Update (HH:MM)</label>
+            <input id="il-esc-next-update" class="il-input" type="time">
+          </div>
+          <div class="il-esc-row">
+            <label class="il-esc-label">Initial Cause</label>
+            <input id="il-esc-cause" class="il-input" type="text" placeholder="Initially, XXX had an internal problem.">
+          </div>
+        </div>
+        <div id="il-esc-status" class="il-esc-status" style="display:none"></div>
+      </div>
+    </div>
+    <div class="il-modal-footer">
+      <button type="button" class="il-btn il-btn--secondary" onclick="IL.closeEscalate()">ยกเลิก</button>
+      <a id="il-esc-jira-link" href="#" target="_blank" rel="noopener" class="il-btn il-btn--ghost" style="display:none">
+        <i data-icon="external-link"></i> เปิด Jira
+      </a>
+      <button type="button" class="il-btn il-btn--primary" id="il-esc-submit-btn" onclick="IL.submitEscalate()">
+        <i data-icon="arrow-up-circle"></i> Escalate as Incident
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- History Modal -->
+<div class="il-modal-overlay" id="il-history-modal" style="display:none" onclick="if(event.target===this)IL.closeHistory()">
+  <div class="il-modal il-modal--wide">
+    <div class="il-modal-header">
+      <span><i data-icon="clock"></i> ประวัติ Incident ที่ Launch</span>
+      <button type="button" onclick="IL.closeHistory()"><i data-icon="x"></i></button>
+    </div>
+    <div class="il-modal-body" id="il-history-body">
+      <div class="il-empty">ยังไม่มีประวัติ</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Incident Launcher Wizard — full-screen overlay ══ -->
+<div class="ilw" id="ilw" style="display:none">
+
+  <!-- Sidebar -->
+  <div class="ilw-sidebar">
+    <div class="ilw-inc-card">
+      <div class="ilw-inc-badge sev1" id="ilw-sev-badge">SEV 1</div>
+      <div class="ilw-inc-title" id="ilw-inc-title">—</div>
+      <div class="ilw-inc-meta"  id="ilw-inc-meta"></div>
+    </div>
+    <div class="ilw-steps-nav" id="ilw-steps-nav"></div>
+    <div class="ilw-tl-panel">
+      <div class="ilw-tl-head"><i data-icon="clock"></i> Activity</div>
+      <div class="ilw-tl-list" id="ilw-tl-list"></div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="ilw-main">
+    <!-- Top bar -->
+    <div class="ilw-topbar">
+      <div class="ilw-progress-track">
+        <div class="ilw-progress-fill" id="ilw-prog-fill" style="width:0%"></div>
+      </div>
+      <div class="ilw-step-ctr" id="ilw-step-ctr">Step 1 / 9</div>
+      <button type="button" class="ilw-close-btn" onclick="ILW.close()" title="ปิด">
+        <i data-icon="x"></i>
+      </button>
+    </div>
+
+    <!-- Step content -->
+    <div class="ilw-step-area" id="ilw-area"></div>
+
+    <!-- Footer -->
+    <div class="ilw-footer" id="ilw-footer">
+      <div>
+        <button type="button" class="ilwb ilwb--ghost" id="ilw-skip-btn" onclick="ILW.skip()">ข้าม</button>
+      </div>
+      <div class="ilw-footer-r">
+        <button type="button" class="ilwb ilwb--secondary" id="ilw-prev-btn" onclick="ILW.prev()" style="display:none">
+          <i data-icon="chevron-left"></i> ย้อนกลับ
+        </button>
+        <button type="button" class="ilwb ilwb--primary" id="ilw-next-btn" onclick="ILW.next()">
+          ถัดไป <i data-icon="chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js?v=20260918-il1"></script>
+<script src="assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script src="./assets/pages/incident-launcher/incident-launcher.js?v=20260921-3"></script>
+<script src="./assets/pages/incident-launcher/wizard.js?v=20260923-13"></script>
+
+</body>
+</html>

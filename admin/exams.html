@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exams — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/exams/exams.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="edit"></i> Exams</div>
+        <div class="page-sub">ระบบข้อสอบประจำปี / certification — แยกจาก quiz ในคอร์สเรียน</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" id="btn-create">+ New Exam</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="edit"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Exams</h1>
+          <p>ระบบข้อสอบประจำปี / certification — กำหนด anti-cheat tier, policy &amp; consent, และดู audit timeline ของผู้สอบ</p>
+        </div>
+      </section>
+
+      <div class="stat-grid" id="stats">
+        <div data-skel="list" data-rows="1"></div>
+      </div>
+
+      <div class="page-section-label">
+        Exams
+        <span class="count" id="grid-count">·</span>
+      </div>
+
+      <div id="grid" class="ex-grid">
+        <div data-skel="list" data-rows="3"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═════ Editor modal ═════ -->
+<div class="modal-overlay" id="editor-modal">
+  <div class="modal xl">
+    <div class="modal-header">
+      <h3 id="editor-title">New Exam</h3>
+      <button class="modal-close" data-close>×</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="ex-tabs">
+        <div class="ex-tab active" data-pane="info"><i data-icon="clipboard"></i> Info</div>
+        <div class="ex-tab" data-pane="config"><i data-icon="settings"></i> Security & Config</div>
+        <div class="ex-tab" data-pane="questions"><i data-icon="help-circle"></i> Questions</div>
+      </div>
+
+      <!-- ── Info pane ── -->
+      <div class="ex-pane active" data-pane="info">
+        <div class="form-grid-2">
+          <div class="form-field full">
+            <label>Title *</label>
+            <input type="text" id="f-title" class="form-control" placeholder="SM Annual Exam 2026">
+          </div>
+          <div class="form-field full">
+            <label>Subtitle</label>
+            <input type="text" id="f-subtitle" class="form-control" placeholder="ข้อสอบความรู้ทั่วไปทีม SM ประจำปี">
+          </div>
+          <div class="form-field full">
+            <label>Description</label>
+            <textarea id="f-description" class="form-control" rows="3" placeholder="คำอธิบาย / กติกา"></textarea>
+          </div>
+          <div class="form-field">
+            <label>Icon</label>
+            <input type="text" id="f-icon" class="form-control" placeholder="📝" value="📝">
+          </div>
+          <div class="form-field">
+            <label>Color</label>
+            <input type="color" id="f-color" class="form-control" value="#f26419" style="height:38px; padding:2px">
+          </div>
+          <div class="form-field">
+            <label>Pass Score (%)</label>
+            <input type="number" id="f-pass" class="form-control" min="0" max="100" value="70">
+          </div>
+          <div class="form-field">
+            <label>Status</label>
+            <select id="f-status" class="form-control">
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+          <div class="form-field" style="grid-column:1/-1">
+            <label style="display:flex; gap:8px; align-items:center; cursor:pointer">
+              <input type="checkbox" id="f-popular" style="width:16px; height:16px">
+              <span><i data-icon="flame"></i> ข้อสอบยอดฮิต (แสดง badge "POPULAR" ที่ card)</span>
+            </label>
+          </div>
+          <div class="form-field" id="f-shared-row" style="grid-column:1/-1">
+            <label style="display:flex; gap:8px; align-items:center; cursor:pointer">
+              <input type="checkbox" id="f-shared" style="width:16px; height:16px">
+              <span><i data-icon="globe"></i> <b>Share ข้ามทีม</b> — ทีมอื่นเห็นและทำข้อสอบได้ (attempts + events แยกตามทีมผู้ทำ; question pool อยู่กับเจ้าของ)</span>
+            </label>
+            <div id="f-shared-note" style="font-size:11px; color:var(--text-muted); margin-top:4px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Config pane ── -->
+      <div class="ex-pane" data-pane="config">
+
+        <div style="margin-bottom:8px; font-size:12px; color:var(--text-muted)">
+          เลือก preset แล้วปรับ toggle/ค่าด้านล่างได้ ถ้าแก้แม้แต่อันเดียวจะกลายเป็น Custom อัตโนมัติ
+        </div>
+
+        <div class="preset-row" id="preset-row">
+          <div class="preset-chip" data-preset="basic">
+            <div class="pn">Basic</div>
+            <div class="pd">Tier 1 ทั้งหมด — สุ่มข้อ/ตัวเลือก, จำกัดจำนวนครั้ง, จำกัดเวลา</div>
+          </div>
+          <div class="preset-chip" data-preset="standard">
+            <div class="pn">Standard <i data-icon="star"></i></div>
+            <div class="pd">Tier 1 + 2 — ทีละข้อ, watermark, ตรวจการสลับแท็บ (แนะนำ)</div>
+          </div>
+          <div class="preset-chip" data-preset="strict">
+            <div class="pn">Strict</div>
+            <div class="pd">Tier 1 + 2 + 3 — fullscreen lock, disable copy/paste, anomaly detection</div>
+          </div>
+          <div class="preset-chip" data-preset="custom">
+            <div class="pn">Custom</div>
+            <div class="pd">เลือกเอง</div>
+          </div>
+        </div>
+
+        <!-- ── Tier 1 ── -->
+        <div class="tier-section">
+          <h4><i data-icon="target"></i> Tier 1 — Foundation</h4>
+          <div class="tier-desc">รากฐานความเป็นธรรม — ลดโอกาสลอกด้วยการสุ่มและจำกัดเวลา/จำนวนครั้ง</div>
+
+          <div class="feat-row" data-feat="pool">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="pool.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Question Pool — สุ่มจากคลังข้อสอบ</div>
+            </div>
+            <div class="feat-desc">มีข้อสอบในคลัง N ข้อ แต่สุ่มแสดงให้ผู้สอบแค่บางข้อ คนละข้อกัน</div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div><label>จำนวนที่แสดง (0 = ทั้งหมด)</label><input type="number" class="form-control" data-cfg="pool.total_show" min="0"></div>
+                <div><label>สุ่มแบบแบ่งหมวด</label>
+                  <select class="form-control" data-cfg="pool.stratified">
+                    <option value="false">ไม่ — สุ่มจากทุกข้อรวมกัน</option>
+                    <option value="true">ใช่ — สุ่มจากแต่ละหมวดให้ครบ</option>
+                  </select>
+                </div>
+              </div>
+              <div id="strat-cats" style="display:none">
+                <label>Categories (name : count)</label>
+                <div id="strat-list"></div>
+                <button class="btn btn-secondary btn-sm" type="button" id="strat-add">+ เพิ่มหมวด</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="feat-row" data-feat="shuffle_questions">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="shuffle_questions.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Shuffle Questions — สลับลำดับข้อ</div>
+            </div>
+            <div class="feat-desc">ลำดับข้อต่างกันต่อคน ทำให้คนนั่งข้างกันไม่เจอข้อเดียวกันพร้อมกัน</div>
+          </div>
+
+          <div class="feat-row" data-feat="shuffle_choices">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="shuffle_choices.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Shuffle Choices — สลับลำดับตัวเลือก</div>
+            </div>
+            <div class="feat-desc">ตัวเลือก A B C D สลับตำแหน่งต่อคน (ไม่กระทบ True/False และ Short Answer)</div>
+          </div>
+
+          <div class="feat-row" data-feat="attempts">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="attempts.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Attempt Limit — จำกัดจำนวนครั้ง</div>
+            </div>
+            <div class="feat-desc">กำหนดได้ว่าทำได้กี่ครั้ง และต้องเว้นเวลาเท่าไหร่ก่อนทำใหม่</div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div><label>จำนวนครั้งสูงสุด (0 = ไม่จำกัด)</label><input type="number" class="form-control" data-cfg="attempts.max" min="0"></div>
+                <div><label>Cooldown (นาที)</label><input type="number" class="form-control" data-cfg="attempts.cooldown_minutes" min="0"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="feat-row" data-feat="time_limit">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="time_limit.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Time Limit — จำกัดเวลา</div>
+            </div>
+            <div class="feat-desc">หมดเวลาแล้วระบบจะส่งข้อสอบให้อัตโนมัติ บีบให้ไม่มีเวลาแชร์คำตอบ</div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div><label>โหมด</label>
+                  <select class="form-control" data-cfg="time_limit.mode">
+                    <option value="total">จำกัดทั้งข้อสอบ</option>
+                    <option value="per_question">จำกัดต่อข้อ</option>
+                    <option value="both">ทั้งสองอย่าง</option>
+                  </select>
+                </div>
+                <div><label>เวลาทั้งข้อสอบ (นาที)</label><input type="number" class="form-control" data-cfg="time_limit.total_minutes" min="0"></div>
+                <div><label>เวลาต่อข้อ (วินาที)</label><input type="number" class="form-control" data-cfg="time_limit.per_question_seconds" min="0"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Policy / Consent ── -->
+        <div class="tier-section">
+          <h4><i data-icon="file-text"></i> Policy &amp; Consent — ข้อตกลงก่อนเริ่มสอบ</h4>
+          <div class="tier-desc">แสดงนโยบาย/ข้อชี้แจงก่อนผู้สอบเริ่มทำ เช่น "ใช้คะแนนเป็นเกณฑ์ประเมิน" — เปิดหรือไม่ก็ได้</div>
+
+          <div class="feat-row" data-feat="policy">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="policy.enabled"><span class="slider"></span></label>
+              <div class="feat-name">เปิดใช้ Policy / คำยินยอม</div>
+            </div>
+            <div class="feat-desc">ผู้สอบจะเห็นกล่องนโยบายม่วงระหว่างกติกาและปุ่ม "เริ่มสอบ" ถ้าตั้งบังคับติ๊ก ปุ่มจะ disable จนกว่าจะติ๊ก</div>
+            <div class="feat-config">
+              <div style="margin-bottom:10px">
+                <label>หัวข้อ</label>
+                <input type="text" class="form-control" data-cfg="policy.title" placeholder="เช่น ข้อตกลงและคำยินยอม">
+              </div>
+              <div style="margin-bottom:10px">
+                <label>เนื้อหา (รองรับ HTML)</label>
+                <textarea class="form-control" data-cfg="policy.content" rows="8"
+                          style="font-family:var(--font); font-size:12.5px; line-height:1.6; resize:vertical"
+                          placeholder="<p>เนื้อหา...</p>&#10;<ul><li>ข้อ 1</li><li>ข้อ 2</li></ul>"></textarea>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:4px">
+                  <i data-icon="lightbulb"></i> ใช้ <code>&lt;p&gt;</code>, <code>&lt;ul&gt;</code>, <code>&lt;li&gt;</code>, <code>&lt;b&gt;</code>, <code>&lt;h4&gt;</code>, <code>&lt;strong&gt;</code> ได้ตามปกติ
+                </div>
+              </div>
+              <div class="feat-config-grid">
+                <div>
+                  <label>บังคับติ๊กยินยอม</label>
+                  <select class="form-control" data-cfg="policy.require_consent">
+                    <option value="true">ใช่ — ต้องติ๊กถึงเริ่มสอบได้</option>
+                    <option value="false">ไม่ — โชว์อย่างเดียว</option>
+                  </select>
+                </div>
+                <div>
+                  <label>ข้อความ checkbox</label>
+                  <input type="text" class="form-control" data-cfg="policy.consent_label"
+                         placeholder="ฉันรับทราบและยินยอมตามเงื่อนไขข้างต้น">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tier 2 ── -->
+        <div class="tier-section">
+          <h4><i data-icon="shield"></i> Tier 2 — Deterrents</h4>
+          <div class="tier-desc">ตัวยับยั้ง — ทำให้การลอกหรือส่งต่อข้อสอบทำได้ยากขึ้น</div>
+
+          <div class="feat-row" data-feat="one_at_a_time">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="one_at_a_time.enabled"><span class="slider"></span></label>
+              <div class="feat-name">One Question At A Time — แสดงทีละข้อ</div>
+            </div>
+            <div class="feat-desc">ผู้สอบเห็นทีละข้อ ทำให้ถ่ายรูปรวบรวมข้อยาก / ส่งต่อข้อสอบทำได้ยาก</div>
+            <div class="feat-config">
+              <div><label>อนุญาตให้ย้อนกลับ</label>
+                <select class="form-control" data-cfg="one_at_a_time.allow_back">
+                  <option value="true">ใช่ — กดย้อนได้</option>
+                  <option value="false">ไม่ — ผ่านไปแล้วผ่านเลย</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="feat-row" data-feat="tab_detection">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="tab_detection.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Tab Switch Detection — ตรวจการสลับแท็บ</div>
+            </div>
+            <div class="feat-desc">
+              ตรวจจับว่าผู้สอบสลับไปแท็บอื่น/หน้าต่างอื่นกี่ครั้ง — นับสะสมตลอด attempt (ไม่รีเซ็ตรายข้อ)
+            </div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div>
+                  <label>อนุญาตให้สลับได้กี่ครั้ง</label>
+                  <input type="number" class="form-control" data-cfg="tab_detection.max_violations" min="0">
+                  <div class="feat-hint">0 = ไม่จำกัด (แค่บันทึก log) · ตัวอย่าง: 3 = สลับได้ 3 ครั้ง ครั้งที่ 4 จะเข้าสู่ action ด้านขวา</div>
+                </div>
+                <div>
+                  <label>เมื่อเกินโควตา จะทำอะไร</label>
+                  <select class="form-control" data-cfg="tab_detection.action" onchange="renderTabDetectionPreview()">
+                    <option value="log">🔇 log อย่างเดียว — ผู้สอบไม่รู้เรื่อง</option>
+                    <option value="warn">เตือนผู้สอบ — โชว์ pop-up ไม่มีผลกับคะแนน</option>
+                    <option value="penalty">หักคะแนน — ตัดคะแนนตอนส่งตามค่าด้านล่าง</option>
+                    <option value="force_submit">บังคับส่งข้อสอบทันที — จบเกมทันทีที่เกินโควตา</option>
+                  </select>
+                </div>
+                <div>
+                  <label>หักคะแนน (%) — เฉพาะโหมด penalty</label>
+                  <input type="number" class="form-control" data-cfg="tab_detection.penalty_pct" min="0" max="100" oninput="renderTabDetectionPreview()">
+                  <div class="feat-hint">ตัวอย่าง: 10 = คะแนนสุดท้ายจะโดนหัก 10% เมื่อผู้สอบสลับเกินโควตา</div>
+                </div>
+                <div>
+                  <label><i data-icon="ban"></i> สลับต่อข้อได้กี่ครั้ง (per-question)</label>
+                  <input type="number" class="form-control" data-cfg="tab_detection.per_question_max" min="0" oninput="renderTabDetectionPreview()">
+                  <div class="feat-hint">
+                    0 = ปิด · <b>ค่าแนะนำ 3</b> = ในข้อเดียวสลับได้ 3 ครั้ง ครั้งที่ 4 ระบบ<b>ล็อกข้อนั้น</b> ทำต่อไม่ได้และกลับมาแก้ไม่ได้ (ต้องใช้ร่วมกับ <b>One-at-a-time</b> ถึงจะได้ผล)
+                  </div>
+                </div>
+              </div>
+
+              <!-- Live preview panel — updates as admin changes settings, so what
+                   the config actually does is never ambiguous. Also mirrors the
+                   text shown to the user in the pre-exam agreement. -->
+              <div id="tabdet-preview" class="feat-preview"></div>
+            </div>
+          </div>
+
+          <div class="feat-row" data-feat="watermark">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="watermark.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Watermark — ลายน้ำชื่อผู้สอบบนหน้าจอ</div>
+            </div>
+            <div class="feat-desc">ทับชื่อผู้สอบแบบโปร่งใสบนหน้าจอ ถ่ายรูปแชร์จะติดชื่อไปด้วย</div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div><label>ความเข้ม (0–1)</label><input type="number" class="form-control" data-cfg="watermark.opacity" min="0" max="1" step="0.05"></div>
+                <div><label>ข้อความ ({username}, {email})</label><input type="text" class="form-control" data-cfg="watermark.text"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="feat-row" data-feat="exam_window">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="exam_window.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Exam Window — ช่วงเวลาที่เปิดให้สอบ</div>
+            </div>
+            <div class="feat-desc">เปิดให้เข้าสอบเฉพาะช่วงเวลาที่กำหนด ทุกคนเริ่มพร้อมกัน → คุยกันแทบไม่ทัน</div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div><label>เริ่ม</label><input type="datetime-local" class="form-control" data-cfg="exam_window.start"></div>
+                <div><label>สิ้นสุด</label><input type="datetime-local" class="form-control" data-cfg="exam_window.end"></div>
+                <div><label>Synchronized</label>
+                  <select class="form-control" data-cfg="exam_window.synchronized">
+                    <option value="false">ไม่ — เริ่มเมื่อกดเริ่มในช่วงเวลานี้</option>
+                    <option value="true">ใช่ — ทุกคนเริ่มที่เวลาเริ่ม</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="feat-row" data-feat="lazy_fetch">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="lazy_fetch.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Lazy Fetch — โหลดข้อสอบทีละข้อ</div>
+            </div>
+            <div class="feat-desc">ไม่โหลดข้อสอบทั้งชุดมาที่ client ตั้งแต่แรก — กด "ข้อถัดไป" ค่อยขอจาก server</div>
+          </div>
+
+          <div class="feat-row" data-feat="course_prereq">
+            <div class="feat-head">
+              <div class="feat-name" style="margin-left:2px"><i data-icon="book-open"></i> Course Prerequisites — ต้องผ่านคอร์สเรียนก่อน</div>
+            </div>
+            <div class="feat-desc">เลือกคอร์สที่ผู้สอบ <b>ต้องเรียนจบทุก phase</b> ก่อนจึงจะเปิดให้ทำข้อสอบนี้ได้ (ไม่เลือก = ไม่ล็อก) — ดึงจากระบบ Learning</div>
+            <div class="feat-config" style="display:block">
+              <div id="cm-exam-courses"
+                   style="display:flex; flex-direction:column; gap:6px; padding:10px; border:1px solid var(--border); border-radius:6px; background:var(--bg); max-height:200px; overflow:auto">
+                <div style="font-size:11px; color:var(--text-muted)">กำลังโหลด…</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tier 3 ── -->
+        <div class="tier-section">
+          <h4><i data-icon="lock"></i> Tier 3 — Strict</h4>
+          <div class="tier-desc">ระดับเข้ม — สำหรับการสอบที่ต้องการความเข้มงวดสูง อาจกดดันผู้สอบ</div>
+
+          <div class="feat-row" data-feat="fullscreen_lock">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="fullscreen_lock.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Fullscreen Lock — บังคับ fullscreen</div>
+            </div>
+            <div class="feat-desc">บังคับให้ทำข้อสอบในโหมด fullscreen หลุดออกจะถูกบันทึก</div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div><label>อนุญาตให้หลุด (ครั้ง)</label><input type="number" class="form-control" data-cfg="fullscreen_lock.max_violations" min="0"></div>
+                <div><label>เมื่อเกิน</label>
+                  <select class="form-control" data-cfg="fullscreen_lock.action">
+                    <option value="log">บันทึก log</option>
+                    <option value="warn">เตือน</option>
+                    <option value="penalty">หักคะแนน</option>
+                    <option value="force_submit">บังคับส่ง</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="feat-row" data-feat="disable_copy_paste">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="disable_copy_paste.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Disable Copy / Paste / Right-click</div>
+            </div>
+            <div class="feat-desc">ป้องกันการคัดลอกข้อสอบ (กันได้แค่ระดับนึง คนเก่งจริงเลี่ยงได้ แต่เป็น deterrent)</div>
+          </div>
+
+          <div class="feat-row" data-feat="anomaly_detection">
+            <div class="feat-head">
+              <label class="feat-toggle"><input type="checkbox" data-cfg="anomaly_detection.enabled"><span class="slider"></span></label>
+              <div class="feat-name">Anomaly Detection — ตรวจจับพฤติกรรมผิดปกติ</div>
+            </div>
+            <div class="feat-desc">flag คนทำเร็วผิดปกติ หรือสองคนตอบเหมือนกันเป๊ะ ให้แอดมินรีวิว</div>
+            <div class="feat-config">
+              <div class="feat-config-grid">
+                <div><label>เร็วผิดปกติ (วิ/ข้อ)</label><input type="number" class="form-control" data-cfg="anomaly_detection.speed_threshold_seconds" min="0"></div>
+                <div><label>ความเหมือนเกิน (0–1)</label><input type="number" class="form-control" data-cfg="anomaly_detection.similarity_threshold" min="0" max="1" step="0.05"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Result visibility ── -->
+        <div class="tier-section">
+          <h4><i data-icon="eye"></i> Result Visibility</h4>
+          <div class="tier-desc">หลังส่งข้อสอบ ผู้สอบจะเห็นอะไรบ้าง</div>
+          <div class="feat-config-grid">
+            <div><label>แสดงผล</label>
+              <select class="form-control" data-cfg="show_results.mode">
+                <option value="after_submit">หลังกดส่งทันที</option>
+                <option value="after_window">หลังหมดช่วงเวลาสอบ</option>
+                <option value="never">ไม่แสดง (admin ดูเท่านั้น)</option>
+              </select>
+            </div>
+            <div><label>เปิดเฉลย</label>
+              <select class="form-control" data-cfg="show_results.show_answers">
+                <option value="false">ไม่ — ไม่แสดงคำตอบที่ถูก</option>
+                <option value="true">ใช่ — แสดงคำตอบที่ถูก</option>
+              </select>
+            </div>
+            <div><label>เปิดคำอธิบาย</label>
+              <select class="form-control" data-cfg="show_results.show_explains">
+                <option value="false">ไม่</option>
+                <option value="true">ใช่</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── Questions pane ── -->
+      <div class="ex-pane" data-pane="questions">
+        <div style="margin-bottom:14px; display:flex; align-items:center; padding:10px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border)">
+          <span style="font-size:13px; font-weight:600"><i data-icon="clipboard"></i> รายการคำถาม</span>
+          <span style="margin-left:auto; font-size:12px; color:var(--text-muted)" id="q-count">0 ข้อ</span>
+        </div>
+        <div id="qb-list"></div>
+        <div class="qb-add-bar">
+          <div class="qb-add-bar-label">+ เพิ่มคำถามใหม่</div>
+          <div class="qb-add-bar-buttons">
+            <button class="qb-add-btn" type="button" data-add="single"><i data-icon="edit"></i> Single choice</button>
+            <button class="qb-add-btn" type="button" data-add="multi"><i data-icon="check"></i> Multi choice</button>
+            <button class="qb-add-btn" type="button" data-add="truefalse"><i data-icon="activity"></i> True / False</button>
+            <button class="qb-add-btn" type="button" data-add="short"><i data-icon="pencil"></i> Short answer</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close>ยกเลิก</button>
+      <button class="btn btn-primary" id="btn-save"><i data-icon="save"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════ Attempts modal ═════ -->
+<div class="modal-overlay" id="att-modal">
+  <div class="modal lg">
+    <div class="modal-header">
+      <h3 id="att-title">Attempts</h3>
+      <div style="display:flex;gap:6px;align-items:center;margin-left:auto">
+        <button class="btn btn-ghost btn-sm" onclick="openReminderModalFromAttempts()" title="ส่ง Reminder เข้า Google Chat" style="color:#4285F4;font-weight:600"><i data-icon="bell"></i> Reminder</button>
+        <button class="modal-close" data-close-att>×</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="att-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════ Report modal ═════ -->
+<div class="modal-overlay" id="rep-modal">
+  <div class="modal xl">
+    <div class="modal-header">
+      <h3 id="rep-title"><i data-icon="trending-up"></i> Report</h3>
+      <div style="display:flex; gap:6px; align-items:center; margin-left:auto;">
+        <button class="btn btn-ghost btn-sm" onclick="openReminderModal()" title="ส่ง Reminder เข้า Google Chat" style="color:#4285F4;font-weight:600"><i data-icon="bell"></i> Reminder</button>
+        <button class="btn btn-ghost btn-sm" onclick="reportExportCsv()" title="Export CSV"><i data-icon="inbox"></i> CSV</button>
+        <button class="btn btn-ghost btn-sm" onclick="reportPrint()" title="พิมพ์รายงาน"><i data-icon="printer"></i> Print</button>
+        <button class="btn btn-ghost btn-sm" onclick="reportCopySummary()" title="คัดลอกสรุป"><i data-icon="clipboard"></i> Copy</button>
+        <button class="modal-close" data-close-rep>×</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="rep-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════ Exam Reminder modal (Google Chat) ═════ -->
+<div class="modal-overlay" id="rem-modal">
+  <div class="modal lg">
+    <div class="modal-header">
+      <h3><i data-icon="bell"></i> Exam Reminder</h3>
+      <button class="modal-close" onclick="closeReminderModal()">×</button>
+    </div>
+    <div class="modal-body" style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <!-- LEFT: target + message + webhook -->
+      <div>
+        <div class="form-group">
+          <label class="form-label"><i data-icon="edit"></i> ข้อสอบ</label>
+          <div id="rem-exam-title" style="font-size:14px;font-weight:600;padding:8px 12px;background:var(--bg);border-radius:8px">—</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i data-icon="target"></i> ผู้รับ Reminder</label>
+          <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+            <button type="button" class="btn btn-ghost btn-sm" id="rem-tab-not" onclick="switchReminderTab('not_attempted')" style="flex:1;min-width:120px"><i data-icon="ban"></i> ยังไม่ได้ทำ (<span id="rem-not-count">0</span>)</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="rem-tab-failed" onclick="switchReminderTab('failed')" style="flex:1;min-width:120px"><i data-icon="x-circle"></i> ทำแล้วไม่ผ่าน (<span id="rem-failed-count">0</span>)</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="rem-tab-custom" onclick="switchReminderTab('custom')" style="flex:1;min-width:120px"><i data-icon="pencil"></i> เลือกเอง</button>
+          </div>
+          <div id="rem-target-list" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px;font-size:12px;background:var(--bg)"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i data-icon="message-circle"></i> ข้อความเพิ่มเติม (ไม่บังคับ)</label>
+          <textarea id="rem-message" class="form-control" rows="2" placeholder="เช่น กรุณาทำข้อสอบภายในสัปดาห์นี้" oninput="renderReminderPreview()"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i data-icon="calendar"></i> Deadline (ไม่บังคับ)</label>
+          <input type="text" id="rem-deadline" class="form-control" placeholder="31 ก.ค. 2026" oninput="renderReminderPreview()">
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i data-icon="link"></i> Webhook URL(s) — 1 URL ต่อบรรทัด</label>
+          <textarea id="rem-webhooks" class="form-control" rows="3" placeholder="เว้นว่าง = ใช้ default จาก System Settings" style="font-family:monospace;font-size:11px"></textarea>
+          <div class="form-hint" id="rem-webhook-hint" style="margin-top:4px">—</div>
+        </div>
+      </div>
+      <!-- RIGHT: card preview -->
+      <div>
+        <label class="form-label"><i data-icon="eye"></i> Preview (การ์ดที่จะยิงเข้า Chat)</label>
+        <div id="rem-preview" style="background:#f8fafc;color:#111;border:1px solid #e2e8f0;border-radius:10px;padding:14px;font-family:'Google Sans','Helvetica',sans-serif;font-size:13px;line-height:1.55;max-height:520px;overflow-y:auto;min-height:220px">
+          <div style="color:#94a3b8;text-align:center;padding:60px 0">กำลังโหลด preview…</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div id="rem-result" style="flex:1;font-size:12px"></div>
+      <button class="btn btn-ghost" onclick="closeReminderModal()">Cancel</button>
+      <button class="btn btn-primary" id="rem-send-btn" onclick="sendReminder()">
+        <span id="rem-send-text"><i data-icon="upload"></i> ส่ง Reminder</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Fullscreen Timeline modal — spawned from the "⛶ ขยาย" button on each
+     attempt's inline timeline. Shows the same event data at full size with a
+     summary chip row on top so investigating an attempt with many events is not
+     cramped into the compact card. -->
+<div class="modal-overlay" id="tl-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="tl-modal-title"><i data-icon="calendar"></i> Timeline</h3>
+      <div style="display:flex; gap:6px; align-items:center; margin-left:auto;">
+        <button class="modal-close" onclick="closeTimelineModal()">×</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="tl-modal-summary" id="tl-modal-summary"></div>
+      <div class="tl-modal-list" id="tl-modal-list"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/js/maintenance.js"></script>
+<script src="../assets/pages/admin/exams/exams.js"></script>
+</body>
+</html>

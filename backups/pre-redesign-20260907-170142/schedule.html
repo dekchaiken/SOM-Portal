@@ -1,0 +1,2579 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Team Schedule — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <script src="assets/js/theme.js"></script>
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <style>
+  /* ═════════════════════════════════════════════════════════════════
+     TEAM SCHEDULE PUBLIC VIEW — Modern Design System
+  ═════════════════════════════════════════════════════════════════ */
+
+  /* Prevent page-level zoom from wide calendar table */
+  .main-content { min-width: 0; overflow-x: hidden; }
+  .page-content { min-width: 0; overflow-x: hidden; }
+
+  .sched-wrap {
+    display: flex; flex-direction: column; gap: 24px;
+  }
+
+  /* ── Page Header with Title & Actions ──────────────────────────────── */
+  .sched-header {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px; padding-bottom: 4px;
+  }
+  .sched-header-left { display: flex; flex-direction: column; gap: 4px; }
+  .sched-header-title {
+    font-size: 26px; font-weight: 900; color: var(--text);
+    letter-spacing: -.02em; line-height: 1.1;
+  }
+  .sched-header-sub {
+    font-size: 12px; color: var(--text-muted); font-weight: 500;
+    letter-spacing: .02em;
+  }
+  .sched-header-actions { display: flex; align-items: center; gap: 10px; }
+
+  /* ── Month Navigator ───────────────────────────────────────────────── */
+  .month-nav {
+    display: flex; align-items: center; gap: 12px;
+    background: white; border: 1.5px solid #e8e8e8;
+    padding: 12px 16px; border-radius: 14px;
+    justify-content: space-between;
+  }
+  .month-nav-left { display: flex; align-items: center; gap: 10px; }
+  .month-nav-title {
+    font-size: 16px; font-weight: 800; color: #1c1c1e;
+    letter-spacing: -.01em; min-width: 180px;
+  }
+  .month-nav-btn {
+    width: 36px; height: 36px; border-radius: 9px;
+    background: #fafafa; border: 1.5px solid #e8e8e8;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px; color: #999;
+    transition: all .18s; font-weight: 700;
+  }
+  .month-nav-btn:hover {
+    background: var(--orange); color: white; border-color: var(--orange);
+    box-shadow: 0 4px 12px rgba(242,100,25,.18);
+  }
+  .month-nav-right { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ── Summary Stats Bar ─────────────────────────────────────────────── */
+  .sched-summary {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  }
+  .sum-chip {
+    display: flex; align-items: center; gap: 7px;
+    padding: 8px 14px; border-radius: 10px;
+    background: white; border: 1.5px solid #e8e8e8;
+    font-size: 11px; color: #666; font-weight: 600;
+    transition: all .15s;
+  }
+  .sum-chip:hover {
+    border-color: #ddd; background: #fafafa;
+  }
+  .sum-chip strong {
+    color: #1c1c1e; font-weight: 700; font-size: 12px;
+  }
+  .sum-chip-icon { font-size: 14px; }
+
+  /* ── Calendar Container ────────────────────────────────────────────── */
+  .cal-outer {
+    background: white;
+    border: 1.5px solid #e8e8e8;
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    transition: box-shadow .2s, border-color .2s;
+  }
+  .cal-outer:hover {
+    border-color: #ddd;
+    box-shadow: 0 4px 16px rgba(242,100,25,.08);
+  }
+  .cal-scroll {
+    overflow-x: auto; overflow-y: visible;
+    scrollbar-width: thin;
+    scrollbar-color: #ddd transparent;
+  }
+  .cal-scroll::-webkit-scrollbar { height: 8px; }
+  .cal-scroll::-webkit-scrollbar-track { background: transparent; }
+  .cal-scroll::-webkit-scrollbar-thumb {
+    background: #ddd; border-radius: 4px;
+  }
+  .cal-scroll::-webkit-scrollbar-thumb:hover {
+    background: #bbb;
+  }
+
+  /* ── Calendar Table ────────────────────────────────────────────────── */
+  /* "Only my days" filter — hide TH/TD without .my-day */
+  .cal-table.only-mine th[data-date]:not(.my-day),
+  .cal-table.only-mine td[data-date]:not(.my-day) { display: none; }
+  #my-days-btn.active { background: var(--orange); color: white; border-color: var(--orange); }
+  #my-days-count { font-size: 10px; font-weight: 700; opacity: .85; margin-left: 4px; }
+  .cal-table {
+    border-collapse: collapse; width: 100%; table-layout: fixed;
+    background: white;
+  }
+  .cal-table td, .cal-table th {
+    border-right: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: top;
+  }
+  .cal-table td:last-child, .cal-table th:last-child { border-right: none; }
+
+  /* ── Sticky Label Column ───────────────────────────────────────────── */
+  .col-label {
+    position: sticky; left: 0; z-index: 10;
+    background: linear-gradient(90deg, white 0%, rgba(255,255,255,.95) 100%);
+    width: 110px; min-width: 110px; max-width: 110px;
+    border-right: 1.5px solid #f0f0f0 !important;
+  }
+  .th-day-label { position: sticky; left: 0; z-index: 11; background: white; border-right: 1.5px solid #f0f0f0; }
+
+  /* ── Day Header Cells ──────────────────────────────────────────────── */
+  .th-day {
+    min-width: 54px; width: 54px; max-width: 54px;
+    text-align: center; padding: 8px 2px 6px;
+    font-size: 8px; font-weight: 700;
+    color: #999; letter-spacing: .06em;
+    background: #fafafa;
+    position: relative; text-transform: uppercase;
+    border-bottom: 1.5px solid #f0f0f0;
+  }
+  .th-day .day-num {
+    display: block; font-size: 15px; font-weight: 900;
+    color: #1c1c1e; margin-top: 2px; line-height: 1;
+  }
+  .th-day.today {
+    background: #ffe8d6;
+    border-bottom-color: #e05a10;
+  }
+  .th-day.today .day-num {
+    color: #c04a00;
+    font-size: 17px;
+  }
+  .th-day.today::after {
+    content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 28px; height: 3px; background: #e05a10; border-radius: 1.5px;
+  }
+  .th-day.weekend { background: #f9f9f9; }
+  .th-day.weekend .day-num { color: #ccc; }
+  .th-day.holiday { background: #fef3c7; border-bottom-color: #d97706; cursor: help; }
+  .th-day.holiday .day-num { color: #92400e; font-size: 17px; }
+  .th-day.holiday::after {
+    content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 28px; height: 3px; background: #d97706; border-radius: 1.5px;
+  }
+  .cal-cell.holiday-col { background: #fffdf0; }
+
+  /* ── Section Header Rows ───────────────────────────────────────────── */
+  .row-section td {
+    padding: 8px 8px 8px 0;
+    border-top: 2px solid transparent !important;
+    border-bottom: 1px solid #e8e8e8 !important;
+  }
+  .row-section .col-label {
+    padding-left: 10px;
+  }
+  .section-label {
+    font-size: 9px; font-weight: 900; letter-spacing: .1em;
+    text-transform: uppercase; display: flex; align-items: center; gap: 7px;
+  }
+  .section-label .sl-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  }
+  .section-label .sl-time {
+    font-size: 7px; font-weight: 600; letter-spacing: .02em;
+    opacity: .65; margin-left: 2px;
+  }
+  .section-fill {
+    font-size: 8px; color: #e0e0e0; text-align: center;
+    padding: 5px 0; letter-spacing: .04em; font-weight: 500;
+  }
+
+  /* ── Shift group row accents ────────────────────────────────────────── */
+  .row-shift1 .col-label { border-left: 3px solid #f2641966; }
+  .row-shift2 .col-label { border-left: 3px solid #8b5cf666; }
+  .row-section.row-shift1 td { background: rgba(242,100,25,.04); border-top-color: #f26419 !important; }
+  .row-section.row-shift2 td { background: rgba(139,92,246,.04); border-top-color: #8b5cf6 !important; }
+  .row-section.row-shift1 .col-label { border-left: 3px solid #f26419; }
+  .row-section.row-shift2 .col-label { border-left: 3px solid #8b5cf6; }
+
+  /* ── Spacer Row (visual separator) ─────────────────────────────────── */
+  .row-spacer td {
+    background: transparent; padding: 0; height: 12px;
+    border: none !important;
+  }
+
+  /* ── Row Labels ────────────────────────────────────────────────────── */
+  .row-lbl {
+    padding: 6px 8px; vertical-align: middle;
+    font-size: 8.5px; font-weight: 700;
+    color: #666; letter-spacing: .03em;
+    white-space: nowrap;
+    border-right: 1.5px solid #f0f0f0;
+  }
+  .row-lbl.oncall-lbl { color: #f59e0b; font-size: 8px; font-weight: 800; }
+  .row-lbl.vac-lbl { color: #22c55e; font-weight: 800; }
+  .row-lbl.sick-lbl { color: #ef4444; font-weight: 800; }
+  .row-lbl.biz-lbl { color: #7c3aed; font-weight: 800; }
+  .row-lbl.event-lbl { color: #3b82f6; font-weight: 800; }
+
+  @media (max-width: 1200px) {
+    .page-content {
+      padding: 8px !important;
+    }
+    .sched-wrap {
+      gap: 8px !important;
+    }
+    .month-nav {
+      padding: 6px 10px !important;
+    }
+    .month-nav-title {
+      font-size: 13px !important;
+      min-width: 130px !important;
+    }
+    .month-nav-btn {
+      width: 30px !important;
+      height: 30px !important;
+    }
+    .sched-header-title {
+      font-size: 18px !important;
+    }
+    .sum-chip {
+      padding: 4px 8px !important;
+      font-size: 10px !important;
+    }
+  }
+
+  /* ── Data Cells ────────────────────────────────────────────────────── */
+  .cal-cell {
+    padding: 4px 3px; min-height: 52px; vertical-align: top;
+    transition: background .15s;
+    background: white;
+  }
+
+  .cal-cell:hover { background: #fffbf7 !important; }
+  .cal-cell.today-col { background: #fff8f0; }
+  .cal-cell.weekend-col { background: #fafafa; }
+  .cal-cell.oncall-cell { vertical-align: middle; text-align: center; padding: 4px 3px; min-height: 32px; }
+  .cal-cell.event-cell { vertical-align: top; padding: 4px 3px; min-height: 32px; }
+
+  /* ── Member Chips ──────────────────────────────────────────────────── */
+  .m-chips { display: flex; flex-direction: column; gap: 2px; padding: 2px 2px; }
+  .m-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 9px; font-weight: 700;
+    padding: 3px 6px; border-radius: 4px;
+    white-space: nowrap; line-height: 1.4;
+    border: 1px solid rgba(242,100,25,.15);
+    transition: all .15s;
+    background: rgba(242,100,25,.04);
+    color: #1c1c1e;
+  }
+  .m-chip:hover {
+    background: rgba(242,100,25,.08);
+    border-color: rgba(242,100,25,.3);
+  }
+
+  /* On-call badge */
+  .oncall-val {
+    font-size: 7px; font-weight: 800; letter-spacing: .07em;
+    color: #1c1c1e; text-transform: uppercase;
+    background: rgba(245,158,11,.08); padding: 2px 6px;
+    border-radius: 4px; border: 1px solid rgba(245,158,11,.15);
+  }
+
+  /* Event text */
+  .event-txt {
+    font-size: 7px; color: #1c1c1e;
+    line-height: 1.4; font-weight: 600;
+    background: rgba(59,130,246,.08); padding: 2px 5px;
+    border-radius: 4px; display: block;
+    border: 1px solid rgba(59,130,246,.15);
+    cursor: pointer; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+    max-width: 100%;
+  }
+  .event-txt:hover {
+    background: rgba(59,130,246,.14);
+    border-color: rgba(59,130,246,.35);
+  }
+
+  /* Event tooltip popup */
+  #ev-tooltip {
+    position: fixed; z-index: 99999;
+    background: #1c1c1e; color: #fff;
+    border-radius: 10px; padding: 10px 14px;
+    font-size: 12px; font-weight: 500; line-height: 1.5;
+    max-width: 260px; pointer-events: none;
+    box-shadow: 0 8px 28px rgba(0,0,0,.28);
+    opacity: 0; transform: translateY(4px);
+    transition: opacity .15s, transform .15s;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  #ev-tooltip.show { opacity: 1; transform: translateY(0); }
+
+  /* ── Stats Panel ───────────────────────────────────────────────────── */
+  .stats-wrap {
+    background: white; border: 1.5px solid #e8e8e8;
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  }
+  .stats-hd {
+    padding: 16px 20px; border-bottom: 1.5px solid #f0f0f0;
+    font-size: 11px; font-weight: 700; color: #666;
+    letter-spacing: .06em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, #fff8f0 0%, white 100%);
+  }
+  .stats-hd strong { color: #1c1c1e; text-transform: none; font-size: 12px; }
+  .stats-export-btn {
+    margin-left: auto; padding: 6px 12px; font-size: 11px; font-weight: 700;
+    border: 1.5px solid #e8e8e8; border-radius: 8px; background: white; color: #555;
+    cursor: pointer; text-transform: none; letter-spacing: 0;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all .15s;
+  }
+  .stats-export-btn:hover { border-color: var(--orange); color: var(--orange); background: #fff8f0; }
+  .stats-export-btn:active { transform: translateY(1px); }
+  .stats-export-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .stats-table {
+    width: 100%; border-collapse: collapse; font-size: 11px;
+    background: white;
+  }
+  .stats-table th {
+    padding: 12px 16px; text-align: left;
+    font-size: 8px; font-weight: 700; letter-spacing: .07em;
+    color: #999; text-transform: uppercase;
+    border-bottom: 1.5px solid #f0f0f0;
+    background: #fafafa;
+  }
+  .stats-table th.num { text-align: center; }
+  .stats-table td {
+    padding: 10px 16px; border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+    color: #1c1c1e;
+    font-weight: 600;
+  }
+  .stats-table td:first-child { display: flex; align-items: center; gap: 10px; }
+  .stats-table td.num { text-align: center; font-weight: 800; }
+  .stats-table tr:last-child td { border-bottom: none; }
+  .stats-table tr:hover td { background: rgba(242,100,25,.04); }
+  .stat-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .stat-badge {
+    display: inline-block; min-width: 32px; text-align: center;
+    padding: 2px 9px; border-radius: 7px;
+    font-size: 10.5px; font-weight: 800; letter-spacing: .04em;
+    background: rgba(242,100,25,.08);
+    color: #1c1c1e;
+    border: 1px solid rgba(242,100,25,.15);
+  }
+
+  /* ── Leave Modal ───────────────────────────────────────────────────── */
+  #leave-modal {
+    position: fixed; inset: 0; z-index: 9000;
+    background: rgba(0,0,0,.4); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .22s;
+  }
+  #leave-modal.open { opacity: 1; pointer-events: all; }
+  #leave-modal-box {
+    background: white; border: none;
+    border-radius: 16px; width: 620px; max-width: 96vw;
+    max-height: 88vh; display: flex; flex-direction: column;
+    box-shadow: 0 32px 80px rgba(0,0,0,.15);
+    overflow: hidden; animation: slideUp .28s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .lm-hd {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 24px; border-bottom: 1.5px solid #f0f0f0;
+    background: linear-gradient(135deg, #fff8f0 0%, white 100%);
+  }
+  .lm-hd-t { font-size: 16px; font-weight: 800; color: #1c1c1e; }
+  .lm-close {
+    cursor: pointer; font-size: 18px; color: #999;
+    background: none; border: none; transition: color .15s; padding: 4px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+  }
+  .lm-close:hover { color: #1c1c1e; background: #f5f5f5; }
+  .lm-body { overflow-y: auto; padding: 22px 24px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* ── Leave Request Form ────────────────────────────────────────────── */
+  .leave-form { display: flex; flex-direction: column; gap: 14px; }
+  .lf-row { display: flex; gap: 11px; }
+  .lf-type-btn {
+    flex: 1; padding: 14px 16px; border-radius: 10px; cursor: pointer;
+    border: 1.5px solid #e8e8e8; background: white;
+    font-family: var(--font); font-size: 12px; font-weight: 700;
+    color: #666; transition: all .16s; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .lf-type-btn:hover:not(.active) {
+    border-color: #ddd; background: #fafafa;
+  }
+  .lf-type-btn.active { background: var(--tc); color: white; border-color: var(--tc); box-shadow: 0 6px 16px var(--tc)55; font-weight: 800; }
+  .lf-type-btn .lf-icon { font-size: 24px; }
+
+  /* ── Form Inputs ───────────────────────────────────────────────────── */
+  .f-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #666; margin-bottom: 7px; display: block; }
+  .f-input, .f-ta {
+    width: 100%; background: white; border: 1.5px solid #e8e8e8;
+    border-radius: 10px; padding: 11px 14px; font-size: 13px; color: #1c1c1e;
+    font-family: var(--font); outline: none; transition: all .16s;
+  }
+  .f-input:hover, .f-ta:hover { border-color: #ddd; }
+  .f-input:focus, .f-ta:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(242,100,25,.1); }
+  .f-ta { resize: vertical; min-height: 70px; }
+
+  /* ── Leave Request Items ───────────────────────────────────────────── */
+  .leave-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 14px 16px; border-radius: 11px;
+    background: white; border: 1.5px solid #e8e8e8;
+    transition: all .12s;
+  }
+  .leave-item:hover { border-color: #ddd; background: #fafafa; }
+  .leave-item-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+  .leave-item-body { flex: 1; min-width: 0; }
+  .leave-item-title { font-size: 13px; font-weight: 700; color: #1c1c1e; margin-bottom: 4px; }
+  .leave-item-dates { font-size: 11px; color: #666; margin-bottom: 5px; font-weight: 600; }
+  .leave-item-reason { font-size: 11px; color: #999; line-height: 1.5; }
+  .leave-status {
+    font-size: 9px; font-weight: 800; letter-spacing: .08em;
+    padding: 4px 10px; border-radius: 6px; text-transform: uppercase;
+  }
+  .ls-pending {
+    background: rgba(245,158,11,.12); color: #f59e0b;
+    border: 1px solid rgba(245,158,11,.2);
+  }
+  .ls-approved {
+    background: rgba(34,197,94,.12); color: #22c55e;
+    border: 1px solid rgba(34,197,94,.2);
+  }
+  .ls-rejected {
+    background: rgba(239,68,68,.12); color: #ef4444;
+    border: 1px solid rgba(239,68,68,.2);
+  }
+
+  /* Vacation Quota Display */
+  .quota-display {
+    background: linear-gradient(135deg, rgba(34,197,94,.08) 0%, rgba(34,197,94,.02) 100%);
+    border: 1.5px solid rgba(34,197,94,.2);
+    border-radius: 12px; padding: 16px 18px; margin-bottom: 16px;
+  }
+  .quota-display.hidden { display: none; }
+  .quota-display-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .quota-display-title {
+    font-size: 11px; font-weight: 800; letter-spacing: .06em;
+    text-transform: uppercase; color: #22c55e;
+  }
+  .quota-display-value {
+    font-size: 13px; font-weight: 800; color: #1c1c1e;
+  }
+  .quota-progress-bar {
+    height: 8px; background: rgba(0,0,0,.08);
+    border-radius: 4px; overflow: hidden; margin-bottom: 10px;
+  }
+  .quota-progress-fill {
+    height: 100%; transition: all .3s ease;
+    border-radius: 4px;
+  }
+  .quota-progress-fill.green { background: linear-gradient(90deg, #22c55e, #86efac); }
+  .quota-progress-fill.yellow { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .quota-progress-fill.red { background: linear-gradient(90deg, #ef4444, #f87171); }
+  .quota-progress-fill.gray { background: linear-gradient(90deg, #9ca3af, #d1d5db); }
+  .quota-breakdown {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; color: #666; font-weight: 600;
+  }
+  .quota-breakdown-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .quota-breakdown-label { font-size: 9px; text-transform: uppercase; letter-spacing: .04em; }
+  .quota-breakdown-value { font-size: 12px; font-weight: 800; color: #1c1c1e; }
+  .quota-warning {
+    background: rgba(239,68,68,.08); border: 1.5px solid rgba(239,68,68,.15);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;
+    font-size: 11px; color: #ef4444; font-weight: 600;
+    display: none; align-items: center; gap: 10px;
+  }
+  .quota-warning.show { display: flex; }
+  .quota-warning-icon { font-size: 18px; }
+
+  /* ── Leave Modal Tabs ──────────────────────────────────────────────── */
+  .lm-tabs {
+    display: flex; border-bottom: 1.5px solid #e8e8e8;
+    padding: 0 24px; flex-shrink: 0;
+  }
+  .lm-tab {
+    padding: 12px 18px; font-size: 12px; font-weight: 700;
+    color: #aaa; border: none; background: none; cursor: pointer;
+    border-bottom: 2.5px solid transparent; margin-bottom: -1.5px;
+    font-family: var(--font); transition: all .15s; letter-spacing: .02em;
+  }
+  .lm-tab:hover { color: #666; }
+  .lm-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+  .lm-tab-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 50%; font-size: 9px; font-weight: 800;
+    background: var(--orange); color: white; margin-left: 6px; vertical-align: middle;
+  }
+
+  /* ── Leave Calendar ────────────────────────────────────────────────── */
+  .leave-calendar {
+    background: white; border-radius: 14px;
+    border: 1.5px solid #e8e8e8; padding: 16px;
+  }
+  .lc-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .lc-month-label {
+    font-size: 15px; font-weight: 800; color: #1c1c1e; letter-spacing: -.01em;
+  }
+  .lc-nav { display: flex; gap: 6px; }
+  .lc-nav-btn {
+    width: 30px; height: 30px; border-radius: 8px; border: none;
+    background: #ef4444; color: white; font-size: 15px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all .12s; line-height: 1;
+  }
+  .lc-nav-btn:hover { background: #dc2626; transform: scale(1.06); }
+  .lc-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;
+  }
+  .lc-dow {
+    text-align: center; font-size: 9.5px; font-weight: 800; color: #bbb;
+    padding: 4px 0 8px; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .lc-cell {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; color: #1c1c1e; border-radius: 9px;
+    cursor: pointer; transition: all .12s; user-select: none; position: relative;
+  }
+  .lc-cell:hover:not(.lc-empty):not(.lc-selected) {
+    background: #fee2e2; color: #ef4444;
+  }
+  .lc-cell.lc-today:not(.lc-selected) {
+    color: #ef4444; font-weight: 800;
+  }
+  .lc-cell.lc-today:not(.lc-selected)::after {
+    content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; border-radius: 50%; background: #ef4444;
+  }
+  .lc-cell.lc-selected {
+    background: #ef4444; color: white !important; font-weight: 800;
+    box-shadow: 0 3px 10px rgba(239,68,68,.35);
+  }
+  .lc-cell.lc-selected.lc-today { box-shadow: 0 3px 10px rgba(239,68,68,.5); }
+  .lc-cell.lc-empty { cursor: default; pointer-events: none; }
+  .lc-cell.lc-other-month { color: #ddd; pointer-events: none; }
+  .lc-summary {
+    margin-top: 12px; padding: 10px 14px;
+    background: rgba(242,100,25,.07); border-radius: 9px;
+    font-size: 11px; font-weight: 700; color: var(--orange);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .lc-summary-clear {
+    font-size: 10px; font-weight: 700; color: #ef4444; background: none;
+    border: none; cursor: pointer; font-family: var(--font); padding: 2px 6px;
+    border-radius: 5px; transition: background .12s;
+  }
+  .lc-summary-clear:hover { background: rgba(239,68,68,.1); }
+  .lc-selected-pills {
+    display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px;
+  }
+  .lc-pill {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 8px 3px 10px; border-radius: 20px;
+    background: rgba(239,68,68,.1); color: #ef4444;
+    font-size: 10px; font-weight: 700; border: 1px solid rgba(239,68,68,.2);
+  }
+  .lc-pill-x {
+    background: none; border: none; cursor: pointer; color: #ef4444;
+    font-size: 11px; padding: 0; line-height: 1; opacity: .6;
+  }
+  .lc-pill-x:hover { opacity: 1; }
+
+  /* Duration row conditional */
+  .dur-half-row { transition: all .15s; }
+
+  /* ── Vacation Summary Card ──────────────────────────────────── */
+  .vac-summary-wrap { background:white;border:1.5px solid #e8e8e8;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-top:16px; }
+  .vac-summary-hd { padding:16px 20px;border-bottom:1.5px solid #f0f0f0;font-size:11px;font-weight:700;color:#666;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#fff8f0 0%,white 100%); }
+  .vac-summary-tbl { width:100%;border-collapse:collapse;font-size:11px;background:white; }
+  .vac-summary-tbl th { padding:10px 16px;text-align:left;font-size:8px;font-weight:700;letter-spacing:.07em;color:#999;text-transform:uppercase;border-bottom:1.5px solid #f0f0f0;background:#fafafa; }
+  .vac-summary-tbl th.c { text-align:center; }
+  .vac-summary-tbl td { padding:10px 16px;border-bottom:1px solid #f0f0f0;vertical-align:middle;color:#1c1c1e;font-weight:600; }
+  .vac-summary-tbl td.c { text-align:center; }
+  .vac-summary-tbl tr:last-child td { border-bottom:none; }
+  .vac-summary-tbl tr:hover td { background:rgba(242,100,25,.03); }
+
+  /* ── Holiday Plans Embedded View ────────────────────────────── */
+  #hp-view { display:none;flex-direction:column;gap:18px; }
+  #hp-view.active { display:flex; }
+  .hp-topbar-back { background:white;border:1.5px solid #e8e8e8;border-radius:14px;padding:11px 16px;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px; }
+  .hp-back-btn { background:none;border:1.5px solid #e8e8e8;border-radius:9px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text);transition:all .15s;display:flex;align-items:center;gap:5px; }
+  .hp-back-btn:hover { background:var(--orange-bg);border-color:var(--orange);color:var(--orange); }
+  .hp-view-title { font-size:14px;font-weight:800;color:var(--text); }
+  .hp-nav-center { display:flex;align-items:center;gap:6px; }
+  .hp-month-btn { background:none;border:1.5px solid #e8e8e8;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:13px;color:var(--text);display:flex;align-items:center;justify-content:center;transition:all .15s; }
+  .hp-month-btn:hover { border-color:var(--orange);color:var(--orange);background:var(--orange-bg); }
+  .hp-month-title { font-size:13px;font-weight:800;color:var(--text);min-width:150px;text-align:center; }
+  .hp-stat-chip { padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:var(--orange-dim);color:var(--orange);border:1px solid rgba(242,100,25,.25); }
+  .hp-note-card { background:linear-gradient(135deg,#fff8f0 0%,#fffdf9 100%);border:1.5px solid rgba(242,100,25,.2);border-radius:14px;padding:13px 18px;font-size:12px;color:#666;line-height:1.75; }
+  .hp-note-card strong { color:var(--orange); }
+  .hp-table-card { background:white;border:1.5px solid #e8e8e8;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06); }
+  .hp-table-scroll { overflow-x:auto; }
+  .hp-tbl { border-collapse:collapse;font-size:11px;background:white;min-width:max-content;width:100%; }
+  .hp-tbl thead th { padding:0;border-bottom:1.5px solid #e8e8e8; }
+  .hp-th-name { position:sticky;left:0;z-index:10;background:linear-gradient(135deg,#fff8f0 0%,white 100%);color:#666;padding:10px 16px;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;min-width:175px;text-align:left;border-right:2px solid #e8e8e8;border-bottom:1.5px solid #e8e8e8; }
+  .hp-th-day { min-width:30px;width:30px;text-align:center;font-size:9px;font-weight:700;padding:5px 2px;color:#999;background:#fafafa;border-right:1px solid #eee;vertical-align:bottom; }
+  .hp-th-day.hw { background:#fff5f5;color:#ef4444; }
+  .hp-th-day.hh { background:#fffbeb;color:#b45309; }
+  .hp-th-day.ht { background:var(--orange);color:white; }
+  .hp-th-total { min-width:64px;background:var(--orange-bg);color:var(--orange);text-align:center;padding:10px 8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-left:2px solid rgba(242,100,25,.2); }
+  .hp-tbl tbody tr { border-bottom:1px solid #f0f0f0; }
+  .hp-tbl tbody tr:last-child { border-bottom:none; }
+  .hp-tbl tbody tr:hover td { background:rgba(242,100,25,.03); }
+  .hp-td-name { position:sticky;left:0;z-index:5;background:white;padding:8px 12px;border-right:2px solid #e8e8e8;white-space:nowrap;display:flex;align-items:center;gap:8px;min-width:175px; }
+  .hp-td-name.me { background:#fff8f0; }
+  .hp-tbl tbody tr:hover .hp-td-name { background:#fdf4ec; }
+  .hp-tbl tbody tr:hover .hp-td-name.me { background:#fde8d0; }
+  .hp-rem-badge { font-size:11px;font-weight:800;background:var(--orange-dim);color:var(--orange);border:1px solid rgba(242,100,25,.25);border-radius:7px;padding:2px 8px;min-width:30px;text-align:center;flex-shrink:0; }
+  .hp-td-cell { min-width:30px;width:30px;height:32px;border-right:1px solid #f0f0f0;padding:0;position:relative;transition:background .1s; }
+  .hp-td-cell.wkd    { background:#fafafa; }
+  .hp-td-cell.hol    { background:#fffbeb; }
+  .hp-td-cell.others { background:rgba(242,100,25,.25); }
+  .hp-td-cell.mine   { background:#22c55e;cursor:pointer; }
+  .hp-td-cell.mine::after { content:'×';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:transparent; }
+  .hp-td-cell.mine:hover { background:#dc2626; }
+  .hp-td-cell.mine:hover::after { color:white; }
+  .hp-td-cell.editable:not(.mine) { cursor:pointer; }
+  .hp-td-cell.editable:not(.mine):hover { background:var(--orange-dim); }
+  .hp-td-total { text-align:center;font-weight:800;font-size:12px;padding:0 8px;border-left:2px solid rgba(242,100,25,.15);min-width:64px; }
+  .hp-legend { display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:11px;color:#888; }
+  .hp-legend-dot { width:13px;height:13px;border-radius:3px;flex-shrink:0; }
+
+  /* holiday tooltip */
+  .hp-hol-btn { position:relative;display:inline-flex;align-items:center;gap:5px;background:none;border:1.5px solid #e8e8e8;border-radius:9px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;color:#b45309;transition:all .15s;white-space:nowrap; }
+  .hp-hol-btn:hover,.hp-hol-btn.active { background:#fffbeb;border-color:#fcd34d; }
+  .hp-hol-popup { display:none;position:absolute;top:calc(100% + 8px);right:0;z-index:9999;background:white;border:1.5px solid #e8e8e8;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.14);width:280px;overflow:hidden;animation:hpPopIn .18s cubic-bezier(0.34,1.4,0.64,1); }
+  .hp-hol-popup.show { display:block; }
+  @keyframes hpPopIn { from{opacity:0;transform:translateY(-8px) scale(.97)} to{opacity:1;transform:none} }
+  .hp-hol-popup-hd { padding:12px 16px 10px;border-bottom:1px solid #f0f0f0;font-size:11px;font-weight:700;color:#666;letter-spacing:.06em;text-transform:uppercase;background:linear-gradient(135deg,#fffbeb 0%,white 100%);display:flex;align-items:center;gap:6px; }
+  .hp-hol-list { max-height:320px;overflow-y:auto;padding:6px 0; }
+  .hp-hol-item { display:flex;align-items:center;gap:10px;padding:7px 16px;transition:background .1s; }
+  .hp-hol-item:hover { background:#fffbeb; }
+  .hp-hol-date { font-size:11px;font-weight:800;color:#b45309;min-width:76px;flex-shrink:0; }
+  .hp-hol-name { font-size:12px;font-weight:600;color:var(--text);line-height:1.3; }
+  .hp-hol-empty { padding:20px 16px;text-align:center;font-size:12px;color:#bbb; }
+
+  /* HP modal */
+  #hp-modal { position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s; }
+  #hp-modal.open { opacity:1;pointer-events:all; }
+  #hp-modal-box { background:white;border-radius:20px;width:520px;max-width:96vw;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.18);overflow:hidden;animation:hpSlideUp .24s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes hpSlideUp { from{opacity:0;transform:translateY(24px) scale(.97)} to{opacity:1;transform:none} }
+  .hpm-hd { padding:18px 22px 14px;border-bottom:1.5px solid #f0f0f0;display:flex;justify-content:space-between;align-items:flex-start;background:linear-gradient(135deg,#fff8f0 0%,white 100%); }
+  .hpm-hd-t { font-size:15px;font-weight:800;color:var(--text); }
+  .hpm-hd-sub { font-size:11px;color:#888;margin-top:2px; }
+  .hpm-close { background:none;border:none;font-size:18px;cursor:pointer;color:#aaa;padding:2px 6px;border-radius:6px; }
+  .hpm-close:hover { background:#f5f5f5;color:#333; }
+  .hpm-body { padding:18px 22px;overflow-y:auto;flex:1; }
+  .hpm-nav { display:flex;align-items:center;justify-content:space-between;margin-bottom:12px; }
+  .hpm-nav-title { font-size:13px;font-weight:800;color:var(--text); }
+  .hpm-nav-btn { background:none;border:1.5px solid #e8e8e8;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s; }
+  .hpm-nav-btn:hover { border-color:var(--orange);color:var(--orange);background:var(--orange-bg); }
+  .hpm-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:14px; }
+  .hpm-dh { text-align:center;font-size:9px;font-weight:700;color:#bbb;padding:4px 0; }
+  .hpm-day { aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;border-radius:8px;cursor:pointer;transition:all .1s;color:var(--text); }
+  .hpm-day:hover:not(.out) { background:var(--orange-bg);color:var(--orange); }
+  .hpm-day.wkd { color:#ef4444; }
+  .hpm-day.hol { background:#fffbeb;color:#b45309; }
+  .hpm-day.sel { background:var(--orange)!important;color:white; }
+  .hpm-day.tod { box-shadow:0 0 0 2px var(--orange); }
+  .hpm-day.out { visibility:hidden; }
+  .hpm-pills-wrap { background:#f9fafb;border-radius:12px;padding:12px 14px;margin-bottom:14px;min-height:44px; }
+  .hpm-pills-title { font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px; }
+  .hpm-pills { display:flex;flex-wrap:wrap;gap:6px; }
+  .hpm-pill { display:inline-flex;align-items:center;gap:4px;background:var(--orange-dim);color:var(--orange);border:1px solid rgba(242,100,25,.3);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700; }
+  .hpm-pill-x { background:none;border:none;cursor:pointer;color:var(--orange);font-size:12px;padding:0;opacity:.6; }
+  .hpm-pill-x:hover { opacity:1; }
+  .hpm-empty { font-size:11px;color:#ccc; }
+  .hpm-foot { padding:13px 22px;border-top:1.5px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;gap:10px; }
+  .hpm-foot-count { font-size:12px;color:#aaa;font-weight:600; }
+  .hpm-foot-count strong { color:var(--text); }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="topbar-title-left">
+          <div class="page-title"><i data-icon="calendar"></i> Team Schedule</div>
+          <div class="page-sub">ตารางเวร SM Team ประจำเดือน</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" data-action="write" onclick="openHolidayPlans()" style="font-size:11px;gap:6px">
+          <i data-icon="calendar"></i> Holiday Plans
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportCalendarImage()" style="font-size:11px;gap:6px">
+          <i data-icon="camera"></i> Export PNG
+        </button>
+        <button class="btn btn-ghost btn-sm" data-action="write" onclick="openLeaveModal()" style="font-size:11px;gap:6px">
+          <i data-icon="clipboard"></i> Leave Request
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="loadAll()" style="font-size:11px">↺</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="sched-wrap">
+
+        <!-- Month navigation + summary -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+          <div class="month-nav">
+            <div class="month-nav-left">
+              <button class="month-nav-btn" onclick="changeMonth(-1)">←</button>
+              <div class="month-nav-title" id="month-title">Loading...</div>
+              <button class="month-nav-btn" onclick="changeMonth(1)">→</button>
+              <button class="btn btn-ghost btn-sm" onclick="goToday()" style="font-size:11px;margin-left:6px">Today</button>
+              <button class="btn btn-ghost btn-sm" id="my-days-btn" onclick="toggleMyDays()" style="font-size:11px;margin-left:6px" title="แสดงเฉพาะวันที่ฉันมีงาน"><i data-icon="user"></i> เฉพาะวันของฉัน<span id="my-days-count"></span></button>
+              <button class="btn btn-ghost btn-sm" onclick="exportMyScheduleICS()" style="font-size:11px;margin-left:6px" title="ดาวน์โหลดไฟล์ .ics เฉพาะวันของฉันในเดือนนี้ — เปิดบน iPhone จะเด้ง Add to Calendar"><i data-icon="calendar"></i> ส่งเข้าปฏิทิน iPhone</button>
+            </div>
+          </div>
+          <div class="sched-summary" id="sched-summary"></div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="cal-outer">
+          <div class="cal-scroll" id="cal-scroll">
+            <table class="cal-table" id="cal-table">
+              <thead id="cal-head"></thead>
+              <tbody id="cal-body" data-skel-cal>
+                <!-- Skeleton placeholder; renderCalendar() replaces this on load -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Stats table -->
+        <div class="stats-wrap">
+          <div class="stats-hd">
+            <span><i data-icon="bar-chart"></i></span> สถิติรายบุคคล — <span id="stats-month-label" style="color:var(--text)"></span>
+            <button class="stats-export-btn" onclick="exportStatsCSV()" title="ดาวน์โหลดเป็นไฟล์ CSV"><i data-icon="inbox"></i> Export CSV</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="stats-table" id="stats-table">
+              <thead>
+                <tr>
+                  <th>ชื่อ</th>
+                  <th class="num">Shift#1<br>TDPK</th>
+                  <th class="num">Shift#1<br>W@H</th>
+                  <th class="num">Shift#2<br>W@H</th>
+                  <th class="num">รวม<br>เวร</th>
+                  <th class="num">วันลา/<br>หยุด</th>
+                  <th class="num">ลาป่วย</th>
+                  <th class="num">ลากิจ</th>
+                  <th class="num">วันลาพักร้อน<br>คงเหลือ</th>
+                </tr>
+              </thead>
+              <tbody id="stats-body" data-skel-stats></tbody>
+            </table>
+          </div>
+        </div>
+
+
+        <!-- Vacation Summary -->
+        <div class="vac-summary-wrap">
+          <div class="vac-summary-hd"><span><i data-icon="calendar"></i></span> วันลาพักร้อนประจำปี — <span id="vac-summary-year" style="color:var(--text)"></span></div>
+          <div style="overflow-x:auto">
+            <table class="vac-summary-tbl">
+              <thead><tr><th>ชื่อ</th><th class="c">โควต้าทั้งหมด</th><th class="c">ลาไปแล้ว</th><th class="c">คงเหลือ</th></tr></thead>
+              <tbody id="vac-summary-body" data-skel-vac></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /.sched-wrap -->
+
+      <!-- Holiday Plans View -->
+      <div id="hp-view">
+        <div class="hp-topbar-back">
+          <div style="display:flex;align-items:center;gap:12px">
+            <button class="hp-back-btn" onclick="closeHolidayPlans()">← กลับปฏิทิน</button>
+            <span class="hp-view-title"><i data-icon="calendar"></i> Advance Holiday Plans</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="hp-nav-center">
+              <button class="hp-month-btn" onclick="hpChangeYear(-1)">«</button>
+              <button class="hp-month-btn" onclick="hpChangeMonth(-1)">‹</button>
+              <div class="hp-month-title" id="hp-month-title">—</div>
+              <button class="hp-month-btn" onclick="hpChangeMonth(1)">›</button>
+              <button class="hp-month-btn" onclick="hpChangeYear(1)">»</button>
+              <button class="btn btn-ghost btn-sm" onclick="hpGoToday()" style="font-size:10px;margin-left:4px">วันนี้</button>
+            </div>
+            <div class="hp-stat-chip" id="hp-stat-chip">—</div>
+            <div style="position:relative">
+              <button class="hp-hol-btn" id="hp-hol-btn" onclick="toggleHolidayPopup(event)"><i data-icon="flag"></i> วันหยุด <span id="hp-hol-count"></span></button>
+              <div class="hp-hol-popup" id="hp-hol-popup">
+                <div class="hp-hol-popup-hd"><i data-icon="flag"></i> วันหยุดนักขัตฤกษ์ — <span id="hp-hol-year"></span></div>
+                <div class="hp-hol-list" id="hp-hol-list"></div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openHpModal()" style="font-size:11px;font-weight:700"><i data-icon="pencil"></i> วางแผนของฉัน</button>
+          </div>
+        </div>
+        <div class="hp-note-card"><i data-icon="pin"></i> <strong>เริ่มทำแผนวันหยุดของทีม</strong> ให้จับจองกันล่วงหน้า ใส่วันที่ต้องการหยุดด้านล่างด้วยครับ ทางหัวหน้าเขาอยากเห็นภาพว่าวันลาเหลือกันเยอะมั้ย จะได้ไม่มาลากระจุกกันเดือนสุดท้าย และ <strong>ขอเพิ่มตั้งกฎ</strong> ในทีม เช่น คนเดิมๆ ไม่ควรลาช่วงวันหยุดยาวเดิมๆ ทุกปี ต้องแบ่งเพื่อนในทีมบ้าง สลับๆ กัน</div>
+        <div class="hp-table-card">
+          <div class="hp-table-scroll">
+            <table class="hp-tbl"><thead id="hp-thead"></thead>
+              <tbody id="hp-tbody" data-skel-hp></tbody>
+            </table>
+          </div>
+          <div style="padding:12px 16px;border-top:1px solid #f0f0f0">
+            <div class="hp-legend">
+              <div style="display:flex;align-items:center;gap:5px"><div class="hp-legend-dot" style="background:#22c55e"></div><span>แผนของฉัน (คลิกเพื่อลบ)</span></div>
+              <div style="display:flex;align-items:center;gap:5px"><div class="hp-legend-dot" style="background:rgba(242,100,25,.25)"></div><span>แผนของเพื่อน</span></div>
+              <div style="display:flex;align-items:center;gap:5px"><div class="hp-legend-dot" style="background:#fffbeb;border:1px solid #e8e8e8"></div><span>วันหยุดนักขัตฤกษ์</span></div>
+              <div style="display:flex;align-items:center;gap:5px"><div class="hp-legend-dot" style="background:#fafafa;border:1px solid #e8e8e8"></div><span>เสาร์-อาทิตย์</span></div>
+              <span style="color:#bbb;margin-left:4px">| คลิกเซลล์ว่างเพื่อเพิ่ม</span>
+            </div>
+          </div>
+        </div>
+      </div><!-- /#hp-view -->
+
+    </main>
+  </div>
+</div>
+
+<!-- HP Modal -->
+<div id="hp-modal">
+  <div id="hp-modal-box">
+    <div class="hpm-hd">
+      <div><div class="hpm-hd-t"><i data-icon="pencil"></i> วางแผนวันหยุดของฉัน</div><div class="hpm-hd-sub" id="hpm-sub"></div></div>
+      <button class="hpm-close" onclick="closeHpModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="hpm-body">
+      <div class="hpm-nav">
+        <button class="hpm-nav-btn" onclick="hpmPrevMonth()">‹</button>
+        <div class="hpm-nav-title" id="hpm-title"></div>
+        <button class="hpm-nav-btn" onclick="hpmNextMonth()">›</button>
+      </div>
+      <div class="hpm-grid" id="hpm-grid"></div>
+      <div class="hpm-pills-wrap">
+        <div class="hpm-pills-title">วันที่เลือกทั้งหมด</div>
+        <div class="hpm-pills" id="hpm-pills"><span class="hpm-empty">ยังไม่ได้เลือก</span></div>
+      </div>
+    </div>
+    <div class="hpm-foot">
+      <div class="hpm-foot-count">เลือกแล้ว <strong id="hpm-count">0</strong> วัน</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="hpmClearMonth()" style="font-size:11px"><i data-icon="trash"></i> ล้างเดือนนี้</button>
+        <button class="btn btn-primary btn-sm" onclick="hpmSave()" id="hpm-save-btn" style="font-size:11px;font-weight:700"><i data-icon="save"></i> บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Leave Request Modal -->
+<div id="leave-modal">
+  <div id="leave-modal-box">
+    <div class="lm-hd">
+      <div class="lm-hd-t"><i data-icon="clipboard"></i> Leave Request</div>
+      <button class="lm-close" onclick="closeLeaveModal()"><i data-icon="x"></i></button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="lm-tabs">
+      <button class="lm-tab active" id="tab-request" onclick="switchLeaveTab('request')"><i data-icon="pencil"></i> ขอลา</button>
+      <button class="lm-tab" id="tab-history" onclick="switchLeaveTab('history')">
+        <i data-icon="calendar"></i> ประวัติขอลา<span class="lm-tab-badge" id="leave-history-badge" style="display:none"></span>
+      </button>
+    </div>
+
+    <!-- Pane: Request -->
+    <div class="lm-body" id="lm-pane-request">
+      <div class="f-label" style="margin-bottom:10px">ส่งคำขอลาใหม่</div>
+
+      <!-- Vacation Quota Display -->
+      <div id="quota-display" class="quota-display hidden">
+        <div class="quota-display-header">
+          <span class="quota-display-title"><i data-icon="calendar"></i> วันลาพักร้อนคงเหลือ</span>
+          <span class="quota-display-value" id="quota-remaining">— วัน</span>
+        </div>
+        <div class="quota-progress-bar">
+          <div class="quota-progress-fill green" id="quota-progress" style="width:100%"></div>
+        </div>
+        <div class="quota-breakdown">
+          <div class="quota-breakdown-item">
+            <span class="quota-breakdown-label">กำลังใช้</span>
+            <span class="quota-breakdown-value" id="quota-using">0</span>
+          </div>
+          <div class="quota-breakdown-item">
+            <span class="quota-breakdown-label">คงเหลือหลังลา</span>
+            <span class="quota-breakdown-value" id="quota-after">—</span>
+          </div>
+          <div class="quota-breakdown-item">
+            <span class="quota-breakdown-label">รวมทั้งหมด</span>
+            <span class="quota-breakdown-value" id="quota-total">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quota Warning -->
+      <div id="quota-warning" class="quota-warning">
+        <span class="quota-warning-icon"><i data-icon="alert-triangle"></i></span>
+        <span id="quota-warning-text">วันลาพักร้อนคงเหลือไม่เพียงพอ</span>
+      </div>
+
+      <div class="leave-form">
+        <!-- Leave Type -->
+        <div>
+          <div class="f-label">ประเภทการลา</div>
+          <div class="lf-row">
+            <button class="lf-type-btn active" id="ltype-vacation" style="--tc:#22c55e;--tb:rgba(34,197,94,.12)"
+              onclick="setLeaveType('vacation')">
+              <span class="lf-icon"><i data-icon="umbrella-beach"></i></span>Vacation / พักร้อน
+            </button>
+            <button class="lf-type-btn" id="ltype-sick" style="--tc:#ef4444;--tb:rgba(239,68,68,.12)"
+              onclick="setLeaveType('sick')">
+              <span class="lf-icon"><i data-icon="thermometer"></i></span>Sick Leave / ลาป่วย
+            </button>
+            <button class="lf-type-btn" id="ltype-business" style="--tc:#7c3aed;--tb:rgba(124,58,237,.12)"
+              onclick="setLeaveType('business')">
+              <span class="lf-icon"><i data-icon="briefcase"></i></span>Business Leave / ลากิจ
+            </button>
+          </div>
+        </div>
+
+        <!-- Calendar Picker -->
+        <div>
+          <div class="f-label">เลือกวันที่ลา <span style="font-weight:500;text-transform:none;letter-spacing:0;color:#aaa">(กดหลายวันได้)</span></div>
+          <div class="leave-calendar" id="leave-calendar"></div>
+        </div>
+
+        <!-- Duration (conditional on selected count) -->
+        <div>
+          <div class="f-label">ประเภทวันลา</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:#1c1c1e">
+              <input type="radio" name="leave-duration" value="full" checked onchange="updateLeaveDisplay()"> Full day
+            </label>
+            <label class="dur-half-row" id="half-day-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:#1c1c1e">
+              <input type="radio" name="leave-duration" value="half" id="half-radio" onchange="updateLeaveDisplay()"> Half day
+            </label>
+          </div>
+          <div id="half-day-opts" style="display:none;margin-top:10px;padding:12px;background:#fafafa;border-radius:8px">
+            <div class="f-label" style="margin-bottom:8px">เลือกช่วงเวลา</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#666">
+                <input type="radio" name="half-period" value="morning" checked> เช้า (08:00-12:00)
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#666">
+                <input type="radio" name="half-period" value="afternoon"> บ่าย (13:00-17:00)
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reason -->
+        <div>
+          <div class="f-label">เหตุผล (optional)</div>
+          <textarea class="f-ta" id="f-reason" placeholder="ระบุเหตุผลเพิ่มเติม..."></textarea>
+        </div>
+
+        <button class="btn btn-primary" onclick="submitLeave()" id="leave-submit-btn" style="font-size:12px;font-weight:700">
+          <i data-icon="upload"></i> ส่งคำขอ
+        </button>
+      </div>
+    </div>
+
+    <!-- Pane: History -->
+    <div class="lm-body" id="lm-pane-history" style="display:none">
+      <div class="f-label" style="margin-bottom:10px">ประวัติการขอลา</div>
+      <div id="my-leaves">
+        <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12px">Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/skeletons.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/csrf.js"></script>
+<script src="assets/js/analytics.js"></script>
+<script src="assets/js/analytics-features.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script>
+if (!Auth.requireAuth()) {}
+Layout.render('schedule');
+trackScheduleView('main');
+
+// ── Inject skeleton shimmer into tables while data loads ─────────────────────
+(function paintSkeletons(){
+  const fades = ['skel-fade-1','skel-fade-2','skel-fade-3','skel-fade-4','skel-fade-5','skel-fade-6'];
+  const now = new Date();
+  const daysThisMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+
+  const cal = document.getElementById('cal-body');
+  if (cal && !cal.children.length) {
+    let h = '';
+    for (let r = 0; r < 8; r++) {
+      const f = fades[Math.min(r, fades.length-1)];
+      h += `<tr class="${f}"><td class="col-label" style="padding:8px 10px"><div class="skel" style="width:78%;height:11px;border-radius:4px"></div></td>`;
+      for (let c = 0; c < daysThisMonth; c++) {
+        h += `<td style="padding:6px 3px"><div class="skel" style="width:100%;height:22px;border-radius:4px"></div></td>`;
+      }
+      h += '</tr>';
+    }
+    cal.innerHTML = h;
+  }
+
+  const stats = document.getElementById('stats-body');
+  if (stats && !stats.children.length) {
+    let h = '';
+    for (let r = 0; r < 6; r++) {
+      const f = fades[Math.min(r, fades.length-1)];
+      h += `<tr class="${f}"><td style="padding:10px 12px"><div class="skel" style="width:60%;height:11px;border-radius:4px"></div></td>`;
+      for (let c = 0; c < 8; c++) {
+        h += `<td style="padding:10px 12px;text-align:center"><div class="skel" style="width:28px;height:11px;border-radius:4px;display:inline-block"></div></td>`;
+      }
+      h += '</tr>';
+    }
+    stats.innerHTML = h;
+  }
+
+  const vac = document.getElementById('vac-summary-body');
+  if (vac && !vac.children.length) {
+    let h = '';
+    for (let r = 0; r < 5; r++) {
+      const f = fades[Math.min(r, fades.length-1)];
+      h += `<tr class="${f}"><td style="padding:10px 12px"><div class="skel" style="width:60%;height:11px;border-radius:4px"></div>`
+        + `</td><td style="padding:10px 12px;text-align:center"><div class="skel" style="width:28px;height:11px;border-radius:4px;display:inline-block"></div>`
+        + `</td><td style="padding:10px 12px;text-align:center"><div class="skel" style="width:28px;height:11px;border-radius:4px;display:inline-block"></div>`
+        + `</td><td style="padding:10px 12px;text-align:center"><div class="skel" style="width:28px;height:11px;border-radius:4px;display:inline-block"></div>`
+        + `</td></tr>`;
+    }
+    vac.innerHTML = h;
+  }
+
+  const hp = document.getElementById('hp-tbody');
+  if (hp && !hp.children.length) {
+    let h = '';
+    for (let r = 0; r < 6; r++) {
+      const f = fades[Math.min(r, fades.length-1)];
+      h += `<tr class="${f}"><td style="padding:8px 10px"><div class="skel" style="width:70%;height:11px;border-radius:4px"></div></td>`;
+      for (let c = 0; c < daysThisMonth; c++) {
+        h += `<td style="padding:6px 3px"><div class="skel" style="width:100%;height:18px;border-radius:4px"></div></td>`;
+      }
+      h += '</tr>';
+    }
+    hp.innerHTML = h;
+  }
+})();
+
+// ── Config ───────────────────────────────────────────────────────────────────
+const CHIP_COLORS = [
+  ['#f26419','rgba(242,100,25,.16)'],
+  ['#3b82f6','rgba(59,130,246,.16)'],
+  ['#22c55e','rgba(34,197,94,.16)'],
+  ['#f59e0b','rgba(245,158,11,.16)'],
+  ['#8b5cf6','rgba(139,92,246,.16)'],
+  ['#ec4899','rgba(236,72,153,.16)'],
+  ['#14b8a6','rgba(20,184,166,.16)'],
+  ['#ef4444','rgba(239,68,68,.16)'],
+  ['#06b6d4','rgba(6,182,212,.16)'],
+  ['#a855f7','rgba(168,85,247,.16)'],
+  ['#84cc16','rgba(132,204,22,.16)'],
+  ['#f97316','rgba(249,115,22,.16)'],
+  ['#10b981','rgba(16,185,129,.16)'],
+  ['#6366f1','rgba(99,102,241,.16)'],
+  ['#64748b','rgba(100,116,139,.16)'],
+];
+
+const ROWS = [
+  { id:'s1hd',   type:'section', label:'Shift#1', time:'09:00–21:00', color:'#f26419' },
+  { id:'s1tdpk', type:'members', label:'TDPK',     slot:'shift1_tdpk', cls:'row-lbl' },
+  { id:'s1wah',  type:'members', label:'W@H',      slot:'shift1_wah',  cls:'row-lbl' },
+  { id:'s1oc',   type:'oncall',  label:'On Call',  slot:'shift1_oncall',cls:'row-lbl oncall-lbl' },
+  { id:'s2hd',   type:'section', label:'Shift#2',  time:'21:00–09:00', color:'#8b5cf6' },
+  { id:'s2wah',  type:'members', label:'W@H',      slot:'shift2_wah',  cls:'row-lbl' },
+  { id:'s2oc',   type:'oncall',  label:'On Call',  slot:'shift2_oncall',cls:'row-lbl oncall-lbl' },
+  { id:'spacer', type:'spacer' }, // Spacer row
+  { id:'vac',    type:'members', label:'Vacation',       slot:'vacation',       cls:'row-lbl vac-lbl' },
+  { id:'sick',   type:'members', label:'Sick Leave',     slot:'sick',           cls:'row-lbl sick-lbl' },
+  { id:'biz',    type:'members', label:'Business Leave', slot:'business_leave', cls:'row-lbl biz-lbl' },
+  { id:'evt',    type:'events',  label:'Event',          slot:'events',         cls:'row-lbl event-lbl' },
+];
+
+const DAY_TH = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+const MONTH_TH = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const MONTH_FULL = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                    'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+let curYear  = new Date().getFullYear();
+let curMonth = new Date().getMonth() + 1;
+let scheduleData = {};
+let fullYearScheduleData = {}; // all months of curYear, for accurate quota calculation
+let _fullYearLoadedFor = null;
+let usersData    = [];
+let leaveData    = [];
+let holidayData  = [];
+let quotaData    = {};
+let userColorsData = {};
+let leaveType    = 'vacation';
+let userQuotaData = null;
+let myDaysOnly   = false;
+let statsExportRows = [];
+
+// ── Leave Calendar State ─────────────────────────────────────────────────────
+let selectedDates = [];
+let calViewYear   = new Date().getFullYear();
+let calViewMonth  = new Date().getMonth() + 1;
+
+// ── Color helpers ────────────────────────────────────────────────────────────
+const _colorMap = {};
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function userColor(uid) {
+  if (!_colorMap[uid]) {
+    const idx = Object.keys(_colorMap).length % CHIP_COLORS.length;
+    _colorMap[uid] = CHIP_COLORS[idx];
+  }
+  // Override with custom color if set
+  const custom = userColorsData[uid];
+  if (custom) return [custom, hexToRgba(custom, .16)];
+  return _colorMap[uid];
+}
+
+function chipHtml(uid, name) {
+  const [fc, bg] = userColor(uid);
+  return `<span class="m-chip" style="color:#1c1c1e;background:${bg};border-color:${fc}44">${esc(name)}</span>`;
+}
+
+// Get display name from ID (nickname → first word → full name)
+function userName(uid) {
+  const u = usersData.find(x => x.id === uid);
+  if (!u) return uid;
+  return u.nickname || u.name.split(' ')[0] || u.name;
+}
+
+// Build color map from users list order (consistent colors)
+function buildColorMap(users) {
+  users.forEach((u, i) => {
+    _colorMap[u.id] = CHIP_COLORS[i % CHIP_COLORS.length];
+  });
+}
+
+// ── Holidays from API (holidayData) ──────────────────────────────────────────
+function getThaiHolidays(year) {
+  const h = new Map();
+  const prefix = `${year}-`;
+  (holidayData || []).forEach(hol => {
+    if (hol.date && hol.date.startsWith(prefix)) h.set(hol.date, hol.name);
+  });
+  return h;
+}
+
+// ── Calendar render ──────────────────────────────────────────────────────────
+function renderCalendar() {
+  const today  = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const daysInMonth = new Date(curYear, curMonth, 0).getDate();
+
+  document.getElementById('month-title').textContent =
+    `${MONTH_FULL[curMonth]} ${curYear + 543}`;
+  document.getElementById('stats-month-label').textContent =
+    `${MONTH_TH[curMonth]} ${curYear + 543}`;
+
+  // ── Header row ──
+  const holidays = getThaiHolidays(curYear);
+  const head = document.getElementById('cal-head');
+  head.innerHTML = '';
+  const trHead = document.createElement('tr');
+
+  const thLabel = document.createElement('th');
+  thLabel.className = 'th-day th-day-label col-label';
+  thLabel.style.cssText = 'padding:10px 12px;font-size:9px;letter-spacing:.08em;color:rgba(255,255,255,.3)';
+  thLabel.textContent = 'SECTION / ROW';
+  trHead.appendChild(thLabel);
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date   = new Date(curYear, curMonth - 1, d);
+    const dow    = date.getDay();
+    const dateStr = `${curYear}-${String(curMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday   = dateStr === todayStr;
+    const isWeekend = dow === 0 || dow === 6;
+
+    const dateStr2 = `${curYear}-${String(curMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const holidayName = holidays.get(dateStr2);
+    const isHoliday = !!holidayName && !isToday;
+
+    const th = document.createElement('th');
+    th.className = 'th-day' + (isToday ? ' today' : '') + (isWeekend ? ' weekend' : '') + (isHoliday ? ' holiday' : '');
+    th.dataset.date = dateStr;
+    if (holidayName) th.dataset.holiday = holidayName;
+    th.innerHTML = `<span style="display:block;font-size:8px;opacity:.5">${DAY_TH[dow]}</span>
+      <span class="day-num">${d}</span>
+      ${isToday ? `<div class="th-day-underline" style="background:var(--orange)"></div>` : ''}`;
+    trHead.appendChild(th);
+  }
+  head.appendChild(trHead);
+
+  // ── Body rows ──
+  const body = document.getElementById('cal-body');
+  body.innerHTML = '';
+
+  let currentShiftCls = '';
+  ROWS.forEach(row => {
+    const tr = document.createElement('tr');
+
+    if (row.type === 'section') {
+      currentShiftCls = row.id.startsWith('s1') ? 'row-shift1' : row.id.startsWith('s2') ? 'row-shift2' : '';
+      tr.className = `row-section ${currentShiftCls}`;
+      const tdLabel = document.createElement('td');
+      tdLabel.className = 'col-label';
+      tdLabel.innerHTML = `<div class="section-label" style="color:${row.color}">
+        <div class="sl-dot" style="background:${row.color}"></div>
+        ${row.label} <span class="sl-time">${row.time}</span>
+      </div>`;
+      tr.appendChild(tdLabel);
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const td = document.createElement('td');
+        td.dataset.date = `${curYear}-${String(curMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        td.innerHTML = `<div class="section-fill">—</div>`;
+        tr.appendChild(td);
+      }
+      body.appendChild(tr);
+      return;
+    }
+
+    // Spacer row (visual separator)
+    if (row.type === 'spacer') {
+      tr.className = 'row-spacer';
+      const tdLabel = document.createElement('td');
+      tdLabel.className = 'col-label';
+      tr.appendChild(tdLabel);
+      for (let d = 1; d <= daysInMonth; d++) {
+        const td = document.createElement('td');
+        td.dataset.date = `${curYear}-${String(curMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        tr.appendChild(td);
+      }
+      body.appendChild(tr);
+      return;
+    }
+
+    // Data row
+    if (currentShiftCls) tr.className = currentShiftCls;
+    const tdLabel = document.createElement('td');
+    tdLabel.className = `col-label ${row.cls || 'row-lbl'}`;
+    tdLabel.textContent = row.label;
+    tr.appendChild(tdLabel);
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${curYear}-${String(curMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const date    = new Date(curYear, curMonth - 1, d);
+      const dow     = date.getDay();
+      const isToday   = dateStr === todayStr;
+      const isWeekend = dow === 0 || dow === 6;
+      const entry   = scheduleData[dateStr] || {};
+
+      const isHolidayCol = holidays.has(dateStr) && !isToday;
+      const td = document.createElement('td');
+      td.dataset.date = dateStr;
+      td.className = 'cal-cell' +
+        (isToday      ? ' today-col'   : '') +
+        (isWeekend    ? ' weekend-col' : '') +
+        (isHolidayCol ? ' holiday-col' : '') +
+        (row.type === 'oncall' ? ' oncall-cell' : '') +
+        (row.type === 'events' ? ' event-cell'  : '');
+
+      td.innerHTML = cellContent(row, entry);
+      tr.appendChild(td);
+    }
+
+    body.appendChild(tr);
+  });
+
+  applyMyDaysFilter();
+  renderStats();
+  renderVacationSummary();
+  renderSummary();
+}
+
+// ── "Only my days" filter ────────────────────────────────────────────────────
+function getMyDateSet() {
+  const myId = Auth.getUser()?.id;
+  const dates = new Set();
+  if (!myId) return dates;
+  const slots = ['shift1_tdpk','shift1_wah','shift2_wah','vacation','sick','business_leave'];
+  Object.entries(scheduleData).forEach(([date, entry]) => {
+    if (entry.shift1_oncall === myId) dates.add(date);
+    slots.forEach(slot => {
+      (entry[slot] || []).forEach(raw => {
+        const id = typeof raw === 'object' ? raw.user_id : raw;
+        if (id === myId) dates.add(date);
+      });
+    });
+  });
+  return dates;
+}
+function applyMyDaysFilter() {
+  const table = document.getElementById('cal-table');
+  const btn   = document.getElementById('my-days-btn');
+  const countEl = document.getElementById('my-days-count');
+  if (!table) return;
+  const mine = getMyDateSet();
+  // Tag cells with .my-day for current user's dates
+  table.querySelectorAll('[data-date]').forEach(el => {
+    el.classList.toggle('my-day', mine.has(el.dataset.date));
+  });
+  table.classList.toggle('only-mine', myDaysOnly);
+  if (btn) btn.classList.toggle('active', myDaysOnly);
+  if (countEl) countEl.textContent = myDaysOnly ? ` (${mine.size} วัน)` : '';
+}
+function toggleMyDays() {
+  myDaysOnly = !myDaysOnly;
+  applyMyDaysFilter();
+}
+
+// ── Export "my days" of current month to iCalendar (.ics) ────────────────────
+async function exportMyScheduleICS() {
+  const me = Auth.getUser();
+  const myId = me?.id;
+  if (!myId) { await SOMDialog.alert('กรุณาเข้าสู่ระบบก่อน', { title: 'แจ้งเตือน', icon: 'warning' }); return; }
+
+  const monthPrefix = `${curYear}-${String(curMonth).padStart(2,'0')}`;
+  const events = [];
+
+  // Slot → event metadata (title, start hour, end hour, +days for end, allDay, location)
+  const SHIFT_META = {
+    shift1_tdpk:   { title:'Shift#1 @TDPK',    sh:9,  eh:21, endDayOffset:0, location:'TDPK' },
+    shift1_wah:    { title:'Shift#1 W@H',      sh:9,  eh:21, endDayOffset:0, location:'W@H'  },
+    shift1_oncall: { title:'Shift#1 On Call',  sh:9,  eh:21, endDayOffset:0, location:'On Call' },
+    shift2_wah:    { title:'Shift#2 W@H (กลางคืน)', sh:21, eh:9, endDayOffset:1, location:'W@H' },
+    shift2_oncall: { title:'Shift#2 On Call (กลางคืน)', sh:21, eh:9, endDayOffset:1, location:'On Call' },
+  };
+  const LEAVE_META = {
+    vacation:       { title:'Vacation' },
+    sick:           { title:'Sick Leave' },
+    business_leave: { title:'Business Leave' },
+  };
+
+  // Helper: entry slot value → array of user IDs (handles scalar, array, {user_id} shape)
+  const idsOf = v => {
+    if (v == null || v === '') return [];
+    const arr = Array.isArray(v) ? v : [v];
+    return arr.map(x => (x && typeof x === 'object') ? x.user_id : x).filter(Boolean);
+  };
+
+  Object.entries(scheduleData).forEach(([date, entry]) => {
+    if (!date.startsWith(monthPrefix)) return;
+
+    // Shifts (timed events)
+    Object.entries(SHIFT_META).forEach(([slot, meta]) => {
+      if (idsOf(entry[slot]).includes(myId)) {
+        events.push({ date, slot, kind:'timed', meta });
+      }
+    });
+
+    // Leaves (all-day)
+    Object.entries(LEAVE_META).forEach(([slot, meta]) => {
+      if (idsOf(entry[slot]).includes(myId)) {
+        events.push({ date, slot, kind:'allday', meta });
+      }
+    });
+  });
+
+  if (!events.length) {
+    await SOMDialog.alert(`ไม่พบตารางเวรของคุณในเดือน ${MONTH_FULL[curMonth]} ${curYear}`, { title: 'แจ้งเตือน', icon: 'info' });
+    return;
+  }
+
+  // ── ICS builders ──────────────────────────────────────────────────────────
+  const pad = n => String(n).padStart(2,'0');
+  const escICS = s => String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
+  // Fold long lines at 74 chars per RFC 5545 (leading space on continuation)
+  const fold = line => {
+    if (line.length <= 74) return line;
+    const parts = [];
+    let i = 0;
+    parts.push(line.slice(0, 74));
+    i = 74;
+    while (i < line.length) { parts.push(' ' + line.slice(i, i + 73)); i += 73; }
+    return parts.join('\r\n');
+  };
+
+  const now = new Date();
+  const dtstamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth()+1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
+
+  const addDays = (yyyyMmDd, n) => {
+    const [y,m,d] = yyyyMmDd.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m-1, d));
+    dt.setUTCDate(dt.getUTCDate() + n);
+    return `${dt.getUTCFullYear()}${pad(dt.getUTCMonth()+1)}${pad(dt.getUTCDate())}`;
+  };
+  const ymd = yyyyMmDd => yyyyMmDd.replaceAll('-','');
+
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//SOM Portal//Schedule Export//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    `X-WR-CALNAME:SOM Schedule — ${MONTH_FULL[curMonth]} ${curYear}`,
+    'X-WR-TIMEZONE:Asia/Bangkok',
+    'BEGIN:VTIMEZONE',
+    'TZID:Asia/Bangkok',
+    'X-LIC-LOCATION:Asia/Bangkok',
+    'BEGIN:STANDARD',
+    'DTSTART:19700101T000000',
+    'TZOFFSETFROM:+0700',
+    'TZOFFSETTO:+0700',
+    'TZNAME:+07',
+    'END:STANDARD',
+    'END:VTIMEZONE',
+  ];
+
+  events.forEach(ev => {
+    const uid = `${ev.date}-${ev.slot}-${myId}@som-portal`;
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:${uid}`);
+    lines.push(`DTSTAMP:${dtstamp}`);
+    lines.push(fold(`SUMMARY:${escICS(ev.meta.title)}`));
+
+    if (ev.kind === 'allday') {
+      lines.push(`DTSTART;VALUE=DATE:${ymd(ev.date)}`);
+      lines.push(`DTEND;VALUE=DATE:${addDays(ev.date, 1)}`); // exclusive
+      lines.push('TRANSP:TRANSPARENT');
+    } else {
+      const startStr = `${ymd(ev.date)}T${pad(ev.meta.sh)}0000`;
+      const endDate  = ev.meta.endDayOffset ? addDays(ev.date, ev.meta.endDayOffset) : ymd(ev.date);
+      const endStr   = `${endDate}T${pad(ev.meta.eh)}0000`;
+      lines.push(`DTSTART;TZID=Asia/Bangkok:${startStr}`);
+      lines.push(`DTEND;TZID=Asia/Bangkok:${endStr}`);
+      lines.push('TRANSP:OPAQUE');
+      if (ev.meta.location) lines.push(fold(`LOCATION:${escICS(ev.meta.location)}`));
+    }
+
+    lines.push(fold(`DESCRIPTION:${escICS(`SOM Portal • slot=${ev.slot} • ${userName(myId)}`)}`));
+    lines.push('END:VEVENT');
+  });
+
+  lines.push('END:VCALENDAR');
+
+  const ics = lines.join('\r\n') + '\r\n';
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `som-schedule-${monthPrefix}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function cellContent(row, entry) {
+  if (row.type === 'members') {
+    const ids = entry[row.slot] || [];
+    if (!ids.length) return '';
+    return `<div class="m-chips">${ids.map(e => { const uid = typeof e === 'object' ? e.user_id : e; return chipHtml(uid, userName(uid)); }).join('')}</div>`;
+  }
+  if (row.type === 'oncall') {
+    const val = entry[row.slot] || '';
+    return val ? `<span class="oncall-val">${esc(userName(val))}</span>` : '';
+  }
+  if (row.type === 'events') {
+    const arr = entry[row.slot] || [];
+    return arr.map(e => `<div class="event-txt" data-full="${esc(e)}">${esc(e)}</div>`).join('');
+  }
+  return '';
+}
+
+// ── Stats ────────────────────────────────────────────────────────────────────
+function daysBetween(a, b) {
+  return Math.max(1, Math.round((new Date(b) - new Date(a)) / 86400000) + 1);
+}
+function leaveDayCount(l) {
+  if (l.dates && Array.isArray(l.dates)) return l.dates.length;
+  return daysBetween(l.start_date, l.end_date);
+}
+
+function renderStats() {
+  // Monthly counts: shifts from scheduleData + approved leave requests within this month
+  const counts = {};
+  const monthStr = `${curYear}-${String(curMonth).padStart(2,'0')}`;
+  const typeKey = { vacation: 'vac', sick: 'sick', business: 'biz' };
+  // Dates already counted from leave requests, per user+type — used to dedup schedule entries
+  const leaveCovered = {};
+  const ensure = id => { if (!counts[id]) counts[id] = { tdpk:0, wah1:0, wah2:0, vac:0, sick:0, biz:0 }; };
+
+  leaveData.forEach(l => {
+    if (l.status !== 'approved' || !(l.type in typeKey)) return;
+    let dates = [];
+    if (l.dates?.length) dates = l.dates.slice();
+    else if (l.start_date && l.end_date) {
+      for (let d = new Date(l.start_date); d <= new Date(l.end_date); d.setDate(d.getDate()+1))
+        dates.push(d.toISOString().slice(0,10));
+    }
+    const monthDates = dates.filter(d => d.startsWith(monthStr));
+    if (!monthDates.length) return;
+    ensure(l.user_id);
+    if (!leaveCovered[l.user_id]) leaveCovered[l.user_id] = { vacation:new Set(), sick:new Set(), business:new Set() };
+    monthDates.forEach(d => leaveCovered[l.user_id][l.type].add(d));
+    counts[l.user_id][typeKey[l.type]] += monthDates.length;
+  });
+
+  Object.entries(scheduleData).forEach(([date, entry]) => {
+    const slots = {
+      tdpk: { arr: entry.shift1_tdpk    || [], leaveType: null },
+      wah1: { arr: entry.shift1_wah     || [], leaveType: null },
+      wah2: { arr: entry.shift2_wah     || [], leaveType: null },
+      vac:  { arr: entry.vacation       || [], leaveType: 'vacation' },
+      sick: { arr: entry.sick           || [], leaveType: 'sick' },
+      biz:  { arr: entry.business_leave || [], leaveType: 'business' },
+    };
+    Object.entries(slots).forEach(([key, { arr, leaveType }]) => {
+      arr.forEach(raw => {
+        const id = typeof raw === 'object' ? raw.user_id : raw;
+        ensure(id);
+        if (leaveType && leaveCovered[id]?.[leaveType]?.has(date)) return;
+        counts[id][key]++;
+      });
+    });
+  });
+
+  const tbody = document.getElementById('stats-body');
+  if (!usersData.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">ยังไม่มีข้อมูลตารางเวร</td></tr>';
+    return;
+  }
+
+  // Show ALL users (init zero if no schedule entry yet)
+  usersData.forEach(u => {
+    if (!counts[u.id]) counts[u.id] = { tdpk:0, wah1:0, wah2:0, vac:0, sick:0, biz:0 };
+  });
+
+  // Sort: most shifts first, then by name
+  const sorted = [...usersData].sort((a, b) => {
+    const ca = counts[a.id], cb = counts[b.id];
+    const ta = ca.tdpk + ca.wah1 + ca.wah2;
+    const tb = cb.tdpk + cb.wah1 + cb.wah2;
+    return tb - ta || a.name.localeCompare(b.name, 'th');
+  });
+
+  statsExportRows = [];
+  tbody.innerHTML = sorted.map(u => {
+    const c     = counts[u.id];
+    const total = c.tdpk + c.wah1 + c.wah2;
+    const [fc]  = userColor(u.id);
+
+    // Remaining vacation for the year — mirrors renderVacationSummary / getHpRem
+    const quota = parseFloat(quotaData[u.id] ?? 0);
+    const yearStr = String(curYear);
+    const covStat = new Set();
+    const usedVac = leaveData
+      .filter(l => l.user_id === u.id && l.status === 'approved' && l.type === 'vacation')
+      .reduce((sum, l) => {
+        let yearDates = [];
+        if (l.dates?.length) {
+          yearDates = l.dates.filter(d => d.startsWith(yearStr));
+        } else if (l.start_date && l.end_date) {
+          for (let d = new Date(l.start_date); d <= new Date(l.end_date); d.setDate(d.getDate()+1)) {
+            const ds = d.toISOString().slice(0,10);
+            if (ds.startsWith(yearStr)) yearDates.push(ds);
+          }
+        }
+        yearDates.forEach(d => covStat.add(d));
+        if (!yearDates.length) return sum;
+        return sum + (l.duration === 'half' ? yearDates.length * 0.5 : yearDates.length);
+      }, 0);
+    const extraStat = Object.entries(fullYearScheduleData).reduce((sum, [date, day]) => {
+      if (!date.startsWith(yearStr) || covStat.has(date)) return sum;
+      return sum + (day.vacation || []).reduce((s, v) =>
+        s + (typeof v === 'object' && v.user_id === u.id ? (v.days||1) : v === u.id ? 1 : 0), 0);
+    }, 0);
+    const remaining  = quota - usedVac - extraStat;
+    const remDisplay = remaining % 1 === 0 ? remaining : remaining.toFixed(1);
+    const remColor   = remaining < 0 ? '#ef4444' : remaining <= 3 ? '#f97316' : '#22c55e';
+    const remBg      = remaining < 0 ? 'rgba(239,68,68,.12)' : remaining <= 3 ? 'rgba(249,115,22,.12)' : 'rgba(34,197,94,.12)';
+
+    statsExportRows.push({
+      name: u.name || '',
+      nickname: u.nickname || '',
+      tdpk: c.tdpk, wah1: c.wah1, wah2: c.wah2, total,
+      vac: c.vac, sick: c.sick, biz: c.biz,
+      remaining: quota > 0 ? remaining : null,
+      quota: quota > 0 ? quota : null,
+    });
+
+    return `<tr>
+      <td style="padding:12px 16px">
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="width:8px;height:8px;border-radius:50%;background:${fc};flex-shrink:0"></div>
+          <span style="font-weight:700;color:var(--text)">${esc(u.nickname || u.name.split(' ')[0] || u.name)}</span>
+          ${u.nickname ? `<span style="font-size:10px;color:var(--text-muted);font-weight:400">${esc(u.name)}</span>` : ''}
+        </div>
+      </td>
+      <td class="num"><span class="stat-badge" style="background:rgba(242,100,25,.12);color:var(--orange)">${c.tdpk}</span></td>
+      <td class="num"><span class="stat-badge" style="background:rgba(59,130,246,.12);color:#3b82f6">${c.wah1}</span></td>
+      <td class="num"><span class="stat-badge" style="background:rgba(139,92,246,.12);color:#8b5cf6">${c.wah2}</span></td>
+      <td class="num"><span style="font-weight:800;color:var(--text);font-size:12px">${total}</span></td>
+      <td class="num"><span class="stat-badge" style="background:rgba(34,197,94,.12);color:#22c55e">${c.vac}</span></td>
+      <td class="num"><span class="stat-badge" style="background:rgba(239,68,68,.12);color:#ef4444">${c.sick}</span></td>
+      <td class="num"><span class="stat-badge" style="background:rgba(124,58,237,.12);color:#7c3aed">${c.biz}</span></td>
+      <td class="num">
+        ${quota > 0
+          ? `<span class="stat-badge" style="background:${remBg};color:${remColor}">${remDisplay}/${quota}</span>`
+          : `<span style="font-size:10px;color:var(--text-muted)">—</span>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function exportStatsCSV() {
+  if (!statsExportRows.length) {
+    (window.toast || alert)('ยังไม่มีข้อมูลสถิติให้ export');
+    return;
+  }
+  const monthLabel = `${MONTH_FULL[curMonth]} ${curYear + 543}`;
+  const headers = [
+    'ชื่อ', 'ชื่อเล่น',
+    'Shift#1 TDPK', 'Shift#1 W@H', 'Shift#2 W@H', 'รวมเวร',
+    'วันลา/หยุด (เดือนนี้)', 'ลาป่วย (เดือนนี้)', 'ลากิจ (เดือนนี้)',
+    'วันลาพักร้อนคงเหลือ (ทั้งปี)', 'โควต้าทั้งปี'
+  ];
+  const csvEsc = v => {
+    if (v === null || v === undefined) return '';
+    const s = String(v);
+    return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const fmtNum = v => {
+    if (v === null || v === undefined) return '';
+    return v % 1 === 0 ? String(v) : v.toFixed(1);
+  };
+
+  const dataRows = statsExportRows.map(r => [
+    r.name, r.nickname,
+    r.tdpk, r.wah1, r.wah2, r.total,
+    r.vac, r.sick, r.biz,
+    fmtNum(r.remaining), fmtNum(r.quota),
+  ].map(csvEsc).join(','));
+
+  const lines = [
+    csvEsc(`สถิติรายบุคคล — ${monthLabel}`),
+    '',
+    headers.map(csvEsc).join(','),
+    ...dataRows,
+  ];
+  const csv = '﻿' + lines.join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `สถิติรายบุคคล-${MONTH_FULL[curMonth]}-${curYear + 543}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function renderSummary() {
+  const daysInMonth = new Date(curYear, curMonth, 0).getDate();
+  const today = new Date();
+  let onLeaveToday = 0;
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const te = scheduleData[todayStr] || {};
+  onLeaveToday = (te.vacation||[]).length + (te.sick||[]).length + (te.business_leave||[]).length;
+
+  document.getElementById('sched-summary').innerHTML = `
+    <div class="sum-chip">
+      <span class="sum-chip-icon"><i data-icon="calendar"></i></span>
+      <span><strong>${daysInMonth}</strong> วันในเดือน</span>
+    </div>
+    ${onLeaveToday > 0 ? `<div class="sum-chip" style="border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.04)">
+      <span class="sum-chip-icon"><i data-icon="umbrella-beach"></i></span>
+      <span><strong>${onLeaveToday}</strong> คนลาวันนี้</span>
+    </div>` : ''}
+    <div class="sum-chip">
+      <span class="sum-chip-icon"><i data-icon="clock"></i></span> Shift#1: <strong>09:00–21:00</strong>
+    </div>
+    <div class="sum-chip">
+      <span class="sum-chip-icon"><i data-icon="moon"></i></span> Shift#2: <strong>21:00–09:00</strong>
+    </div>
+  `;
+}
+
+// ── Month navigation ─────────────────────────────────────────────────────────
+function changeMonth(dir) {
+  const prevYear = curYear;
+  curMonth += dir;
+  if (curMonth > 12) { curMonth = 1; curYear++; }
+  if (curMonth < 1)  { curMonth = 12; curYear--; }
+  loadSchedule();
+  if (curYear !== prevYear) loadFullYearSchedule();
+}
+function goToday() {
+  const prevYear = curYear;
+  curYear  = new Date().getFullYear();
+  curMonth = new Date().getMonth() + 1;
+  loadSchedule();
+  if (curYear !== prevYear) loadFullYearSchedule();
+}
+
+// ── Data loading ─────────────────────────────────────────────────────────────
+async function loadSchedule() {
+  const res = await API.schedule.get(curYear, curMonth);
+  scheduleData = res?.ok ? (res.data.data || {}) : {};
+  // keep fullYearScheduleData in sync for the current month
+  Object.assign(fullYearScheduleData, scheduleData);
+  renderCalendar();
+}
+
+async function loadFullYearSchedule() {
+  if (_fullYearLoadedFor === curYear) return;
+  _fullYearLoadedFor = curYear;
+  fullYearScheduleData = {};
+  const results = await Promise.all(
+    Array.from({length: 12}, (_, i) => API.schedule.get(curYear, i + 1))
+  );
+  results.forEach(r => { if (r?.ok) Object.assign(fullYearScheduleData, r.data.data || {}); });
+  renderStats();
+  renderVacationSummary();
+  try { HP.rerender(); } catch {}
+}
+
+async function loadUsers() {
+  const res = await API.users.list();
+  usersData = (res?.ok ? (res.data.data || []) : []).filter(u => u.schedule_include !== false);
+  buildColorMap(usersData);
+}
+
+async function loadQuotas() {
+  const res = await API.vacation.getQuotas();
+  quotaData = res?.ok ? (res.data.data || {}) : {};
+}
+
+async function loadLeaves() {
+  const res = await API.leave.list();
+  leaveData = res?.ok ? (res.data.data || []) : [];
+}
+
+async function loadUserColors() {
+  const res = await API.userColors.get();
+  userColorsData = res?.ok ? (res.data.data || {}) : {};
+}
+
+async function loadHolidays() {
+  const res = await API.holidays.list();
+  holidayData = res?.ok ? (res.data.data || []) : [];
+}
+
+async function loadAll() {
+  await Promise.all([loadUsers(), loadUserColors(), loadHolidays()]);
+  await Promise.all([loadSchedule(), loadQuotas(), loadLeaves()]);
+  renderStats();
+  renderVacationSummary();
+  // Load full year in background for accurate yearly quota
+  loadFullYearSchedule();
+}
+
+// ── Leave Modal ──────────────────────────────────────────────────────────────
+
+async function loadUserQuota() {
+  const user = Auth.getUser();
+  if (!user?.id) {
+    console.log('No user ID found');
+    return;
+  }
+  
+  console.log('Loading quota for user:', user.id);
+  const res = await API.vacation.getUserQuota(user.id);
+  console.log('Quota response:', res);
+  
+  if (res?.ok && res.data?.data) {
+    userQuotaData = res.data.data;
+    console.log('User quota data:', userQuotaData);
+  } else {
+    console.error('Failed to load quota:', res);
+  }
+}
+
+function calculateLeaveDays() {
+  if (selectedDates.length === 0) return 0;
+  const duration = document.querySelector('input[name="leave-duration"]:checked')?.value || 'full';
+  return duration === 'half' ? selectedDates.length * 0.5 : selectedDates.length;
+}
+
+function updateQuotaDisplay() {
+  console.log('updateQuotaDisplay called. leaveType:', leaveType, 'userQuotaData:', userQuotaData);
+  
+  const quotaDisplay = document.getElementById('quota-display');
+  if (!quotaDisplay) {
+    console.error('quota-display element not found!');
+    return;
+  }
+  
+  // Only show for vacation type
+  if (leaveType !== 'vacation') {
+    quotaDisplay.classList.add('hidden');
+    document.getElementById('quota-warning').classList.remove('show');
+    // Re-enable submit button for non-vacation leave types
+    const submitBtn = document.getElementById('leave-submit-btn');
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+    submitBtn.style.cursor = 'pointer';
+    return;
+  }
+  
+  if (!userQuotaData) {
+    console.log('No quota data yet, hiding display');
+    quotaDisplay.classList.add('hidden');
+    return;
+  }
+  
+  console.log('Showing quota display');
+  quotaDisplay.classList.remove('hidden');
+  
+  const totalQuota = userQuotaData.total_quota || 0;
+  const used = userQuotaData.used || 0;
+  const remaining = userQuotaData.remaining || 0;
+  const usingNow = calculateLeaveDays();
+  const afterLeave = remaining - usingNow;
+  
+  console.log('Quota values:', { totalQuota, used, remaining, usingNow, afterLeave });
+  
+  // Update values
+  document.getElementById('quota-remaining').textContent = `${remaining} วัน`;
+  document.getElementById('quota-using').textContent = usingNow;
+  document.getElementById('quota-after').textContent = afterLeave >= 0 ? afterLeave.toFixed(1) : '0';
+  document.getElementById('quota-total').textContent = totalQuota;
+  
+  // Update progress bar
+  const percentage = totalQuota > 0 ? (remaining / totalQuota) * 100 : 0;
+  const progressBar = document.getElementById('quota-progress');
+  progressBar.style.width = `${Math.max(0, percentage)}%`;
+  
+  // Update color based on remaining percentage
+  progressBar.className = 'quota-progress-fill';
+  if (percentage > 50) {
+    progressBar.classList.add('green');
+  } else if (percentage >= 20) {
+    progressBar.classList.add('yellow');
+  } else if (percentage > 0) {
+    progressBar.classList.add('red');
+  } else {
+    progressBar.classList.add('gray');
+  }
+  
+  // Show warning if insufficient quota
+  const warningEl = document.getElementById('quota-warning');
+  const submitBtn = document.getElementById('leave-submit-btn');
+  
+  if (remaining === 0) {
+    console.log('No quota remaining');
+    warningEl.classList.add('show');
+    document.getElementById('quota-warning-text').textContent = 'คุณไม่มีวันลาพักร้อนคงเหลือ';
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.5';
+    submitBtn.style.cursor = 'not-allowed';
+  } else if (afterLeave < 0) {
+    console.log('Insufficient quota');
+    warningEl.classList.add('show');
+    document.getElementById('quota-warning-text').textContent = 
+      `วันลาพักร้อนคงเหลือไม่เพียงพอ (ต้องการ ${usingNow} วัน แต่เหลือเพียง ${remaining} วัน)`;
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.5';
+    submitBtn.style.cursor = 'not-allowed';
+  } else {
+    console.log('Quota sufficient');
+    warningEl.classList.remove('show');
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+    submitBtn.style.cursor = 'pointer';
+  }
+}
+
+async function openLeaveModal() {
+  document.getElementById('leave-modal').classList.add('open');
+
+  // Reset to "ขอลา" tab
+  switchLeaveTab('request');
+
+  // Init calendar to current month
+  calViewYear  = new Date().getFullYear();
+  calViewMonth = new Date().getMonth() + 1;
+  selectedDates = [];
+  renderLeaveCalendar();
+  updateDurationOptions();
+
+  loadMyLeaves();
+  await loadUserQuota();
+  updateQuotaDisplay();
+}
+function closeLeaveModal() { document.getElementById('leave-modal').classList.remove('open'); }
+document.getElementById('leave-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('leave-modal')) closeLeaveModal();
+});
+
+// ── Tab switcher ─────────────────────────────────────────────────────────────
+function switchLeaveTab(tab) {
+  document.getElementById('lm-pane-request').style.display = tab === 'request' ? '' : 'none';
+  document.getElementById('lm-pane-history').style.display = tab === 'history'  ? '' : 'none';
+  document.getElementById('tab-request').classList.toggle('active', tab === 'request');
+  document.getElementById('tab-history').classList.toggle('active', tab === 'history');
+}
+
+// ── Calendar render ──────────────────────────────────────────────────────────
+function renderLeaveCalendar() {
+  const el = document.getElementById('leave-calendar');
+  if (!el) return;
+
+  const daysInMonth  = new Date(calViewYear, calViewMonth, 0).getDate();
+  const firstDow     = new Date(calViewYear, calViewMonth - 1, 1).getDay(); // 0=Sun
+  const startOffset  = (firstDow + 6) % 7; // Mon-first
+  const today        = new Date().toISOString().slice(0, 10);
+  const pad          = n => String(n).padStart(2, '0');
+
+  let grid = '';
+  ['จ','อ','พ','พฤ','ศ','ส','อา'].forEach(d => { grid += `<div class="lc-dow">${d}</div>`; });
+
+  for (let i = 0; i < startOffset; i++) grid += '<div class="lc-cell lc-empty"></div>';
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds  = `${calViewYear}-${pad(calViewMonth)}-${pad(d)}`;
+    const sel = selectedDates.includes(ds);
+    const cls = ['lc-cell'];
+    if (sel)      cls.push('lc-selected');
+    if (ds === today) cls.push('lc-today');
+    grid += `<div class="${cls.join(' ')}" onclick="toggleDate('${ds}')">${d}</div>`;
+  }
+
+  // Selected pills
+  let pillsHtml = '';
+  if (selectedDates.length > 0) {
+    const pills = [...selectedDates].sort().map(ds => {
+      const [y, m, day] = ds.split('-');
+      return `<span class="lc-pill">${parseInt(day)} ${MONTH_TH[parseInt(m)]}<button class="lc-pill-x" onclick="removeDate('${ds}')"><i data-icon="x"></i></button></span>`;
+    }).join('');
+    pillsHtml = `
+      <div class="lc-summary">
+        <span>เลือกแล้ว ${selectedDates.length} วัน</span>
+        <button class="lc-summary-clear" onclick="clearDates()">ล้างทั้งหมด</button>
+      </div>
+      <div class="lc-selected-pills">${pills}</div>`;
+  }
+
+  el.innerHTML = `
+    <div class="lc-header">
+      <span class="lc-month-label">${MONTH_FULL[calViewMonth]} ${calViewYear + 543}</span>
+      <div class="lc-nav">
+        <button class="lc-nav-btn" onclick="calNav(-1)">‹</button>
+        <button class="lc-nav-btn" onclick="calNav(1)">›</button>
+      </div>
+    </div>
+    <div class="lc-grid">${grid}</div>
+    ${pillsHtml}`;
+}
+
+function calNav(dir) {
+  calViewMonth += dir;
+  if (calViewMonth > 12) { calViewMonth = 1; calViewYear++; }
+  if (calViewMonth < 1)  { calViewMonth = 12; calViewYear--; }
+  renderLeaveCalendar();
+}
+
+function toggleDate(ds) {
+  const idx = selectedDates.indexOf(ds);
+  if (idx >= 0) selectedDates.splice(idx, 1);
+  else          selectedDates.push(ds);
+  selectedDates.sort();
+  renderLeaveCalendar();
+  updateDurationOptions();
+  updateQuotaDisplay();
+}
+
+function removeDate(ds) {
+  selectedDates = selectedDates.filter(d => d !== ds);
+  renderLeaveCalendar();
+  updateDurationOptions();
+  updateQuotaDisplay();
+}
+
+function clearDates() {
+  selectedDates = [];
+  renderLeaveCalendar();
+  updateDurationOptions();
+  updateQuotaDisplay();
+}
+
+function updateDurationOptions() {
+  const count      = selectedDates.length;
+  const halfLabel  = document.getElementById('half-day-label');
+  const halfRadio  = document.getElementById('half-radio');
+  const fullRadio  = document.querySelector('input[name="leave-duration"][value="full"]');
+
+  if (count > 1) {
+    // Multi-day: hide half option, force full
+    if (halfLabel) halfLabel.style.display = 'none';
+    if (halfRadio && halfRadio.checked) {
+      halfRadio.checked = false;
+      if (fullRadio) fullRadio.checked = true;
+      document.getElementById('half-day-opts').style.display = 'none';
+    }
+  } else {
+    if (halfLabel) halfLabel.style.display = '';
+  }
+}
+
+function setLeaveType(type) {
+  leaveType = type;
+  document.getElementById('ltype-vacation').classList.toggle('active', type === 'vacation');
+  document.getElementById('ltype-sick').classList.toggle('active', type === 'sick');
+  document.getElementById('ltype-business').classList.toggle('active', type === 'business');
+  updateQuotaDisplay();
+}
+
+function updateLeaveDisplay() {
+  const isDuration = document.querySelector('input[name="leave-duration"]:checked').value;
+  const halfDayOpts = document.getElementById('half-day-opts');
+  halfDayOpts.style.display = isDuration === 'half' ? 'block' : 'none';
+  updateQuotaDisplay();
+}
+
+async function submitLeave() {
+  if (selectedDates.length === 0) { Toast.error('กรุณาเลือกวันที่อย่างน้อย 1 วัน'); return; }
+
+  const sorted   = [...selectedDates].sort();
+  const reason   = document.getElementById('f-reason').value.trim();
+  const duration = document.querySelector('input[name="leave-duration"]:checked').value;
+  const period   = duration === 'half' ? document.querySelector('input[name="half-period"]:checked').value : null;
+
+  const btn = document.getElementById('leave-submit-btn');
+  btn.disabled = true; btn.textContent = 'กำลังส่ง...';
+
+  const res = await API.leave.submit({
+    type:       leaveType,
+    dates:      sorted,
+    start_date: sorted[0],
+    end_date:   sorted[sorted.length - 1],
+    reason,
+    duration,
+    period
+  });
+  btn.disabled = false; btn.innerHTML = '<i data-icon="upload"></i> ส่งคำขอ';
+
+  if (!res?.ok) { Toast.error(res?.data?.message || 'ส่งไม่ได้'); return; }
+  trackLeaveRequest(leaveType);
+  Toast.success('ส่งคำขอแล้ว รอ Admin อนุมัติ <i data-icon="check"></i>');
+  selectedDates = [];
+  document.getElementById('f-reason').value = '';
+  renderLeaveCalendar();
+  updateDurationOptions();
+  loadMyLeaves();
+}
+
+function fmtLeaveDates(r) {
+  if (r.dates && r.dates.length > 0) {
+    const sorted = [...r.dates].sort();
+    if (sorted.length === 1) return fmtDate(sorted[0]);
+    // Check consecutive
+    const isConsec = sorted.every((d, i) => {
+      if (i === 0) return true;
+      return (new Date(d) - new Date(sorted[i-1])) === 86400000;
+    });
+    if (isConsec) return `${fmtDate(sorted[0])} — ${fmtDate(sorted[sorted.length-1])}`;
+    // Non-consecutive: show as pills summary
+    return sorted.map(fmtDate).join(' · ');
+  }
+  if (!r.start_date) return '—';
+  return r.start_date === r.end_date ? fmtDate(r.start_date) : `${fmtDate(r.start_date)} — ${fmtDate(r.end_date)}`;
+}
+
+async function loadMyLeaves() {
+  const res = await API.leave.list();
+  const allItems = res?.ok ? (res.data.data || []) : [];
+  const currentUser = Auth.getUser();
+  const items = allItems.filter(r => r.user_id === currentUser.id);
+
+  // Update badge on history tab
+  const pending = items.filter(r => r.status === 'pending').length;
+  const badge = document.getElementById('leave-history-badge');
+  if (badge) {
+    badge.style.display = pending > 0 ? '' : 'none';
+    badge.textContent   = pending;
+  }
+
+  const el = document.getElementById('my-leaves');
+  if (!items.length) {
+    el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:11px">ยังไม่มีคำขอลา</div>';
+    return;
+  }
+  el.innerHTML = items.map(r => {
+    const iconMap  = { vacation:'<i data-icon="umbrella-beach"></i>', sick:'<i data-icon="thermometer"></i>', business:'<i data-icon="briefcase"></i>' };
+    const labelMap = { vacation:'Vacation', sick:'Sick Leave', business:'Business Leave' };
+    const icon      = iconMap[r.type]  || '<i data-icon="clipboard"></i>';
+    const typeLabel = labelMap[r.type] || r.type;
+    const dayCount  = r.dates?.length || Math.max(1, Math.round((new Date(r.end_date) - new Date(r.start_date)) / 86400000) + 1);
+    const days      = r.duration === 'half' ? dayCount * 0.5 : dayCount;
+    const durBadge  = r.duration === 'half'
+      ? `<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(245,158,11,.12);color:#f59e0b;font-weight:700;margin-left:4px">${r.period === 'afternoon' ? 'บ่าย' : 'เช้า'}</span>`
+      : '';
+    const statusCls = { pending:'ls-pending', approved:'ls-approved', rejected:'ls-rejected' }[r.status] || '';
+    const statusTh  = { pending:'รอพิจารณา', approved:'อนุมัติแล้ว', rejected:'ไม่อนุมัติ' }[r.status] || r.status;
+    const isNonConsec = r.dates?.length > 1 && (() => {
+      const s = [...r.dates].sort();
+      return !s.every((d,i) => i===0 || (new Date(d)-new Date(s[i-1]))===86400000);
+    })();
+    return `<div class="leave-item" style="margin-bottom:8px">
+      <div class="leave-item-icon">${icon}</div>
+      <div class="leave-item-body">
+        <div class="leave-item-title">${typeLabel} · ${days} วัน${durBadge}${isNonConsec ? ' <span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(99,102,241,.1);color:#6366f1;font-weight:700">สลับวัน</span>' : ''}</div>
+        <div class="leave-item-dates">${fmtLeaveDates(r)}</div>
+        ${r.reason ? `<div class="leave-item-reason">"${esc(r.reason)}"</div>` : ''}
+        ${r.review_note ? `<div class="leave-item-reason" style="color:#ef4444">หมายเหตุ: ${esc(r.review_note)}</div>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <span class="leave-status ${statusCls}">${statusTh}</span>
+        ${r.status === 'pending' ? `<button class="btn btn-ghost btn-sm" onclick="cancelLeave('${r.id}')" style="font-size:10px;color:#ef4444;border-color:rgba(239,68,68,.2)">ยกเลิก</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function cancelLeave(id) {
+  if (!await SOMDialog.confirm('ยกเลิกคำขอนี้?', { title: 'ยืนยัน', okLabel: 'ยกเลิกคำขอ', icon: 'question', okColor: 'danger' })) return;
+  const res = await API.leave.cancel(id);
+  if (!res?.ok) { Toast.error('ยกเลิกไม่ได้'); return; }
+  Toast.success('ยกเลิกแล้ว');
+  loadMyLeaves();
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y, m, day] = d.split('-');
+  return `${parseInt(day)} ${MONTH_TH[parseInt(m)]} ${parseInt(y)+543}`;
+}
+
+// ── Export Calendar as PNG ───────────────────────────────────────────────────
+async function exportCalendarImage() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังสร้าง...';
+
+  try {
+    if (!window.html2canvas) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      document.head.appendChild(script);
+      await new Promise((resolve, reject) => { script.onload = resolve; script.onerror = reject; });
+    }
+
+    const calTable = document.getElementById('cal-table');
+
+    // ── Neutralize sticky positioning (root cause of skew in html2canvas) ──
+    // sticky elements render at their "stuck" viewport position instead of
+    // their natural table position, causing columns to appear shifted.
+    const stickyEls = [];
+    calTable.querySelectorAll('th, td').forEach(el => {
+      const pos = window.getComputedStyle(el).position;
+      if (pos === 'sticky') {
+        stickyEls.push({ el, saved: el.style.position });
+        el.style.position = 'relative';
+      }
+    });
+
+    // ── Unlock ancestor overflow clipping ─────────────────────────────────
+    const ancestorSave = [];
+    let node = calTable.parentElement;
+    while (node && node !== document.body) {
+      const cs = window.getComputedStyle(node);
+      if (cs.overflowX !== 'visible') {
+        ancestorSave.push({ el: node, ox: node.style.overflowX, sl: node.scrollLeft });
+        node.style.overflowX = 'visible';
+        node.scrollLeft = 0;
+      }
+      node = node.parentElement;
+    }
+
+    // ── Measure after sticky removal so width is correct ──────────────────
+    const fullW = calTable.scrollWidth;
+    const fullH = calTable.scrollHeight;
+    const savedTableWidth = calTable.style.width;
+    calTable.style.width = fullW + 'px';
+
+    const savedWin = { x: window.scrollX, y: window.scrollY };
+    window.scrollTo(0, 0);
+
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    const canvas = await html2canvas(calTable, {
+      scale:           2,
+      backgroundColor: '#ffffff',
+      logging:         false,
+      useCORS:         true,
+      allowTaint:      true,
+      scrollX:         0,
+      scrollY:         0,
+      width:           fullW,
+      height:          fullH,
+    });
+
+    // ── Restore everything ────────────────────────────────────────────────
+    stickyEls.forEach(({ el, saved }) => { el.style.position = saved; });
+    calTable.style.width = savedTableWidth;
+    ancestorSave.forEach(({ el, ox, sl }) => { el.style.overflowX = ox; el.scrollLeft = sl; });
+    window.scrollTo(savedWin.x, savedWin.y);
+
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a   = document.createElement('a');
+      a.href     = url;
+      a.download = `schedule-${MONTH_FULL[curMonth]}-${curYear + 543}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      Toast.success('บันทึกรูปภาพเรียบร้อย <i data-icon="check"></i>');
+    }, 'image/png', 1.0);
+
+  } catch (err) {
+    console.error('Export error:', err);
+    Toast.error('ไม่สามารถสร้างรูปภาพได้');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i data-icon="camera"></i> Export PNG';
+  }
+}
+
+loadAll();
+
+// ── Event tooltip ────────────────────────────────────────────────────────────
+(function () {
+  const tip = document.createElement('div');
+  tip.id = 'ev-tooltip';
+  document.body.appendChild(tip);
+
+  let hideTimer;
+
+  function showTip(el, e) {
+    clearTimeout(hideTimer);
+    tip.textContent = el.dataset.full || el.dataset.holiday || el.textContent;
+    tip.classList.add('show');
+    moveTip(e);
+  }
+
+  function moveTip(e) {
+    const pad = 12;
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let x = e.clientX + pad, y = e.clientY + pad;
+    if (x + tw > window.innerWidth  - pad) x = e.clientX - tw - pad;
+    if (y + th > window.innerHeight - pad) y = e.clientY - th - pad;
+    tip.style.left = x + 'px';
+    tip.style.top  = y + 'px';
+  }
+
+  function hideTip() {
+    hideTimer = setTimeout(() => tip.classList.remove('show'), 80);
+  }
+
+  const calTbl = document.getElementById('cal-table');
+  if (calTbl) {
+    calTbl.addEventListener('mouseover', e => {
+      const ev = e.target.closest('.event-txt');
+      if (ev) { showTip(ev, e); return; }
+      const hd = e.target.closest('.th-day.holiday');
+      if (hd) { showTip(hd, e); return; }
+    });
+    calTbl.addEventListener('mousemove', e => {
+      if (tip.classList.contains('show')) moveTip(e);
+    });
+    calTbl.addEventListener('mouseout', e => {
+      if (e.target.closest('.event-txt') || e.target.closest('.th-day.holiday')) hideTip();
+    });
+  }
+})();
+
+/* ══════════════════════════════════════════════════════
+   Vacation Summary (annual)
+══════════════════════════════════════════════════════ */
+function renderVacationSummary() {
+  document.getElementById('vac-summary-year').textContent = `ปี ${curYear + 543}`;
+  const tbody = document.getElementById('vac-summary-body');
+  if (!usersData.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">ยังไม่มีข้อมูลสมาชิก</td></tr>'; return; }
+
+  tbody.innerHTML = usersData.map(u => {
+    const quota = parseFloat(quotaData[u.id]) || 0;
+    const yearStr = String(curYear);
+    // Count from approved leave requests — only dates within curYear
+    const coveredDates = new Set();
+    const usedFromLeaves = leaveData
+      .filter(l => l.user_id === u.id && l.status === 'approved' && l.type === 'vacation')
+      .reduce((sum, l) => {
+        let yearDates = [];
+        if (l.dates?.length) {
+          yearDates = l.dates.filter(d => d.startsWith(yearStr));
+        } else if (l.start_date && l.end_date) {
+          for (let d = new Date(l.start_date); d <= new Date(l.end_date); d.setDate(d.getDate()+1)) {
+            const ds = d.toISOString().slice(0,10);
+            if (ds.startsWith(yearStr)) yearDates.push(ds);
+          }
+        }
+        yearDates.forEach(d => coveredDates.add(d));
+        if (!yearDates.length) return sum;
+        return sum + (l.duration === 'half' ? yearDates.length * 0.5 : yearDates.length);
+      }, 0);
+    // Add direct schedule entries (full year) not covered by leave requests
+    const extraFromSchedule = Object.entries(fullYearScheduleData).reduce((sum, [date, day]) => {
+      if (!date.startsWith(yearStr) || coveredDates.has(date)) return sum;
+      return sum + (day.vacation || []).reduce((s, v) =>
+        s + (typeof v === 'object' && v.user_id === u.id ? (v.days||1) : v === u.id ? 1 : 0), 0);
+    }, 0);
+    const used      = usedFromLeaves + extraFromSchedule;
+    const remaining = quota - used;
+    const [fc] = userColor(u.id);
+    const usedDisp   = used % 1 === 0 ? used : used.toFixed(1);
+    const remDisp    = remaining % 1 === 0 ? remaining : remaining.toFixed(1);
+    const quotaDisp  = quota % 1 === 0 ? quota : quota.toFixed(1);
+    const remColor   = remaining < 0 ? '#ef4444' : remaining <= 3 ? '#f97316' : '#22c55e';
+    return `<tr>
+      <td style="display:flex;align-items:center;gap:9px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${fc};flex-shrink:0"></div>
+        <span style="font-weight:700;color:var(--text)">${esc(u.nickname||u.name.split(' ')[0]||u.name)}</span>
+        ${u.nickname?`<span style="font-size:10px;color:var(--text-muted);font-weight:400">${esc(u.name)}</span>`:''}
+      </td>
+      <td class="c">${quota>0?`<span style="font-weight:700;color:var(--text)">${quotaDisp} วัน</span>`:'—'}</td>
+      <td class="c">${quota>0?`<span style="font-weight:700;color:#f97316">${usedDisp} วัน</span>`:'—'}</td>
+      <td class="c">${quota>0?`<span style="font-weight:800;color:${remColor}">${Math.max(0,parseFloat(remDisp))} วัน</span>`:'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════
+   Holiday Plans — embedded view
+══════════════════════════════════════════════════════ */
+const HP = (() => {
+  const MTH = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+               'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const DTH = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+  let hpY = new Date().getFullYear(), hpM = new Date().getMonth()+1;
+  let hpPlans = {}, hpSel = {}, hpModalY, hpModalM;
+
+  const p2 = n => String(n).padStart(2,'0');
+  const ds = (y,m,d) => `${y}-${p2(m)}-${p2(d)}`;
+  const isHol = date => (holidayData||[]).some(h=>h.date===date);
+  const holName = date => (holidayData||[]).find(h=>h.date===date)?.name||'';
+
+  function getHpRem(uid) {
+    const q = parseFloat(quotaData[uid])||0; if (!q) return null;
+    const yearStr = String(curYear);
+    const cov = new Set();
+    const usedFromLeaves = leaveData.filter(l=>l.user_id===uid&&l.status==='approved'&&l.type==='vacation')
+      .reduce((s,l)=>{
+        let yearDates=[];
+        if (l.dates?.length) yearDates = l.dates.filter(d=>d.startsWith(yearStr));
+        else if (l.start_date&&l.end_date) {
+          for (let d=new Date(l.start_date);d<=new Date(l.end_date);d.setDate(d.getDate()+1)) {
+            const ds=d.toISOString().slice(0,10);
+            if (ds.startsWith(yearStr)) yearDates.push(ds);
+          }
+        }
+        yearDates.forEach(d=>cov.add(d));
+        if (!yearDates.length) return s;
+        return s+(l.duration==='half'?yearDates.length*0.5:yearDates.length);
+      },0);
+    const extraFromSchedule = Object.entries(fullYearScheduleData).reduce((s,[date,day])=>{
+      if (!date.startsWith(yearStr) || cov.has(date)) return s;
+      return s+(day.vacation||[]).reduce((ss,v)=>
+        ss+(typeof v==='object'&&v.user_id===uid?(v.days||1):v===uid?1:0),0);
+    },0);
+    const r=q-usedFromLeaves-extraFromSchedule; return r%1===0?r:parseFloat(r.toFixed(1));
+  }
+
+  async function loadRender() {
+    const res=await API.holidayPlans.get(hpY,hpM);
+    hpPlans=res?.ok?(res.data.data?.plans||{}):{};
+    render();
+  }
+
+  function render() {
+    const myId=Auth.getUser()?.id, dim=new Date(hpY,hpM,0).getDate();
+    const todStr=ds(new Date().getFullYear(),new Date().getMonth()+1,new Date().getDate());
+    document.getElementById('hp-month-title').textContent=`${MTH[hpM]} ${hpY+543}`;
+    const planners=Object.keys(hpPlans).filter(id=>(hpPlans[id]||[]).length>0);
+    document.getElementById('hp-stat-chip').textContent=`${planners.length}/${usersData.length} คนกรอกแล้ว`;
+
+    let hd=`<tr><th class="hp-th-name">Name</th>`;
+    for (let d=1;d<=dim;d++) {
+      const date=ds(hpY,hpM,d), dw=new Date(hpY,hpM-1,d).getDay();
+      let c='hp-th-day'; if(date===todStr)c+=' ht'; else if(isHol(date))c+=' hh'; else if(dw===0||dw===6)c+=' hw';
+      hd+=`<th class="${c}" ${isHol(date)?`title="${esc(holName(date))}"`:''}><div>${p2(d)}</div><div style="font-size:8px;opacity:.7">${DTH[dw]}</div></th>`;
+    }
+    hd+=`<th class="hp-th-total">วันแผน</th></tr>`;
+    document.getElementById('hp-thead').innerHTML=hd;
+
+    document.getElementById('hp-tbody').innerHTML=usersData.map(u=>{
+      const isMe=u.id===myId, rem=getHpRem(u.id);
+      const remOvr=rem===null?'color:#aaa':rem<0?`color:#ef4444;border-color:#ef4444;background:#ef444422`:rem<=3?`color:#f97316;border-color:#f97316;background:#f9731622`:'';
+      const plan=new Set(hpPlans[u.id]||[]);
+      let cells='';
+      for (let d=1;d<=dim;d++) {
+        const date=ds(hpY,hpM,d), dw=new Date(hpY,hpM-1,d).getDay(), wkd=dw===0||dw===6;
+        let c='hp-td-cell';
+        if(plan.has(date)) c+=isMe?' mine':' others'; else if(isHol(date)) c+=' hol'; else if(wkd) c+=' wkd';
+        if(isMe) c+=' editable';
+        cells+=`<td class="${c}" onclick="hpQuickToggle('${date}')"></td>`;
+      }
+      return `<tr>
+        <td class="hp-td-name${isMe?' me':''}">
+          <span class="hp-rem-badge" style="${remOvr}">${rem!==null?rem:'—'}</span>
+          <div><div style="font-weight:700;font-size:12px;color:var(--text)">${esc(u.nickname||u.name.split(' ')[0]||u.name)}</div>${u.nickname?`<div style="font-size:9px;color:#aaa">${esc(u.name)}</div>`:''}</div>
+          ${isMe?`<span style="margin-left:auto;font-size:9px;background:rgba(34,197,94,.15);color:#16a34a;border-radius:4px;padding:1px 5px;font-weight:700">ฉัน</span>`:''}
+        </td>${cells}
+        <td class="hp-td-total">${plan.size>0?`<span style="font-weight:800;font-size:13px;color:${isMe?'#16a34a':'#b45309'}">${plan.size}</span>`:`<span style="color:#ddd">—</span>`}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function quickToggle(date) {
+    const myId=Auth.getUser()?.id, [y,m]=date.split('-').map(Number), mk=`${y}-${p2(m)}`;
+    if (!hpSel[mk]) hpSel[mk]=new Set(hpPlans[myId]||[]);
+    hpSel[mk].has(date)?hpSel[mk].delete(date):hpSel[mk].add(date);
+    await saveMonth(y,m);
+  }
+  async function saveMonth(y,m) {
+    const myId=Auth.getUser()?.id, mk=`${y}-${p2(m)}`;
+    const dates=[...(hpSel[mk]||new Set())].sort();
+    const res=await API.holidayPlans.save({year:y,month:m,dates});
+    if (!res?.ok){Toast.error('บันทึกไม่สำเร็จ');return;}
+    if (y===hpY&&m===hpM){hpPlans[myId]=dates;render();}
+  }
+
+  // Modal
+  function openModal() {
+    const myId=Auth.getUser()?.id; hpModalY=hpY; hpModalM=hpM;
+    const mk=`${hpModalY}-${p2(hpModalM)}`;
+    if (!hpSel[mk]) hpSel[mk]=new Set(hpPlans[myId]||[]);
+    renderModal(); document.getElementById('hp-modal').classList.add('open');
+  }
+  function closeModal(){document.getElementById('hp-modal').classList.remove('open');}
+  async function modalNav(dm) {
+    hpModalM+=dm; if(hpModalM>12){hpModalM=1;hpModalY++;} if(hpModalM<1){hpModalM=12;hpModalY--;}
+    const myId=Auth.getUser()?.id, mk=`${hpModalY}-${p2(hpModalM)}`;
+    if (!hpSel[mk]){const r=await API.holidayPlans.get(hpModalY,hpModalM);const pl=r?.ok?(r.data.data?.plans||{}):{};hpSel[mk]=new Set(pl[myId]||[]);}
+    renderModal();
+  }
+  function renderModal() {
+    const mk=`${hpModalY}-${p2(hpModalM)}`, sel=hpSel[mk]||new Set();
+    const tod=ds(new Date().getFullYear(),new Date().getMonth()+1,new Date().getDate());
+    const dim=new Date(hpModalY,hpModalM,0).getDate(), first=new Date(hpModalY,hpModalM-1,1).getDay();
+    document.getElementById('hpm-sub').textContent=`เลือกวันที่ต้องการหยุด — ${MTH[hpModalM]} ${hpModalY+543}`;
+    document.getElementById('hpm-title').textContent=`${MTH[hpModalM]} ${hpModalY+543}`;
+    let g=DTH.map(d=>`<div class="hpm-dh">${d}</div>`).join('');
+    for(let i=0;i<first;i++) g+=`<div class="hpm-day out"></div>`;
+    for(let d=1;d<=dim;d++){
+      const date=ds(hpModalY,hpModalM,d), dw=new Date(hpModalY,hpModalM-1,d).getDay();
+      let c='hpm-day'; if(dw===0||dw===6)c+=' wkd'; if(isHol(date))c+=' hol'; if(sel.has(date))c+=' sel'; if(date===tod)c+=' tod';
+      g+=`<div class="${c}" onclick="hpToggleDay('${date}')" ${isHol(date)?`title="${esc(holName(date))}"`:''}>${d}</div>`;
+    }
+    document.getElementById('hpm-grid').innerHTML=g;
+    const all=Object.values(hpSel).flatMap(s=>[...s]).sort();
+    document.getElementById('hpm-count').textContent=all.length;
+    document.getElementById('hpm-pills').innerHTML=all.length
+      ?all.map(d=>`<span class="hpm-pill">${d}<button class="hpm-pill-x" onclick="hpRemovePill('${d}')">×</button></span>`).join('')
+      :'<span class="hpm-empty">ยังไม่ได้เลือก</span>';
+  }
+  function toggleDay(date){const mk=`${hpModalY}-${p2(hpModalM)}`;if(!hpSel[mk])hpSel[mk]=new Set();hpSel[mk].has(date)?hpSel[mk].delete(date):hpSel[mk].add(date);renderModal();}
+  function removePill(date){const [y,m]=date.split('-').map(Number);hpSel[`${y}-${p2(m)}`]?.delete(date);renderModal();}
+  async function clearMonth(){const mk=`${hpModalY}-${p2(hpModalM)}`;hpSel[mk]=new Set();renderModal();await API.holidayPlans.clear(hpModalY,hpModalM);if(hpModalY===hpY&&hpModalM===hpM)await loadRender();Toast.success('ล้างแผนเดือนนี้แล้ว');}
+  async function modalSave(){
+    const btn=document.getElementById('hpm-save-btn');btn.disabled=true;btn.textContent='กำลังบันทึก...';
+    for(const mk of Object.keys(hpSel)){const [y,m]=mk.split('-').map(Number);await saveMonth(y,m);}
+    btn.disabled=false;btn.innerHTML='<i data-icon="save"></i> บันทึก';closeModal();Toast.success('บันทึกแผนเรียบร้อยแล้ว <i data-icon="check"></i>');
+  }
+
+  return {
+    open() { hpY=curYear;hpM=curMonth; document.querySelector('.sched-wrap').style.display='none'; document.getElementById('hp-view').classList.add('active'); renderHolidayPopup(hpY); loadRender(); },
+    close() { document.getElementById('hp-view').classList.remove('active'); document.querySelector('.sched-wrap').style.display=''; },
+    changeMonth(d){hpM+=d;if(hpM>12){hpM=1;hpY++;}if(hpM<1){hpM=12;hpY--;}loadRender();},
+    changeYear(d){hpY+=d;renderHolidayPopup(hpY);loadRender();},
+    goToday(){hpY=new Date().getFullYear();hpM=new Date().getMonth()+1;renderHolidayPopup(hpY);loadRender();},
+    openModal:openModal, closeModal:closeModal,
+    modalPrev(){modalNav(-1);}, modalNext(){modalNav(1);},
+    clearMonth, save:modalSave,
+    quickToggle, toggleDay, removePill,
+    rerender: render,
+    get _year(){return hpY;},
+  };
+})();
+
+// Global shims — inline onclick cannot reach `const HP` directly
+function openHolidayPlans()  { HP.open(); }
+function closeHolidayPlans() { HP.close(); }
+function hpChangeMonth(d)    { HP.changeMonth(d); }
+function hpChangeYear(d)     { HP.changeYear(d); }
+function hpGoToday()         { HP.goToday(); }
+function openHpModal()       { HP.openModal(); }
+function closeHpModal()      { HP.closeModal(); }
+function hpmPrevMonth()      { HP.modalPrev(); }
+function hpmNextMonth()      { HP.modalNext(); }
+function hpmClearMonth()     { HP.clearMonth(); }
+function hpmSave()           { HP.save(); }
+function hpQuickToggle(date) { HP.quickToggle(date); }
+function hpToggleDay(date)   { HP.toggleDay(date); }
+function hpRemovePill(date)  { HP.removePill(date); }
+
+// ── Holiday tooltip ──────────────────────────────────────────────────────────
+const _MONTH_SHORT=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function renderHolidayPopup(year){
+  const hols=(holidayData||[]).filter(h=>h.date?.startsWith(String(year))).sort((a,b)=>a.date.localeCompare(b.date));
+  const ce=document.getElementById('hp-hol-count'), ye=document.getElementById('hp-hol-year'), le=document.getElementById('hp-hol-list');
+  if(!ce||!ye||!le)return;
+  ce.textContent=hols.length?`(${hols.length})`:'';
+  ye.textContent=`ปี ${year+543}`;
+  le.innerHTML=hols.length?hols.map(h=>{const[,m,d]=h.date.split('-').map(Number),dw=new Date(h.date).getDay();return`<div class="hp-hol-item"><span class="hp-hol-date">${d} ${_MONTH_SHORT[m]} (${['อา','จ','อ','พ','พฤ','ศ','ส'][dw]})</span><span class="hp-hol-name">${h.name||''}</span></div>`;}).join(''):'<div class="hp-hol-empty">ไม่มีข้อมูลวันหยุด</div>';
+}
+function toggleHolidayPopup(e){
+  e.stopPropagation();
+  const popup=document.getElementById('hp-hol-popup'),btn=document.getElementById('hp-hol-btn');
+  const open=popup.classList.toggle('show'); btn.classList.toggle('active',open);
+  if(open) try{renderHolidayPopup(HP._year);}catch{renderHolidayPopup(curYear);}
+}
+document.addEventListener('click',()=>{document.getElementById('hp-hol-popup')?.classList.remove('show');document.getElementById('hp-hol-btn')?.classList.remove('active');});
+</script>
+</body>
+</html>

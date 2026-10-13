@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File → Job Lookup — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <script src="assets/js/theme.js"></script>
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/batch-file-search/batch-file-search.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">File → Job Lookup</div>
+        <div class="page-sub">SM triage tool</div>
+      </div>
+      <div class="topbar-actions">
+        <!-- SM owns the crawler + index. Non-SM teams can search but not
+             manage — hide the CTA to avoid a dead-end click into admin/. -->
+        <a id="manage-index-btn" href="admin/batch-file-index.html" class="sn-btn sn-btn-outline sn-btn-sm" style="text-decoration:none;display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Manage index
+        </a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="sn-container">
+
+        <section class="page-hero">
+          <div class="page-hero-mark"><i data-icon="search"></i></div>
+          <div class="page-hero-body">
+            <div class="page-hero-eyebrow">Batch File Search</div>
+            <h1>ไฟล์นี้มาจาก job ไหน?</h1>
+            <p>Paste ชื่อไฟล์ที่ทีมอื่นถาม — ระบบจะ normalize (ตัด date/ID), เทียบกับ index ที่ crawl มาจาก Jenkins console logs และคืนค่า batch job ที่สร้างไฟล์นั้น พร้อม dev owner และคำแนะนำการ rerun.</p>
+          </div>
+        </section>
+
+        <div class="sn-card">
+          <div class="sn-search-wrap">
+            <svg class="sn-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
+            <textarea id="lookup-input" class="sn-search-input" rows="2"
+              placeholder="e.g. Dailypayment_DISABLESETTLE_010000000000574887768_0_settlement_20260627_000000"></textarea>
+          </div>
+          <div class="sn-toolbar">
+            <button class="sn-btn sn-btn-primary" id="lookup-go" onclick="doLookup()">Search</button>
+            <button class="sn-btn sn-btn-ghost" onclick="clearAll()">Clear</button>
+            <div class="sn-toolbar-spacer"></div>
+            <div class="sn-hint">⌘/Ctrl+Enter to search</div>
+            <div class="sn-mono sn-hint" id="norm-preview"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <div class="sn-note">
+            <span>Match tiers:</span>
+            <span class="sn-badge sn-badge-green">Exact</span>
+            <span>normalized key hit</span>
+            <span style="opacity:.35">·</span>
+            <span class="sn-badge sn-badge-blue">Partial</span>
+            <span>substring</span>
+            <span style="opacity:.35">·</span>
+            <span class="sn-badge sn-badge-amber">Fuzzy</span>
+            <span>token overlap</span>
+          </div>
+        </div>
+
+        <div id="results" style="margin-top:20px;"></div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/skeletons.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script src="./assets/pages/batch-file-search/batch-file-search.js"></script>
+</body>
+</html>

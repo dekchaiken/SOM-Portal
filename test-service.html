@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Service — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/test-service/test-service.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content" style="display:flex;flex-direction:column">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">⊡ Test Service</div>
+        <div class="page-sub">Test tools &amp; reconcile status</div>
+      </div>
+    </header>
+
+    <!-- Tab Bar -->
+    <div class="ts-tabbar" id="ts-tabbar">
+      <!-- Tabs injected by JS -->
+      <div class="ts-tabbar-spacer"></div>
+      <div class="ts-tabbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="reloadCurrent()" title="Reload">↺ Reload</button>
+        <a id="tab-newtab" href="#" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">↗ Open in New Tab</a>
+      </div>
+    </div>
+
+    <!-- Frame area -->
+    <div class="ts-frame-area" id="frame-area">
+
+      <!-- Loading overlay -->
+      <div class="ts-loading" id="ts-loading">
+        <div class="spinner"></div>
+        <div class="ts-loading-text" id="loading-text">Loading…</div>
+      </div>
+
+      <!-- Blocked overlay -->
+      <div class="ts-blocked" id="ts-blocked">
+        <div class="ts-blocked-card">
+          <div class="ts-blocked-ring" id="blocked-icon"><i data-icon="link"></i></div>
+          <div class="ts-blocked-title" id="blocked-title">ไม่สามารถแสดงในหน้านี้ได้</div>
+          <div class="ts-blocked-sub" id="blocked-sub">
+            หน้าเว็บนี้ตั้งค่าป้องกันการแสดงผลใน iframe<br>กรุณาเปิดในแท็บใหม่แทน
+          </div>
+          <div class="ts-blocked-info">
+            <span class="ts-blocked-info-icon"><i data-icon="lightbulb"></i></span>
+            <span id="blocked-hint">หากใช้ VPN อยู่ สามารถเปิดลิงก์ด้านล่างได้ทันที</span>
+          </div>
+          <a id="blocked-newtab" href="#" target="_blank" rel="noopener" class="ts-blocked-cta">
+            ↗ &nbsp;เปิดในแท็บใหม่
+          </a>
+        </div>
+      </div>
+
+      <!-- iframe -->
+      <iframe id="main-frame" src="about:blank" allowfullscreen
+              style="position:absolute;inset:0;width:100%;height:100%;border:none;display:block"></iframe>
+
+      <!-- ══════════════════════════════════════════
+           RECONCILE PANEL — 3-COLUMN GRID
+      ══════════════════════════════════════════ -->
+      <div class="recon-panel" id="recon-panel">
+
+        <!-- ─── COL 1: Step 1 — Reconcile Status ─── -->
+        <div class="step-col">
+          <div class="step-head">
+            <div class="step-num">1</div>
+            <div class="step-title"><i data-icon="refresh-cw"></i> Reconcile Status — Cash-out</div>
+          </div>
+
+          <div class="step-body">
+
+            <!-- ── Query Params Form ── -->
+            <div class="rqp-wrap">
+              <!-- Header / collapsed summary -->
+              <div class="rqp-head" onclick="rqpToggle()">
+                <span class="rqp-head-lbl"><i data-icon="clipboard"></i> Query Params</span>
+                <div class="rqp-head-chips" id="rqp-chips">
+                  <span class="rqp-chip" id="rqp-chip-recon">Recon: New</span>
+                  <span class="rqp-chip" id="rqp-chip-transfer">Transfer: Success</span>
+                  <span class="rqp-chip" id="rqp-chip-date"><i data-icon="calendar"></i> Auto</span>
+                  <span class="rqp-chip" id="rqp-chip-banks">Banks: All</span>
+                </div>
+                <button class="rqp-reset-btn" onclick="event.stopPropagation();rqpReset()" title="Reset to defaults">↺</button>
+                <span class="rqp-arrow" id="rqp-arrow">▸</span>
+              </div>
+
+              <!-- Expanded body -->
+              <div class="rqp-body" id="rqp-body">
+
+                <!-- Row 1: Reconcile + Transfer status -->
+                <div class="rqp-grid-2">
+                  <div class="rqp-field">
+                    <label class="rqp-label">Reconcile Status</label>
+                    <select class="rqp-select" id="rqp-recon-status" onchange="rqpSyncChips()">
+                      <option value="New" selected>New</option>
+                      <option value="Reconciled">Reconciled</option>
+                      <option value="Fail">Fail</option>
+                      <option value="">— All —</option>
+                    </select>
+                  </div>
+                  <div class="rqp-field">
+                    <label class="rqp-label">Transfer Status</label>
+                    <select class="rqp-select" id="rqp-transfer-status" onchange="rqpSyncChips()">
+                      <option value="Success" selected>Success</option>
+                      <option value="Fail">Fail</option>
+                      <option value="">— All —</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Row 2: Date range -->
+                <div class="rqp-field">
+                  <label class="rqp-label">Request Date Range</label>
+                  <label class="rqp-check-row">
+                    <input type="checkbox" id="rqp-auto" checked onchange="rqpToggleDateAuto()">
+                    Auto (today 00:00 → ปัจจุบัน − 2h)
+                  </label>
+                  <div id="rqp-date-preview" class="time-row" style="margin-top:4px;padding:6px 10px;font-size:10px;gap:5px">
+                    <span class="time-row-lbl" style="font-size:9.5px">From</span>
+                    <span class="time-row-val" id="recon-from" style="font-size:9.5px">—</span>
+                    <span class="time-row-arr">→</span>
+                    <span class="time-row-val" id="recon-to" style="font-size:9.5px">—</span>
+                  </div>
+                  <div id="rqp-date-manual-wrap" style="display:none;margin-top:4px">
+                    <div class="rqp-grid-2">
+                      <div class="rqp-field">
+                        <label class="rqp-label">From</label>
+                        <input class="rqp-input" id="rqp-date-from" placeholder="17-Apr-2026 00:00:00">
+                      </div>
+                      <div class="rqp-field">
+                        <label class="rqp-label">To</label>
+                        <input class="rqp-input" id="rqp-date-to" placeholder="17-Apr-2026 12:59:59">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Row 3: Banks -->
+                <div class="rqp-field">
+                  <label class="rqp-label">Transfer to Bank</label>
+                  <label class="rqp-check-row">
+                    <input type="checkbox" id="rqp-banks-all" checked onchange="rqpToggleBanks()">
+                    All banks (ยกเว้น BBL, KBANK, SCB สำหรับ Status New)
+                  </label>
+                  <div id="rqp-banks-custom" style="display:none;margin-top:4px">
+                    <div class="bank-grid" id="rqp-bank-grid"><!-- populated by JS --></div>
+                    <div class="bank-select-actions">
+                      <button class="bank-select-btn" onclick="rqpBankSelectAll()">เลือกทั้งหมด</button>
+                      <button class="bank-select-btn" onclick="rqpBankDeselectAll()">ยกเลิกทั้งหมด</button>
+                    </div>
+                    <input type="hidden" id="rqp-banks">
+                  </div>
+                </div>
+
+                <hr class="rqp-divider">
+
+                <!-- Optional filters toggle -->
+                <button class="rqp-more-btn" id="rqp-more-btn" onclick="rqpToggleOptional()">▸ Optional filters</button>
+                <div class="rqp-optional" id="rqp-optional">
+                  <div class="rqp-grid-2">
+                    <div class="rqp-field">
+                      <label class="rqp-label">Request Channel</label>
+                      <input class="rqp-input" id="rqp-req-channel" placeholder="ว่าง = all">
+                    </div>
+                    <div class="rqp-field">
+                      <label class="rqp-label">Request Status</label>
+                      <input class="rqp-input" id="rqp-req-status" placeholder="ว่าง = all">
+                    </div>
+                  </div>
+                  <div class="rqp-grid-2">
+                    <div class="rqp-field">
+                      <label class="rqp-label">TPP ID</label>
+                      <input class="rqp-input" id="rqp-tpp-id" placeholder="ว่าง = all">
+                    </div>
+                    <div class="rqp-field">
+                      <label class="rqp-label">Utiba ID</label>
+                      <input class="rqp-input" id="rqp-utiba-id" placeholder="ว่าง = all">
+                    </div>
+                  </div>
+                  <div class="rqp-grid-2">
+                    <div class="rqp-field">
+                      <label class="rqp-label">EW Account</label>
+                      <input class="rqp-input" id="rqp-ew-acct" placeholder="ว่าง = all">
+                    </div>
+                    <div class="rqp-field">
+                      <label class="rqp-label">Request Amount</label>
+                      <input class="rqp-input" id="rqp-req-amt" placeholder="ว่าง = all">
+                    </div>
+                  </div>
+                  <div class="rqp-grid-2">
+                    <div class="rqp-field">
+                      <label class="rqp-label">Bank Account No.</label>
+                      <input class="rqp-input" id="rqp-bank-acct-no" placeholder="ว่าง = all">
+                    </div>
+                    <div class="rqp-field">
+                      <label class="rqp-label">Bank Account Name</label>
+                      <input class="rqp-input" id="rqp-bank-acct-name" placeholder="ว่าง = all">
+                    </div>
+                  </div>
+                  <div class="rqp-field">
+                    <label class="rqp-label">Rows limit</label>
+                    <input class="rqp-input" id="rqp-limit" type="number" value="10000" min="1" max="50000" style="width:120px">
+                  </div>
+                </div>
+
+              </div><!-- /rqp-body -->
+            </div><!-- /rqp-wrap -->
+
+            <!-- Action -->
+            <div class="step-actions">
+              <button class="btn-action" id="recon-btn" onclick="reconCheck()">
+                <span id="recon-btn-icon"><i data-icon="search"></i></span>
+                <span id="recon-btn-text">Check Now</span>
+              </button>
+              <div class="step-status-row" id="recon-status"></div>
+            </div>
+
+            <!-- Error -->
+            <div class="step-info-box error" id="recon-error">
+              <span><i data-icon="alert-triangle"></i></span>
+              <span id="recon-error-msg">เกิดข้อผิดพลาด</span>
+            </div>
+
+            <!-- Empty -->
+            <div class="step-info-box success" id="recon-empty">
+              <i data-icon="check-circle"></i> ไม่มีรายการที่ต้องตรวจสอบในช่วงเวลานี้
+            </div>
+
+            <!-- Result -->
+            <div class="step-result" id="recon-result">
+              <div class="result-header">
+                <span>พบรายการ <span class="result-count has-items" id="recon-count">0</span></span>
+                <span class="result-last" id="recon-last-check"></span>
+              </div>
+              <div class="result-table-wrap">
+                <table class="recon-table">
+                  <thead id="recon-thead"></thead>
+                  <tbody id="recon-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Debug (Reconcile API) -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">
+              <span style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.07em">API Debug</span>
+              <button class="btn btn-ghost btn-sm" onclick="reconToggleDebug()" style="font-size:10px;padding:2px 7px;"><i data-icon="eye"></i> แสดง/ซ่อน</button>
+            </div>
+            <div id="recon-debug" class="debug-panel">
+              <div class="debug-field">
+                <div class="debug-field-lbl">Endpoint</div>
+                <div class="debug-field-val"><span id="debug-endpoint">—</span></div>
+              </div>
+              <div class="debug-field">
+                <div class="debug-field-lbl">Parameters</div>
+                <div class="debug-field-val"><pre id="debug-params" style="margin:0;white-space:pre-wrap">—</pre></div>
+              </div>
+              <div class="debug-field">
+                <div class="debug-field-lbl">Token (first 50)</div>
+                <div class="debug-field-val token"><span id="debug-token">—</span></div>
+              </div>
+              <div class="debug-field">
+                <div class="debug-field-lbl">Last Response</div>
+                <div class="debug-field-val"><pre id="debug-response" style="margin:0;white-space:pre-wrap">—</pre></div>
+              </div>
+            </div>
+
+          </div><!-- /step-body -->
+        </div><!-- /col 1 -->
+
+        <!-- ─── COL 2: Step 2 — Jenkins Job ─── -->
+        <div class="step-col" id="jenkins-card">
+          <div class="step-head">
+            <div class="step-num">2</div>
+            <div class="step-title"><i data-icon="settings"></i> Jenkins Job Status</div>
+            <div class="step-badges"><span class="step-badge blue">Fund-Out Reconcile</span></div>
+          </div>
+
+          <div class="step-body">
+            <div style="font-size:11px;color:var(--text-muted);line-height:1.7;">
+              ตรวจสอบว่า Jenkins Job ทำงานปกติหรือไม่ในแต่ละชั่วโมง
+            </div>
+
+            <div class="step-actions">
+              <button class="btn-action" onclick="checkJenkinsJob()">
+                <i data-icon="search"></i> Check Jenkins Job
+              </button>
+              <a href="https://jenkins-batch-eks-cicd.private-a-cloud1p.ascendmoney.io/job/truemoney-fund-production/job/fund-out-reconcile-job-job-fund-out-reconcile-run-pipeline/"
+                 target="_blank" class="btn btn-ghost btn-sm">↗ เปิด Jenkins</a>
+              <button class="btn btn-ghost btn-sm" onclick="toggleJenkinsDebug()" style="font-size:11px;"><i data-icon="eye"></i> Debug</button>
+            </div>
+
+            <!-- Jenkins debug panel -->
+            <div id="jenkins-debug" class="debug-panel">
+              <div class="debug-field-lbl">API Request Details</div>
+              <div class="debug-mono" id="jenkins-debug-content">ยังไม่มีข้อมูล — กด Check Jenkins Job เพื่อดูรายละเอียด</div>
+            </div>
+
+            <!-- Jenkins results -->
+            <div id="jenkins-result" style="display:none">
+              <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;">
+                Recent Builds (5 ล่าสุด)
+              </div>
+              <div class="build-list" id="jenkins-builds">
+                <div class="step-status-row">
+                  <div class="spinner" style="width:12px;height:12px;border-width:2px;flex-shrink:0"></div>
+                  กำลังโหลด...
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /step-body -->
+        </div><!-- /col 2 -->
+
+        <!-- ─── COL 3: Step 3 — Rundeck sFTP ─── -->
+        <div class="step-col" id="rundeck-card">
+          <div class="step-head">
+            <div class="step-num">3</div>
+            <div class="step-title"><i data-icon="folder"></i> Rundeck sFTP File Checker</div>
+            <div class="step-badges"><span class="step-badge orange">CIMB sFTP Server</span></div>
+          </div>
+
+          <div class="step-body">
+            <div style="font-size:11px;color:var(--text-muted);line-height:1.7;">
+              ตรวจสอบว่ามีไฟล์มาวางบน sFTP Server หรือไม่ในช่วงเวลาที่มีปัญหา
+            </div>
+
+            <!-- Quick Start -->
+            <div class="quick-start">
+              <strong><i data-icon="rocket"></i> Quick Start:</strong><br>
+              1. คลิก "เปิด Rundeck Job" ด้านล่าง<br>
+              2. ถ้ายังไม่ได้ login → Login ด้วย User ของคุณ<br>
+              3. เลือก <code>sftp_partner_name = CIMB</code><br>
+              4. กด <strong>Run Job Now</strong> (ปุ่มสีส้ม)<br>
+              5. รอดูผลลัพธ์ (~10-30 วินาที)
+            </div>
+
+            <!-- Action -->
+            <div class="step-actions">
+              <button class="btn btn-primary btn-sm" id="sftp-run-btn" onclick="SftpChecker.run()">
+                <i data-icon="play"></i> Run Job
+              </button>
+              <a href="https://th-ops-rundeck.mgt.ascendmoney.io/project/SM/job/show/b87c7df1-2ec1-4480-9fe6-22a07f31ad02"
+                 target="_blank" class="btn-link-action">
+                ↗ เปิด Rundeck
+              </a>
+              <button class="btn btn-ghost btn-sm" onclick="toggleRundeckGuide()"><i data-icon="lightbulb"></i> Tips</button>
+            </div>
+
+            <!-- Output panel -->
+            <div id="sftp-output" style="display:none;margin-top:12px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+                <span id="sftp-badge" style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(251,191,36,.15);color:#f59e0b">
+                  <span id="sftp-spinner" style="display:inline-block;width:9px;height:9px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:sftp-spin .7s linear infinite"></span>
+                  RUNNING
+                </span>
+                <span id="sftp-exec-id" style="font-size:11px;color:var(--text-muted)"></span>
+                <a id="sftp-rundeck-link" href="#" target="_blank" style="display:none;font-size:11px;color:var(--accent,#f26419);margin-left:auto;font-weight:700">
+                  <i data-icon="external-link"></i> View in Rundeck
+                </a>
+              </div>
+              <div style="background:var(--bg,#f4f4f0);border:1px solid var(--border,#e5e5e0);border-radius:8px;max-height:280px;overflow-y:auto;padding:10px 12px">
+                <pre id="sftp-log" style="margin:0;font-family:monospace;font-size:11px;line-height:1.7;color:var(--text,#1a1a1a);white-space:pre-wrap;word-break:break-all"><em style="color:var(--text-muted)">Waiting for output…</em></pre>
+              </div>
+            </div>
+            <style>@keyframes sftp-spin{to{transform:rotate(360deg)}}</style>
+
+            <!-- Expandable guide -->
+            <div id="rundeck-guide" class="debug-panel">
+              <div style="font-size:11px;color:#93c5fd;line-height:1.7;">
+                <strong style="color:#bfdbfe"><i data-icon="lightbulb"></i> การวิเคราะห์ผลลัพธ์:</strong><br><br>
+                <strong style="color:#86efac"><i data-icon="check-circle"></i> ถ้าเจอไฟล์:</strong><br>
+                <i data-icon="circle"></i> ตรวจสอบ timestamp ว่าตรงกับช่วงเวลาที่มีปัญหาหรือไม่<br>
+                <i data-icon="circle"></i> ปัญหาอาจอยู่ที่ Jenkins Job ไม่ได้ดึงไฟล์มาประมวลผล<br>
+                <i data-icon="circle"></i> ตรวจสอบ Jenkins logs เพื่อหาสาเหตุ<br><br>
+                <strong style="color:#fca5a5"><i data-icon="x-circle"></i> ถ้าไม่เจอไฟล์:</strong><br>
+                <i data-icon="circle"></i> Partner (CIMB) อาจไม่ได้ส่งไฟล์มา<br>
+                <i data-icon="circle"></i> ติดต่อ Partner เพื่อตรวจสอบ<br>
+                <i data-icon="circle"></i> ตรวจสอบว่ามี network issue หรือไม่
+              </div>
+            </div>
+
+          </div><!-- /step-body -->
+        </div><!-- /col 3 -->
+
+      </div><!-- /recon-panel -->
+      <!-- ══════════════════════════════════════════ -->
+
+      <!-- ── Test Service Portal Panel ── -->
+      <div class="portal-panel" id="portal-panel">
+        <div class="panel-hd">
+          <div class="panel-hd-left">
+            <div class="panel-hd-title"><i data-icon="test-tube"></i> Test Service Report</div>
+            <div class="panel-hd-sub" id="portal-datetime">—</div>
+          </div>
+          <div class="panel-hd-right">
+            <div class="brand-switcher" id="portal-brand-switcher">
+              <button class="brand-sw-btn active" data-brand="tmn" onclick="setPortalBrand('tmn')">TMN</button>
+              <button class="brand-sw-btn" data-brand="vb" onclick="setPortalBrand('vb')">VB</button>
+            </div>
+            <div class="panel-reporter">
+              <span><i data-icon="user"></i></span>
+              <span id="portal-reporter-name">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="portal-scroll" id="portal-form-body">
+          <!-- rendered by JS -->
+        </div>
+        <div class="portal-foot">
+          <div class="portal-foot-meta" id="portal-submit-status"></div>
+          <button class="btn-portal-submit" id="portal-submit-btn" onclick="portalSubmit()">
+            <span id="portal-submit-icon"><i data-icon="check-circle"></i></span>
+            <span id="portal-submit-text">Submit Test Result</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Submit Success Modal -->
+      <div class="submit-modal-overlay" id="submit-modal-overlay">
+        <div class="submit-modal">
+          <div class="submit-modal-ring"><i data-icon="check-circle"></i></div>
+          <div class="submit-modal-title">บันทึกเรียบร้อยแล้ว</div>
+          <div class="submit-modal-sub" id="submit-modal-sub">—</div>
+          <div class="submit-modal-actions">
+            <button class="btn-cancel" onclick="submitModalClose()">ตกลง</button>
+            <button class="btn-records" onclick="submitModalViewRecords()"><i data-icon="clipboard"></i> ดูผล</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Daily Test Records Panel ── -->
+      <div class="records-panel" id="records-panel">
+        <div class="panel-hd">
+          <div class="panel-hd-left">
+            <div class="panel-hd-title"><i data-icon="clipboard"></i> Daily Test Records</div>
+            <div class="panel-hd-sub" id="records-sub">กำลังโหลด…</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div class="brand-switcher" id="records-brand-switcher">
+              <button class="brand-sw-btn active" data-brand="tmn" onclick="setRecordsBrand('tmn')">TMN</button>
+              <button class="brand-sw-btn" data-brand="vb" onclick="setRecordsBrand('vb')">VB</button>
+            </div>
+            <select id="rec-month-sel" class="btn btn-ghost btn-sm" style="cursor:pointer;padding-right:6px" onchange="recMonthChange(this.value)"><option>กำลังโหลด…</option></select>
+            <button class="btn btn-ghost btn-sm" onclick="recordsLoad()">↺ Refresh</button>
+            <button class="btn btn-ghost btn-sm" onclick="recordsExportCSV()"><i data-icon="inbox"></i> Export CSV</button>
+          </div>
+        </div>
+        <div class="rec-subtabs">
+          <button class="rec-subtab active" id="rec-subtab-list"     onclick="recSwitchView('list')"><i data-icon="clipboard"></i> Records</button>
+          <button class="rec-subtab"        id="rec-subtab-coverage" onclick="recSwitchView('coverage')"><i data-icon="calendar"></i> Coverage <span id="rec-subtab-miss" class="rec-subtab-badge" style="display:none">0</span></button>
+        </div>
+
+        <!-- Records list view (existing) -->
+        <div class="rec-view active" id="rec-view-list">
+          <div class="records-hint"><i data-icon="pencil"></i> คลิกที่เวลา / ชื่อ / สถานะ แก้ไขได้เลย — บันทึกอัตโนมัติ &nbsp;|&nbsp; ⌄ ขยายแถวเพื่อดู/แก้ sub-services</div>
+          <div class="records-body">
+            <div class="rec-wrap" id="rec-wrap">
+              <div class="rec-empty-box" id="records-empty">
+                <div class="rec-empty-icon"><i data-icon="inbox"></i></div>
+                <div>กำลังโหลด…</div>
+              </div>
+              <table class="rec-tbl" id="records-table" style="display:none">
+                <thead id="records-thead"></thead>
+                <tbody id="records-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coverage view (new) -->
+        <div class="rec-view" id="rec-view-coverage">
+          <div class="tcov-summary" id="tcov-summary"></div>
+          <div class="tcov-legend-mini">
+            <span><i style="background:#dcfce7"></i> ครบ</span>
+            <span><i style="background:#fef3c7"></i> ซ้ำ (>1 ต่อ ชม.)</span>
+            <span><i style="background:#fee2e2;border:1px dashed rgba(220,38,38,.4)"></i> ขาด (คลิกเพื่อบันทึกย้อนหลัง)</span>
+            <span><i style="background:var(--rc-bg-subtle);opacity:.5"></i> ยังไม่ถึง</span>
+            <span style="margin-left:auto">คำนวณเวลาแบบ Asia/Bangkok (+07:00)</span>
+          </div>
+          <div class="tcov-filters">
+            <label><input type="checkbox" id="tcov-only-issue" onchange="tcovRender()"> เฉพาะวันที่มีปัญหา (ขาด/ซ้ำ)</label>
+            <label><input type="checkbox" id="tcov-hide-weekend" onchange="tcovRender()"> ซ่อนเสาร์-อาทิตย์</label>
+            <label><input type="checkbox" id="tcov-hide-holiday" onchange="tcovRender()"> ซ่อนวันหยุด</label>
+            <label><input type="checkbox" id="tcov-hide-future" checked onchange="tcovRender()"> ซ่อนวันที่ยังไม่ถึง</label>
+          </div>
+          <div class="records-body">
+            <div class="tcov-list" id="tcov-list"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ts-frame-area -->
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SETTINGS MODAL
+══════════════════════════════════════════════ -->
+<div class="cfg-overlay" id="cfg-overlay" onclick="if(event.target===this)closeSettings()">
+  <div class="cfg-modal">
+    <div class="cfg-modal-head">
+      <div class="cfg-title-row" style="display:flex;align-items:center;gap:10px;flex:1;padding-bottom:0">
+        <span class="cfg-modal-title"><i data-icon="settings"></i> Settings — Test Service</span>
+        <button class="btn btn-ghost btn-sm" onclick="closeSettings()" style="margin-left:auto;padding:3px 8px;font-size:13px;"><i data-icon="x"></i></button>
+      </div>
+    </div>
+    <div style="flex-shrink:0;padding:0 20px;border-bottom:1.5px solid var(--border)">
+      <div class="cfg-tabs">
+        <button class="cfg-tab active" id="cfg-tab-step1" onclick="switchCfgTab('step1')"><i data-icon="refresh-cw"></i> Step 1 — Reconcile</button>
+        <button class="cfg-tab"        id="cfg-tab-step2" onclick="switchCfgTab('step2')"><i data-icon="settings"></i> Step 2 — Jenkins</button>
+        <button class="cfg-tab"        id="cfg-tab-step3" onclick="switchCfgTab('step3')"><i data-icon="folder"></i> Step 3 — Rundeck</button>
+      </div>
+    </div>
+
+    <div class="cfg-modal-body">
+
+      <!-- ── Step 1 Pane ── -->
+      <div class="cfg-pane active" id="cfg-pane-step1">
+
+        <div class="cfg-section">
+          <div class="cfg-section-title"><i data-icon="bell"></i> การแจ้งเตือนอัตโนมัติ</div>
+          <div class="cfg-row-2">
+            <div class="cfg-row">
+              <label class="cfg-label">จำนวน threshold (รายการ)</label>
+              <input class="cfg-input" id="cfg-s1-threshold" type="number" min="1" value="50" placeholder="50">
+            </div>
+            <div class="cfg-row">
+              <label class="cfg-label">ย้อนหลัง (ชั่วโมง)</label>
+              <input class="cfg-input" id="cfg-s1-offset" type="number" min="1" max="24" value="2" placeholder="2">
+            </div>
+          </div>
+          <div class="cfg-hint">เมื่อพบรายการ ≥ threshold → แสดง Popup สร้าง Jira + ส่ง Chat Alert อัตโนมัติ</div>
+        </div>
+
+        <div class="cfg-section">
+          <div class="cfg-section-title"><i data-icon="ticket"></i> Jira Ticket</div>
+          <div class="cfg-row">
+            <label class="cfg-label">Summary Template</label>
+            <input class="cfg-input" id="cfg-s1-jira-summary"
+              placeholder="CIMB transfer reconcile status New {count} transactions ({datetime})">
+            <div class="cfg-hint">ตัวแปร: <code>{count}</code> จำนวนรายการ, <code>{datetime}</code> วันเวลาปัจจุบัน</div>
+          </div>
+          <div class="cfg-row-2">
+            <div class="cfg-row">
+              <label class="cfg-label">Business Unit Impacted</label>
+              <input class="cfg-input" id="cfg-s1-jira-bu" placeholder="TrueMoneyTH">
+            </div>
+            <div class="cfg-row">
+              <label class="cfg-label">TH Service Impacted</label>
+              <input class="cfg-input" id="cfg-s1-jira-service" placeholder="Fund-out">
+            </div>
+          </div>
+          <div class="cfg-row-2">
+            <div class="cfg-row">
+              <label class="cfg-label">Channel / Component</label>
+              <input class="cfg-input" id="cfg-s1-jira-channel" placeholder="TrueMoney Transfer - CIMB">
+            </div>
+            <div class="cfg-row">
+              <label class="cfg-label">Detected by</label>
+              <input class="cfg-input" id="cfg-s1-jira-detected" placeholder="SM">
+            </div>
+          </div>
+          <div class="cfg-row-2">
+            <div class="cfg-row">
+              <label class="cfg-label">Work Type (Issue Type)</label>
+              <input class="cfg-input" id="cfg-s1-jira-worktype" placeholder="Monitoring">
+            </div>
+            <div class="cfg-row"><!-- spacer --></div>
+          </div>
+          <div class="cfg-row">
+            <label class="cfg-label">Action / Solution (ค่าเริ่มต้น)</label>
+            <input class="cfg-input" id="cfg-s1-jira-action" placeholder="Escalated to CIMB support team.">
+          </div>
+        </div>
+
+        <div class="cfg-section">
+          <div class="cfg-section-title"><i data-icon="megaphone"></i> Google Chat Webhook</div>
+          <div class="cfg-row">
+            <label class="cfg-label">Webhook URL</label>
+            <input class="cfg-input" id="cfg-s1-chat-webhook" type="url" placeholder="https://chat.googleapis.com/v1/spaces/...">
+          </div>
+          <div class="cfg-row">
+            <label class="cfg-label">Message Template</label>
+            <textarea class="cfg-textarea" id="cfg-s1-chat-msg"
+              placeholder="⚠️ Reconciliation Alert&#10;Cash-out Status: New&#10;&#10;Total Records: {count} รายการ&#10;Check Time: {datetime}&#10;Status: NEW&#10;&#10;⚠️ รายการเกิน {threshold} - สร้าง Jira Ticket แล้ว"></textarea>
+            <div class="cfg-hint">ตัวแปร: <code>{count}</code> <code>{datetime}</code> <code>{threshold}</code></div>
+          </div>
+        </div>
+
+        <div class="cfg-section">
+          <div class="cfg-section-title"><i data-icon="mail"></i> อีเมล (CIMB Notification)</div>
+          <div class="cfg-row">
+            <label class="cfg-label">To (คั่นด้วย comma หรือบรรทัดใหม่)</label>
+            <textarea class="cfg-textarea" id="cfg-s1-email-to" rows="2"
+              placeholder="prajuk.s@cimbthai.com, varin.j@cimbthai.com, tbhotline@cimbthai.com"></textarea>
+          </div>
+          <div class="cfg-row">
+            <label class="cfg-label">CC (คั่นด้วย comma หรือบรรทัดใหม่)</label>
+            <textarea class="cfg-textarea" id="cfg-s1-email-cc" rows="3"
+              placeholder="TH_TB_IMP@cimbthai.com, sm@ascendcorp.com, ..."></textarea>
+          </div>
+          <div class="cfg-row">
+            <label class="cfg-label">Subject Template</label>
+            <input class="cfg-input" id="cfg-s1-email-subject"
+              placeholder="[{jira_key}] : CIMB transfer reconcile status New {count} transactions ({date})">
+            <div class="cfg-hint">ตัวแปร: <code>{jira_key}</code> <code>{count}</code> <code>{date}</code></div>
+          </div>
+          <div class="cfg-row">
+            <label class="cfg-label">Email Body Template</label>
+            <textarea class="cfg-textarea" id="cfg-s1-email-body" rows="8"
+              placeholder="เรียนทีมงาน CIMB ..."></textarea>
+            <div class="cfg-hint">ตัวแปร: <code>{date}</code> <code>{round_time}</code> <code>{count}</code></div>
+          </div>
+        </div>
+
+      </div><!-- /step1 pane -->
+
+      <!-- ── Step 2 Pane ── -->
+      <div class="cfg-pane" id="cfg-pane-step2">
+
+        <div class="cfg-section">
+          <div class="cfg-section-title"><i data-icon="key"></i> Jenkins Authentication</div>
+          <div class="cfg-row">
+            <label class="cfg-label">Username</label>
+            <input class="cfg-input" id="cfg-s2-user" placeholder="firstname.lastname">
+          </div>
+          <div class="cfg-row">
+            <label class="cfg-label">API Token</label>
+            <input class="cfg-input" id="cfg-s2-token" type="password" placeholder="••••••••••••••••••••••••••••••••••">
+          </div>
+        </div>
+
+        <div class="cfg-section">
+          <div class="cfg-section-title"><i data-icon="link"></i> Jenkins Job</div>
+          <div class="cfg-row">
+            <label class="cfg-label">Jenkins Job URL</label>
+            <input class="cfg-input" id="cfg-s2-url"
+              placeholder="https://jenkins-batch-eks-cicd.../job/.../api/json?tree=builds[...]">
+            <div class="cfg-hint">ใส่ full URL ของ Jenkins Job API endpoint</div>
+          </div>
+          <div class="cfg-row">
+            <label class="cfg-label">จำนวน Builds ที่แสดง</label>
+            <input class="cfg-input" id="cfg-s2-builds" type="number" min="1" max="20" value="5" placeholder="5">
+          </div>
+        </div>
+
+        <div class="cfg-section">
+          <div class="cfg-section-title">↗ Quick Link</div>
+          <div class="cfg-row">
+            <label class="cfg-label">Jenkins Console URL (เปิดในแท็บใหม่)</label>
+            <input class="cfg-input" id="cfg-s2-console"
+              placeholder="https://jenkins-batch-eks-cicd.../job/.../">
+          </div>
+        </div>
+
+      </div><!-- /step2 pane -->
+
+      <!-- ── Step 3 Pane ── -->
+      <div class="cfg-pane" id="cfg-pane-step3">
+
+        <div class="cfg-section">
+          <div class="cfg-section-title"><i data-icon="link"></i> Rundeck Job</div>
+          <div class="cfg-row">
+            <label class="cfg-label">Rundeck Job URL</label>
+            <input class="cfg-input" id="cfg-s3-url"
+              placeholder="https://th-ops-rundeck.mgt.ascendmoney.io/project/SM/job/show/...">
+          </div>
+          <div class="cfg-row">
+            <label class="cfg-label">sftp_partner_name (default)</label>
+            <input class="cfg-input" id="cfg-s3-partner" placeholder="CIMB">
+          </div>
+        </div>
+
+        <div class="cfg-section">
+          <div class="cfg-section-title"><i data-icon="clipboard"></i> Quick Start Guide</div>
+          <div class="cfg-row">
+            <label class="cfg-label">คำอธิบาย Step 1</label>
+            <input class="cfg-input" id="cfg-s3-step1" placeholder='คลิก "เปิด Rundeck Job" ด้านล่าง'>
+          </div>
+          <div class="cfg-row">
+            <label class="cfg-label">คำอธิบาย Step 2</label>
+            <input class="cfg-input" id="cfg-s3-step2" placeholder="ถ้ายังไม่ได้ login → Login ด้วย User ของคุณ">
+          </div>
+          <div class="cfg-row">
+            <label class="cfg-label">Partner Selector ที่ต้องเลือก</label>
+            <input class="cfg-input" id="cfg-s3-selector" placeholder="sftp_partner_name = CIMB">
+          </div>
+        </div>
+
+      </div><!-- /step3 pane -->
+
+    </div><!-- /cfg-modal-body -->
+
+    <div class="cfg-modal-foot">
+      <span class="cfg-save-status" id="cfg-save-status"></span>
+      <button class="btn btn-ghost btn-sm" onclick="closeSettings()">ยกเลิก</button>
+      <button class="btn-action" onclick="saveSettings()" style="font-size:12px;padding:7px 20px;"><i data-icon="save"></i> บันทึกการตั้งค่า</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     ALERT MODAL (count > threshold)
+══════════════════════════════════════════════ -->
+<div class="alert-overlay" id="alert-overlay">
+  <div class="alert-modal">
+
+    <div class="alert-head">
+      <div class="alert-warn-badge"><i data-icon="alert-triangle"></i> พบรายการผิดปกติ</div>
+      <div class="alert-title" id="alert-title">พบรายการ <span id="alert-count">0</span> รายการ (เกินกว่า <span id="alert-threshold">50</span> รายการ)</div>
+      <div class="alert-sub">Reconcile Status: New — กรุณาดำเนินการตามขั้นตอนด้านล่าง</div>
+    </div>
+
+    <!-- Step progress -->
+    <div class="alert-steps">
+      <div class="alert-step active" id="alert-s1">
+        <div class="alert-step-num">1</div>
+        <span><i data-icon="ticket"></i> Jira</span>
+      </div>
+      <div class="alert-step-line" id="alert-line1"></div>
+      <div class="alert-step" id="alert-s2">
+        <div class="alert-step-num">2</div>
+        <span><i data-icon="megaphone"></i> Chat</span>
+      </div>
+      <div class="alert-step-line" id="alert-line2"></div>
+      <div class="alert-step" id="alert-s3">
+        <div class="alert-step-num">3</div>
+        <span><i data-icon="mail"></i> อีเมล</span>
+      </div>
+      <div class="alert-step-line" id="alert-line3"></div>
+      <div class="alert-step" id="alert-s4">
+        <div class="alert-step-num">4</div>
+        <span><i data-icon="check-circle"></i> จบ</span>
+      </div>
+    </div>
+
+    <!-- Body (swaps content per step) -->
+    <div class="alert-body" id="alert-body">
+
+      <!-- Step 1: Jira form -->
+      <div id="alert-step1-content">
+        <div class="alert-form-title"><i data-icon="ticket"></i> Jira Ticket</div>
+        
+        <!-- Loading state -->
+        <div id="alert-jira-loading" style="display:flex;align-items:center;justify-content:center;padding:40px;gap:10px;color:var(--text-muted);font-size:12px;">
+          <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>
+          <span>กำลังโหลดข้อมูลจาก Jira...</span>
+        </div>
+        
+        <!-- Form (hidden until loaded) -->
+        <div id="alert-jira-form" style="display:none;">
+          <div class="alert-field">
+            <label class="alert-label">Summary</label>
+            <input class="alert-input" id="alert-jira-summary">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="alert-field">
+              <label class="alert-label">Business Unit Impacted</label>
+              <select class="alert-input" id="alert-jira-bu">
+                <option value="">กำลังโหลด...</option>
+              </select>
+            </div>
+            <div class="alert-field">
+              <label class="alert-label">TH Service Impacted</label>
+              <select class="alert-input" id="alert-jira-service">
+                <option value="">กำลังโหลด...</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="alert-field">
+              <label class="alert-label">Channel / Component</label>
+              <select class="alert-input" id="alert-jira-channel">
+                <option value="">กำลังโหลด...</option>
+              </select>
+            </div>
+            <div class="alert-field">
+              <label class="alert-label">Detected by</label>
+              <select class="alert-input" id="alert-jira-detected">
+                <option value="">กำลังโหลด...</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="alert-field">
+              <label class="alert-label">Work Type</label>
+              <select class="alert-input" id="alert-jira-worktype">
+                <option value="">กำลังโหลด...</option>
+              </select>
+            </div>
+            <div class="alert-field"><!-- spacer --></div>
+          </div>
+          <div class="alert-field">
+            <label class="alert-label">Action / Solution</label>
+            <input class="alert-input" id="alert-jira-action">
+          </div>
+          <div class="alert-field">
+            <label class="alert-label">Fault Start Date/Time</label>
+            <input class="alert-input" id="alert-jira-fault-start" type="datetime-local">
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Chat form -->
+      <div id="alert-step2-content" style="display:none">
+        <div class="alert-form-title"><i data-icon="megaphone"></i> Google Chat Alert</div>
+        <div class="alert-field">
+          <label class="alert-label">Webhook URL</label>
+          <input class="alert-input" id="alert-chat-webhook" placeholder="https://chat.googleapis.com/v1/spaces/...">
+        </div>
+        <div class="alert-field">
+          <label class="alert-label">ข้อความแจ้งเตือน</label>
+          <textarea class="alert-textarea" id="alert-chat-msg" rows="8"></textarea>
+        </div>
+      </div>
+
+      <!-- Step 3: Email form -->
+      <div id="alert-step3-content" style="display:none">
+        <div class="alert-form-title"><i data-icon="mail"></i> ส่งอีเมลแจ้ง CIMB</div>
+        <div class="alert-field">
+          <label class="alert-label">To</label>
+          <textarea class="alert-textarea" id="alert-email-to" rows="2" placeholder="email@example.com (คั่นด้วยบรรทัดใหม่หรือ comma)"></textarea>
+        </div>
+        <div class="alert-field">
+          <label class="alert-label">CC</label>
+          <textarea class="alert-textarea" id="alert-email-cc" rows="2" placeholder="email@example.com (คั่นด้วยบรรทัดใหม่หรือ comma)"></textarea>
+        </div>
+        <div class="alert-field">
+          <label class="alert-label">Subject</label>
+          <input class="alert-input" id="alert-email-subject">
+        </div>
+        <div class="alert-field">
+          <label class="alert-label">เนื้อหาอีเมล</label>
+          <textarea class="alert-textarea" id="alert-email-body" rows="10"></textarea>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;padding:8px 10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);border-radius:7px;font-size:10.5px;color:#1d4ed8;">
+          <i data-icon="paperclip"></i> จะแนบไฟล์ CSV รายการ Reconcile อัตโนมัติ (<span id="alert-csv-count">0</span> รายการ)
+        </div>
+      </div>
+
+      <!-- Step 4: Done -->
+      <div id="alert-step4-content" style="display:none">
+        <div class="alert-done-panel">
+          <div class="alert-done-icon"><i data-icon="check-circle"></i></div>
+          <div class="alert-done-title">ดำเนินการเสร็จสิ้น</div>
+          <div id="alert-done-items" style="display:flex;flex-direction:column;gap:7px;width:100%;margin-top:8px"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="alert-foot">
+      <span class="alert-status" id="alert-status"></span>
+      <button class="btn btn-ghost btn-sm" id="alert-skip-btn" onclick="alertSkipStep()">ข้ามขั้นตอนนี้</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeAlertModal()">ปิด</button>
+      <button class="btn-action" id="alert-next-btn" onclick="alertNextStep()">
+        <span id="alert-next-icon"><i data-icon="ticket"></i></span>
+        <span id="alert-next-text">สร้าง Jira Ticket</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/analytics.js"></script>
+<script src="./assets/js/analytics-features.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script src="./assets/pages/test-service/test-service.js"></script>
+<script src="./assets/pages/test-service/reconcile-auth.js"></script>
+<script>
+window.SftpChecker = {
+  pollTimer: null,
+  execId: null,
+  pollCount: 0,
+  MAX_POLLS: 80,
+
+  run() {
+    document.getElementById('sftp-run-btn').disabled = true;
+    document.getElementById('sftp-output').style.display = '';
+    document.getElementById('sftp-log').innerHTML = '<em style="color:var(--text-muted)">Waiting for output…</em>';
+    document.getElementById('sftp-exec-id').textContent = '';
+    document.getElementById('sftp-rundeck-link').style.display = 'none';
+    this._setBadge('running', 'RUNNING');
+    this.execId = null;
+    this.pollCount = 0;
+    clearInterval(this.pollTimer);
+
+    API.get('/rundeck-proxy.php?action=run')
+      .then(res => {
+        if (!res.ok || !res?.data?.data?.id) {
+          const msg = res?.data?.error || res?.data?.message || `HTTP ${res.status}`;
+          throw new Error(msg);
+        }
+        this.execId = res.data.data.id;
+        document.getElementById('sftp-exec-id').textContent = `Execution #${this.execId}`;
+        const link = document.getElementById('sftp-rundeck-link');
+        link.href = `https://th-ops-rundeck.mgt.ascendmoney.io/execution/show/${this.execId}`;
+        link.style.display = '';
+        this._poll();
+        this.pollTimer = setInterval(() => this._poll(), 2500);
+      })
+      .catch(err => {
+        this._setBadge('failed', 'FAILED');
+        document.getElementById('sftp-log').textContent = `Error: ${err.message || err}`;
+        document.getElementById('sftp-run-btn').disabled = false;
+        if (typeof Toast !== 'undefined') Toast.show(`Error: ${err.message}`, 'error');
+      });
+  },
+
+  async _poll() {
+    if (!this.execId) return;
+    this.pollCount++;
+    if (this.pollCount > this.MAX_POLLS) { clearInterval(this.pollTimer); return; }
+
+    try {
+      const [outRes, statusRes] = await Promise.all([
+        API.get(`/rundeck-proxy.php?action=output&executionId=${this.execId}`),
+        API.get(`/rundeck-proxy.php?action=status&executionId=${this.execId}`)
+      ]);
+
+      const entries = outRes?.data?.data?.entries ?? [];
+      if (entries.length > 0) {
+        const logEl = document.getElementById('sftp-log');
+        logEl.textContent = entries.map(e => e.log ?? '').join('\n');
+        logEl.parentElement.scrollTop = logEl.parentElement.scrollHeight;
+      }
+
+      const status = statusRes?.data?.data?.status;
+      if (status === 'succeeded') {
+        this._setBadge('succeeded', 'SUCCEEDED');
+        clearInterval(this.pollTimer);
+        document.getElementById('sftp-run-btn').disabled = false;
+        if (typeof Toast !== 'undefined') Toast.show('SFTP Checker สำเร็จ', 'success');
+      } else if (status === 'failed') {
+        this._setBadge('failed', 'FAILED');
+        clearInterval(this.pollTimer);
+        document.getElementById('sftp-run-btn').disabled = false;
+      } else if (status === 'aborted') {
+        this._setBadge('aborted', 'ABORTED');
+        clearInterval(this.pollTimer);
+        document.getElementById('sftp-run-btn').disabled = false;
+      }
+    } catch (_) { /* keep polling */ }
+  },
+
+  _setBadge(state, label) {
+    const el = document.getElementById('sftp-badge');
+    if (!el) return;
+    const colors = {
+      running:   'background:rgba(251,191,36,.15);color:#f59e0b',
+      succeeded: 'background:rgba(34,197,94,.15);color:#22c55e',
+      failed:    'background:rgba(239,68,68,.15);color:#ef4444',
+      aborted:   'background:rgba(107,114,128,.15);color:#9ca3af',
+    };
+    const spin = state === 'running'
+      ? '<span style="display:inline-block;width:9px;height:9px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:sftp-spin .7s linear infinite"></span> '
+      : '';
+    el.style.cssText = `display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;${colors[state] || ''}`;
+    el.innerHTML = spin + label;
+  }
+};
+</script>
+
+
+</body>
+</html>

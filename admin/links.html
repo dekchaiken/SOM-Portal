@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Links Management — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/links/links.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="link"></i> Links Management</div>
+        <div class="page-sub">จัดการลิงก์ทุก section — Monitoring / Test / Batch / Report</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openCreateModal()">+ Add Link</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="link"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Links Management</h1>
+          <p>จัดการลิงก์ทุก section — Monitoring · Test Service · Batch Monitor · Report Weekly</p>
+        </div>
+      </section>
+
+      <!-- Section Tabs -->
+      <div class="section-tabs" id="section-tabs">
+        <button class="section-tab active" data-section="monitoring" onclick="switchSection('monitoring', this)"><i data-icon="circle"></i> Monitoring</button>
+        <button class="section-tab" data-section="test-service" onclick="switchSection('test-service', this)">⊡ Test Service</button>
+        <button class="section-tab" data-section="batch-monitor" onclick="switchSection('batch-monitor', this)">⊞ Batch Monitor</button>
+        <button class="section-tab" data-section="report" onclick="switchSection('report', this)">≡ Report Weekly</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title" id="section-title">Monitoring Links</span>
+          <span class="badge badge-gray" id="link-count">—</span>
+        </div>
+        <div class="card-body" style="padding:0" id="table-container">
+          <div data-skel="table" data-rows="5"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══ Create / Edit Modal ═══ -->
+<div class="modal-overlay" id="modal-link">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Add Link</span>
+      <button class="modal-close" onclick="closeModal('modal-link')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Section *</label>
+        <select class="form-select" id="f-section" onchange="onSectionChange(this.value)">
+          <option value="monitoring">Monitoring</option>
+          <option value="test-service">⊡ Test Service</option>
+          <option value="batch-monitor">⊞ Batch Monitor</option>
+          <option value="report">≡ Report Weekly</option>
+        </select>
+      </div>
+      <div class="form-row" id="f-subsection-row" style="display:none">
+        <label class="form-label">Sub-group <span style="font-weight:400;color:var(--text-muted)">(สำหรับ Monitoring)</span></label>
+        <select class="form-select" id="f-subsection">
+          <option value="">— ไม่ระบุ</option>
+          <option value="overview">Service Overview</option>
+          <option value="monitor">Monitor Dashboard</option>
+          <option value="polywall">Polywall</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">ชื่อ Link *</label>
+        <input class="form-input" id="f-name" type="text" placeholder="เช่น Grafana — Payment">
+      </div>
+      <div class="form-row">
+        <label class="form-label">URL *</label>
+        <input class="form-input" id="f-url" type="url" placeholder="https://...">
+      </div>
+      <div class="form-row">
+        <label class="form-label">คำอธิบาย</label>
+        <input class="form-input" id="f-desc" type="text" placeholder="คำอธิบายสั้นๆ หรือ sub-URL">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Icon (Emoji)</label>
+        <div class="icon-preview-row">
+          <div class="icon-preview-box" id="icon-preview"><i data-icon="link"></i></div>
+          <input class="form-input" id="f-icon" type="text" placeholder="🔗" maxlength="4"
+            oninput="document.getElementById('icon-preview').textContent = this.value || '🔗'"
+            style="flex:1">
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div>
+          <label class="form-label">Badge Text</label>
+          <input class="form-input" id="f-badge-text" type="text" placeholder="เช่น Live, Prod">
+        </div>
+        <div>
+          <label class="form-label">Badge Color</label>
+          <select class="form-select" id="f-badge-type">
+            <option value="gray">Gray</option>
+            <option value="orange">Orange</option>
+            <option value="green">Green</option>
+            <option value="blue">Blue</option>
+            <option value="red">Red</option>
+            <option value="yellow">Yellow</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" id="f-open-mode-row">
+        <label class="form-label">วิธีเปิด Link</label>
+        <select class="form-select" id="f-open-mode">
+          <option value="newtab">↗ New Tab (เปิดหน้าต่างใหม่)</option>
+          <option value="iframe">⧉ Iframe (แสดงในหน้า Monitoring)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Order (ลำดับการแสดง)</label>
+        <input class="form-input" id="f-order" type="number" min="1" placeholder="ระบุลำดับ (ถ้าไม่ระบุใช้ auto)">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-link')">Cancel</button>
+      <button class="btn btn-primary" id="modal-save-btn" onclick="saveLink()">Save Link</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Delete Confirm Modal ═══ -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-header">
+      <span class="modal-title" style="color:#dc2626">Delete Link</span>
+      <button class="modal-close" onclick="closeModal('modal-delete')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text);margin:0">ต้องการลบลิงก์ <strong id="delete-link-name"></strong> ใช่ไหม?</p>
+      <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0">การกระทำนี้ไม่สามารถยกเลิกได้</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-delete')">Cancel</button>
+      <button class="btn" style="background:#dc2626;color:#fff" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/links/links.js"></script>
+</body>
+</html>

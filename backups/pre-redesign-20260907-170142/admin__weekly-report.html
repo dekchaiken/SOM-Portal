@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Report Management — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--orange);
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .weeks-table {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1.5px solid var(--border);
+    }
+    .table-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead {
+      background: var(--bg);
+    }
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 12px 16px;
+      font-size: 11px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr:hover {
+      background: var(--orange-dim);
+    }
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .action-btns {
+      display: flex;
+      gap: 8px;
+    }
+    .empty-state {
+      padding: 40px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="bar-chart"></i> Weekly Report Management</div>
+        <div class="page-sub">Manage all weekly reports</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="../weekly-report-form.html" class="btn btn-primary btn-sm">
+          <span><i data-icon="plus"></i></span>
+          <span>Add New Week</span>
+        </a>
+        <a href="../weekly-report.html" class="btn btn-ghost btn-sm">
+          <span><i data-icon="bar-chart"></i></span>
+          <span>View Dashboard</span>
+        </a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="bar-chart"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Weekly Report Management</h1>
+          <p>จัดการ weekly reports ทั้งหมด — Incidents · Tasks · Highlights ของแต่ละสัปดาห์</p>
+        </div>
+      </section>
+
+      <!-- Statistics -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-value" id="totalWeeks">0</div>
+          <div class="stat-label">Total Weeks</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalIncidents">0</div>
+          <div class="stat-label">Total Incidents</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalBatch">0</div>
+          <div class="stat-label">Batch Items</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalSupport">0</div>
+          <div class="stat-label">Support Items</div>
+        </div>
+      </div>
+
+      <!-- Weeks Table -->
+      <div class="weeks-table">
+        <div class="table-header">
+          <div class="table-title">All Weekly Reports</div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="exportAllData()">
+              <span><i data-icon="inbox"></i></span>
+              <span>Export All</span>
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="loadWeeks()">
+              <span><i data-icon="refresh-cw"></i></span>
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Week</th>
+              <th>Date Range</th>
+              <th>Incidents</th>
+              <th>Batch</th>
+              <th>Support</th>
+              <th>Updates</th>
+              <th>Improvements</th>
+              <th>Last Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="weeksTableBody">
+            <tr>
+              <td colspan="9" class="empty-state">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/weekly-report/date-utils.js"></script>
+<script src="../assets/js/weekly-report/api.js"></script>
+<script>
+if (!Auth.requireAuth()) {}
+Layout.render('admin');
+
+let allWeeksData = [];
+
+async function loadWeeks() {
+  try {
+    const response = await WeeklyReportAPI.listWeeks();
+    const weeks = response.weeks || [];
+    
+    // Load all week data
+    allWeeksData = [];
+    for (const week of weeks) {
+      try {
+        const weekResponse = await WeeklyReportAPI.getWeek(week);
+        allWeeksData.push({
+          week,
+          data: weekResponse.data
+        });
+      } catch (error) {
+        console.error(`Failed to load ${week}:`, error);
+      }
+    }
+    
+    renderStats();
+    renderTable();
+  } catch (error) {
+    console.error('Failed to load weeks:', error);
+    Toast.error('Failed to load data');
+  }
+}
+
+function renderStats() {
+  let totalIncidents = 0;
+  let totalBatch = 0;
+  let totalSupport = 0;
+  
+  allWeeksData.forEach(({ data }) => {
+    totalIncidents += (data.incidents || []).length;
+    totalBatch += (data.batch?.event || []).length + (data.batch?.pending || []).length;
+    totalSupport += (data.support?.ma || []).length + (data.support?.dev || []).length;
+  });
+  
+  document.getElementById('totalWeeks').textContent = allWeeksData.length;
+  document.getElementById('totalIncidents').textContent = totalIncidents;
+  document.getElementById('totalBatch').textContent = totalBatch;
+  document.getElementById('totalSupport').textContent = totalSupport;
+}
+
+function renderTable() {
+  const tbody = document.getElementById('weeksTableBody');
+  
+  if (allWeeksData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No weekly reports found</td></tr>';
+    return;
+  }
+  
+  // Sort by date descending
+  allWeeksData.sort((a, b) => b.week.localeCompare(a.week));
+  
+  tbody.innerHTML = allWeeksData.map(({ week, data }) => {
+    const dateRange = WeeklyDateUtils.formatWeekRange(week);
+    const incidents = (data.incidents || []).length;
+    const batch = (data.batch?.event || []).length + (data.batch?.pending || []).length;
+    const support = (data.support?.ma || []).length + (data.support?.dev || []).length;
+    const updates = (data.updates?.alert || []).length + (data.updates?.handover || []).length + (data.updates?.other || []).length;
+    const improvements = (data.improvements?.improve || []).length + (data.improvements?.project || []).length;
+    const updatedAt = data.updatedAt ? DateTime.timeAgo(data.updatedAt) : '—';
+    
+    return `
+      <tr>
+        <td><strong>${week}</strong></td>
+        <td>${dateRange}</td>
+        <td>${incidents}</td>
+        <td>${batch}</td>
+        <td>${support}</td>
+        <td>${updates}</td>
+        <td>${improvements}</td>
+        <td>${updatedAt}</td>
+        <td>
+          <div class="action-btns">
+            <a href="../weekly-report.html?week=${week}" class="btn btn-ghost btn-xs" title="View"><i data-icon="eye"></i></a>
+            <a href="../weekly-report-form.html?week=${week}" class="btn btn-ghost btn-xs" title="Edit"><i data-icon="pencil"></i></a>
+            <button class="btn btn-ghost btn-xs" onclick="exportWeek('${week}')" title="Export"><i data-icon="inbox"></i></button>
+            <button class="btn btn-danger btn-xs" onclick="deleteWeek('${week}')" title="Delete"><i data-icon="trash"></i></button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function deleteWeek(week) {
+  const confirmed = await confirmDialog(
+    `Are you sure you want to delete ${week}? This action cannot be undone.`,
+    'Delete Week'
+  );
+  
+  if (!confirmed) return;
+  
+  try {
+    await WeeklyReportAPI.deleteWeek(week);
+    Toast.success('Week deleted successfully');
+    loadWeeks();
+  } catch (error) {
+    console.error('Failed to delete week:', error);
+    Toast.error('Failed to delete: ' + error.message);
+  }
+}
+
+function exportWeek(week) {
+  window.open(`../api/weekly-report/export.php?week=${week}&format=csv`, '_blank');
+}
+
+function exportAllData() {
+  const year = new Date().getFullYear();
+  window.open(`../api/weekly-report/export.php?type=yearly&year=${year}&format=csv`, '_blank');
+}
+
+// Initialize
+loadWeeks();
+</script>
+
+</body>
+</html>

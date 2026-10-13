@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Learn Hero — Design D: Learning Path Journey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#F26419; --orange-light:#FB923C; --orange-dark:#EA580C;
+  --amber:#FBBF24;
+  --bg:#F5F6F8; --bg-card:#FFFFFF;
+  --text:#1C1C1E; --text-muted:#767676;
+  --border:#E5E5E5;
+  --font:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); font-family:var(--font); color:var(--text); font-size:12px; padding:32px}
+.container{max-width:1180px; margin:0 auto; display:flex; flex-direction:column; gap:22px}
+.hint{color:var(--text-muted); font-size:11px}
+
+/* ═══ JOURNEY HERO ═══ */
+.jn-hero{
+  position:relative; display:flex; align-items:stretch; gap:18px;
+  padding:16px 20px; border-radius:16px; overflow:hidden;
+  background:
+    radial-gradient(120% 200% at 100% 0%, rgba(251,191,36,.18), transparent 55%),
+    linear-gradient(135deg, rgba(242,100,25,.14), rgba(251,191,36,.09) 55%, rgba(242,100,25,.05));
+  border:1.5px solid rgba(242,100,25,.32);
+  box-shadow:0 4px 20px -8px rgba(242,100,25,.40);
+  animation:jnEnter .55s cubic-bezier(.22,.9,.32,1.1) both;
+}
+@keyframes jnEnter{ from{opacity:0; transform:translateY(-8px)} to{opacity:1; transform:none} }
+
+/* Cloud pattern */
+.jn-clouds{position:absolute; inset:0; pointer-events:none; opacity:.5}
+.jn-cloud{
+  position:absolute; font-size:10px; color:rgba(242,100,25,.35);
+  animation:jnDrift 20s linear infinite;
+}
+.jn-cloud.c1{top:12%; left:12%; animation-delay:0s}
+.jn-cloud.c2{top:60%; left:35%; animation-delay:-7s}
+.jn-cloud.c3{top:20%; left:65%; animation-delay:-14s}
+@keyframes jnDrift{ 0%{transform:translateX(0)} 100%{transform:translateX(-60px)} }
+
+/* ─── Left compact info ─── */
+.jn-info{
+  flex-shrink:0; display:flex; flex-direction:column; justify-content:center;
+  padding-right:14px; border-right:1px dashed rgba(242,100,25,.25);
+  min-width:150px; max-width:190px;
+}
+.jn-tag{
+  align-self:flex-start;
+  font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+  color:#7C2D12; background:rgba(251,191,36,.28); border:1px solid rgba(251,191,36,.55);
+  padding:2px 8px; border-radius:999px; margin-bottom:6px;
+}
+.jn-title{font-size:14px; font-weight:800; letter-spacing:-.01em; line-height:1.25}
+.jn-title .accent{color:var(--orange)}
+.jn-sub{font-size:10.5px; color:var(--text-muted); margin-top:4px; line-height:1.45}
+.jn-sub b{color:var(--text); font-weight:800}
+.jn-percent{
+  margin-top:8px; display:flex; align-items:baseline; gap:4px;
+}
+.jn-percent .n{font-size:24px; font-weight:800; color:var(--orange); letter-spacing:-.02em; line-height:1}
+.jn-percent .u{font-size:12px; color:var(--text-muted); font-weight:700}
+.jn-percent .k{font-size:10px; color:var(--text-muted); font-weight:700; margin-left:6px}
+
+/* ─── Middle: PATH ─── */
+.jn-path{
+  flex:1; min-width:0; position:relative;
+  display:flex; align-items:center;
+  padding:14px 12px 20px;
+}
+.jn-track{
+  position:absolute; left:20px; right:20px; top:50%; height:6px;
+  border-radius:3px; transform:translateY(-50%);
+  background:linear-gradient(90deg,
+    var(--orange) 0%, var(--orange) 55%,
+    rgba(251,191,36,.45) 55%, rgba(251,191,36,.45) 62%,
+    rgba(0,0,0,.06) 62%, rgba(0,0,0,.06) 100%);
+}
+.jn-track::after{
+  content:''; position:absolute; left:55%; top:0; bottom:0; width:2px;
+  background:linear-gradient(180deg, transparent, var(--amber), transparent);
+  filter:blur(1px);
+  animation:jnPulseDot 1.8s ease-in-out infinite;
+}
+@keyframes jnPulseDot{ 0%,100%{transform:translateY(-4px); opacity:.6} 50%{transform:translateY(4px); opacity:1} }
+
+.jn-nodes{
+  position:relative; z-index:2; flex:1; display:grid; grid-template-columns:repeat(6, 1fr); gap:0;
+}
+.jn-node{
+  position:relative; display:flex; flex-direction:column; align-items:center; gap:5px;
+  cursor:pointer;
+}
+.jn-dot{
+  width:32px; height:32px; border-radius:50%;
+  display:grid; place-items:center;
+  font-size:12px; font-weight:800; color:#fff;
+  box-shadow:0 3px 8px -2px rgba(0,0,0,.15);
+  transition:transform .2s;
+}
+.jn-node:hover .jn-dot{transform:scale(1.1)}
+.jn-node.done .jn-dot{background:linear-gradient(135deg, #22C55E, #16A34A)}
+.jn-node.current .jn-dot{
+  background:linear-gradient(135deg, var(--amber), var(--orange));
+  box-shadow:0 4px 14px -2px rgba(242,100,25,.7);
+}
+.jn-node.current .jn-dot::before{
+  content:''; position:absolute; inset:-4px; border-radius:50%;
+  border:2px solid var(--orange); opacity:0;
+  animation:jnRipple 1.8s ease-out infinite;
+}
+@keyframes jnRipple{ 0%{transform:scale(.9); opacity:.8} 100%{transform:scale(1.7); opacity:0} }
+.jn-node.locked .jn-dot{background:#E5E7EB; color:#9CA3AF}
+.jn-node.locked .jn-lbl{color:var(--text-muted); opacity:.75}
+.jn-lbl{
+  font-size:9.5px; font-weight:800; text-align:center; letter-spacing:.02em;
+  color:var(--text); max-width:80px; line-height:1.25;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.jn-mini{font-size:8.5px; font-weight:700; color:var(--text-muted)}
+
+/* Walking mascot on current node */
+.jn-node.current .jn-mascot-walk{
+  position:absolute; top:-32px; left:50%; transform:translateX(-50%);
+  animation:jnWalk 1.4s ease-in-out infinite;
+}
+@keyframes jnWalk{
+  0%,100%{transform:translateX(-50%) translateY(0) rotate(-4deg)}
+  50%    {transform:translateX(-50%) translateY(-3px) rotate(4deg)}
+}
+.jn-mascot-walk{
+  width:24px; height:24px; border-radius:50%;
+  background:linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color:#fff; display:grid; place-items:center;
+  box-shadow:0 4px 10px -2px rgba(242,100,25,.55);
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.15));
+}
+.jn-mascot-walk svg{width:14px; height:14px; stroke:#fff; fill:none; stroke-width:2.4}
+.jn-mascot-walk::after{
+  content:'▼'; position:absolute; bottom:-8px; left:50%; transform:translateX(-50%);
+  font-size:8px; color:var(--orange); text-shadow:0 1px 2px rgba(0,0,0,.15);
+  animation:jnPointBob 1s ease-in-out infinite;
+}
+@keyframes jnPointBob{ 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-2px)} }
+
+.jn-flag{
+  position:absolute; top:-24px; right:-8px; z-index:3;
+  font-size:14px; animation:jnFlagWave 2.4s ease-in-out infinite;
+  transform-origin:bottom left;
+}
+@keyframes jnFlagWave{ 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(8deg)} }
+
+/* ─── CTA ─── */
+.jn-cta{
+  flex-shrink:0; align-self:center;
+  position:relative; overflow:hidden;
+  display:inline-flex; align-items:center; gap:8px;
+  padding:12px 18px; border-radius:12px;
+  background:linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color:#fff !important; font-size:12px; font-weight:800;
+  text-decoration:none; letter-spacing:.02em;
+  box-shadow:0 6px 16px -6px rgba(242,100,25,.7), inset 0 1px 0 rgba(255,255,255,.25);
+  transition:transform .15s, box-shadow .15s;
+}
+.jn-cta::before{
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.4) 50%, transparent 70%);
+  transform:translateX(-100%); animation:jnCtaShine 3s ease-in-out infinite;
+}
+@keyframes jnCtaShine{ 0%,30%{transform:translateX(-100%)} 55%,100%{transform:translateX(110%)} }
+.jn-cta:hover{transform:translateY(-1px); box-shadow:0 10px 22px -6px rgba(242,100,25,.85)}
+.jn-cta .arr{
+  display:inline-block;
+  animation:jnArrHop 1.3s ease-in-out infinite;
+}
+@keyframes jnArrHop{
+  0%,100%{transform:translateX(0)}
+  50%    {transform:translateX(4px)}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <p class="hint">DESIGN D — <b>Learning Path Journey</b> — Horizontal roadmap with walking mascot</p>
+
+  <!-- Card -->
+  <div class="jn-hero">
+    <div class="jn-clouds">
+      <span class="jn-cloud c1">☁</span>
+      <span class="jn-cloud c2">☁</span>
+      <span class="jn-cloud c3">☁</span>
+    </div>
+
+    <!-- Left info -->
+    <div class="jn-info">
+      <span class="jn-tag">Learning Path</span>
+      <div class="jn-title">SM Onboarding <span class="accent">Journey</span></div>
+      <div class="jn-sub"><b>3/6</b> checkpoints ผ่านแล้ว · เหลืออีก <b>3</b> ก้าว</div>
+      <div class="jn-percent">
+        <span class="n">55</span><span class="u">%</span>
+        <span class="k">complete</span>
+      </div>
+    </div>
+
+    <!-- PATH nodes -->
+    <div class="jn-path">
+      <div class="jn-track"></div>
+      <div class="jn-nodes">
+        <div class="jn-node done">
+          <div class="jn-dot">✓</div>
+          <div class="jn-lbl">Grafana 101</div>
+          <div class="jn-mini">คอร์สแรก</div>
+        </div>
+        <div class="jn-node done">
+          <div class="jn-dot">✓</div>
+          <div class="jn-lbl">Grafana 102</div>
+          <div class="jn-mini">TMN service</div>
+        </div>
+        <div class="jn-node done">
+          <div class="jn-dot">✓</div>
+          <div class="jn-lbl">7-Eleven Net</div>
+          <div class="jn-mini">Interface</div>
+        </div>
+        <div class="jn-node current">
+          <div class="jn-mascot-walk">
+            <svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+          </div>
+          <div class="jn-dot">4</div>
+          <div class="jn-lbl">IMPB</div>
+          <div class="jn-mini">อยู่ตรงนี้</div>
+        </div>
+        <div class="jn-node locked">
+          <div class="jn-dot">5</div>
+          <div class="jn-lbl">Sev-Ladder</div>
+          <div class="jn-mini">ปลดล็อกเร็วๆ นี้</div>
+        </div>
+        <div class="jn-node locked">
+          <div class="jn-flag">🚩</div>
+          <div class="jn-dot">6</div>
+          <div class="jn-lbl">Finale</div>
+          <div class="jn-mini">รับ badge</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <a class="jn-cta" href="#">
+      <span>ไปต่อ</span>
+      <span class="arr">→</span>
+    </a>
+  </div>
+
+</div>
+</body>
+</html>

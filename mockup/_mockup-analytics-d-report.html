@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Analytics — Design D: Executive Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#F26419;
+  --bg:#F0EFEA; --bg-card:#FFFFFF; --bg-paper:#FAFAF7;
+  --text:#1C1C1E; --text-muted:#6B6B6B; --text-dim:#A5A5A5;
+  --border:#E5E3DC; --border-soft:#EEECE4;
+  --good:#16A34A; --bad:#DC2626; --warn:#F59E0B;
+  --brand:#B91C1C;
+  --font:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--font); font-size:12px}
+.page{
+  max-width:1360px; margin:24px auto; background:var(--bg-paper);
+  border:1px solid var(--border); border-radius:6px; padding:36px 44px 40px;
+  box-shadow:0 6px 24px rgba(0,0,0,.05);
+}
+
+/* ── Executive report header ────────── */
+.masthead{
+  border-bottom:2px solid var(--text); padding-bottom:16px; margin-bottom:24px;
+  display:flex; justify-content:space-between; align-items:flex-end;
+}
+.masthead .title{font-size:11px; letter-spacing:.28em; font-weight:800; color:var(--brand); text-transform:uppercase; margin-bottom:6px}
+.masthead h1{margin:0; font-size:28px; font-weight:800; letter-spacing:-.02em}
+.masthead .h-sub{color:var(--text-muted); font-size:12px; margin-top:4px; font-style:italic}
+.masthead .meta{text-align:right}
+.masthead .meta .row{font-size:11px; color:var(--text-muted); font-weight:700}
+.masthead .meta .row b{color:var(--text)}
+
+/* ── Two-column layout ──────────────── */
+.grid{
+  display:grid; grid-template-columns:280px 1fr; gap:28px; align-items:start;
+}
+.side{display:flex; flex-direction:column; gap:14px}
+.main{display:flex; flex-direction:column; gap:22px}
+
+/* ── Sidebar KPI cards ──────────────── */
+.side-kpi{
+  border:1px solid var(--border); background:var(--bg-card); border-radius:8px; padding:14px 16px;
+}
+.side-kpi .l{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--text-muted); font-weight:800; margin-bottom:8px}
+.side-kpi .v{font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1}
+.side-kpi .v.good{color:var(--good)}
+.side-kpi .v.bad{color:var(--bad)}
+.side-kpi .v.warn{color:var(--warn)}
+.side-kpi .s{font-size:10.5px; color:var(--text-muted); font-weight:600; margin-top:6px}
+.side-kpi .prog{margin-top:10px; height:6px; background:#EEEAE1; border-radius:3px; overflow:hidden}
+.side-kpi .prog span{display:block; height:100%; border-radius:3px}
+
+.side-panel{
+  border:1px solid var(--border); background:var(--bg-card); border-radius:8px; padding:14px 16px;
+}
+.side-panel h4{margin:0 0 10px; font-size:10px; letter-spacing:.18em; text-transform:uppercase; font-weight:800; color:var(--text); border-bottom:1px solid var(--border-soft); padding-bottom:8px}
+.imp{display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border-soft); font-size:11.5px}
+.imp:last-child{border-bottom:0}
+.imp .k{display:flex; align-items:center; gap:8px; font-weight:800}
+.imp .k .dt{width:8px; height:8px; border-radius:50%}
+.imp .v{color:var(--text-muted); font-weight:700}
+.imp .v b{color:var(--text)}
+
+/* ── Main column sections ───────────── */
+.section-head{
+  font-size:11px; letter-spacing:.18em; text-transform:uppercase; font-weight:800; color:var(--text);
+  border-bottom:1px solid var(--border); padding-bottom:8px; margin:0 0 12px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.section-head .accent{color:var(--brand)}
+.section-head .aside{font-size:10.5px; font-weight:600; letter-spacing:.06em; color:var(--text-muted); text-transform:none}
+
+/* ── Monthly grid (3×4) ─────────────── */
+.month-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:12px}
+.mc{
+  border:1px solid var(--border); background:var(--bg-card); border-radius:8px;
+  padding:14px 14px 12px; position:relative; overflow:hidden;
+  min-height:130px;
+}
+.mc::before{
+  content:''; position:absolute; left:0; top:0; bottom:0; width:5px; background:#D9D9D9;
+}
+.mc.g::before{background:var(--good)}
+.mc.b::before{background:var(--bad)}
+.mc .top{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px}
+.mc .top .mo{font-size:14px; font-weight:800; letter-spacing:-.01em}
+.mc .badge{
+  font-size:10px; font-weight:800; letter-spacing:.06em; padding:3px 8px; border-radius:999px;
+}
+.mc.g .badge{background:#DCFCE7; color:var(--good)}
+.mc.b .badge{background:#FEE2E2; color:var(--bad)}
+.mc.f .badge{background:#F1F1F1; color:var(--text-muted)}
+.mc .num{font-size:32px; font-weight:800; letter-spacing:-.02em; line-height:1; margin:4px 0}
+.mc.g .num{color:var(--good)}
+.mc.b .num{color:var(--bad)}
+.mc.f .num{color:var(--text-dim)}
+.mc .lbl{font-size:10.5px; color:var(--text-muted); font-weight:700; letter-spacing:.04em}
+.mc .foot{margin-top:8px; display:flex; justify-content:space-between; align-items:center; font-size:10.5px; color:var(--text-muted); font-weight:700}
+.mc .foot b{color:var(--text)}
+.mc .tags{margin-top:6px; display:flex; flex-wrap:wrap; gap:4px}
+.mc .tags span{font-size:9px; font-weight:800; color:var(--brand); background:#FFF1EA; padding:2px 6px; border-radius:3px; letter-spacing:.06em}
+
+/* ── Bar chart section ──────────────── */
+.chart-panel{border:1px solid var(--border); background:var(--bg-card); border-radius:8px; padding:20px 22px}
+.chart-wrap{display:flex; align-items:flex-end; gap:14px; height:220px; padding:0 6px 24px; border-bottom:1px solid var(--border-soft); position:relative}
+.bw{flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end}
+.bv{font-size:11px; font-weight:800}
+.bv.mut{color:var(--text-dim)}
+.br{width:100%; max-width:36px; background:var(--brand); border-radius:3px 3px 0 0; min-height:2px; box-shadow:inset 0 -3px 0 rgba(0,0,0,.08)}
+.br.z{background:#DDD; height:2px !important}
+.bl{margin-top:6px; display:flex; gap:14px; padding:0 6px}
+.bl .m{flex:1; text-align:center; font-size:10.5px; color:var(--text-muted); font-weight:700}
+
+/* Signature footer */
+.report-foot{
+  margin-top:28px; padding-top:16px; border-top:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center; font-size:10.5px; color:var(--text-muted);
+}
+.brand-line{font-size:12px; font-weight:800; letter-spacing:-.01em}
+.brand-line span{color:var(--brand); font-weight:800}
+
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="masthead">
+    <div>
+      <div class="title">Executive Report · SM Detection</div>
+      <h1>Green Month Dashboard <span style="color:var(--text-muted); font-weight:500">/</span> Y2026</h1>
+      <div class="h-sub">Service operations · monthly SM-miss ledger &middot; as of July-2026</div>
+    </div>
+    <div class="meta">
+      <div class="row">Report No. <b>SMR-2026-07</b></div>
+      <div class="row">Owner <b>SM Team</b></div>
+      <div class="row">Issued <b>11 Aug 2026</b></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Sidebar -->
+    <aside class="side">
+      <div class="side-kpi">
+        <div class="l">SM Detection %</div>
+        <div class="v good">92.4%</div>
+        <div class="s">Target 90% &middot; +2.4 pp above</div>
+        <div class="prog"><span style="width:92.4%; background:var(--good)"></span></div>
+      </div>
+      <div class="side-kpi">
+        <div class="l">SM Missed YTD</div>
+        <div class="v bad">9</div>
+        <div class="s">across 6 months · 1 green month</div>
+      </div>
+      <div class="side-kpi">
+        <div class="l">Outage Minutes</div>
+        <div class="v warn">1,794</div>
+        <div class="s">avg 199 min per missed incident</div>
+      </div>
+
+      <div class="side-panel">
+        <h4>Business Impact YTD</h4>
+        <div class="imp"><div class="k"><span class="dt" style="background:#E4187C"></span>DTAC</div><div class="v"><b>4</b> · 1,431 min</div></div>
+        <div class="imp"><div class="k"><span class="dt" style="background:var(--orange)"></span>TRUE</div><div class="v"><b>2</b> · 184 min</div></div>
+        <div class="imp"><div class="k"><span class="dt" style="background:#F5C518"></span>TMN</div><div class="v"><b>3</b> · 179 min</div></div>
+      </div>
+
+      <div class="side-panel">
+        <h4>Signals</h4>
+        <div style="font-size:11px; color:var(--text-muted); font-weight:600; line-height:1.6">
+          &middot; <b style="color:var(--text)">DTAC</b> upstream = biggest exposure (80% of outage min)<br>
+          &middot; <b style="color:var(--text)">Mar</b> alone accounts for 44% of YTD downtime<br>
+          &middot; <b style="color:var(--good)">Jan</b> = only clean month; replicate playbook
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="main">
+
+      <section>
+        <div class="section-head">
+          <span>Monthly Tracker <span class="accent">/ SM Miss per Month</span></span>
+          <span class="aside">green = no miss &middot; red = SM missed X incident(s)</span>
+        </div>
+        <div class="month-grid">
+          <div class="mc g">
+            <div class="top"><div class="mo">Jan</div><span class="badge">GREEN</span></div>
+            <div class="num">0</div><div class="lbl">SM misses</div>
+            <div class="foot"><span>outage <b>0 min</b></span><span>14 tickets</span></div>
+          </div>
+          <div class="mc b">
+            <div class="top"><div class="mo">Feb</div><span class="badge">1 MISS</span></div>
+            <div class="num">1</div><div class="lbl">480 min &middot; 1 incident</div>
+            <div class="tags"><span>DTAC</span></div>
+          </div>
+          <div class="mc b">
+            <div class="top"><div class="mo">Mar</div><span class="badge">2 MISS</span></div>
+            <div class="num">2</div><div class="lbl">781 min &middot; 2 incidents</div>
+            <div class="tags"><span>DTAC</span><span>TMN</span></div>
+          </div>
+          <div class="mc b">
+            <div class="top"><div class="mo">Apr</div><span class="badge">1 MISS</span></div>
+            <div class="num">1</div><div class="lbl">98 min &middot; 1 incident</div>
+            <div class="tags"><span>TRUE</span></div>
+          </div>
+          <div class="mc b">
+            <div class="top"><div class="mo">May</div><span class="badge">3 MISS</span></div>
+            <div class="num">3</div><div class="lbl">216 min &middot; 3 incidents</div>
+            <div class="tags"><span>DTAC</span><span>TRUE</span><span>TMN</span></div>
+          </div>
+          <div class="mc b">
+            <div class="top"><div class="mo">Jun</div><span class="badge">1 MISS</span></div>
+            <div class="num">1</div><div class="lbl">103 min &middot; 1 incident</div>
+            <div class="tags"><span>DTAC</span></div>
+          </div>
+          <div class="mc b">
+            <div class="top"><div class="mo">Jul</div><span class="badge">1 MISS</span></div>
+            <div class="num">1</div><div class="lbl">116 min &middot; 1 incident</div>
+            <div class="tags"><span>TMN</span></div>
+          </div>
+          <div class="mc f">
+            <div class="top"><div class="mo">Aug</div><span class="badge">TBD</span></div>
+            <div class="num">&mdash;</div><div class="lbl">in progress</div>
+          </div>
+          <div class="mc f">
+            <div class="top"><div class="mo">Sep</div><span class="badge">TBD</span></div>
+            <div class="num">&mdash;</div><div class="lbl">future</div>
+          </div>
+          <div class="mc f">
+            <div class="top"><div class="mo">Oct</div><span class="badge">TBD</span></div>
+            <div class="num">&mdash;</div><div class="lbl">future</div>
+          </div>
+          <div class="mc f">
+            <div class="top"><div class="mo">Nov</div><span class="badge">TBD</span></div>
+            <div class="num">&mdash;</div><div class="lbl">future</div>
+          </div>
+          <div class="mc f">
+            <div class="top"><div class="mo">Dec</div><span class="badge">TBD</span></div>
+            <div class="num">&mdash;</div><div class="lbl">future</div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <span>Outage Minutes <span class="accent">/ by Month</span></span>
+          <span class="aside">YTD total 1,794 min</span>
+        </div>
+        <div class="chart-panel">
+          <div class="chart-wrap">
+            <div class="bw"><div class="bv mut">0</div><div class="br z"></div></div>
+            <div class="bw"><div class="bv">480</div><div class="br" style="height:60%"></div></div>
+            <div class="bw"><div class="bv">781</div><div class="br" style="height:100%"></div></div>
+            <div class="bw"><div class="bv">98</div><div class="br" style="height:13%"></div></div>
+            <div class="bw"><div class="bv">216</div><div class="br" style="height:28%"></div></div>
+            <div class="bw"><div class="bv">103</div><div class="br" style="height:14%"></div></div>
+            <div class="bw"><div class="bv">116</div><div class="br" style="height:16%"></div></div>
+            <div class="bw"><div class="bv mut">&mdash;</div><div class="br z"></div></div>
+            <div class="bw"><div class="bv mut">&mdash;</div><div class="br z"></div></div>
+            <div class="bw"><div class="bv mut">&mdash;</div><div class="br z"></div></div>
+            <div class="bw"><div class="bv mut">&mdash;</div><div class="br z"></div></div>
+            <div class="bw"><div class="bv mut">&mdash;</div><div class="br z"></div></div>
+          </div>
+          <div class="bl">
+            <div class="m">Jan</div><div class="m">Feb</div><div class="m">Mar</div><div class="m">Apr</div>
+            <div class="m">May</div><div class="m">Jun</div><div class="m">Jul</div><div class="m">Aug</div>
+            <div class="m">Sep</div><div class="m">Oct</div><div class="m">Nov</div><div class="m">Dec</div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <div class="report-foot">
+    <div>&copy; Ascend Money Co., Ltd. All rights reserved. &middot; Internal report</div>
+    <div class="brand-line">ascend<span>money</span></div>
+  </div>
+
+</div>
+</body>
+</html>

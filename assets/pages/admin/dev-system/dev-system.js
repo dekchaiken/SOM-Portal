@@ -1,0 +1,614 @@
+// admin/dev-system — page script, extracted from admin/dev-system.html.
+//
+// Wrapped in an IIFE on purpose. When this code lived inline it was run through
+// Layout's indirect eval, which kept const/let/class LOCAL; as a plain external
+// script those would become global lexical bindings and collide with other pages'
+// scripts (both stay loaded across SPA navigation). The IIFE restores that scoping.
+//
+// Top-level function/var declarations DID leak to global under eval, and inline
+// on*="" handlers in the HTML call them, so they are re-published on window below
+// via accessor bridges (get + set, so later reassignment stays in sync).
+(function () {
+'use strict';
+
+// ── Auth gate: dev_sm only ─────────────────────────────────
+Auth.requireAuth();
+const _u = Auth.getUser?.();
+if (_u && _u.role !== 'dev_sm') {
+  window.location.replace('../index.html');
+}
+
+Layout.render('dev-system');
+
+// ── State ──────────────────────────────────────────────────
+let _data = null;
+
+// ── Helpers ────────────────────────────────────────────────
+function fmtBytes(bytes) {
+  if (bytes == null) return '—';
+  if (bytes >= 1048576) return (bytes / 1048576).toFixed(2) + ' MB';
+  if (bytes >= 1024)    return (bytes / 1024).toFixed(1) + ' KB';
+  return bytes + ' B';
+}
+
+function parseMemLimit(str) {
+  if (!str) return 0;
+  const n = parseFloat(str);
+  const u = str.slice(-1).toUpperCase();
+  if (u === 'G') return n * 1073741824;
+  if (u === 'M') return n * 1048576;
+  if (u === 'K') return n * 1024;
+  return n;
+}
+
+function relTime(ts) {
+  const diff = Math.floor(Date.now() / 1000) - ts;
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+function truncKey(key, max) {
+  if (!key || key.length <= max) return key;
+  return key.slice(0, max - 1) + '…';
+}
+
+// ── Render: PHP Runtime ────────────────────────────────────
+function renderPhp(d) {
+  const limitBytes = parseMemLimit(d.memory_limit);
+  const usagePct   = limitBytes > 0 ? Math.round(d.memory_usage / limitBytes * 100) : 0;
+  const peakPct    = limitBytes > 0 ? Math.round(d.memory_peak  / limitBytes * 100) : 0;
+  const fillCls    = usagePct >= 80 ? 'error' : usagePct >= 50 ? 'warn' : '';
+
+  document.getElementById('php-kv').innerHTML = `
+    <dl class="dt-kv">
+      <dt>PHP Version</dt><dd>${escHtml(d.php_version)}</dd>
+      <dt>PHP SAPI</dt><dd>${escHtml(d.php_sapi)}</dd>
+      <dt>Memory Limit</dt><dd>${escHtml(d.memory_limit)}</dd>
+      <dt>Upload Max</dt><dd>${escHtml(d.upload_max)}</dd>
+      <dt>Post Max</dt><dd>${escHtml(d.post_max)}</dd>
+    </dl>`;
+
+  document.getElementById('mem-bar').innerHTML = `
+    <div class="mem-bar-wrap">
+      <div class="mem-bar-labels">
+        <span>Memory Usage — ${usagePct}% of limit</span>
+        <span>${fmtBytes(d.memory_usage)} / ${escHtml(d.memory_limit)}</span>
+      </div>
+      <div class="mem-bar-track">
+        <div class="mem-bar-fill ${fillCls}" style="width:${Math.min(usagePct, 100)}%"></div>
+      </div>
+      <div class="mem-bar-meta">
+        <span>Current: <strong>${fmtBytes(d.memory_usage)}</strong></span>
+        <span>Peak: <strong>${fmtBytes(d.memory_peak)}</strong> (${peakPct}%)</span>
+        <span>Limit: <strong>${escHtml(d.memory_limit)}</strong></span>
+      </div>
+    </div>`;
+}
+
+// ── Render: Application Stats ──────────────────────────────
+function renderAppStats(d) {
+  const board = d.board || {};
+  const users = d.users || {};
+  const byRole = users.by_role || {};
+
+  const ROLE_META = {
+    sm_admin: { label: 'Admin',   cls: 'role-sm_admin' },
+    sm_lead:  { label: 'Lead',    cls: 'role-sm_lead'  },
+    sm_user:  { label: 'User',    cls: 'role-sm_user'  },
+    dev_sm:   { label: 'Dev SM',  cls: 'role-dev_sm'   },
+  };
+
+  const rolePills = Object.entries(byRole).map(([role, count]) => {
+    const meta = ROLE_META[role] || { label: role, cls: '' };
+    return `<span class="role-pill ${meta.cls}">
+      <span class="role-pill-count">${count}</span>
+      <span>${escHtml(meta.label)}</span>
+    </span>`;
+  }).join('');
+
+  document.getElementById('app-stats').innerHTML = `
+    <div style="margin-bottom:4px;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Board Posts</div>
+    <div class="stat-chips">
+      <div class="stat-chip"><div class="stat-chip-val">${board.total ?? 0}</div><div class="stat-chip-lbl">Total</div></div>
+      <div class="stat-chip orange"><div class="stat-chip-val">${board.open ?? 0}</div><div class="stat-chip-lbl">Open</div></div>
+      <div class="stat-chip blue"><div class="stat-chip-val">${board.in_progress ?? 0}</div><div class="stat-chip-lbl">In Progress</div></div>
+      <div class="stat-chip green"><div class="stat-chip-val">${board.resolved ?? 0}</div><div class="stat-chip-lbl">Resolved</div></div>
+      <div class="stat-chip red"><div class="stat-chip-val">${board.trashed ?? 0}</div><div class="stat-chip-lbl">Trashed</div></div>
+    </div>
+    <div style="margin-top:12px;margin-bottom:4px;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Users — Total: ${users.total ?? 0}</div>
+    <div class="role-pills">${rolePills || '<span class="state-empty">ไม่มีข้อมูล</span>'}</div>`;
+}
+
+// ── Render: Rate Limit ────────────────────────────────────
+function renderRateLimit(d) {
+  const rl = d.rate_limit || {};
+  const topUsers = rl.top_users || [];
+  const apiMax = rl.api_max || 1;
+
+  const lockedCls  = rl.login_locked > 0  ? 'danger' : 'ok';
+  const activeCls  = rl.active_windows > 0 ? ''       : '';
+
+  const rows = topUsers.length ? topUsers.map(u => {
+    const pct = Math.min(Math.round(u.count / apiMax * 100), 100);
+    const fillCls = pct >= 80 ? 'error' : pct >= 50 ? 'warn' : '';
+    return `<tr>
+      <td>${escHtml(truncKey(u.key, 28))}</td>
+      <td>${u.count}</td>
+      <td style="min-width:100px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:10px;color:var(--text-muted);min-width:32px">${pct}%</span>
+          <div class="rl-pct-bar" style="flex:1"><div class="rl-pct-fill ${fillCls}" style="width:${pct}%"></div></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="3" class="state-empty" style="padding:10px">ไม่มี active rate limit windows</td></tr>`;
+
+  document.getElementById('rl-stats').innerHTML = `
+    <div class="rl-info-grid">
+      <div class="rl-info-cell ${lockedCls}">
+        <div class="rl-info-val">${rl.login_locked ?? 0}</div>
+        <div class="rl-info-lbl">Login Locked IPs</div>
+      </div>
+      <div class="rl-info-cell">
+        <div class="rl-info-val">${rl.api_max ?? '—'}</div>
+        <div class="rl-info-lbl">API Max Req</div>
+      </div>
+      <div class="rl-info-cell">
+        <div class="rl-info-val">${rl.api_window ?? '—'}s</div>
+        <div class="rl-info-lbl">Window Size</div>
+      </div>
+      <div class="rl-info-cell">
+        <div class="rl-info-val">${rl.active_windows ?? 0}</div>
+        <div class="rl-info-lbl">Active Windows</div>
+      </div>
+    </div>
+    ${topUsers.length ? `
+    <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px">Top Users (by request count)</div>
+    <table class="rl-table">
+      <thead><tr><th>Key (User/IP)</th><th>Count</th><th>% of Max</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>` : `<div class="state-empty" style="margin-top:10px">ไม่มี active windows</div>`}`;
+}
+
+// ── File table renderer ────────────────────────────────────
+let _dataFiles = [];
+let _logFiles  = [];
+let _dfSort = { col: 'size', dir: -1 };
+let _lfSort = { col: 'mtime', dir: -1 };
+
+function sortFiles(files, col, dir) {
+  return [...files].sort((a, b) => {
+    if (col === 'name')  return dir * a.name.localeCompare(b.name);
+    if (col === 'size')  return dir * (a.size - b.size);
+    if (col === 'mtime') return dir * (a.mtime - b.mtime);
+    return 0;
+  });
+}
+
+function totalSize(files) {
+  return files.reduce((s, f) => s + (f.size || 0), 0);
+}
+
+function renderFileTable(containerId, files, sort, searchId, onSort) {
+  const q   = document.getElementById(searchId)?.value.trim().toLowerCase() || '';
+  const filtered = q ? files.filter(f => f.name.toLowerCase().includes(q)) : files;
+  const sorted   = sortFiles(filtered, sort.col, sort.dir);
+
+  const arrow = (col) => {
+    if (sort.col !== col) return '<span class="sort-arrow">↕</span>';
+    return `<span class="sort-arrow">${sort.dir === 1 ? '↑' : '↓'}</span>`;
+  };
+
+  const rows = sorted.map((f, i) => `<tr>
+    <td class="fn">${escHtml(f.name)}</td>
+    <td class="sz">${fmtBytes(f.size)}</td>
+    <td class="mt">${relTime(f.mtime)}</td>
+  </tr>`).join('');
+
+  document.getElementById(containerId).innerHTML = sorted.length
+    ? `<table class="file-table">
+        <thead><tr>
+          <th onclick="${onSort}('name')" class="${sort.col==='name'?'sorted':''}">Name ${arrow('name')}</th>
+          <th onclick="${onSort}('size')" class="${sort.col==='size'?'sorted':''}">Size ${arrow('size')}</th>
+          <th onclick="${onSort}('mtime')" class="${sort.col==='mtime'?'sorted':''}">Modified ${arrow('mtime')}</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+       </table>`
+    : `<div class="state-empty">ไม่พบไฟล์ที่ตรงกับ "${escHtml(q)}"</div>`;
+}
+
+function renderDataFiles() {
+  renderFileTable('data-files-table', _dataFiles, _dfSort, 'data-search', 'sortDataFiles');
+}
+function renderLogFiles() {
+  renderFileTable('log-files-table', _logFiles, _lfSort, 'log-search', 'sortLogFiles');
+}
+
+function sortDataFiles(col) {
+  _dfSort = { col, dir: _dfSort.col === col ? -_dfSort.dir : -1 };
+  renderDataFiles();
+}
+function sortLogFiles(col) {
+  _lfSort = { col, dir: _lfSort.col === col ? -_lfSort.dir : -1 };
+  renderLogFiles();
+}
+
+// ── Render: Server Resources ──────────────────────────────
+function fmtUptime(sec) {
+  if (sec == null) return '—';
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h ${m}m`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function bar(pct, fillCls) {
+  if (pct == null) return '<span style="font-size:10px;color:var(--text-muted)">N/A</span>';
+  const p = Math.min(Math.max(pct, 0), 100);
+  return `<div class="mem-bar-track"><div class="mem-bar-fill ${fillCls}" style="width:${p}%"></div></div>`;
+}
+
+function pctClass(p) {
+  if (p == null) return '';
+  if (p >= 85) return 'error';
+  if (p >= 65) return 'warn';
+  return '';
+}
+
+function renderServer(d) {
+  const cpu  = d.cpu  || {};
+  const mem  = d.memory || {};
+  const swap = d.swap || {};
+  const disk = d.disk || {};
+  const la   = d.load_avg;
+
+  const cpuPct = cpu.percent;
+  const cpuChip = cpuPct == null
+    ? `<div class="stat-chip"><div class="stat-chip-val" style="font-size:14px">N/A</div><div class="stat-chip-lbl">CPU${cpu.cores ? ' · ' + cpu.cores + ' cores' : ''}</div></div>`
+    : `<div class="stat-chip ${cpuPct >= 85 ? 'red' : cpuPct >= 65 ? 'orange' : 'green'}">
+         <div class="stat-chip-val">${cpuPct}%</div>
+         <div class="stat-chip-lbl">CPU${cpu.cores ? ' · ' + cpu.cores + ' cores' : ''}</div>
+       </div>`;
+
+  const loadChip = la
+    ? `<div class="stat-chip blue"><div class="stat-chip-val" style="font-size:15px">${la['1']} / ${la['5']} / ${la['15']}</div><div class="stat-chip-lbl">Load Avg (1/5/15m)</div></div>`
+    : `<div class="stat-chip"><div class="stat-chip-val" style="font-size:14px">—</div><div class="stat-chip-lbl">Load Avg (Linux/macOS only)</div></div>`;
+
+  const upChip = `<div class="stat-chip purple"><div class="stat-chip-val" style="font-size:15px">${fmtUptime(d.uptime)}</div><div class="stat-chip-lbl">Uptime</div></div>`;
+
+  const memBar = `
+    <div class="mem-bar-wrap" style="margin-top:0">
+      <div class="mem-bar-labels">
+        <span>RAM — ${mem.percent != null ? mem.percent + '%' : 'N/A'}</span>
+        <span>${mem.used != null ? fmtBytes(mem.used) + ' / ' + fmtBytes(mem.total) : '—'}</span>
+      </div>
+      ${bar(mem.percent, pctClass(mem.percent))}
+      <div class="mem-bar-meta">
+        <span>Available: <strong>${mem.available != null ? fmtBytes(mem.available) : '—'}</strong></span>
+        <span>Free: <strong>${mem.free != null ? fmtBytes(mem.free) : '—'}</strong></span>
+        ${swap.total ? `<span>Swap: <strong>${fmtBytes(swap.used)} / ${fmtBytes(swap.total)}</strong> (${swap.percent}%)</span>` : ''}
+      </div>
+    </div>`;
+
+  const diskBar = `
+    <div class="mem-bar-wrap" style="margin-top:10px">
+      <div class="mem-bar-labels">
+        <span>Disk — ${disk.percent != null ? disk.percent + '%' : 'N/A'}</span>
+        <span>${disk.used != null ? fmtBytes(disk.used) + ' / ' + fmtBytes(disk.total) : '—'}</span>
+      </div>
+      ${bar(disk.percent, pctClass(disk.percent))}
+      <div class="mem-bar-meta">
+        <span>Free: <strong>${disk.free != null ? fmtBytes(disk.free) : '—'}</strong></span>
+        <span>Path: <strong style="font-size:10px">${escHtml(disk.path || '—')}</strong></span>
+      </div>
+    </div>`;
+
+  document.getElementById('srv-stats').innerHTML = `
+    <div class="stat-chips">${cpuChip}${loadChip}${upChip}</div>
+    ${memBar}
+    ${diskBar}`;
+
+  document.getElementById('srv-sub').textContent =
+    `${d.hostname || 'host'} · ${d.os || ''}${cpu.cores ? ' · ' + cpu.cores + ' cores' : ''}`;
+}
+
+async function loadServer() {
+  const res = await API.request('GET', '/dev/index.php?action=server');
+  if (!res?.ok) {
+    document.getElementById('srv-stats').innerHTML =
+      `<div class="state-error">Error ${res?.status || ''}: ${escHtml(res?.data?.message || 'โหลด server metrics ไม่สำเร็จ')}</div>`;
+    return;
+  }
+  const d = res.data.data ?? res.data;
+  renderServer(d);
+  pushSrvBuffer(d);
+  // Keep sampler status fresh from the snapshot response (no extra roundtrip)
+  if (d.sampler) {
+    _srvHistMeta = {
+      sampler_active: d.sampler.active,
+      last_sample_ts: d.sampler.last_sample_ts,
+      total_points:   d.sampler.total_points,
+    };
+    updateSamplerStatus();
+  }
+  if (_srvRange === '30m') drawSrvChart();
+}
+
+// ── Live buffer (30m at 5s = 360 points) ──────────────────
+const SRV_BUF_MAX = 360;
+const _srvBuffer = { t: [], c: [], m: [], d: [] };
+let _srvRange  = '30m';
+let _srvHist   = null;   // server-fetched history (range-specific)
+let _srvHistMeta = null; // {sampler_active, last_sample_ts, ...}
+
+function pushSrvBuffer(d) {
+  _srvBuffer.t.push(d.server_time || Math.floor(Date.now() / 1000));
+  _srvBuffer.c.push(d.cpu?.percent ?? null);
+  _srvBuffer.m.push(d.memory?.percent ?? null);
+  _srvBuffer.d.push(d.disk?.percent ?? null);
+  if (_srvBuffer.t.length > SRV_BUF_MAX) {
+    _srvBuffer.t.shift(); _srvBuffer.c.shift(); _srvBuffer.m.shift(); _srvBuffer.d.shift();
+  }
+}
+
+async function loadSrvHistory(range) {
+  const res = await API.request('GET', '/dev/index.php?action=server-history&range=' + encodeURIComponent(range));
+  if (!res?.ok) { _srvHist = []; _srvHistMeta = null; return; }
+  const payload = res.data.data ?? res.data;
+  _srvHist     = payload?.history || [];
+  _srvHistMeta = payload || null;
+  updateSamplerStatus();
+}
+
+function updateSamplerStatus() {
+  const el = document.getElementById('srv-sampler-status');
+  if (!el) return;
+  if (!_srvHistMeta) { el.textContent = ''; return; }
+  const pts = _srvHistMeta.total_points;
+  const ptsStr = pts != null ? ` · ${pts.toLocaleString()} จุดสะสม` : '';
+  if (_srvHistMeta.sampler_active) {
+    const age = Math.floor((Date.now()/1000) - _srvHistMeta.last_sample_ts);
+    el.innerHTML = `<span style="color:#22c55e">●</span> Sampler active · ล่าสุด ${age}s${ptsStr}`;
+    el.title = 'มีตัวสุ่มเก็บข้อมูลกำลังทำงาน (ทั้งจาก cron + การเปิดหน้านี้)';
+    el.style.cursor = 'help';
+  } else {
+    el.innerHTML = `<span style="color:#f59e0b">●</span> Sampler ไม่ทำงาน${ptsStr} — เก็บเฉพาะตอนเปิดหน้านี้`;
+    el.title = 'ตั้ง Task Scheduler ยิง cron/sample-server-metrics.bat ทุก 1 นาที เพื่อให้เก็บข้อมูลตลอด 24×7 ดูคำสั่งใน comment ที่ head ของไฟล์ .php';
+    el.style.cursor = 'help';
+  }
+}
+
+function drawSrvChart() {
+  const cv = document.getElementById('srv-chart');
+  if (!cv) return;
+
+  let ts, cpus, mems, disks;
+  if (_srvRange === '30m') {
+    ts = _srvBuffer.t; cpus = _srvBuffer.c; mems = _srvBuffer.m; disks = _srvBuffer.d;
+  } else {
+    if (!_srvHist) return;
+    ts    = _srvHist.map(e => e.t);
+    cpus  = _srvHist.map(e => e.c);
+    mems  = _srvHist.map(e => e.m);
+    disks = _srvHist.map(e => e.d);
+  }
+
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth || 800;
+  const H = cv.clientHeight || 170;
+  cv.width  = Math.floor(W * dpr);
+  cv.height = Math.floor(H * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  const metaEl = document.getElementById('srv-hist-meta');
+
+  if (!ts.length) {
+    ctx.fillStyle = 'rgba(150,150,150,.5)';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    const msg = _srvRange === '30m'
+      ? 'ยังไม่มีข้อมูล — รอ poll ครั้งต่อไป…'
+      : 'ยังไม่มี history บันทึก — ต้องเปิดหน้าทิ้งไว้ให้ระบบ sample ก่อน';
+    ctx.fillText(msg, W/2, H/2);
+    if (metaEl) metaEl.textContent = '';
+    return;
+  }
+
+  const pad = { l: 32, r: 8, t: 6, b: 18 };
+  const cW = W - pad.l - pad.r;
+  const cH = H - pad.t - pad.b;
+
+  // Y gridlines + labels
+  ctx.strokeStyle = 'rgba(150,150,150,.12)';
+  ctx.fillStyle   = 'rgba(150,150,150,.65)';
+  ctx.font        = '9px ui-sans-serif, sans-serif';
+  ctx.textAlign   = 'right';
+  ctx.lineWidth   = 1;
+  for (let p = 0; p <= 100; p += 25) {
+    const y = pad.t + cH - (p / 100) * cH;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillText(p + '%', pad.l - 4, y + 3);
+  }
+
+  // X time labels
+  ctx.textAlign = 'center';
+  const minT = ts[0], maxT = ts[ts.length - 1];
+  const fmtT  = (t) => new Date(t * 1000).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const fmtD  = (t) => new Date(t * 1000).toLocaleDateString('th-TH', { day: '2-digit', month: 'short' });
+  const fmtDT = (t) => fmtD(t) + ' ' + fmtT(t);
+  const labelFmt = _srvRange === '7d' ? fmtD : fmtT;
+  for (let i = 0; i <= 4; i++) {
+    const t = minT + (maxT - minT) * i / 4;
+    const x = pad.l + (i / 4) * cW;
+    ctx.fillText(labelFmt(t), x, H - 4);
+  }
+
+  // Plot line
+  const plot = (values, color) => {
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    let drawing = false;
+    const n = values.length;
+    for (let i = 0; i < n; i++) {
+      const v = values[i];
+      if (v == null || isNaN(v)) { drawing = false; continue; }
+      const x = pad.l + (n === 1 ? cW / 2 : (i / (n - 1)) * cW);
+      const y = pad.t + cH - (Math.min(Math.max(v, 0), 100) / 100) * cH;
+      if (!drawing) { ctx.moveTo(x, y); drawing = true; }
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  };
+
+  plot(disks, '#f59e0b');
+  plot(mems,  '#22c55e');
+  plot(cpus,  '#8b5cf6');
+
+  if (metaEl) {
+    const span = Math.round((maxT - minT) / 60);
+    metaEl.textContent = `· ${ts.length} จุด · ${span}m (${fmtDT(minT)} → ${fmtDT(maxT)})`;
+  }
+}
+
+function bindHistTabs() {
+  document.querySelectorAll('.hist-tab').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (btn.classList.contains('active')) return;
+      document.querySelectorAll('.hist-tab').forEach(x => x.classList.remove('active'));
+      btn.classList.add('active');
+      _srvRange = btn.dataset.range;
+      if (_srvRange !== '30m') {
+        _srvHist = null; // force refetch for the new range
+        document.getElementById('srv-hist-meta').textContent = '· กำลังโหลด…';
+        await loadSrvHistory(_srvRange);
+      } else {
+        updateSamplerStatus();
+      }
+      drawSrvChart();
+    });
+  });
+}
+
+let _srvChartResizeBound = false;
+function bindChartResize() {
+  if (_srvChartResizeBound) return;
+  _srvChartResizeBound = true;
+  let t = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(t);
+    t = setTimeout(drawSrvChart, 120);
+  });
+}
+
+let _srvTimer = null;
+function startServerLive() {
+  stopServerLive();
+  _srvTimer = setInterval(() => {
+    if (document.hidden) return;
+    loadServer();
+  }, 5000);
+}
+function stopServerLive() {
+  if (_srvTimer) { clearInterval(_srvTimer); _srvTimer = null; }
+}
+
+// ── Main load ──────────────────────────────────────────────
+async function loadAll() {
+  const btn = document.getElementById('btn-refresh');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin" style="width:12px;height:12px;border-width:1.5px"></span> Loading…';
+
+  // Show loading states
+  ['srv-stats','php-kv','mem-bar','app-stats','rl-stats','data-files-table','log-files-table'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<div class="card-loading"><span class="spin"></span> Loading…</div>';
+  });
+
+  // Server metrics load in parallel (separate endpoint, has 200ms CPU sample)
+  loadServer();
+
+  const res = await API.request('GET', '/dev/index.php');
+
+  btn.disabled = false;
+  btn.innerHTML = '↺ Refresh';
+
+  if (!res?.ok) {
+    const errHtml = `<div class="state-error">Error ${res?.status || ''}: ${escHtml(res?.data?.message || 'ไม่สามารถโหลดข้อมูลได้')}</div>`;
+    ['php-kv','app-stats','rl-stats','data-files-table','log-files-table'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = errHtml;
+    });
+    document.getElementById('mem-bar').innerHTML = '';
+    Toast.error('โหลดข้อมูลไม่สำเร็จ: ' + (res?.data?.message || 'unknown error'));
+    return;
+  }
+
+  _data      = res.data.data ?? res.data;
+  _dataFiles = _data.data_files || [];
+  _logFiles  = _data.log_files  || [];
+
+  renderPhp(_data);
+  renderAppStats(_data);
+  renderRateLimit(_data);
+
+  // Update card sub-titles with totals
+  document.getElementById('data-files-sub').textContent =
+    `${_dataFiles.length} files · รวม ${fmtBytes(totalSize(_dataFiles))}`;
+  document.getElementById('log-files-sub').textContent =
+    `${_logFiles.length} files · รวม ${fmtBytes(totalSize(_logFiles))}`;
+
+  renderDataFiles();
+  renderLogFiles();
+
+  document.getElementById('last-updated').textContent =
+    'อัปเดตล่าสุด: ' + new Date().toLocaleTimeString('th-TH', { hour12: false });
+}
+
+// ── Init ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  bindHistTabs();
+  bindChartResize();
+  loadAll();
+  // Live auto-refresh for the Server Resources card (every 5s)
+  const cb = document.getElementById('srv-autorefresh');
+  if (cb?.checked) startServerLive();
+  cb?.addEventListener('change', () => cb.checked ? startServerLive() : stopServerLive());
+});
+window.addEventListener('beforeunload', stopServerLive);
+
+  // ── re-publish what the inline version leaked to global ──
+  try { Object.defineProperty(window, "bar", { configurable: true, get: () => bar, set: (v) => { bar = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "bindChartResize", { configurable: true, get: () => bindChartResize, set: (v) => { bindChartResize = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "bindHistTabs", { configurable: true, get: () => bindHistTabs, set: (v) => { bindHistTabs = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "drawSrvChart", { configurable: true, get: () => drawSrvChart, set: (v) => { drawSrvChart = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "fmtBytes", { configurable: true, get: () => fmtBytes, set: (v) => { fmtBytes = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "fmtUptime", { configurable: true, get: () => fmtUptime, set: (v) => { fmtUptime = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "loadAll", { configurable: true, get: () => loadAll, set: (v) => { loadAll = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "loadServer", { configurable: true, get: () => loadServer, set: (v) => { loadServer = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "loadSrvHistory", { configurable: true, get: () => loadSrvHistory, set: (v) => { loadSrvHistory = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "parseMemLimit", { configurable: true, get: () => parseMemLimit, set: (v) => { parseMemLimit = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "pctClass", { configurable: true, get: () => pctClass, set: (v) => { pctClass = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "pushSrvBuffer", { configurable: true, get: () => pushSrvBuffer, set: (v) => { pushSrvBuffer = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "relTime", { configurable: true, get: () => relTime, set: (v) => { relTime = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "renderAppStats", { configurable: true, get: () => renderAppStats, set: (v) => { renderAppStats = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "renderDataFiles", { configurable: true, get: () => renderDataFiles, set: (v) => { renderDataFiles = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "renderFileTable", { configurable: true, get: () => renderFileTable, set: (v) => { renderFileTable = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "renderLogFiles", { configurable: true, get: () => renderLogFiles, set: (v) => { renderLogFiles = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "renderPhp", { configurable: true, get: () => renderPhp, set: (v) => { renderPhp = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "renderRateLimit", { configurable: true, get: () => renderRateLimit, set: (v) => { renderRateLimit = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "renderServer", { configurable: true, get: () => renderServer, set: (v) => { renderServer = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "sortDataFiles", { configurable: true, get: () => sortDataFiles, set: (v) => { sortDataFiles = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "sortFiles", { configurable: true, get: () => sortFiles, set: (v) => { sortFiles = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "sortLogFiles", { configurable: true, get: () => sortLogFiles, set: (v) => { sortLogFiles = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "startServerLive", { configurable: true, get: () => startServerLive, set: (v) => { startServerLive = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "stopServerLive", { configurable: true, get: () => stopServerLive, set: (v) => { stopServerLive = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "totalSize", { configurable: true, get: () => totalSize, set: (v) => { totalSize = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "truncKey", { configurable: true, get: () => truncKey, set: (v) => { truncKey = v; } }); } catch (e) {}
+  try { Object.defineProperty(window, "updateSamplerStatus", { configurable: true, get: () => updateSamplerStatus, set: (v) => { updateSamplerStatus = v; } }); } catch (e) {}
+})();

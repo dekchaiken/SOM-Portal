@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Holiday Plans — Team SM</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <script src="assets/js/theme.js"></script>
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/holiday-plans/holiday-plans.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="topbar-title-left">
+          <div class="page-title"><i data-icon="calendar"></i> Advance Holiday Plans</div>
+          <div class="page-sub">วางแผนวันหยุดล่วงหน้า Team SM</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary btn-sm" onclick="openPlanModal()" style="font-size:11px;font-weight:700">
+          <i data-icon="pencil"></i> วางแผนของฉัน
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="loadAll()" style="font-size:11px">↺</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="hp-wrap">
+
+        <!-- Month / Year nav -->
+        <div class="hp-nav">
+          <div class="hp-nav-center">
+            <button class="hp-nav-btn" onclick="changeYear(-1)">«</button>
+            <button class="hp-nav-btn" onclick="changeMonth(-1)">‹</button>
+            <div class="hp-nav-title" id="hp-nav-title">Loading...</div>
+            <button class="hp-nav-btn" onclick="changeMonth(1)">›</button>
+            <button class="hp-nav-btn" onclick="changeYear(1)">»</button>
+            <button class="btn btn-ghost btn-sm" onclick="goToday()" style="font-size:10px;margin-left:4px">วันนี้</button>
+          </div>
+          <div class="hp-nav-chips">
+            <div class="hp-chip" id="hp-stat-chip">—</div>
+          </div>
+        </div>
+
+        <!-- Note -->
+        <div class="hp-note">
+          <div class="hp-note-title"><i data-icon="map-pin"></i> หมายเหตุ</div>
+          เริ่มทำแผนวันหยุดของทีม ให้จับจองกันล่วงหน้า <strong>ใส่วันที่ต้องการหยุดด้านล่าง</strong>ด้วยครับ
+          ทางหัวหน้าเขาอยากเห็นภาพว่าวันลาเหลือกันเยอะมั้ย จะได้ไม่มาลากระจุกกันเดือนสุดท้ายครับ
+          และ<strong>ขอเพิ่ม ตั้งกฎ</strong> ในทีม เช่น คนเดิมๆ ไม่ควรลาช่วงวันหยุดยาวเดิมๆ ทุกปี ต้องแบ่งเพื่อนในทีมบ้าง สลับๆ กัน
+        </div>
+
+        <!-- Calendar table -->
+        <div class="hp-table-card">
+          <div class="hp-table-scroll">
+            <table class="hp-table" id="hp-table">
+              <thead id="hp-thead"></thead>
+              <tbody id="hp-tbody">
+                <tr><td colspan="40" style="text-align:center;padding:40px;color:#aaa;font-size:12px">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Legend -->
+          <div style="padding:12px 16px; border-top:1px solid #f0f0f0;">
+            <div class="hp-legend">
+              <div class="hp-legend-item"><div class="hp-legend-dot" style="background:#22c55e"></div><span>แผนของฉัน</span></div>
+              <div class="hp-legend-item"><div class="hp-legend-dot" style="background:#fbbf24"></div><span>แผนของเพื่อน</span></div>
+              <div class="hp-legend-item"><div class="hp-legend-dot" style="background:#fef9c3;border:1px solid #e8e8e8"></div><span>วันหยุดนักขัตฤกษ์</span></div>
+              <div class="hp-legend-item"><div class="hp-legend-dot" style="background:#fafafa;border:1px solid #e8e8e8"></div><span>เสาร์-อาทิตย์</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Plan Modal -->
+<div id="plan-modal">
+  <div id="plan-modal-box">
+    <div class="pm-hd">
+      <div>
+        <div class="pm-hd-t"><i data-icon="pencil"></i> วางแผนวันหยุดของฉัน</div>
+        <div class="pm-hd-sub" id="pm-hd-sub">เลือกวันที่ต้องการหยุดในเดือนนี้</div>
+      </div>
+      <button class="pm-close" onclick="closePlanModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="pm-body">
+      <!-- mini month nav in modal -->
+      <div class="pm-cal-nav">
+        <button class="pm-cal-btn" onclick="modalPrevMonth()">‹</button>
+        <div class="pm-cal-title" id="pm-cal-title"></div>
+        <button class="pm-cal-btn" onclick="modalNextMonth()">›</button>
+      </div>
+      <!-- calendar grid -->
+      <div class="pm-cal-grid" id="pm-cal-grid"></div>
+      <!-- selected pills -->
+      <div class="pm-selected-wrap">
+        <div class="pm-selected-title">วันที่เลือก</div>
+        <div class="pm-selected-pills" id="pm-pills"><span class="pm-empty">ยังไม่ได้เลือกวัน</span></div>
+      </div>
+    </div>
+    <div class="pm-foot">
+      <div class="pm-count">เลือกแล้ว <strong id="pm-count">0</strong> วัน</div>
+      <div class="pm-actions">
+        <button class="btn btn-ghost btn-sm" onclick="clearModalMonth()" style="font-size:11px"><i data-icon="trash"></i> ล้างเดือนนี้</button>
+        <button class="btn btn-primary btn-sm" onclick="savePlan()" id="pm-save-btn" style="font-size:11px;font-weight:700"><i data-icon="save"></i> บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script src="./assets/pages/holiday-plans/holiday-plans.js"></script>
+</body>
+</html>

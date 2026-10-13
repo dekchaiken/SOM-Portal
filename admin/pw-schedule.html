@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PW Schedule — Admin</title>
+<link rel="icon" href="../favicon.ico" type="image/x-icon">
+<script src="../assets/js/theme.js"></script>
+<link rel="stylesheet" href="../assets/css/dark.css">
+<link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+
+  <link rel="stylesheet" href="../assets/pages/admin/pw-schedule/pw-schedule.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="topbar-title-left">
+          <div class="page-title">◐ PW Schedule · Settings</div>
+          <div class="page-sub">ตั้งค่า webhook, เวลาแจ้งเตือน และดูรอบก่อนหน้า</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <a href="../pw-schedule.html" class="btn btn-ghost btn-sm" style="font-size:11px;gap:6px">↗ Go to PW page</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div id="admin-nav-mount"></div>
+
+      <section class="page-hero">
+        <div class="page-hero-mark">◐</div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>PW Schedule · Settings</h1>
+          <p>ตั้งค่า webhook, เวลาแจ้งเตือนรอบประชุม Planwork และดูประวัติรอบก่อนหน้า</p>
+        </div>
+      </section>
+
+      <!-- Webhook & notifications -->
+      <div class="cfg-card">
+        <div class="cfg-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon">↗</div>
+            <div>
+              <div class="cfg-card-title">Google Chat Webhook</div>
+              <div class="cfg-card-sub">URL ที่จะใช้ส่งสรุป PW ไปยังห้อง chat</div>
+            </div>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div class="cfg-row">
+            <label class="cfg-label">Webhook URL</label>
+            <input class="cfg-input code" id="f-webhook" placeholder="https://chat.googleapis.com/v1/spaces/…/messages?key=…&token=…">
+            <div class="cfg-hint">ผู้ใช้ทั่วไปมองไม่เห็น URL นี้ — เก็บเฉพาะสถานะ “ตั้งค่าแล้ว / ยังไม่ตั้ง”</div>
+          </div>
+          <div class="cfg-row">
+            <button class="cfg-btn-ghost" id="btn-test" style="align-self:flex-start">ทดสอบส่งด้วย URL ด้านบน</button>
+            <div class="cfg-hint">ส่งการ์ดทดสอบไปยังห้องที่ URL ชี้ไว้ (ไม่ทำลาย webhook log)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- n8n sync -->
+      <div class="cfg-card">
+        <div class="cfg-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon">↻</div>
+            <div>
+              <div class="cfg-card-title">Google Sheet Sync (n8n)</div>
+              <div class="cfg-card-sub">ปุ่ม “Sync Sheet” ในหน้า PW จะเรียก n8n webhook นี้</div>
+            </div>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div class="cfg-row">
+            <label class="cfg-label">n8n Webhook URL</label>
+            <input class="cfg-input code" id="f-n8n-webhook" placeholder="https://n8n.example.com/webhook/pw-sheet-sync">
+            <div class="cfg-hint">workflow ของ n8n ต้องตอบกลับเป็น JSON shape <code>{ items: [...] }</code> — ดูตัวอย่างใน <code>n8n-workflows/pw-schedule-sync.json</code></div>
+          </div>
+          <div class="cfg-row">
+            <label class="cfg-label">Shared Secret (ส่งเป็น header X-Sync-Secret)</label>
+            <input class="cfg-input code" id="f-n8n-secret" placeholder="(optional) ใส่ค่าเดียวกันใน n8n credential เพื่อกัน webhook ถูกเรียกโดยคนนอก">
+          </div>
+        </div>
+      </div>
+
+      <!-- Teamup calendar sync -->
+      <div class="cfg-card">
+        <div class="cfg-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon">▦</div>
+            <div>
+              <div class="cfg-card-title">Teamup Calendar Sync</div>
+              <div class="cfg-card-sub">ตารางเดือนในหน้า PW จะดึงงานจาก Teamup calendar นี้ (cache 5 นาที)</div>
+            </div>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div class="cfg-row">
+            <label class="cfg-label">Calendar Key หรือ Share URL</label>
+            <input class="cfg-input code" id="f-teamup-key" placeholder="ksufkt35kezgafdqch หรือ https://teamup.com/ksufkt35kezgafdqch">
+            <div class="cfg-hint">ใส่ได้ทั้ง key ล้วน หรือ URL แชร์ — ระบบจะดึงเฉพาะ key ออกมาให้</div>
+          </div>
+          <div class="cfg-row">
+            <label class="cfg-label">Mode</label>
+            <div class="tog-row" style="gap:16px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+                <input type="radio" name="teamup-mode" value="share" id="f-teamup-mode-share"> Share endpoint ★ แนะนำ (ที่หน้าแชร์ Teamup ใช้เอง — ไม่ต้อง token)
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+                <input type="radio" name="teamup-mode" value="ics" id="f-teamup-mode-ics"> iCal feed (ไม่ต้อง token)
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+                <input type="radio" name="teamup-mode" value="api" id="f-teamup-mode-api"> Teamup API (ต้องขอ token, official + rate-limit ต่ำ)
+              </label>
+            </div>
+            <div class="cfg-hint">Share endpoint = XHR ที่ browser ยิงเวลาเปิดหน้า <code>teamup.com/{key}</code> — ได้ข้อมูลครบเท่า API (subcalendar_id, notes, who, custom). ข้อเสียคือ undocumented → ถ้า Teamup เปลี่ยนอาจต้องสลับไปใช้อีก mode</div>
+          </div>
+          <div class="cfg-row" id="f-teamup-token-row" style="display:none">
+            <label class="cfg-label">Teamup API Token</label>
+            <input class="cfg-input code" id="f-teamup-token" placeholder="Teamup-Token value จาก email ตอบกลับ">
+          </div>
+          <div class="cfg-row">
+            <button class="cfg-btn-ghost" id="btn-teamup-test" style="align-self:flex-start">ทดสอบดึงเดือนนี้</button>
+            <div class="cfg-hint" id="teamup-test-hint">กดเพื่อลอง fetch events ของเดือนปัจจุบันจาก Teamup (จะบันทึกก่อนถ้ามีการเปลี่ยน)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lead times + sound -->
+      <div class="cfg-card">
+        <div class="cfg-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon">⏱</div>
+            <div>
+              <div class="cfg-card-title">การแจ้งเตือนบน Web</div>
+              <div class="cfg-card-sub">เวลาแจ้งเตือนก่อนถึง PW และการเปิด/ปิดเสียง</div>
+            </div>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div class="cfg-row">
+            <label class="cfg-label">Lead time (นาทีก่อนเริ่ม)</label>
+            <div class="lead-chips" id="lead-chips"></div>
+            <div class="lead-add">
+              <input type="number" min="1" max="120" id="lead-input" placeholder="นาที">
+              <button id="lead-add-btn">+ Add</button>
+            </div>
+            <div class="cfg-hint">ค่าพื้นฐาน 10, 5 นาที — ใส่ได้หลายค่า, แต่ละค่าจะยิง noti + เสียงหนึ่งครั้ง</div>
+          </div>
+          <div class="cfg-row">
+            <label class="cfg-label">เสียงแจ้งเตือน</label>
+            <div class="tog-row">
+              <label class="tog">
+                <input type="checkbox" id="f-sound">
+                <span class="tog-slider"></span>
+              </label>
+              <span class="tog-text" id="f-sound-label">เปิด</span>
+            </div>
+          </div>
+        </div>
+        <div class="save-row">
+          <button class="cfg-btn-ghost" id="btn-reload">Reload</button>
+          <button class="cfg-btn-primary" id="btn-save">บันทึก</button>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div class="cfg-card">
+        <div class="cfg-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon">≡</div>
+            <div>
+              <div class="cfg-card-title">ประวัติ PW รอบก่อนหน้า</div>
+              <div class="cfg-card-sub">รอบล่าสุดและสถานะการทำเสร็จ</div>
+            </div>
+          </div>
+        </div>
+        <div id="hist-mount"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/analytics.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/pw-schedule/pw-schedule.js"></script>
+</body>
+</html>

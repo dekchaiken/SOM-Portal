@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>GenZ Office — Option 2: CSS Isometric</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0d1a;min-height:100vh;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif}
+
+/* Ambient glow bg */
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 60% 40% at 30% 40%,rgba(167,139,250,.12) 0%,transparent 60%),
+             radial-gradient(ellipse 40% 30% at 70% 60%,rgba(244,114,182,.08) 0%,transparent 50%);
+  pointer-events:none}
+
+header{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:100;
+  display:flex;align-items:center;gap:10px}
+.hbadge{background:rgba(10,12,25,.8);border:1px solid rgba(167,139,250,.35);
+  color:#c4b5fd;padding:5px 14px;border-radius:999px;font-size:11px;font-weight:700;
+  letter-spacing:.08em;backdrop-filter:blur(6px)}
+
+#option-tag{position:fixed;bottom:20px;right:20px;color:rgba(167,139,250,.4);font-size:10px;font-weight:800;letter-spacing:.12em}
+
+/* Isometric scene */
+.iso-scene{
+  width:700px;height:500px;position:relative;
+  transform:rotateX(60deg) rotateZ(-45deg);
+  transform-style:preserve-3d;
+}
+
+/* Floor tiles */
+.floor{position:absolute;inset:0;
+  background:
+    linear-gradient(rgba(167,139,250,.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(167,139,250,.06) 1px,transparent 1px);
+  background-size:70px 70px;
+  background-color:#0d1022;
+  border:1px solid rgba(167,139,250,.1);
+  border-radius:4px;
+}
+
+/* Desk */
+.desk{
+  position:absolute;
+  width:140px;height:80px;
+  transform-style:preserve-3d;
+  cursor:pointer;
+  transition:transform .25s ease;
+}
+.desk:hover{transform:translateZ(8px) scale(1.03)!important;}
+
+.desk-top{
+  position:absolute;inset:0;
+  border-radius:8px;
+  transform:translateZ(18px);
+  display:flex;align-items:center;justify-content:center;
+}
+.desk-front{
+  position:absolute;left:0;right:0;bottom:-18px;height:18px;
+  transform:rotateX(-90deg);transform-origin:bottom;
+  filter:brightness(.6);border-radius:0 0 4px 4px;
+}
+.desk-side{
+  position:absolute;top:0;right:-18px;bottom:0;width:18px;
+  transform:rotateY(90deg);transform-origin:right;
+  filter:brightness(.7);
+}
+
+/* Monitor on desk */
+.monitor{
+  width:50px;height:36px;
+  border-radius:4px;
+  position:relative;transform:translateZ(8px);
+  border:2px solid rgba(255,255,255,.1);
+}
+.monitor::after{
+  content:'';position:absolute;inset:3px;border-radius:2px;
+  opacity:.7;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0,rgba(255,255,255,.05) 1px,transparent 1px,transparent 4px);
+}
+.monitor-stand{
+  position:absolute;bottom:-12px;left:50%;
+  width:4px;height:12px;transform:translateX(-50%);
+  background:rgba(255,255,255,.15);
+}
+
+/* Chair */
+.chair{
+  position:absolute;width:36px;height:36px;
+  border-radius:50%;border:3px solid rgba(255,255,255,.15);
+  transform:translateZ(8px);
+  background:rgba(255,255,255,.04);
+}
+
+/* Name tag */
+.nametag{
+  position:absolute;
+  padding:4px 10px;border-radius:999px;
+  font-size:10px;font-weight:800;letter-spacing:.04em;
+  white-space:nowrap;
+  transform:translateZ(40px);
+  border:1px solid rgba(255,255,255,.2);
+  background:rgba(10,12,25,.7);
+  backdrop-filter:blur(4px);
+  color:#fff;
+  transition:transform .25s;
+}
+.desk:hover .nametag{transform:translateZ(55px)}
+
+/* Wall decorations */
+.wall-h,.wall-v{position:absolute;background:rgba(255,255,255,.03);border:1px solid rgba(167,139,250,.08)}
+.wall-h{left:0;right:0;height:60px;top:0;border-radius:4px 4px 0 0}
+.wall-v{top:0;bottom:0;width:60px;left:0;border-radius:4px 0 0 4px}
+
+/* Status dots */
+.status{
+  position:absolute;top:-4px;right:-4px;
+  width:10px;height:10px;border-radius:50%;background:#22c55e;
+  border:2px solid #0a0d1a;
+  transform:translateZ(50px);
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}50%{box-shadow:0 0 0 6px rgba(34,197,94,0)}}
+
+/* Info panel */
+#info{
+  position:fixed;left:24px;top:50%;transform:translateY(-50%);
+  width:200px;
+  background:rgba(10,12,25,.9);border:1.5px solid rgba(167,139,250,.35);
+  border-radius:16px;padding:20px;backdrop-filter:blur(10px);
+  opacity:0;transition:opacity .25s;
+  pointer-events:none;
+}
+#info.show{opacity:1}
+#info h3{font-size:15px;font-weight:800;color:#fff;margin-bottom:4px}
+#info .role{font-size:9.5px;color:#a78bfa;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
+.info-row{display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-bottom:8px}
+.info-row b{color:#e2e8f0;font-weight:700}
+
+/* Floating particles */
+.particles{position:fixed;inset:0;pointer-events:none;z-index:0}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hbadge">✦ GenZ Team Office</div>
+  <div class="hbadge" style="color:#f472b6;border-color:rgba(244,114,182,.35)">4 Members · All Online</div>
+</header>
+
+<div class="iso-scene" id="scene">
+  <div class="floor"></div>
+
+  <!-- Wall H (back) -->
+  <div class="wall-h"></div>
+  <!-- Wall V (left) -->
+  <div class="wall-v"></div>
+
+  <!-- Desk 1: Warapon — top-left -->
+  <div class="desk" style="left:80px;top:60px" data-name="Warapon (วรพล)" data-role="SM Lead" data-notes="12" data-kudos="8" data-color="#a78bfa">
+    <div class="desk-top" style="background:#1a1040;border:1px solid rgba(167,139,250,.4)">
+      <div class="monitor" style="background:#a78bfa;">
+        <div class="monitor-stand"></div>
+      </div>
+    </div>
+    <div class="desk-front" style="background:#a78bfa;opacity:.3"></div>
+    <div class="desk-side" style="background:#a78bfa;opacity:.2"></div>
+    <div class="chair" style="bottom:-50px;left:50%;transform:translateX(-50%) translateZ(8px);border-color:rgba(167,139,250,.4)"></div>
+    <div class="nametag" style="bottom:-80px;left:50%;transform:translateX(-50%) translateZ(40px);color:#c4b5fd">
+      Warapon
+    </div>
+    <div class="status"></div>
+  </div>
+
+  <!-- Desk 2: Piyaphan — top-right -->
+  <div class="desk" style="right:80px;top:60px" data-name="Piyaphan (เผือก)" data-role="SM Dev" data-notes="7" data-kudos="5" data-color="#f472b6">
+    <div class="desk-top" style="background:#1a0a1a;border:1px solid rgba(244,114,182,.4)">
+      <div class="monitor" style="background:#f472b6;">
+        <div class="monitor-stand"></div>
+      </div>
+    </div>
+    <div class="desk-front" style="background:#f472b6;opacity:.3"></div>
+    <div class="desk-side" style="background:#f472b6;opacity:.2"></div>
+    <div class="chair" style="bottom:-50px;left:50%;transform:translateX(-50%) translateZ(8px);border-color:rgba(244,114,182,.4)"></div>
+    <div class="nametag" style="bottom:-80px;left:50%;transform:translateX(-50%) translateZ(40px);color:#fbb6f0">
+      Piyaphan
+    </div>
+    <div class="status"></div>
+  </div>
+
+  <!-- Desk 3: Sirirat — bottom-left -->
+  <div class="desk" style="left:80px;bottom:80px" data-name="Sirirat (น้องหมู)" data-role="SM Ops" data-notes="5" data-kudos="11" data-color="#22d3ee">
+    <div class="desk-top" style="background:#051a1a;border:1px solid rgba(34,211,238,.4)">
+      <div class="monitor" style="background:#22d3ee;">
+        <div class="monitor-stand"></div>
+      </div>
+    </div>
+    <div class="desk-front" style="background:#22d3ee;opacity:.3"></div>
+    <div class="desk-side" style="background:#22d3ee;opacity:.2"></div>
+    <div class="chair" style="bottom:-50px;left:50%;transform:translateX(-50%) translateZ(8px);border-color:rgba(34,211,238,.4)"></div>
+    <div class="nametag" style="bottom:-80px;left:50%;transform:translateX(-50%) translateZ(40px);color:#67e8f9">
+      Sirirat
+    </div>
+    <div class="status"></div>
+  </div>
+
+  <!-- Desk 4: Thammanoon — bottom-right -->
+  <div class="desk" style="right:80px;bottom:80px" data-name="Thammanoon (โน)" data-role="SM Ops" data-notes="4" data-kudos="6" data-color="#fbbf24">
+    <div class="desk-top" style="background:#1a140a;border:1px solid rgba(251,191,36,.4)">
+      <div class="monitor" style="background:#fbbf24;">
+        <div class="monitor-stand"></div>
+      </div>
+    </div>
+    <div class="desk-front" style="background:#fbbf24;opacity:.3"></div>
+    <div class="desk-side" style="background:#fbbf24;opacity:.2"></div>
+    <div class="chair" style="bottom:-50px;left:50%;transform:translateX(-50%) translateZ(8px);border-color:rgba(251,191,36,.4)"></div>
+    <div class="nametag" style="bottom:-80px;left:50%;transform:translateX(-50%) translateZ(40px);color:#fde68a">
+      Thammanoon
+    </div>
+    <div class="status"></div>
+  </div>
+
+  <!-- Center table (meeting) -->
+  <div style="position:absolute;left:50%;top:50%;transform:translateX(-50%) translateY(-50%) translateZ(8px);
+    width:100px;height:60px;background:#1a1040;border:1px solid rgba(167,139,250,.3);
+    border-radius:999px;display:flex;align-items:center;justify-content:center;
+    color:rgba(167,139,250,.5);font-size:18px">
+    ✦
+  </div>
+</div>
+
+<div id="info">
+  <h3 id="i-name">–</h3>
+  <div class="role" id="i-role">–</div>
+  <div class="info-row">Notes <b id="i-notes">–</b></div>
+  <div class="info-row">Kudos <b id="i-kudos">–</b></div>
+  <div class="info-row">Status <b style="color:#22c55e">Online</b></div>
+</div>
+
+<div id="option-tag">OPTION 2 — CSS Isometric</div>
+
+<script>
+document.querySelectorAll('.desk').forEach(desk => {
+  desk.addEventListener('mouseenter', () => {
+    const info = document.getElementById('info');
+    document.getElementById('i-name').textContent = desk.dataset.name;
+    document.getElementById('i-role').textContent = desk.dataset.role;
+    document.getElementById('i-notes').textContent = desk.dataset.notes;
+    document.getElementById('i-kudos').textContent = desk.dataset.kudos;
+    info.style.borderColor = desk.dataset.color + '66';
+    info.classList.add('show');
+  });
+  desk.addEventListener('mouseleave', () => {
+    document.getElementById('info').classList.remove('show');
+  });
+});
+
+// Slight auto-rotation
+let angle = 0;
+const scene = document.getElementById('scene');
+function tick() {
+  angle += 0.002;
+  scene.style.transform = `rotateX(60deg) rotateZ(${-45 + Math.sin(angle)*3}deg)`;
+  requestAnimationFrame(tick);
+}
+tick();
+</script>
+</body>
+</html>

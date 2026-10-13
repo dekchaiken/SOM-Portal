@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>GenZ Office — Option 5: Lo-fi Pixel Office</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#070a12;overflow:hidden;font-family:'Space Grotesk',sans-serif;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}
+
+/* Lo-fi scanlines */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.04) 0,rgba(0,0,0,.04) 1px,transparent 1px,transparent 2px);
+  mix-blend-mode:multiply}
+
+header{position:fixed;top:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;z-index:100}
+.badge{background:rgba(10,12,25,.85);border:1px solid rgba(167,139,250,.3);color:#c4b5fd;
+  padding:5px 14px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.06em;backdrop-filter:blur(6px)}
+.live{display:flex;align-items:center;gap:5px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#ef4444;animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* Main window frame */
+.window{
+  border:1.5px solid rgba(167,139,250,.3);
+  border-radius:16px;overflow:hidden;
+  width:min(860px,96vw);height:min(560px,92vh);
+  background:#0d0f1e;
+  position:relative;
+  box-shadow:0 0 60px rgba(167,139,250,.1), inset 0 0 40px rgba(0,0,0,.5);
+}
+.window-titlebar{
+  height:36px;background:rgba(167,139,250,.06);
+  border-bottom:1px solid rgba(167,139,250,.12);
+  display:flex;align-items:center;padding:0 14px;gap:8px;
+}
+.dot-red{width:10px;height:10px;border-radius:50%;background:#ef4444;cursor:pointer}
+.dot-yellow{width:10px;height:10px;border-radius:50%;background:#fbbf24;cursor:pointer}
+.dot-green{width:10px;height:10px;border-radius:50%;background:#22c55e;cursor:pointer}
+.win-title{margin-left:8px;font-size:11px;font-weight:700;color:rgba(167,139,250,.6);letter-spacing:.06em}
+
+/* Office content */
+.office{
+  display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;
+  gap:1px;height:calc(100% - 36px);
+  background:rgba(167,139,250,.08);
+}
+.zone{
+  position:relative;background:#0d0f1e;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;overflow:hidden;cursor:pointer;
+  transition:background .2s;
+}
+.zone:hover{background:#111428}
+.zone:hover .zone-glow{opacity:1}
+.zone::before{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(rgba(255,255,255,.015) 1px,transparent 1px);
+  background-size:16px 16px;
+}
+
+.zone-glow{position:absolute;inset:0;opacity:0;transition:opacity .3s;pointer-events:none}
+
+/* Desk illustration */
+.desk-illo{
+  position:relative;width:160px;height:100px;margin-bottom:12px;
+}
+/* Desk surface */
+.d-surface{
+  position:absolute;bottom:0;left:10px;right:10px;height:24px;
+  border-radius:4px;
+}
+/* Monitor */
+.d-monitor{
+  position:absolute;bottom:22px;left:50%;transform:translateX(-50%);
+  width:70px;height:50px;border-radius:6px;border:2px solid rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.d-monitor-inner{width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:rgba(255,255,255,.6)}
+/* Stand */
+.d-stand{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);
+  width:4px;height:10px;background:rgba(255,255,255,.1)}
+/* Chair */
+.d-chair{
+  position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);
+  width:40px;height:40px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.03);
+}
+/* Avatar */
+.d-avatar{
+  position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
+  width:32px;height:32px;border-radius:50%;border:2px solid;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:900;color:rgba(255,255,255,.9);
+  background:#111830;z-index:2;
+  box-shadow:0 0 12px var(--acolor);
+  animation:avatarBob 3s ease-in-out infinite;
+}
+@keyframes avatarBob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-4px)}}
+
+/* Member info */
+.zone-name{font-size:15px;font-weight:800;color:#fff;margin-bottom:3px;text-align:center}
+.zone-role{font-size:9px;text-transform:uppercase;letter-spacing:.14em;font-weight:700;margin-bottom:10px;text-align:center}
+.zone-chips{display:flex;gap:6px}
+.zone-chip{padding:2px 9px;border-radius:999px;font-size:9.5px;font-weight:700;
+  background:rgba(255,255,255,.05);color:rgba(255,255,255,.5)}
+
+/* Status bar */
+.zone-status{
+  position:absolute;top:12px;right:12px;
+  display:flex;align-items:center;gap:5px;
+  font-size:9px;font-weight:700;color:#22c55e;
+  background:rgba(34,197,94,.08);
+  border:1px solid rgba(34,197,94,.2);
+  padding:2px 8px;border-radius:999px;
+}
+.status-dot{width:5px;height:5px;border-radius:50%;background:#22c55e;
+  animation:dotPulse 2s ease-in-out infinite}
+@keyframes dotPulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Corner decoration */
+.zone-num{position:absolute;top:10px;left:12px;
+  font-size:10px;font-weight:800;color:rgba(167,139,250,.3);letter-spacing:.1em}
+
+/* Active animation */
+.zone:hover .d-avatar{animation:avatarBobFast .5s ease-in-out infinite}
+@keyframes avatarBobFast{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-6px)}}
+
+/* Hover tooltip */
+.zone-tooltip{
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  background:rgba(10,12,25,.95);border:1px solid rgba(167,139,250,.35);
+  border-radius:8px;padding:8px 14px;font-size:10.5px;
+  color:#e2e8f0;white-space:nowrap;
+  opacity:0;transition:opacity .2s;pointer-events:none;
+  display:flex;gap:10px;
+}
+.zone:hover .zone-tooltip{opacity:1}
+.tstat{display:flex;flex-direction:column;align-items:center;gap:1px}
+.tstat b{font-size:14px;font-weight:800;color:#fff}
+
+/* Center divider glyph */
+.center-divider{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:36px;height:36px;border-radius:50%;
+  background:#0d0f1e;border:1px solid rgba(167,139,250,.3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:rgba(167,139,250,.5);
+  z-index:10;
+  pointer-events:none;
+}
+
+#option-tag{position:fixed;bottom:16px;right:16px;color:rgba(167,139,250,.4);font-size:10px;font-weight:800;letter-spacing:.12em;z-index:100}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge">✦ GenZ Team · SM Office</div>
+  <div class="badge live"><div class="live-dot"></div>LIVE · 4 Active</div>
+</header>
+
+<div class="window">
+  <div class="window-titlebar">
+    <div class="dot-red"></div><div class="dot-yellow"></div><div class="dot-green"></div>
+    <div class="win-title">genz-hub.app — Team Office</div>
+  </div>
+  <div class="office">
+
+    <!-- Zone 1: Warapon -->
+    <div class="zone" style="border-right:1px solid rgba(167,139,250,.08)">
+      <div class="zone-glow" style="background:radial-gradient(circle at 50% 80%,rgba(167,139,250,.08),transparent 60%)"></div>
+      <div class="zone-num">01</div>
+      <div class="zone-status"><div class="status-dot"></div>Online</div>
+      <div class="desk-illo">
+        <div class="d-chair" style="border-color:rgba(167,139,250,.3)"></div>
+        <div class="d-surface" style="background:#1a1040;border:1px solid rgba(167,139,250,.3)"></div>
+        <div class="d-monitor" style="background:rgba(167,139,250,.1)">
+          <div class="d-monitor-inner" style="color:#a78bfa">SM</div>
+        </div>
+        <div class="d-stand"></div>
+        <div class="d-avatar" style="border-color:#a78bfa;--acolor:#a78bfa">W</div>
+      </div>
+      <div class="zone-name">Warapon</div>
+      <div class="zone-role" style="color:#a78bfa">SM Lead · วรพล</div>
+      <div class="zone-chips">
+        <div class="zone-chip">12 notes</div>
+        <div class="zone-chip">8 kudos</div>
+      </div>
+      <div class="zone-tooltip">
+        <div class="tstat"><b>12</b>Notes</div>
+        <div class="tstat"><b>8</b>Kudos</div>
+        <div class="tstat"><b style="color:#22c55e">●</b>Online</div>
+      </div>
+    </div>
+
+    <!-- Zone 2: Piyaphan -->
+    <div class="zone">
+      <div class="zone-glow" style="background:radial-gradient(circle at 50% 80%,rgba(244,114,182,.08),transparent 60%)"></div>
+      <div class="zone-num">02</div>
+      <div class="zone-status"><div class="status-dot"></div>Online</div>
+      <div class="desk-illo">
+        <div class="d-chair" style="border-color:rgba(244,114,182,.3)"></div>
+        <div class="d-surface" style="background:#1a0a1a;border:1px solid rgba(244,114,182,.3)"></div>
+        <div class="d-monitor" style="background:rgba(244,114,182,.1)">
+          <div class="d-monitor-inner" style="color:#f472b6">DEV</div>
+        </div>
+        <div class="d-stand"></div>
+        <div class="d-avatar" style="border-color:#f472b6;--acolor:#f472b6">P</div>
+      </div>
+      <div class="zone-name">Piyaphan</div>
+      <div class="zone-role" style="color:#f472b6">SM Dev · เผือก</div>
+      <div class="zone-chips">
+        <div class="zone-chip">7 notes</div>
+        <div class="zone-chip">5 kudos</div>
+      </div>
+      <div class="zone-tooltip">
+        <div class="tstat"><b>7</b>Notes</div>
+        <div class="tstat"><b>5</b>Kudos</div>
+        <div class="tstat"><b style="color:#22c55e">●</b>Online</div>
+      </div>
+    </div>
+
+    <!-- Zone 3: Sirirat -->
+    <div class="zone" style="border-right:1px solid rgba(167,139,250,.08);border-top:1px solid rgba(167,139,250,.08)">
+      <div class="zone-glow" style="background:radial-gradient(circle at 50% 20%,rgba(34,211,238,.08),transparent 60%)"></div>
+      <div class="zone-num">03</div>
+      <div class="zone-status"><div class="status-dot"></div>Online</div>
+      <div class="desk-illo">
+        <div class="d-chair" style="border-color:rgba(34,211,238,.3)"></div>
+        <div class="d-surface" style="background:#051a1a;border:1px solid rgba(34,211,238,.3)"></div>
+        <div class="d-monitor" style="background:rgba(34,211,238,.1)">
+          <div class="d-monitor-inner" style="color:#22d3ee">OPS</div>
+        </div>
+        <div class="d-stand"></div>
+        <div class="d-avatar" style="border-color:#22d3ee;--acolor:#22d3ee">S</div>
+      </div>
+      <div class="zone-name">Sirirat</div>
+      <div class="zone-role" style="color:#22d3ee">SM Ops · น้องหมู</div>
+      <div class="zone-chips">
+        <div class="zone-chip">5 notes</div>
+        <div class="zone-chip">11 kudos</div>
+      </div>
+      <div class="zone-tooltip">
+        <div class="tstat"><b>5</b>Notes</div>
+        <div class="tstat"><b>11</b>Kudos</div>
+        <div class="tstat"><b style="color:#22c55e">●</b>Online</div>
+      </div>
+    </div>
+
+    <!-- Zone 4: Thammanoon -->
+    <div class="zone" style="border-top:1px solid rgba(167,139,250,.08)">
+      <div class="zone-glow" style="background:radial-gradient(circle at 50% 20%,rgba(251,191,36,.08),transparent 60%)"></div>
+      <div class="zone-num">04</div>
+      <div class="zone-status"><div class="status-dot"></div>Online</div>
+      <div class="desk-illo">
+        <div class="d-chair" style="border-color:rgba(251,191,36,.3)"></div>
+        <div class="d-surface" style="background:#1a140a;border:1px solid rgba(251,191,36,.3)"></div>
+        <div class="d-monitor" style="background:rgba(251,191,36,.1)">
+          <div class="d-monitor-inner" style="color:#fbbf24">OPS</div>
+        </div>
+        <div class="d-stand"></div>
+        <div class="d-avatar" style="border-color:#fbbf24;--acolor:#fbbf24">T</div>
+      </div>
+      <div class="zone-name">Thammanoon</div>
+      <div class="zone-role" style="color:#fbbf24">SM Ops · โน</div>
+      <div class="zone-chips">
+        <div class="zone-chip">4 notes</div>
+        <div class="zone-chip">6 kudos</div>
+      </div>
+      <div class="zone-tooltip">
+        <div class="tstat"><b>4</b>Notes</div>
+        <div class="tstat"><b>6</b>Kudos</div>
+        <div class="tstat"><b style="color:#22c55e">●</b>Online</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Center divider -->
+  <div class="center-divider">✦</div>
+</div>
+
+<div id="option-tag">OPTION 5 — Lo-fi App Window</div>
+
+</body>
+</html>

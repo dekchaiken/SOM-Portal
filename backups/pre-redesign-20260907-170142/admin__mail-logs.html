@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mail Logs — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .ml-stats { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px; }
+    .ml-stat  {
+      background:var(--bg-card); border:1.5px solid var(--border);
+      border-radius:10px; padding:10px 18px; min-width:110px; flex:1;
+    }
+    .ml-stat-val { font-size:22px; font-weight:800; color:var(--text); line-height:1; }
+    .ml-stat-val.red  { color:#ef4444; }
+    .ml-stat-val.grn  { color:#22c55e; }
+    .ml-stat-lbl { font-size:9.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-top:4px; }
+
+    .ml-filters { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:14px; }
+    .ml-filters input, .ml-filters select {
+      font-size:11px; padding:6px 10px; border-radius:7px;
+      border:1.5px solid var(--border); background:var(--bg-input);
+      font-family:var(--font); color:var(--text); outline:none;
+    }
+    .ml-filters input { flex:1; min-width:180px; }
+    .ml-filters input:focus, .ml-filters select:focus { border-color:var(--orange); }
+
+    .ml-table-wrap { border-radius:12px; border:1.5px solid var(--border); overflow:hidden; }
+    .ml-table { width:100%; border-collapse:collapse; font-size:11px; }
+    .ml-table th {
+      text-align:left; font-size:9.5px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.06em; color:var(--text-muted); padding:8px 14px;
+      border-bottom:1px solid var(--border); background:var(--bg); white-space:nowrap;
+    }
+    .ml-table td { padding:9px 14px; border-bottom:1px solid var(--border); vertical-align:top; }
+    .ml-table tr:last-child td { border-bottom:none; }
+    .ml-table tr:hover td { background:var(--bg); }
+
+    .ml-badge {
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:9.5px; font-weight:700; padding:2px 8px; border-radius:5px;
+    }
+    .ml-badge.sent   { background:rgba(34,197,94,.1);  color:#22c55e; }
+    .ml-badge.failed { background:rgba(239,68,68,.1);  color:#ef4444; }
+    .ml-badge-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
+
+    .ml-type { font-size:9.5px; color:var(--text-muted); background:var(--bg); border-radius:4px; padding:1px 6px; }
+
+    .ml-to { color:var(--text); font-weight:500; }
+    .ml-to-more { font-size:10px; color:var(--text-muted); }
+
+    .ml-error { font-size:10px; color:#ef4444; margin-top:3px; max-width:280px; word-break:break-all; }
+
+    .ml-pagination { display:flex; align-items:center; justify-content:space-between; padding:10px 16px;
+      border-top:1px solid var(--border); font-size:11px; color:var(--text-muted); }
+    .ml-pagination-btns { display:flex; gap:6px; }
+
+    .ml-empty { padding:48px 20px; text-align:center; color:var(--text-muted); font-size:12px; }
+    .ml-empty-icon { font-size:32px; opacity:.25; margin-bottom:8px; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="mail"></i> Mail Logs</div>
+        <div class="page-sub">ประวัติการส่ง Email ทั้งหมดจากระบบ</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="load()" style="font-size:11px">↺ Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="mail"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Mail Logs</h1>
+          <p>ประวัติการส่ง Email ทั้งหมดจากระบบ — Jira ticket emails, notifications, manual sends</p>
+        </div>
+      </section>
+
+      <!-- Stats -->
+      <div class="ml-stats">
+        <div class="ml-stat"><div class="ml-stat-val" id="stat-total">—</div><div class="ml-stat-lbl">Total</div></div>
+        <div class="ml-stat"><div class="ml-stat-val grn" id="stat-today">—</div><div class="ml-stat-lbl">Today</div></div>
+        <div class="ml-stat"><div class="ml-stat-val red" id="stat-failed">—</div><div class="ml-stat-lbl">Failed</div></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="ml-filters">
+        <input type="search" id="f-search" placeholder="ค้นหา subject, ผู้รับ, ผู้ส่ง..." oninput="schedSearch()">
+        <select id="f-status" onchange="load()">
+          <option value="">All Status</option>
+          <option value="sent">Sent</option>
+          <option value="failed">Failed</option>
+        </select>
+      </div>
+
+      <!-- Table -->
+      <div class="ml-table-wrap">
+        <table class="ml-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>To</th>
+              <th>Subject</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Sent by</th>
+            </tr>
+          </thead>
+          <tbody id="ml-tbody">
+            <tr><td colspan="6" class="ml-empty"><div class="ml-empty-icon"><i data-icon="mail"></i></div>Loading...</td></tr>
+          </tbody>
+        </table>
+        <div class="ml-pagination" id="ml-pagination" style="display:none">
+          <span id="pag-info">—</span>
+          <div class="ml-pagination-btns">
+            <button class="btn btn-ghost btn-sm" id="btn-prev" onclick="pagePrev()">← Prev</button>
+            <button class="btn btn-ghost btn-sm" id="btn-next" onclick="pageNext()">Next →</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('mail-logs');
+
+const LIMIT = 50;
+let _offset = 0;
+let _total  = 0;
+let _searchTimer = null;
+
+function schedSearch() {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => { _offset = 0; load(); }, 300);
+}
+
+async function load() {
+  const search = document.getElementById('f-search').value.trim();
+  const status = document.getElementById('f-status').value;
+
+  const res = await API.mail.getLogs({ search, status, limit: LIMIT, offset: _offset });
+  if (!res?.ok) { Toast.error('โหลดไม่ได้'); return; }
+
+  const d = res.data.data;
+  _total = d.total;
+
+  document.getElementById('stat-total').textContent  = d.total;
+  document.getElementById('stat-today').textContent  = d.today;
+  document.getElementById('stat-failed').textContent = d.failed;
+
+  renderTable(d.logs);
+  renderPagination();
+}
+
+function renderTable(logs) {
+  const tbody = document.getElementById('ml-tbody');
+  if (!logs.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="ml-empty"><div class="ml-empty-icon"><i data-icon="mail"></i></div>ไม่มีรายการ</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = logs.map(l => {
+    const toList  = (l.to || []);
+    const toLabel = toList[0] || '—';
+    const toMore  = toList.length > 1 ? `<span class="ml-to-more">+${toList.length - 1} more</span>` : '';
+    const badge   = l.status === 'sent'
+      ? `<span class="ml-badge sent"><span class="ml-badge-dot"></span>Sent</span>`
+      : `<span class="ml-badge failed"><span class="ml-badge-dot"></span>Failed</span>`;
+    const errRow  = l.error ? `<div class="ml-error"><i data-icon="alert-triangle"></i> ${escHtml(l.error)}</div>` : '';
+    return `<tr>
+      <td style="white-space:nowrap">${fmtDt(l.sent_at)}</td>
+      <td><span class="ml-to">${escHtml(toLabel)}</span>${toMore}</td>
+      <td>${escHtml(l.subject || '—')}${errRow}</td>
+      <td><span class="ml-type">${escHtml(l.type || '—')}</span></td>
+      <td>${badge}</td>
+      <td>${escHtml(l.sent_by_name || l.sent_by || '—')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPagination() {
+  const pag = document.getElementById('ml-pagination');
+  if (_total <= LIMIT) { pag.style.display = 'none'; return; }
+  pag.style.display = '';
+  const from = _offset + 1;
+  const to   = Math.min(_offset + LIMIT, _total);
+  document.getElementById('pag-info').textContent   = `${from}–${to} of ${_total}`;
+  document.getElementById('btn-prev').disabled      = _offset === 0;
+  document.getElementById('btn-next').disabled      = _offset + LIMIT >= _total;
+}
+
+function pagePrev() { if (_offset > 0) { _offset = Math.max(0, _offset - LIMIT); load(); } }
+function pageNext() { if (_offset + LIMIT < _total) { _offset += LIMIT; load(); } }
+
+function fmtDt(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('th-TH', { day:'numeric', month:'short', year:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+load();
+</script>
+
+</body>
+</html>

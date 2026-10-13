@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>GenZ Office — Option 3: Gather-style Walkable</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0d1a;overflow:hidden;font-family:'Space Grotesk',sans-serif;user-select:none}
+
+#ui{position:fixed;top:16px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:100}
+.badge{background:rgba(10,12,25,.85);border:1px solid rgba(167,139,250,.3);color:#c4b5fd;
+  padding:5px 14px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.06em;backdrop-filter:blur(6px)}
+
+#hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  color:rgba(167,139,250,.55);font-size:11px;letter-spacing:.06em;text-align:center;z-index:100}
+
+#canvas{display:block}
+
+/* Member popup */
+#popup{position:fixed;z-index:200;display:none;
+  background:rgba(10,12,25,.95);border:1.5px solid rgba(167,139,250,.5);
+  border-radius:14px;padding:16px 18px;min-width:180px;backdrop-filter:blur(12px);
+  animation:popIn .18s cubic-bezier(.22,.9,.28,1)}
+@keyframes popIn{from{opacity:0;transform:scale(.9) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}
+#popup h3{font-size:14px;font-weight:800;color:#fff;margin-bottom:2px}
+#popup .role{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#a78bfa;font-weight:700;margin-bottom:10px}
+#popup .row{display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-bottom:5px}
+#popup .row b{color:#e2e8f0}
+#popup .close-hint{margin-top:10px;font-size:9.5px;color:rgba(167,139,250,.5);text-align:center}
+
+#option-tag{position:fixed;bottom:16px;right:16px;color:rgba(167,139,250,.4);font-size:10px;font-weight:800;letter-spacing:.12em;z-index:100}
+</style>
+</head>
+<body>
+<div id="ui">
+  <div class="badge">✦ GenZ Office</div>
+  <div class="badge" style="color:#22c55e;border-color:rgba(34,197,94,.3)">🟢 4 Online</div>
+</div>
+<div id="hint">⬆⬇⬅➡ / WASD เดินได้เลย · เข้าใกล้โต๊ะเพื่อดูข้อมูล</div>
+<canvas id="canvas"></canvas>
+<div id="popup">
+  <h3 id="p-name">–</h3>
+  <div class="role" id="p-role">–</div>
+  <div class="row">Notes <b id="p-notes">–</b></div>
+  <div class="row">Kudos <b id="p-kudos">–</b></div>
+  <div class="row">Status <b style="color:#22c55e">Online ✦</b></div>
+  <div class="close-hint">ก้าวออกมาเพื่อปิด</div>
+</div>
+<div id="option-tag">OPTION 3 — Gather-style 2D Walkable</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W = canvas.width  = window.innerWidth;
+let H = canvas.height = window.innerHeight;
+
+// ── TILES ──────────────────────────────────────────────────────
+const TILE = 48;
+const ROOM_W = 20, ROOM_H = 14;
+const offX = Math.floor((W - ROOM_W*TILE) / 2);
+const offY = Math.floor((H - ROOM_H*TILE) / 2);
+
+const MEMBERS = [
+  { name:'Warapon', nick:'(วรพล)', role:'SM Lead', notes:12, kudos:8,
+    color:'#a78bfa', deskTile:{x:3,y:2}, charTile:{x:3,y:4} },
+  { name:'Piyaphan', nick:'(เผือก)', role:'SM Dev', notes:7, kudos:5,
+    color:'#f472b6', deskTile:{x:15,y:2}, charTile:{x:15,y:4} },
+  { name:'Sirirat', nick:'(หมู)', role:'SM Ops', notes:5, kudos:11,
+    color:'#22d3ee', deskTile:{x:3,y:10}, charTile:{x:3,y:8} },
+  { name:'Thammanoon', nick:'(โน)', role:'SM Ops', notes:4, kudos:6,
+    color:'#fbbf24', deskTile:{x:15,y:10}, charTile:{x:15,y:8} },
+];
+
+// ── PLAYER ─────────────────────────────────────────────────────
+const player = { x: 9.5, y: 7, vx:0, vy:0, dir:'down', moving:false };
+const keys = {};
+
+// ── HELPERS ────────────────────────────────────────────────────
+const tx = t => offX + t*TILE + TILE/2;
+const ty = t => offY + t*TILE + TILE/2;
+
+// ── DRAW TILE FLOOR ────────────────────────────────────────────
+function drawRoom() {
+  // Floor
+  for (let y=0;y<ROOM_H;y++) for (let x=0;x<ROOM_W;x++) {
+    const px = offX + x*TILE, py = offY + y*TILE;
+    const checker = (x+y)%2===0;
+    ctx.fillStyle = checker ? '#0d1022' : '#0b0e1e';
+    ctx.fillRect(px,py,TILE,TILE);
+    // Grid lines
+    ctx.strokeStyle = 'rgba(167,139,250,.06)';
+    ctx.lineWidth = .5;
+    ctx.strokeRect(px,py,TILE,TILE);
+  }
+  // Room border
+  ctx.strokeStyle = 'rgba(167,139,250,.25)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(offX,offY,ROOM_W*TILE,ROOM_H*TILE);
+
+  // Wall top
+  ctx.fillStyle = '#080b18';
+  ctx.fillRect(offX,offY-20,ROOM_W*TILE,20);
+  ctx.strokeStyle = 'rgba(167,139,250,.3)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(offX,offY-20,ROOM_W*TILE,20);
+
+  // Wall decorations
+  for (let i=2;i<ROOM_W-2;i+=4) {
+    ctx.fillStyle = 'rgba(167,139,250,.15)';
+    ctx.fillRect(offX+i*TILE+TILE*.2,offY-16,TILE*.6,12);
+  }
+}
+
+// ── DRAW DESK ──────────────────────────────────────────────────
+function drawDesk(m) {
+  const dx = tx(m.deskTile.x), dy = ty(m.deskTile.y);
+  const c = m.color;
+
+  // Desk shadow
+  ctx.fillStyle = 'rgba(0,0,0,.3)';
+  ctx.beginPath(); ctx.ellipse(dx,dy+38,36,12,0,0,Math.PI*2); ctx.fill();
+
+  // Desk body
+  ctx.fillStyle = '#111827';
+  roundRect(ctx, dx-40,dy-16,80,40,6);
+  ctx.fill();
+
+  // Desk top surface (colored)
+  ctx.fillStyle = c+'22';
+  ctx.strokeStyle = c+'88';
+  ctx.lineWidth = 1.5;
+  roundRect(ctx,dx-38,dy-14,76,36,5);
+  ctx.fill(); ctx.stroke();
+
+  // Monitor
+  ctx.fillStyle = '#0a0d1a';
+  roundRect(ctx,dx-18,dy-26,36,24,3);
+  ctx.fill();
+  ctx.fillStyle = c+'cc';
+  roundRect(ctx,dx-16,dy-24,32,20,2);
+  ctx.fill();
+  // Screen glow
+  ctx.shadowColor = c;
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = c+'33';
+  ctx.beginPath(); ctx.ellipse(dx,dy-16,20,6,0,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Monitor stand
+  ctx.fillStyle = '#374151';
+  ctx.fillRect(dx-2,dy-4,4,8);
+
+  // Name tag above desk
+  const nearDist = Math.hypot(player.x-m.deskTile.x, player.y-m.deskTile.y);
+  const alpha = nearDist < 4 ? 1 : Math.max(0, 1-(nearDist-4)/3);
+  if (alpha > 0) {
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = 'rgba(10,12,25,.85)';
+    const tw = ctx.measureText(m.name).width + 20;
+    roundRect(ctx,dx-tw/2,dy-56,tw,22,999);
+    ctx.fill();
+    ctx.fillStyle = c;
+    ctx.font = '700 11px Space Grotesk,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(m.name, dx, dy-40);
+    ctx.globalAlpha = 1;
+  }
+
+  // Status dot
+  ctx.fillStyle = '#22c55e';
+  ctx.shadowColor = '#22c55e'; ctx.shadowBlur = 6;
+  ctx.beginPath(); ctx.arc(dx+38,dy-18,4,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+// ── DRAW MEMBER CHARACTER ──────────────────────────────────────
+function drawChar(m, isNPC=true, t=0) {
+  const cx = isNPC ? tx(m.charTile.x) : offX + player.x*TILE;
+  const cy = isNPC ? ty(m.charTile.y) : offY + player.y*TILE;
+  const bob = Math.sin(t*3 + (isNPC?m.charTile.x:0)) * 1.5;
+  const c = isNPC ? m.color : '#a78bfa';
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,.25)';
+  ctx.beginPath(); ctx.ellipse(cx,cy+14,10,4,0,0,Math.PI*2); ctx.fill();
+
+  // Body
+  ctx.fillStyle = c+'44';
+  ctx.strokeStyle = c+'cc';
+  ctx.lineWidth = 1.5;
+  roundRect(ctx,cx-9,cy-4+bob,18,18,4);
+  ctx.fill(); ctx.stroke();
+
+  // Head
+  ctx.fillStyle = '#1e2040';
+  ctx.strokeStyle = c;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx,cy-8+bob,9,0,Math.PI*2); ctx.fill(); ctx.stroke();
+
+  // Face dot
+  ctx.fillStyle = c;
+  ctx.shadowColor = c; ctx.shadowBlur = 4;
+  ctx.beginPath(); ctx.arc(cx,cy-8+bob,3,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // NPC name
+  if (isNPC) {
+    ctx.fillStyle = c;
+    ctx.font = '600 9px Space Grotesk,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(m.nick, cx, cy+28);
+  } else {
+    ctx.fillStyle = '#a78bfa';
+    ctx.font = '700 9px Space Grotesk,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('YOU', cx, cy+28);
+  }
+}
+
+// ── DRAW CENTER AREA ───────────────────────────────────────────
+function drawCenter() {
+  const cx = tx(9.5), cy = ty(7);
+  // Meeting table
+  ctx.fillStyle = '#111827';
+  ctx.strokeStyle = 'rgba(167,139,250,.3)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.ellipse(cx,cy,60,40,0,0,Math.PI*2);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(167,139,250,.05)';
+  ctx.beginPath(); ctx.ellipse(cx,cy,60,40,0,0,Math.PI*2); ctx.fill();
+
+  // Center glyph
+  ctx.fillStyle = 'rgba(167,139,250,.3)';
+  ctx.font = '700 20px Space Grotesk,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('✦', cx, cy);
+  ctx.textBaseline = 'alphabetic';
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
+  ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+h-r);
+  ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);
+  ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);
+  ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
+}
+
+// ── INPUT ──────────────────────────────────────────────────────
+document.addEventListener('keydown',e=>keys[e.key]=true);
+document.addEventListener('keyup',e=>keys[e.key]=false);
+
+const SPEED = 0.06;
+let nearDesk = null;
+
+// ── POPUP ──────────────────────────────────────────────────────
+const popup = document.getElementById('popup');
+let activePopup = null;
+
+function showPopup(m) {
+  if (activePopup === m) return;
+  activePopup = m;
+  document.getElementById('p-name').textContent = `${m.name} ${m.nick}`;
+  document.getElementById('p-role').textContent = m.role;
+  document.getElementById('p-notes').textContent = m.notes;
+  document.getElementById('p-kudos').textContent = m.kudos;
+  popup.style.borderColor = m.color+'88';
+  popup.style.display = 'block';
+  // Position near desk
+  const dx = tx(m.deskTile.x), dy = ty(m.deskTile.y);
+  popup.style.left = Math.min(W-220, dx+20)+'px';
+  popup.style.top  = Math.max(60, dy-80)+'px';
+}
+function hidePopup() {
+  activePopup = null;
+  popup.style.display = 'none';
+}
+
+// ── MAIN LOOP ──────────────────────────────────────────────────
+let t = 0;
+function loop() {
+  t += 0.016;
+  ctx.clearRect(0,0,W,H);
+
+  // Move player
+  let dx=0, dy=0;
+  if (keys['ArrowLeft']||keys['a']||keys['A']) dx=-SPEED;
+  if (keys['ArrowRight']||keys['d']||keys['D']) dx=SPEED;
+  if (keys['ArrowUp']||keys['w']||keys['W']) dy=-SPEED;
+  if (keys['ArrowDown']||keys['s']||keys['S']) dy=SPEED;
+
+  const nx = Math.max(0.5, Math.min(ROOM_W-0.5, player.x+dx));
+  const ny = Math.max(0.5, Math.min(ROOM_H-0.5, player.y+dy));
+  player.x = nx; player.y = ny;
+
+  drawRoom();
+  drawCenter();
+
+  // Check proximity to desks
+  let found = null;
+  MEMBERS.forEach(m => {
+    const dist = Math.hypot(player.x - m.deskTile.x, player.y - m.deskTile.y);
+    if (dist < 2.5) found = m;
+    drawDesk(m);
+  });
+  if (found) showPopup(found);
+  else hidePopup();
+
+  // Draw NPCs
+  MEMBERS.forEach(m => drawChar(m,true,t));
+
+  // Draw player
+  drawChar(null,false,t);
+
+  requestAnimationFrame(loop);
+}
+loop();
+
+window.addEventListener('resize',()=>{
+  W=canvas.width=innerWidth; H=canvas.height=innerHeight;
+});
+</script>
+</body>
+</html>

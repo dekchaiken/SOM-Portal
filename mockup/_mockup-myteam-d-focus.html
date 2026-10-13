@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>My Team — Design D: Focus Detail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#F26419; --orange-bg:#FFF4EE;
+  --bg:#F7F7F7; --bg-card:#FFFFFF; --bg-input:#F9F9F9;
+  --text:#1C1C1E; --text-muted:#767676;
+  --border:#E5E5E5;
+  --accent:#F26419; --accent-soft:rgba(242,100,25,.10); --accent-line:rgba(242,100,25,.35); --accent-glow:rgba(242,100,25,.20);
+  --font:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--font); font-size:12px; padding:24px 32px 40px}
+
+.page-title{font-size:18px; font-weight:800; margin:0}
+.badge-tag{display:inline-block; margin-left:8px; font-size:8.5px; font-weight:800; letter-spacing:.15em; padding:3px 8px; border-radius:4px; background:var(--accent-soft); color:var(--accent); vertical-align:middle}
+.page-sub{color:var(--text-muted); font-size:11px; margin-top:4px; margin-bottom:16px}
+
+.workspace{display:grid; grid-template-columns:300px 1fr; gap:14px; height:calc(100vh - 130px); min-height:640px}
+
+/* ---- Left rail ---- */
+.rail{background:var(--bg-card); border:1px solid var(--border); border-radius:12px; overflow:hidden; display:flex; flex-direction:column}
+.rail-head{padding:14px 14px 10px; border-bottom:1px solid var(--border)}
+.rail-search{display:flex; align-items:center; gap:8px; background:var(--bg-input); border:1.5px solid var(--border); border-radius:8px; padding:7px 10px}
+.rail-search input{flex:1; border:0; outline:0; background:transparent; font-family:var(--font); font-size:11px}
+.rail-tabs{margin-top:10px; display:flex; gap:4px}
+.rail-tab{flex:1; padding:5px 8px; border-radius:6px; text-align:center; font-size:9.5px; font-weight:700; color:var(--text-muted); border:1px solid var(--border); background:var(--bg-card); cursor:pointer; letter-spacing:.05em; text-transform:uppercase}
+.rail-tab.on{background:var(--accent); color:#fff; border-color:var(--accent)}
+.rail-list{flex:1; overflow-y:auto; padding:6px 6px}
+
+.rail-group{padding:8px 8px 4px; font-size:8px; font-weight:800; letter-spacing:.15em; color:var(--text-muted); text-transform:uppercase; display:flex; align-items:center; gap:6px}
+.rail-group .c{font-size:8.5px; padding:1px 5px; border-radius:3px; background:var(--bg-input)}
+
+.item{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; cursor:pointer; transition:background .12s; position:relative}
+.item:hover{background:var(--bg)}
+.item.on{background:var(--accent-soft)}
+.item.on::before{content:''; position:absolute; left:-2px; top:6px; bottom:6px; width:3px; background:var(--accent); border-radius:2px}
+.iav{width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800; color:#fff; flex-shrink:0; position:relative}
+.iav .p{position:absolute; bottom:-1px; right:-1px; width:9px; height:9px; border-radius:50%; background:#22c55e; border:2px solid var(--bg-card)}
+.iav .p.off{background:#a1a1aa}
+.i-body{flex:1; min-width:0}
+.i-name{font-size:11.5px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.i-nick{font-size:9.5px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.i-nick .p{color:var(--accent); font-weight:700}
+.item.on .i-nick{color:var(--accent)}
+.i-dot{width:6px; height:6px; border-radius:50%; background:#a1a1aa; flex-shrink:0}
+.i-dot.on{background:#22c55e}
+.you-tag{font-size:7.5px; font-weight:800; letter-spacing:.1em; padding:1px 5px; border-radius:3px; background:var(--accent); color:#fff; text-transform:uppercase; margin-left:4px}
+
+/* ---- Detail ---- */
+.detail{background:var(--bg-card); border:1px solid var(--border); border-radius:12px; overflow:hidden; display:flex; flex-direction:column}
+.d-hero{
+  position:relative; padding:22px 26px 20px;
+  background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, var(--bg-card)) 0%, var(--bg-card) 60%);
+  border-bottom:1px solid var(--border);
+}
+.d-hero::before{
+  content:''; position:absolute; inset:0;
+  background-image:radial-gradient(circle, var(--accent-line) 1px, transparent 1px);
+  background-size:16px 16px;
+  mask-image:linear-gradient(225deg, black 0%, transparent 60%);
+  -webkit-mask-image:linear-gradient(225deg, black 0%, transparent 60%);
+  opacity:.4;
+}
+.d-hero > *{position:relative}
+.d-top{display:flex; align-items:flex-start; gap:20px}
+.d-av-wrap{position:relative; cursor:pointer}
+.d-av{
+  width:96px; height:96px; border-radius:50%;
+  background:#F26419; border:3px solid var(--bg-card);
+  box-shadow:0 0 0 2px var(--accent-line), 0 6px 22px var(--accent-glow);
+  display:flex; align-items:center; justify-content:center; font-size:32px; font-weight:800; color:#fff;
+  overflow:hidden; position:relative;
+}
+.d-av-upload{position:absolute; inset:0; border-radius:50%; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px; font-weight:800; opacity:0; transition:opacity .15s; text-align:center; padding:0 10px; letter-spacing:.05em}
+.d-av-wrap:hover .d-av-upload{opacity:1}
+.d-av-presence{position:absolute; bottom:5px; right:5px; width:16px; height:16px; border-radius:50%; background:#22c55e; border:3px solid var(--bg-card); z-index:2}
+.d-info{flex:1; min-width:0}
+.d-eye{font-size:8.5px; color:var(--text-muted); letter-spacing:.1em; text-transform:uppercase}
+.d-eye .p{color:var(--accent); font-weight:700}
+.d-name{font-size:22px; font-weight:800; margin-top:2px; letter-spacing:.01em}
+.d-nick{font-size:13px; color:var(--text-muted); margin-top:4px}
+.d-nick .p{color:var(--accent); font-weight:700}
+.d-tags{margin-top:10px; display:flex; gap:6px; flex-wrap:wrap}
+.tag{font-size:8.5px; font-weight:800; padding:3px 8px; border-radius:4px; letter-spacing:.08em; text-transform:uppercase}
+.rb-admin{background:rgba(220,38,38,.12); color:#b91c1c}
+.rb-lead{background:rgba(147,51,234,.12); color:#7e22ce}
+.rb-user{background:var(--orange-bg); color:var(--orange)}
+.rb-dev{background:rgba(6,182,212,.12); color:#0891b2}
+.duty-on{background:rgba(34,197,94,.15); color:#15803d}
+.duty-off{background:var(--bg-input); color:var(--text-muted)}
+
+.d-actions{position:absolute; top:22px; right:22px; display:flex; gap:8px}
+.btn{padding:8px 14px; border-radius:8px; border:1.5px solid var(--border); background:var(--bg-card); font-family:var(--font); font-size:10.5px; font-weight:800; cursor:pointer; letter-spacing:.03em; transition:all .15s}
+.btn.primary{background:var(--accent); color:#fff; border-color:var(--accent)}
+.btn.primary:hover{background:#d9550f}
+.btn:hover{border-color:var(--accent-line); color:var(--accent)}
+.btn.primary:hover{color:#fff}
+.btn:disabled{opacity:.35; cursor:not-allowed}
+
+/* Body */
+.d-body{flex:1; overflow-y:auto; padding:24px 26px}
+.d-body h3{
+  font-size:9.5px; font-weight:800; letter-spacing:.15em; color:var(--text-muted); text-transform:uppercase;
+  margin:0 0 12px; display:flex; align-items:center; gap:8px;
+}
+.d-body h3::before{content:''; width:16px; height:2px; background:var(--accent); border-radius:2px}
+.d-body h3:not(:first-child){margin-top:26px}
+
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+
+.fld{display:flex; flex-direction:column}
+.fld label{font-size:9px; font-weight:700; color:var(--text-muted); letter-spacing:.05em; text-transform:uppercase; margin-bottom:5px}
+.fld input, .fld select{
+  padding:10px 12px; background:var(--bg-input); border:1.5px solid var(--border); border-radius:8px;
+  font-family:var(--font); font-size:11.5px; color:var(--text); outline:0; transition:all .15s;
+}
+.fld input:focus{border-color:var(--accent); background:var(--bg-card); box-shadow:0 0 0 3px var(--accent-glow)}
+.fld input[readonly]{background:var(--bg); color:var(--text-muted); cursor:not-allowed}
+.fld .miss::placeholder{color:#c2410c; opacity:.6}
+
+.fld-hint{font-size:9px; color:var(--text-muted); margin-top:4px}
+.fld-hint .lock::before{content:'🔒 '; font-size:8px}
+.fld-hint .edit::before{content:'✏️ '; font-size:8px}
+
+.hint{margin-top:14px; padding:10px 14px; border-radius:10px; background:var(--bg-card); border:1px dashed var(--border); font-size:10.5px; color:var(--text-muted); display:flex; gap:14px; flex-wrap:wrap}
+.hint b{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<h1 class="page-title">My Team <span class="badge-tag">Design D · Focus Detail</span></h1>
+<div class="page-sub">master-detail layout · left rail scannable, right pane = deep view + edit · เหมาะกับหน้าที่เน้น "ดู profile คนหนึ่งลึกๆ" (Slack/Notion style)</div>
+
+<div class="workspace">
+  <!-- Left rail -->
+  <div class="rail">
+    <div class="rail-head">
+      <div class="rail-search"><span style="color:var(--text-muted)">⌕</span><input placeholder="ค้นหา..."/></div>
+      <div class="rail-tabs">
+        <div class="rail-tab on">ALL 15</div>
+        <div class="rail-tab">ON DUTY</div>
+        <div class="rail-tab">OFF</div>
+      </div>
+    </div>
+    <div class="rail-list" id="rail"></div>
+  </div>
+
+  <!-- Detail pane -->
+  <div class="detail">
+    <div class="d-hero">
+      <div class="d-actions">
+        <button class="btn">Profile Page</button>
+        <button class="btn primary" id="editBtn">Edit Profile</button>
+      </div>
+      <div class="d-top">
+        <div class="d-av-wrap">
+          <div class="d-av" id="dav" style="background:#F26419">ชุม<div class="d-av-presence"></div></div>
+          <div class="d-av-upload">คลิกเพื่ออัพโหลด<br/>รูปใหม่</div>
+        </div>
+        <div class="d-info">
+          <div class="d-eye"><span class="p">SM TEAM</span> · เข้างานล่าสุด 5 นาทีที่แล้ว</div>
+          <div class="d-name" id="dname">Chumpon Khongmanee</div>
+          <div class="d-nick">nickname "<span class="p" id="dnick">ชุม</span>"</div>
+          <div class="d-tags" id="dtags">
+            <span class="tag rb-admin">SM Admin</span>
+            <span class="tag duty-on">On duty · Shift 1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-body">
+
+      <h3>Contact</h3>
+      <div class="grid2">
+        <div class="fld">
+          <label>Email</label>
+          <input value="chumpon.kho@ascendcorp.com" readonly>
+          <div class="fld-hint"><span class="lock">system-managed</span></div>
+        </div>
+        <div class="fld">
+          <label>Phone (มือถือ)</label>
+          <input value="081-234-5678" placeholder="เช่น 081-234-5678">
+          <div class="fld-hint"><span class="edit">แก้ได้เอง</span></div>
+        </div>
+      </div>
+
+      <h3>TrueMoney &amp; Network</h3>
+      <div class="grid2">
+        <div class="fld">
+          <label>TMN.ID / เบอร์ Wallet</label>
+          <input value="0812345678" placeholder="เช่น 0812345678">
+          <div class="fld-hint"><span class="edit">แก้ได้เอง</span></div>
+        </div>
+        <div class="fld">
+          <label>เครือข่ายมือถือ</label>
+          <input value="AIS 5G" placeholder="AIS / True / DTAC / NT">
+          <div class="fld-hint"><span class="edit">แก้ได้เอง</span></div>
+        </div>
+        <div class="fld" style="grid-column:1/-1">
+          <label>เน็ตบ้าน (ISP + speed)</label>
+          <input value="AIS Fiber 500/500" placeholder="เช่น AIS Fiber 500/500, True Gigabit, 3BB 300/300">
+          <div class="fld-hint"><span class="edit">แก้ได้เอง · ใช้เวลาต้อง remote / WFH</span></div>
+        </div>
+      </div>
+
+      <h3>Identity <span style="color:var(--text-muted); font-weight:600; text-transform:none; letter-spacing:0; margin-left:6px">— admin only</span></h3>
+      <div class="grid2">
+        <div class="fld">
+          <label>Full name</label>
+          <input value="Chumpon Khongmanee" readonly>
+          <div class="fld-hint"><span class="lock">admin เท่านั้น</span></div>
+        </div>
+        <div class="fld">
+          <label>Nickname</label>
+          <input value="ชุม" readonly>
+          <div class="fld-hint"><span class="lock">admin เท่านั้น</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="hint">
+  <b>UX note:</b>
+  <span>· รายชื่อทั้ง 15 คนอยู่ซ้ายเสมอ · scroll เห็นครบไม่ต้องกลับหน้า</span>
+  <span>· ขวา = <b>profile card ใหญ่ + form ครบ</b> อ่านสบายตา แก้ตรงนั้นได้เลย</span>
+  <span>· รูป profile: hover บน avatar ใหญ่ → overlay <b>"คลิกเพื่ออัพโหลด"</b> โผล่ (เฉพาะเจ้าของ / admin)</span>
+  <span>· field แต่ละอันมี <b>hint icon</b> บอกชัดว่าใครแก้ได้ (🔒 = ห้าม, ✏️ = ได้)</span>
+</div>
+
+<script>
+const TEAM = [
+  {n:'Chumpon Khongmanee', nick:'ชุม',   role:'admin', duty:'on',  online:true,  me:false},
+  {n:'Watchara Suksri',    nick:'อาร์',  role:'admin', duty:'on',  online:true,  me:false},
+  {n:'Kanokwan Sri',       nick:'มิ้น',  role:'lead',  duty:'off', online:true,  me:false},
+  {n:'Warapon Leadlum',    nick:'เคน',   role:'dev',   duty:'off', online:true,  me:true},
+  {n:'Sakonwan Thoongkam', nick:'ออย',   role:'user',  duty:'on',  online:true,  me:false},
+  {n:'Thanaporn Boonprom', nick:'แนน',   role:'user',  duty:'on',  online:false, me:false},
+  {n:'Kittipong Manee',    nick:'กิต',   role:'user',  duty:'on',  online:true,  me:false},
+  {n:'Pichaya Wongsakul',  nick:'ปุ๋ย',  role:'user',  duty:'off', online:false, me:false},
+  {n:'Surachai Choochart', nick:'ต้น',   role:'user',  duty:'off', online:true,  me:false},
+  {n:'Nattapong Rakwong',  nick:'ปอนด์', role:'user',  duty:'off', online:false, me:false},
+  {n:'Nithinan Petch',     nick:'นก',    role:'user',  duty:'off', online:true,  me:false},
+  {n:'Preecha Wattana',    nick:'ปรี',   role:'user',  duty:'off', online:false, me:false},
+  {n:'Somchai Piyathong',  nick:'สม',    role:'user',  duty:'off', online:true,  me:false},
+  {n:'Wanida Kongkaew',    nick:'หวัน',  role:'user',  duty:'off', online:false, me:false},
+  {n:'Rungrudee Chomchai', nick:'รุ่ง',  role:'user',  duty:'off', online:true,  me:false},
+];
+const bgs = {admin:'#B91C1C', lead:'#7E22CE', user:'#F26419', dev:'#0891B2'};
+
+const rail = document.getElementById('rail');
+const onGroup = TEAM.filter(m=>m.duty==='on');
+const offGroup = TEAM.filter(m=>m.duty==='off');
+
+function renderGroup(label, count, arr){
+  return `<div class="rail-group"><span>${label}</span><span class="c">${count}</span></div>` +
+    arr.map((m,i)=>{
+      const bg = bgs[m.role];
+      return `
+      <div class="item ${m===TEAM[0]?'on':''}" onclick="pick(${TEAM.indexOf(m)})">
+        <div class="iav" style="background:${bg}">${m.nick}<div class="p ${m.online?'':'off'}"></div></div>
+        <div class="i-body">
+          <div class="i-name">${m.n}${m.me?'<span class="you-tag">You</span>':''}</div>
+          <div class="i-nick"><span class="p">"${m.nick}"</span> · ${m.role.toUpperCase()}</div>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+rail.innerHTML = renderGroup('On duty today', onGroup.length, onGroup) + renderGroup('Off / Other', offGroup.length, offGroup);
+
+function pick(i){
+  const m = TEAM[i];
+  document.querySelectorAll('.item').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('.item')[Array.from(document.querySelectorAll('.item')).findIndex(el=>el.querySelector('.i-name').textContent.startsWith(m.n))]?.classList.add('on');
+  const bg = bgs[m.role];
+  const dav = document.getElementById('dav');
+  dav.style.background = bg;
+  dav.childNodes[0].textContent = m.nick;
+  document.getElementById('dname').textContent = m.n;
+  document.getElementById('dnick').textContent = m.nick;
+  const rmap = {admin:'SM Admin', lead:'SM Lead', user:'SM User', dev:'Dev SM'};
+  const rcls = {admin:'rb-admin', lead:'rb-lead', user:'rb-user', dev:'rb-dev'}[m.role];
+  document.getElementById('dtags').innerHTML = `<span class="tag ${rcls}">${rmap[m.role]}</span><span class="tag ${m.duty==='on'?'duty-on':'duty-off'}">${m.duty==='on'?'On duty · Shift 1':'Off today'}</span>`;
+  document.getElementById('editBtn').disabled = !(m.me);
+  document.getElementById('editBtn').textContent = m.me ? 'Edit Profile' : 'Locked · แก้ตัวเองเท่านั้น';
+}
+</script>
+</body>
+</html>

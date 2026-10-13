@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Performance — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/service-performance/service-performance.css" data-page-css>
+  <script>
+    if (new URLSearchParams(location.search).get('wizard') === '1') {
+      document.documentElement.classList.add('sp-wizard-embed');
+    }
+  </script>
+  <style>
+    /* ── Wizard embed mode (?wizard=1) ─────────────────────── */
+    html.sp-wizard-embed body { background: var(--bg-page, #f5f5f7); overflow-x: hidden; margin: 0; }
+
+    /* Hide: ALL navigation & portal chrome */
+    html.sp-wizard-embed #topnav-wrap,
+    html.sp-wizard-embed .topnav,
+    html.sp-wizard-embed .topnav-horizon,
+    html.sp-wizard-embed .topnav-capsule-wrap,
+    html.sp-wizard-embed .topnav-vision-wrap,
+    html.sp-wizard-embed #sidebar-mount,
+    html.sp-wizard-embed .sidebar,
+    html.sp-wizard-embed .topbar,
+    html.sp-wizard-embed .sp2-hero,
+    html.sp-wizard-embed .sp2-hint { display: none !important; }
+
+    /* Full-width layout — no sidebar offset */
+    html.sp-wizard-embed .app-shell    { display: block !important; width: 100%; }
+    html.sp-wizard-embed .main-content { margin-left: 0 !important; padding: 0 !important; width: 100% !important; min-width: 0 !important; }
+
+    /* SP2 page: full width, compact padding */
+    html.sp-wizard-embed .sp2,
+    html.sp-wizard-embed .sp2-page { padding: 10px 16px 24px !important; max-width: 100% !important; width: 100% !important; box-sizing: border-box; }
+
+    /* Compact service header */
+    html.sp-wizard-embed .sp2-svc-head { padding: 10px 14px !important; margin-bottom: 10px !important; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Service Performance</div>
+        <div class="page-sub">Search a service to see live CPU / MEM / Pod metrics</div>
+      </div>
+      <div class="topbar-actions">
+        <span id="sp2-inv-count" style="font-size:11px;color:var(--text-muted)"></span>
+        <button type="button" class="sp2-docs-btn" onclick="SP.openDocs()" title="ดู PromQL / metrics ที่ใช้ในแต่ละ section">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5v.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>คู่มือค่า / Metrics</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="sp2">
+
+        <!-- Hero search -->
+        <div class="sp2-hero">
+          <div class="sp2-hero-lbl">Find a service</div>
+          <div class="sp2-searchbox">
+            <svg class="sp2-search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input id="sp2-input" class="sp2-search-input" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="e.g. aml-tx-persistence-service, acm-ac-stm-consumer …" />
+            <button id="sp2-clear" class="sp2-search-clear" title="Clear">×</button>
+            <div id="sp2-dropdown" class="sp2-dropdown" role="listbox"></div>
+          </div>
+          <div class="sp2-hint">
+            <span>Type to search · <span class="sp2-kbd">↑</span> <span class="sp2-kbd">↓</span> navigate · <span class="sp2-kbd">↵</span> select · <span class="sp2-kbd">esc</span> close</span>
+          </div>
+        </div>
+
+        <!-- Detail dashboard — starts as a placeholder scaffold showing the
+             boxes the user will see; loadDetail() replaces it with real data
+             after a selection. -->
+        <div id="sp2-detail" class="sp2-detail"></div>
+
+        <!-- In-page drill view — replaces the main detail area when active.
+             Renders inline (no overlay/slide). Back button pops one nav
+             level; multi-level stack supported so group → service drills
+             feel like natural back navigation. -->
+        <section id="sp2-drill" class="sp2-drill" role="region">
+          <div class="sp2-drill-head">
+            <button type="button" class="sp2-back-btn" onclick="SP.navBack()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              กลับ
+            </button>
+            <div class="sp2-drill-head-info">
+              <div id="sp2-drill-kind"  class="sp2-drill-kind">DRILL</div>
+              <div id="sp2-drill-title" class="sp2-drill-title">—</div>
+              <div id="sp2-drill-sub"   class="sp2-drill-sub"></div>
+            </div>
+            <a id="sp2-drill-open" class="sp2-btn" href="#" onclick="SP._drillOpenService(event)" style="display:none">Open service →</a>
+          </div>
+          <div id="sp2-drill-body" class="sp2-drill-body"></div>
+        </section>
+
+        <!-- Metrics documentation modal — opened from topbar button.
+             Shows the exact PromQL query, source metric name, and datasource
+             behind every value on the page. Same position:fixed pattern as
+             the picker so it sits INSIDE .sp2 for scoped CSS vars. -->
+        <div id="sp2-docs" class="sp2-docs-ovl" onclick="if(event.target===this) SP.closeDocs()">
+          <div class="sp2-docs-card">
+            <div class="sp2-docs-head">
+              <div>
+                <div class="sp2-docs-title">คู่มือค่า / Metrics ที่ใช้ในหน้านี้</div>
+                <div class="sp2-docs-sub">ทุก section บนหน้าจอนี้ ใช้ PromQL อะไร · จาก metric ตัวไหน · datasource อะไร</div>
+              </div>
+              <button type="button" class="sp2-docs-close" onclick="SP.closeDocs()" title="ปิด (Esc)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+              </button>
+            </div>
+            <div id="sp2-docs-body" class="sp2-docs-body"></div>
+          </div>
+        </div>
+
+        <!-- Custom time-range picker. Position:fixed puts it viewport-centered
+             regardless of DOM location, but it must sit INSIDE .sp2 so scoped
+             CSS vars (--cool, --runway-accent, --bg-card…) resolve — otherwise
+             the primary "Apply" button renders transparent. -->
+        <div id="sp2-picker" class="sp2-picker-ovl" onclick="if(event.target===this) SP.closeCustomPicker()">
+          <div class="sp2-picker-card">
+            <div class="sp2-picker-title">Custom time range</div>
+            <div class="sp2-picker-presets">
+              <button type="button" class="sp2-picker-preset" onclick="SP._pickerPreset('today')">Today</button>
+              <button type="button" class="sp2-picker-preset" onclick="SP._pickerPreset('yesterday')">Yesterday</button>
+              <button type="button" class="sp2-picker-preset" onclick="SP._pickerPreset('last3d')">Last 3 days</button>
+              <button type="button" class="sp2-picker-preset" onclick="SP._pickerPreset('last7d')">Last 7 days</button>
+              <button type="button" class="sp2-picker-preset" onclick="SP._pickerPreset('last30d')">Last 30 days</button>
+            </div>
+            <div class="sp2-picker-row">
+              <label for="sp2-picker-from">From</label>
+              <input id="sp2-picker-from" type="datetime-local" step="60">
+            </div>
+            <div class="sp2-picker-row">
+              <label for="sp2-picker-to">To</label>
+              <input id="sp2-picker-to" type="datetime-local" step="60">
+            </div>
+            <div id="sp2-picker-err" class="sp2-picker-err"></div>
+            <div class="sp2-picker-actions">
+              <button type="button" onclick="SP.closeCustomPicker()">Cancel</button>
+              <button type="button" class="primary" onclick="SP.applyCustomPicker()">Apply</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ Chart expand modal ═════════════════════════════════════════
+             Rendered once here; SP.expandChart() fills it in on demand and
+             SP.closeChart() empties + hides it. Backdrop click closes too. -->
+        <div id="sp2-cx-modal" class="sp2-cx-modal" onclick="if(event.target===this) SP.closeChart()">
+          <div class="sp2-cx-modal-card">
+            <div class="sp2-cx-head">
+              <div class="sp2-cx-title" id="sp2-cx-title">—</div>
+              <button type="button" class="sp2-cx-close" onclick="SP.closeChart()" title="ปิด (Esc)">
+                <i data-icon="x"></i>
+              </button>
+            </div>
+            <div class="sp2-cx-body" id="sp2-cx-body"></div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/loading-overlay.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js?v=20260820-alerts"></script>
+<script src="assets/js/layout.js?v=20260820-alerts"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script src="./assets/pages/service-performance/service-performance.js"></script>
+
+
+
+
+<div class="lv-ovl" id="lv-ovl" onclick="if(event.target===this)SP.LogViewer.close()">
+  <div class="lv-card">
+    <div class="lv-head">
+      <div class="lv-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" x2="15" y1="13" y2="13"/><line x1="9" x2="12" y1="17" y2="17"/></svg>
+        OpenSearch log viewer
+        <span class="svc" id="lv-svc">—</span>
+      </div>
+      <div id="lv-cred-bar" style="margin-left:auto;margin-right:8px;display:flex;align-items:center"></div>
+      <button class="lv-close" onclick="SP.LogViewer.close()" title="Close (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="lv-filters">
+      <span class="lbl">Endpoint</span>
+      <select id="lv-endpoint" onchange="SP.LogViewer._onEndpointChange()"></select>
+      <span class="lbl">Index</span>
+      <select id="lv-index"></select>
+      <span class="lbl">Range</span>
+      <select id="lv-range">
+        <option value="last_5m">Last 5m</option>
+        <option value="last_15m" selected>Last 15m</option>
+        <option value="last_30m">Last 30m</option>
+        <option value="last_1h">Last 1h</option>
+        <option value="last_4h">Last 4h</option>
+        <option value="last_12h">Last 12h</option>
+        <option value="last_24h">Last 24h</option>
+        <option value="last_3d">Last 3d</option>
+        <option value="last_7d">Last 7d</option>
+        <option value="custom">Custom…</option>
+      </select>
+      <input id="lv-custom-start" type="datetime-local" style="display:none;height:32px;box-sizing:border-box;padding:0 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font:inherit;font-size:12px" title="Start (local time)" />
+      <input id="lv-custom-end"   type="datetime-local" style="display:none;height:32px;box-sizing:border-box;padding:0 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font:inherit;font-size:12px" title="End (local time)" />
+      <span class="lbl">Level</span>
+      <select id="lv-lvl">
+        <option value="">Any</option>
+        <option value="INFO">INFO</option>
+        <option value="WARN">WARN</option>
+        <option value="ERROR">ERROR</option>
+        <option value="DEBUG">DEBUG</option>
+      </select>
+      <input class="grow" id="lv-q" type="text" placeholder="Free text (DQL syntax OK)" />
+      <input id="lv-cid" type="text" placeholder="CORRELATION_ID (exact)" style="width:200px;font-family:ui-monospace,monospace" />
+      <input id="lv-regexp" type="text" placeholder='e.g. [4-5][0-9]{2}' style="width:160px;font-family:ui-monospace,monospace;font-size:11.5px" title="Regexp บน REST field — ใส่แค่ pattern เช่น [4-5][0-9]{2} หรือ response.*timeout&#10;(วาง OpenSearch JSON ได้เลย ระบบจะดึง value ให้อัตโนมัติ)" />
+      <button class="lv-btn primary" id="lv-run" onclick="SP.LogViewer.search()">Search</button>
+      <button class="lv-btn" id="lv-csv"  onclick="SP.LogViewer.exportCsv()" title="Export current hits as CSV">CSV</button>
+      <button class="lv-btn" id="lv-link" onclick="SP.LogViewer.openInOpenSearch()" title="Open this view in OpenSearch Dashboards">Open ↗</button>
+    </div>
+
+    <div class="lv-trace-banner" id="lv-trace" style="display:none">
+      <span>Trace mode · CORRELATION_ID = <b id="lv-trace-cid"></b> · showing ALL services that touched this request</span>
+      <button class="exit" onclick="SP.LogViewer._refreshTrace()" title="Re-fetch — useful when logs are still streaming in from a slow/failed request" style="margin-left:auto">Refresh</button>
+      <button class="exit" onclick="SP.LogViewer._exitTrace()">Exit trace</button>
+    </div>
+
+    <div class="lv-summary" id="lv-sum">
+      <span class="lv-stat" id="lv-sum-total">—</span>
+      <span class="lv-stat info" id="lv-sum-took">—</span>
+      <span class="lv-stat ok clickable"   id="lv-sum-ok"   onclick="SP.LogViewer._pickStatus('ok')"   title="2xx only (200–299)">2xx · 0</span>
+      <span class="lv-stat warn clickable" id="lv-sum-warn" onclick="SP.LogViewer._pickStatus('warn')" title="4xx only (400–499)">4xx · 0</span>
+      <span class="lv-stat err clickable"  id="lv-sum-err"  onclick="SP.LogViewer._pickStatus('err')"  title="5xx only (500+)">5xx · 0</span>
+      <span class="lv-stat clickable" id="lv-sum-other"   onclick="SP.LogViewer._pickStatus('other')"   title="1xx / 3xx redirects" style="display:none">3xx · 0</span>
+      <span class="lv-stat clickable" id="lv-sum-unknown" onclick="SP.LogViewer._pickStatus('unknown')" title="Rows with no HTTP status parsed">no status · 0</span>
+      <span class="lv-stat" id="lv-sum-lat">latency —</span>
+      <span class="lv-summary-spacer"></span>
+    </div>
+
+    <div class="lv-active" id="lv-active"></div>
+
+    <div class="lv-hist" id="lv-hist">
+      <div class="lv-hist-empty">no data</div>
+    </div>
+
+    <div class="lv-side" id="lv-side"></div>
+
+    <div class="lv-body" id="lv-body">
+      <div class="lv-msg">Configure an endpoint and click <b>Search</b> to load logs</div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<div id="sa-overlay" class="sa-ovl" onclick="if(event.target===this) SP.Alerts.close()">
+  <div class="sa-drawer" onclick="event.stopPropagation()">
+    <div class="sa-hd">
+      <div class="icon-wrap"><i data-icon="bell" style="width:20px;height:20px"></i></div>
+      <div style="flex:1;min-width:0">
+        <h3>Custom Alerts</h3>
+        <div class="svc" id="sa-svc-name">—</div>
+      </div>
+      <div class="sa-hd-actions">
+        <button class="sa-btn icon-only" onclick="SP.Alerts.openConfig()" title="Manage Google Chat webhooks (⚙ notification channels)">
+          <i data-icon="settings" style="width:14px;height:14px"></i>
+        </button>
+        <button class="sa-btn primary" onclick="SP.Alerts.openForm()">
+          <span style="font-size:14px;line-height:1">+</span> New alert
+        </button>
+        <button class="sa-btn icon-only" onclick="SP.Alerts.close()" title="Close (Esc)">✕</button>
+      </div>
+    </div>
+    <div class="sa-body" id="sa-body">
+      <div class="sa-empty">
+        <div class="icon"><i data-icon="bell" style="width:26px;height:26px"></i></div>
+        Loading rules…
+      </div>
+    </div>
+  </div>
+</div>
+<div id="sa-modal" class="sa-modal" onclick="if(event.target===this) SP.Alerts.closeForm()">
+  <div class="sa-modal-card">
+    <div class="sa-modal-hd">
+      <div class="icon-wrap"><i data-icon="bell" style="width:18px;height:18px"></i></div>
+      <div style="flex:1">
+        <h3 id="sa-modal-title">New alert</h3>
+        <div class="sub" id="sa-modal-sub">Threshold-based alert · evaluated every 30s · sends Google Chat on transitions</div>
+      </div>
+      <button class="sa-btn" onclick="SP.Alerts.closeForm()" title="Close">✕</button>
+    </div>
+    <div class="sa-modal-split">
+      <div class="sa-modal-body" id="sa-modal-body">
+        <!-- form injected by openForm() -->
+      </div>
+      <aside class="sa-preview-panel" id="sa-preview-panel">
+        <div class="sa-preview-panel-hd">
+          <i data-icon="activity" style="width:14px;height:14px"></i>
+          <span>Live preview</span>
+          <span class="live-badge">LIVE</span>
+          <select class="sa-preview-range" id="sa-preview-range"
+                  onchange="SP.Alerts._onPreviewRangeChange(this.value)"
+                  title="Time range for preview chart">
+            <option value="30">30m</option>
+            <option value="60" selected>1h</option>
+            <option value="180">3h</option>
+            <option value="360">6h</option>
+            <option value="1440">24h</option>
+          </select>
+          <button class="sa-expand-btn" onclick="SP.Alerts._toggleExpand()" title="Expand / collapse modal">
+            <i data-icon="maximize-2" id="sa-expand-icon" style="width:11px;height:11px"></i>
+          </button>
+        </div>
+        <div id="sa-preview-content">
+          <div class="sa-preview-chart">
+            <div class="empty">เลือก metric ด้านซ้ายเพื่อดู live preview</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <div class="sa-modal-ft">
+      <button class="sa-btn" onclick="SP.Alerts.closeForm()">Cancel</button>
+      <button class="sa-btn" onclick="SP.Alerts._testFromForm()" title="ยิง test Google Chat card ทันที (ไม่บันทึก rule)">
+        <i data-icon="send" style="width:12px;height:12px"></i> Test notification
+      </button>
+      <button class="sa-btn primary" id="sa-save-btn" onclick="SP.Alerts._dispatchSave()">Save alert</button>
+    </div>
+  </div>
+</div>
+
+
+
+<div id="da-overlay" class="da-ovl" onclick="if(event.target===this) SP.DeepAnalysis.close()">
+  <div class="da-card" onclick="event.stopPropagation()">
+    <div class="da-hd">
+      <div class="icon-wrap"><i data-icon="activity" style="width:22px;height:22px"></i></div>
+      <div style="flex:1">
+        <h2>Deep Analysis</h2>
+        <div class="sub" id="da-svc">—</div>
+      </div>
+      <div class="da-range-picker" id="da-range" role="group" aria-label="Analysis range"></div>
+      <button class="close" onclick="SP.DeepAnalysis.close()">✕</button>
+    </div>
+    <div class="da-body" id="da-body">
+      <div class="da-loading">Loading analysis…</div>
+    </div>
+  </div>
+</div>
+
+
+
+<div id="cm-overlay" class="cm-ovl" onclick="if(event.target===this) SP.Compare.close()">
+  <div class="cm-card" onclick="event.stopPropagation()">
+    <div class="cm-hd">
+      <div class="icon-wrap"><i data-icon="bar-chart" style="width:22px;height:22px"></i></div>
+      <div style="flex:1">
+        <h2>Compare Services</h2>
+        <div class="sub">Overlay CPU / MEM / latency / TXN ของ 2-8 services บนแกนเวลาเดียวกัน — เทียบ fleet-wide</div>
+      </div>
+      <button class="close" onclick="SP.Compare.copyLink()" title="Copy shareable URL"><i data-icon="link" style="width:12px;height:12px;vertical-align:-1px"></i> Copy link</button>
+      <button class="close" onclick="SP.Compare.close()">✕</button>
+    </div>
+    <div class="cm-body">
+      <div class="cm-toolbar">
+        <div class="cm-svc-row" id="cm-svc-row"></div>
+        <div class="cm-range" id="cm-range">
+          <span class="cm-range-lbl">Range</span>
+        </div>
+      </div>
+      <div id="cm-content">
+        <div class="cm-empty">
+          <div class="icon"><i data-icon="bar-chart" style="width:26px;height:26px"></i></div>
+          พิมพ์ชื่อ service ในช่องด้านบน → Enter → เพิ่มได้สูงสุด 8 services
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

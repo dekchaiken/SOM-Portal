@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Docs — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .doc-type-icon {
+      width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .doc-type-sheet { background: #e6f4ea; }
+    .doc-type-doc   { background: #e8f0fe; }
+    .doc-type-slide { background: #fce8e6; }
+    .doc-type-other { background: #f3e8fd; }
+
+    .cat-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px 4px 12px; border-radius: 20px;
+      background: var(--bg); border: 1.5px solid var(--border);
+      font-size: 11px; font-weight: 600; color: var(--text);
+    }
+
+    .cat-chip button {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 11px; padding: 0; line-height: 1;
+      transition: color .12s;
+    }
+
+    .cat-chip button:hover { color: var(--danger); }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">⊟ Manage Docs</div>
+        <div class="page-sub">จัดการ Team Docs และหมวดหมู่</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input type="text" id="search-input" class="form-control" placeholder="ค้นหา..." style="width:200px">
+        </div>
+        <button class="btn btn-primary" onclick="openDocModal()">+ เพิ่มเอกสาร</button>
+      </div>
+    </header>
+
+    <main class="page-content" style="display:flex;flex-direction:column;gap:20px">
+
+      <section class="page-hero">
+        <div class="page-hero-mark">⊟</div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Manage Docs</h1>
+          <p>จัดการ Team Docs และหมวดหมู่ — Google Sheets, Grafana, DataDog embeds</p>
+        </div>
+      </section>
+
+      <!-- Categories section -->
+      <div class="card" style="padding:18px 20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">หมวดหมู่</div>
+          <button class="btn btn-ghost btn-sm" onclick="openAddCategory()">+ เพิ่มหมวด</button>
+        </div>
+        <div id="cat-list" style="display:flex;flex-wrap:wrap;gap:8px">
+          <div data-skel="chips" data-rows="5"></div>
+        </div>
+      </div>
+
+      <!-- Docs table -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">
+            เอกสารทั้งหมด <span id="doc-count" style="color:var(--text)"></span>
+          </div>
+          <select id="filter-cat" class="form-control" style="width:160px;font-size:11px" onchange="applyFilter()">
+            <option value="">ทุกหมวด</option>
+          </select>
+        </div>
+        <div id="docs-table-wrap">
+          <div data-skel="table" data-rows="5"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Add/Edit Doc Modal ── -->
+<div class="modal-overlay" id="doc-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title" id="doc-modal-title">เพิ่มเอกสาร</span>
+      <button class="btn-close" onclick="Modal.close('doc-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:0">
+      <input type="hidden" id="edit-doc-id">
+      <div class="form-group">
+        <label class="form-label">ชื่อเอกสาร <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="doc-name" class="form-control" maxlength="120">
+      </div>
+      <div class="form-group">
+        <label class="form-label">URL <span style="color:var(--danger)">*</span></label>
+        <input type="url" id="doc-url" class="form-control" placeholder="https://docs.google.com/...">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">ประเภท</label>
+          <select id="doc-type" class="form-control">
+            <option value="sheet">Google Sheet</option>
+            <option value="doc">Google Doc</option>
+            <option value="slide">Google Slide</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">หมวดหมู่</label>
+          <select id="doc-category" class="form-control">
+            <option value="">— ไม่ระบุ —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">รายละเอียด</label>
+        <textarea id="doc-desc" class="form-control" rows="3" maxlength="300"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('doc-modal')">Cancel</button>
+      <button class="btn btn-primary" id="doc-save-btn" onclick="saveDoc()">
+        <span id="doc-save-text">บันทึก</span>
+        <span id="doc-save-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add Category Modal ── -->
+<div class="modal-overlay" id="cat-modal">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-header">
+      <span class="modal-title">เพิ่มหมวดหมู่</span>
+      <button class="btn-close" onclick="Modal.close('cat-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">ชื่อหมวดหมู่</label>
+        <input type="text" id="cat-name" class="form-control" placeholder="เช่น Planning, Report" maxlength="60">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('cat-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCategory()">เพิ่ม</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+  if (!Auth.requireAdmin()) {}
+  Layout.render('admin-sheets');
+
+  const TYPE_META = {
+    sheet: { icon: '<i data-icon="book"></i>', cls: 'doc-type-sheet' },
+    doc:   { icon: '<i data-icon="book"></i>', cls: 'doc-type-doc'   },
+    slide: { icon: '<i data-icon="book"></i>', cls: 'doc-type-slide' },
+    other: { icon: '<i data-icon="file"></i>', cls: 'doc-type-other' },
+  };
+
+  let allDocs = [];
+  let categories = [];
+
+  async function init() {
+    const [docsRes, catRes] = await Promise.all([
+      API.sheets.list(),
+      API.sheets.getCategories()
+    ]);
+    if (catRes?.ok)  { categories = catRes.data.data || []; renderCategories(); populateSelects(); }
+    if (docsRes?.ok) { allDocs = docsRes.data.data || [];   renderTable(allDocs); }
+  }
+
+  // ── Categories ────────────────────────────────────────────
+  function renderCategories() {
+    const el = document.getElementById('cat-list');
+    if (!categories.length) { el.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">ยังไม่มีหมวดหมู่</span>'; return; }
+    el.innerHTML = categories.map(c => `
+      <div class="cat-chip">
+        ${escHtml(c)}
+        <button onclick="deleteCategory('${escHtml(c)}')" title="ลบ"><i data-icon="x"></i></button>
+      </div>`).join('');
+  }
+
+  function populateSelects() {
+    const opts = '<option value="">— ไม่ระบุ —</option>' +
+      categories.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+    document.getElementById('doc-category').innerHTML = opts;
+
+    const filterOpts = '<option value="">ทุกหมวด</option>' +
+      categories.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+    document.getElementById('filter-cat').innerHTML = filterOpts;
+  }
+
+  function openAddCategory() {
+    document.getElementById('cat-name').value = '';
+    Modal.open('cat-modal');
+  }
+
+  async function saveCategory() {
+    const name = document.getElementById('cat-name').value.trim();
+    if (!name) { Toast.warning('ใส่ชื่อหมวดหมู่ด้วย'); return; }
+    const res = await API.sheets.addCategory({ name });
+    if (res?.ok) {
+      categories = res.data.data || [];
+      renderCategories(); populateSelects();
+      Modal.close('cat-modal');
+      Toast.success('เพิ่มหมวดหมู่แล้ว');
+    } else {
+      Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด');
+    }
+  }
+
+  async function deleteCategory(name) {
+    const confirmed = await confirmDialog(`ลบหมวด "${name}"?`, 'ลบหมวดหมู่');
+    if (!confirmed) return;
+    const res = await API.sheets.deleteCategory(name);
+    if (res?.ok) {
+      categories = res.data.data || [];
+      renderCategories(); populateSelects();
+      Toast.success('ลบหมวดหมู่แล้ว');
+    } else {
+      Toast.error(res?.data?.message || 'ลบไม่สำเร็จ');
+    }
+  }
+
+  // ── Table ─────────────────────────────────────────────────
+  function applyFilter() {
+    const cat = document.getElementById('filter-cat').value;
+    const filtered = cat ? allDocs.filter(d => d.category === cat) : allDocs;
+    renderTable(filtered);
+  }
+
+  function renderTable(docs) {
+    document.getElementById('doc-count').textContent = `(${docs.length})`;
+    const wrap = document.getElementById('docs-table-wrap');
+    if (!docs.length) {
+      wrap.innerHTML = `<div class="empty-state" style="padding:40px 0"><div class="empty-icon">⊞</div><p>ยังไม่มีเอกสาร</p></div>`;
+      return;
+    }
+    wrap.innerHTML = `
+      <table class="data-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>เอกสาร</th>
+            <th>ประเภท</th>
+            <th>หมวดหมู่</th>
+            <th>โดย</th>
+            <th>วันที่</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${docs.map(d => {
+          const m = TYPE_META[d.type] || TYPE_META.other;
+          return `
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div class="doc-type-icon ${m.cls}" style="width:32px;height:32px;border-radius:8px;font-size:14px">${m.icon}</div>
+                  <div>
+                    <div style="font-size:12px;font-weight:600;color:var(--text)">${escHtml(d.name)}</div>
+                    ${d.description ? `<div style="font-size:10px;color:var(--text-muted);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(d.description)}</div>` : ''}
+                  </div>
+                </div>
+              </td>
+              <td><span class="badge badge-gray" style="font-size:10px">${d.type}</span></td>
+              <td style="font-size:11px;color:var(--text-muted)">${escHtml(d.category || '—')}</td>
+              <td style="font-size:11px;color:var(--text-muted)">${escHtml(d.author_name)}</td>
+              <td style="font-size:11px;color:var(--text-muted)">${DateTime.formatDate(d.created_at)}</td>
+              <td style="text-align:right">
+                <div style="display:flex;gap:4px;justify-content:flex-end">
+                  <a href="${escHtml(d.url)}" target="_blank" rel="noopener noreferrer"
+                     class="btn btn-ghost btn-icon btn-sm" data-tip="Open" title="เปิด">↗</a>
+                  <button class="btn btn-ghost btn-icon btn-sm" data-tip="Edit" onclick="editDoc('${d.id}')">✎</button>
+                  <button class="btn btn-ghost btn-icon btn-sm" data-tip="Delete" style="color:var(--danger)" onclick="deleteDoc('${d.id}')">✕</button>
+                </div>
+              </td>
+            </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+  }
+
+  // ── Doc CRUD ──────────────────────────────────────────────
+  function openDocModal(doc = null) {
+    document.getElementById('doc-modal-title').textContent = doc ? 'แก้ไขเอกสาร' : 'เพิ่มเอกสาร';
+    document.getElementById('doc-save-text').textContent   = doc ? 'บันทึก' : 'เพิ่ม';
+    document.getElementById('edit-doc-id').value  = doc?.id || '';
+    document.getElementById('doc-name').value     = doc?.name || '';
+    document.getElementById('doc-url').value      = doc?.url || '';
+    document.getElementById('doc-type').value     = doc?.type || 'sheet';
+    document.getElementById('doc-category').value = doc?.category || '';
+    document.getElementById('doc-desc').value     = doc?.description || '';
+    Modal.open('doc-modal');
+  }
+
+  function editDoc(id) {
+    const d = allDocs.find(x => x.id === id);
+    if (d) openDocModal(d);
+  }
+
+  async function saveDoc() {
+    const btn  = document.getElementById('doc-save-btn');
+    const text = document.getElementById('doc-save-text');
+    const spin = document.getElementById('doc-save-spin');
+    const id   = document.getElementById('edit-doc-id').value;
+
+    const payload = {
+      name:        document.getElementById('doc-name').value.trim(),
+      url:         document.getElementById('doc-url').value.trim(),
+      type:        document.getElementById('doc-type').value,
+      category:    document.getElementById('doc-category').value,
+      description: document.getElementById('doc-desc').value.trim(),
+    };
+
+    if (!payload.name) { Toast.warning('กรุณาใส่ชื่อเอกสาร'); return; }
+    if (!payload.url)  { Toast.warning('กรุณาใส่ URL'); return; }
+
+    btn.disabled = true; spin.classList.remove('hidden');
+    const res = id ? await API.sheets.update(id, payload) : await API.sheets.create(payload);
+    btn.disabled = false; spin.classList.add('hidden');
+
+    if (res?.ok) {
+      Toast.success(id ? 'แก้ไขแล้ว <i data-icon="check"></i>' : 'เพิ่มแล้ว <i data-icon="check"></i>');
+      Modal.close('doc-modal');
+      const docsRes = await API.sheets.list();
+      if (docsRes?.ok) { allDocs = docsRes.data.data || []; applyFilter(); }
+    } else {
+      Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด');
+    }
+  }
+
+  async function deleteDoc(id) {
+    const confirmed = await confirmDialog('ลบเอกสารนี้?', 'ลบเอกสาร');
+    if (!confirmed) return;
+    const res = await API.sheets.delete(id);
+    if (res?.ok) {
+      Toast.success('ลบแล้ว');
+      allDocs = allDocs.filter(d => d.id !== id);
+      applyFilter();
+    } else {
+      Toast.error(res?.data?.message || 'ลบไม่สำเร็จ');
+    }
+  }
+
+  // ── Search ────────────────────────────────────────────────
+  document.getElementById('search-input').addEventListener('input', debounce((e) => {
+    const q = e.target.value.trim().toLowerCase();
+    let filtered = allDocs;
+    const cat = document.getElementById('filter-cat').value;
+    if (cat) filtered = filtered.filter(d => d.category === cat);
+    if (q)   filtered = filtered.filter(d =>
+      d.name.toLowerCase().includes(q) || (d.description || '').toLowerCase().includes(q)
+    );
+    renderTable(filtered);
+  }, 250));
+
+  // Enter to add category
+  document.getElementById('cat-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveCategory();
+  });
+
+  init();
+</script>
+</body>
+</html>

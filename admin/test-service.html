@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Service Config — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+
+  <link rel="stylesheet" href="../assets/pages/admin/test-service/test-service.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="test-tube"></i> Test Service Config</div>
+        <div class="page-sub">จัดการ Service Groups · Records · Reconcile</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="./logs.html?action=test_service" class="btn btn-ghost btn-sm" id="test-svc-logs-link" style="display:none;">◈ ดู Logs</a>
+        <a href="./index.html" class="btn btn-ghost btn-sm">← Admin</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="test-tube"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Test Service Config</h1>
+          <p>จัดการ Service Groups แยกตาม Organization · Daily Test Records · Reconcile Credentials</p>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════
+           SERVICE GROUPS — TMN / VB  (2-column)
+      ══════════════════════════════════════════════════ -->
+      <div class="org-section-label">
+        <i data-icon="layers"></i> Service Groups
+        <span class="org-section-hint">จัดการ groups และ sub-services สำหรับ Test Report ของแต่ละ org</span>
+      </div>
+
+      <div class="ts-grid">
+
+        <!-- ── TMN Card ── -->
+        <div class="cfg-card brand-card brand-card-tmn">
+          <div class="cfg-card-hd">
+            <div class="cfg-card-hd-left">
+              <div class="cfg-card-icon brand-icon-tmn"><i data-icon="test-tube"></i></div>
+              <div>
+                <div class="cfg-card-title">
+                  <span class="brand-pill brand-pill-tmn">TMN</span>
+                  <span style="margin-left:6px">TrueMoney</span>
+                </div>
+                <div class="cfg-card-sub">Service groups สำหรับ TMN</div>
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="toggleAddForm('tmn')" style="flex-shrink:0">+ เพิ่มกลุ่ม</button>
+          </div>
+          <div class="cfg-card-body">
+            <div class="group-list" id="tmn-group-list">
+              <div class="grp-loading">กำลังโหลด…</div>
+            </div>
+            <!-- Add form for TMN -->
+            <div class="add-group-form" id="tmn-add-group-form">
+              <input id="tmn-new-group-name" type="text" placeholder="ชื่อกลุ่ม เช่น Mobile App(Wallet)">
+              <input id="tmn-new-group-id"   type="text" placeholder="ID (snake_case) เช่น wallet">
+              <div class="add-group-form-row">
+                <button class="btn btn-sm" onclick="addGroupConfirm('tmn')" style="background:var(--tmn-color);color:#fff;border:none">+ เพิ่ม</button>
+                <button class="btn btn-ghost btn-sm" onclick="toggleAddForm('tmn')">ยกเลิก</button>
+              </div>
+            </div>
+            <div class="action-bar">
+              <span class="save-status" id="tmn-groups-status"></span>
+              <button class="btn btn-sm" onclick="saveGroups()" style="background:var(--tmn-color);color:#fff;border:none"><i data-icon="save"></i> บันทึก</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── VB Card ── -->
+        <div class="cfg-card brand-card brand-card-vb">
+          <div class="cfg-card-hd">
+            <div class="cfg-card-hd-left">
+              <div class="cfg-card-icon brand-icon-vb"><i data-icon="test-tube"></i></div>
+              <div>
+                <div class="cfg-card-title">
+                  <span class="brand-pill brand-pill-vb">VB</span>
+                  <span style="margin-left:6px">VirtualBank</span>
+                </div>
+                <div class="cfg-card-sub">Service groups สำหรับ VB</div>
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="toggleAddForm('vb')" style="flex-shrink:0">+ เพิ่มกลุ่ม</button>
+          </div>
+          <div class="cfg-card-body">
+            <div class="group-list" id="vb-group-list">
+              <div class="grp-loading">กำลังโหลด…</div>
+            </div>
+            <!-- Add form for VB -->
+            <div class="add-group-form" id="vb-add-group-form">
+              <input id="vb-new-group-name" type="text" placeholder="ชื่อกลุ่ม เช่น VB App">
+              <input id="vb-new-group-id"   type="text" placeholder="ID (snake_case) เช่น vb_app">
+              <div class="add-group-form-row">
+                <button class="btn btn-sm" onclick="addGroupConfirm('vb')" style="background:var(--vb-color);color:#fff;border:none">+ เพิ่ม</button>
+                <button class="btn btn-ghost btn-sm" onclick="toggleAddForm('vb')">ยกเลิก</button>
+              </div>
+            </div>
+            <div class="action-bar">
+              <span class="save-status" id="vb-groups-status"></span>
+              <button class="btn btn-sm" onclick="saveGroups()" style="background:var(--vb-color);color:#fff;border:none"><i data-icon="save"></i> บันทึก</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /ts-grid -->
+
+      <!-- ══════════════════════════════════════════════════
+           DAILY TEST RECORDS  (with TMN / VB tab)
+      ══════════════════════════════════════════════════ -->
+      <div class="records-card">
+        <div class="records-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon"><i data-icon="clipboard"></i></div>
+            <div>
+              <div class="cfg-card-title">Daily Test Records</div>
+              <div class="cfg-card-sub" id="records-sub">กำลังโหลด…</div>
+            </div>
+          </div>
+          <!-- Brand tab switcher -->
+          <div class="rec-brand-tabs" id="rec-brand-tabs">
+            <button class="rec-brand-tab active" data-brand="tmn" onclick="setAdminRecordsBrand('tmn')">
+              <span class="brand-pill brand-pill-tmn" style="font-size:9px;padding:1px 8px">TMN</span>
+            </button>
+            <button class="rec-brand-tab" data-brand="vb" onclick="setAdminRecordsBrand('vb')">
+              <span class="brand-pill brand-pill-vb" style="font-size:9px;padding:1px 8px">VB</span>
+            </button>
+          </div>
+          <!-- Actions -->
+          <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+            <button class="btn btn-ghost btn-sm" onclick="loadRecords()">↺ Refresh</button>
+            <button class="btn btn-ghost btn-sm" style="color:#ef4444" onclick="clearBrandRecords()"><i data-icon="trash"></i> Clear</button>
+          </div>
+        </div>
+
+        <div class="rec-hint">
+          <i data-icon="pencil"></i> คลิกที่เวลา, ชื่อ, หรือสถานะ เพื่อแก้ไขได้เลย — บันทึกอัตโนมัติ &nbsp;|&nbsp;
+          ⌄ กดขยายแถวเพื่อดู/แก้ children
+        </div>
+
+        <div class="rec-wrap" id="rec-wrap">
+          <div class="rec-empty" id="rec-empty">
+            <div class="rec-empty-icon"><i data-icon="inbox"></i></div>
+            <div>กำลังโหลด…</div>
+          </div>
+          <table class="rec-table" id="rec-table" style="display:none">
+            <thead id="rec-thead"></thead>
+            <tbody id="rec-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════
+           RECONCILE CREDENTIALS  (ย้ายลงมาข้างล่าง)
+      ══════════════════════════════════════════════════ -->
+      <div class="org-section-label">
+        <i data-icon="refresh-cw"></i> Reconcile Credentials
+        <span class="org-section-hint">Keycloak ROPC สำหรับ Fund-Out Check (Step 1)</span>
+      </div>
+
+      <div class="cfg-card" style="max-width:540px">
+        <div class="cfg-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon"><i data-icon="refresh-cw"></i></div>
+            <div>
+              <div class="cfg-card-title">Reconcile Credentials</div>
+              <div class="cfg-card-sub">Keycloak ROPC สำหรับ Fund-Out Check</div>
+            </div>
+          </div>
+        </div>
+        <div class="cfg-card-body">
+          <div class="recon-status-row none" id="recon-status-row">
+            <span id="recon-status-icon"><i data-icon="settings"></i></span>
+            <span id="recon-status-text">กำลังตรวจสอบ…</span>
+          </div>
+          <div class="form-field">
+            <label>Username (Email)</label>
+            <input type="text" id="recon-user" placeholder="email@ascendcorp.com">
+          </div>
+          <div class="form-field">
+            <label>Password</label>
+            <input type="password" id="recon-pass" placeholder="••••••••">
+          </div>
+          <div class="action-bar">
+            <span class="save-status" id="recon-status-msg"></span>
+            <button class="btn btn-sm" onclick="saveReconcile()" style="background:var(--orange);color:#fff;border:none"><i data-icon="save"></i> บันทึก</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════
+           STEP SETTINGS
+      ══════════════════════════════════════════════════ -->
+      <div class="org-section-label" style="margin-top:8px">
+        <i data-icon="settings"></i> Step Settings
+        <span class="org-section-hint">ตั้งค่า Alert · Jenkins · Rundeck</span>
+      </div>
+
+      <!-- Step 1 - Reconcile Alert -->
+      <div class="cfg-card">
+        <div class="cfg-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon"><i data-icon="bell"></i></div>
+            <div>
+              <div class="cfg-card-title">Step 1 — Reconcile Alert Settings</div>
+              <div class="cfg-card-sub">การแจ้งเตือน · Jira · Chat · Email</div>
+            </div>
+          </div>
+        </div>
+        <div class="cfg-card-body">
+
+          <div class="settings-block">
+            <div class="settings-block-title"><i data-icon="bell"></i> การแจ้งเตือนอัตโนมัติ</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
+              <div class="form-field">
+                <label>จำนวน threshold (รายการ)</label>
+                <input type="number" id="cfg-s1-threshold" min="1" value="50" placeholder="50">
+              </div>
+              <div class="form-field">
+                <label>ย้อนหลัง (ชั่วโมง)</label>
+                <input type="number" id="cfg-s1-offset" min="1" max="24" value="2" placeholder="2">
+              </div>
+            </div>
+            <div style="font-size:10px;color:var(--text-muted);line-height:1.6;">เมื่อพบรายการ ≥ threshold → แสดง Popup สร้าง Jira + ส่ง Chat Alert อัตโนมัติ</div>
+          </div>
+
+          <div class="settings-block">
+            <div class="settings-block-title"><i data-icon="ticket"></i> Jira Ticket</div>
+            <div class="form-field">
+              <label>Summary Template</label>
+              <input type="text" id="cfg-s1-jira-summary" placeholder="CIMB transfer reconcile status New {count} transactions ({datetime})">
+              <div class="field-hint">ตัวแปร: <code>{count}</code> <code>{datetime}</code></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div class="form-field">
+                <label>Business Unit Impacted</label>
+                <input type="text" id="cfg-s1-jira-bu" placeholder="TrueMoneyTH">
+              </div>
+              <div class="form-field">
+                <label>TH Service Impacted</label>
+                <input type="text" id="cfg-s1-jira-service" placeholder="Fund-out">
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div class="form-field">
+                <label>Channel / Component</label>
+                <input type="text" id="cfg-s1-jira-channel" placeholder="TrueMoney Transfer - CIMB">
+              </div>
+              <div class="form-field">
+                <label>Detected by</label>
+                <input type="text" id="cfg-s1-jira-detected" placeholder="SM">
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div class="form-field">
+                <label>Work Type (Issue Type)</label>
+                <input type="text" id="cfg-s1-jira-worktype" placeholder="Monitoring">
+              </div>
+              <div class="form-field"></div>
+            </div>
+            <div class="form-field">
+              <label>Action / Solution (ค่าเริ่มต้น)</label>
+              <input type="text" id="cfg-s1-jira-action" placeholder="Escalated to CIMB support team.">
+            </div>
+          </div>
+
+          <div class="settings-block">
+            <div class="settings-block-title"><i data-icon="megaphone"></i> Google Chat Webhook</div>
+            <div class="form-field">
+              <label>Webhook URL</label>
+              <input type="url" id="cfg-s1-chat-webhook" placeholder="https://chat.googleapis.com/v1/spaces/...">
+            </div>
+            <div class="form-field">
+              <label>Message Template</label>
+              <textarea id="cfg-s1-chat-msg" rows="6" placeholder="⚠️ Reconciliation Alert&#10;Total Records: {count} รายการ&#10;Check Time: {datetime}&#10;&#10;รายการเกิน {threshold}" class="form-textarea"></textarea>
+              <div class="field-hint">ตัวแปร: <code>{count}</code> <code>{datetime}</code> <code>{threshold}</code></div>
+            </div>
+          </div>
+
+          <div class="settings-block">
+            <div class="settings-block-title"><i data-icon="mail"></i> อีเมล (CIMB Notification)</div>
+            <div class="form-field">
+              <label>To (คั่นด้วย comma หรือบรรทัดใหม่)</label>
+              <textarea id="cfg-s1-email-to" rows="2" placeholder="prajuk.s@cimbthai.com, ..." class="form-textarea"></textarea>
+            </div>
+            <div class="form-field">
+              <label>CC (คั่นด้วย comma หรือบรรทัดใหม่)</label>
+              <textarea id="cfg-s1-email-cc" rows="3" placeholder="TH_TB_IMP@cimbthai.com, sm@ascendcorp.com, ..." class="form-textarea"></textarea>
+            </div>
+            <div class="form-field">
+              <label>Subject Template</label>
+              <input type="text" id="cfg-s1-email-subject" placeholder="[{jira_key}] : CIMB transfer reconcile status New {count} transactions ({date})">
+              <div class="field-hint">ตัวแปร: <code>{jira_key}</code> <code>{count}</code> <code>{date}</code></div>
+            </div>
+            <div class="form-field">
+              <label>Email Body Template</label>
+              <textarea id="cfg-s1-email-body" rows="8" placeholder="เรียนทีมงาน CIMB ..." class="form-textarea"></textarea>
+              <div class="field-hint">ตัวแปร: <code>{date}</code> <code>{round_time}</code> <code>{count}</code></div>
+            </div>
+          </div>
+
+          <div class="action-bar">
+            <span class="save-status" id="step1-status"></span>
+            <button class="btn btn-sm" onclick="saveStep1Settings()" style="background:var(--orange);color:#fff;border:none"><i data-icon="save"></i> บันทึก Step 1</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 - Jenkins -->
+      <div class="cfg-card">
+        <div class="cfg-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon"><i data-icon="settings"></i></div>
+            <div>
+              <div class="cfg-card-title">Step 2 — Jenkins Job Settings</div>
+              <div class="cfg-card-sub">Authentication · Job URL · Console Link</div>
+            </div>
+          </div>
+        </div>
+        <div class="cfg-card-body">
+          <div class="settings-block">
+            <div class="settings-block-title"><i data-icon="key"></i> Jenkins Authentication</div>
+            <div class="form-field">
+              <label>Username</label>
+              <input type="text" id="cfg-s2-user" placeholder="firstname.lastname">
+            </div>
+            <div class="form-field">
+              <label>API Token</label>
+              <input type="password" id="cfg-s2-token" placeholder="••••••••••••••••••••••••••••••••••">
+            </div>
+          </div>
+          <div class="settings-block">
+            <div class="settings-block-title"><i data-icon="link"></i> Jenkins Job</div>
+            <div class="form-field">
+              <label>Jenkins Job URL</label>
+              <input type="text" id="cfg-s2-url" placeholder="https://jenkins-batch-eks-cicd.../job/.../api/json?tree=builds[...]">
+              <div class="field-hint">ใส่ full URL ของ Jenkins Job API endpoint</div>
+            </div>
+            <div class="form-field">
+              <label>จำนวน Builds ที่แสดง</label>
+              <input type="number" id="cfg-s2-builds" min="1" max="20" value="5" placeholder="5">
+            </div>
+          </div>
+          <div class="settings-block">
+            <div class="settings-block-title">↗ Quick Link</div>
+            <div class="form-field">
+              <label>Jenkins Console URL (เปิดในแท็บใหม่)</label>
+              <input type="text" id="cfg-s2-console" placeholder="https://jenkins-batch-eks-cicd.../job/.../">
+            </div>
+          </div>
+          <div class="action-bar">
+            <span class="save-status" id="step2-status"></span>
+            <button class="btn btn-sm" onclick="saveStep2Settings()" style="background:var(--orange);color:#fff;border:none"><i data-icon="save"></i> บันทึก Step 2</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 - Rundeck -->
+      <div class="cfg-card">
+        <div class="cfg-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon"><i data-icon="folder"></i></div>
+            <div>
+              <div class="cfg-card-title">Step 3 — Rundeck sFTP Settings</div>
+              <div class="cfg-card-sub">Job URL · Partner · Quick Start Guide</div>
+            </div>
+          </div>
+        </div>
+        <div class="cfg-card-body">
+          <div class="settings-block">
+            <div class="settings-block-title"><i data-icon="link"></i> Rundeck Job</div>
+            <div class="form-field">
+              <label>Rundeck Job URL</label>
+              <input type="text" id="cfg-s3-url" placeholder="https://th-ops-rundeck.mgt.ascendmoney.io/project/SM/job/show/...">
+            </div>
+            <div class="form-field">
+              <label>sftp_partner_name (default)</label>
+              <input type="text" id="cfg-s3-partner" placeholder="CIMB">
+            </div>
+          </div>
+          <div class="settings-block">
+            <div class="settings-block-title"><i data-icon="clipboard"></i> Quick Start Guide</div>
+            <div class="form-field">
+              <label>คำอธิบาย Step 1</label>
+              <input type="text" id="cfg-s3-step1" placeholder='คลิก "เปิด Rundeck Job" ด้านล่าง'>
+            </div>
+            <div class="form-field">
+              <label>คำอธิบาย Step 2</label>
+              <input type="text" id="cfg-s3-step2" placeholder="ถ้ายังไม่ได้ login → Login ด้วย User ของคุณ">
+            </div>
+            <div class="form-field">
+              <label>Partner Selector ที่ต้องเลือก</label>
+              <input type="text" id="cfg-s3-selector" placeholder="sftp_partner_name = CIMB">
+            </div>
+          </div>
+          <div class="action-bar">
+            <span class="save-status" id="step3-status"></span>
+            <button class="btn btn-sm" onclick="saveStep3Settings()" style="background:var(--orange);color:#fff;border:none"><i data-icon="save"></i> บันทึก Step 3</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/test-service/test-service.js"></script>
+</body>
+</html>

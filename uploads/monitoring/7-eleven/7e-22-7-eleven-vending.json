@@ -1,0 +1,353 @@
+{
+  "n": 15,
+  "title": "7-Eleven · Vending",
+  "refresh": "1m",
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 426
+      },
+      "id": 2087,
+      "options": {
+        "composites": [],
+        "content": "%%{init: {\"flowchart\": {\"useMaxWidth\": true, \"htmlLabels\": true}, \"theme\": \"dark\"}}%%\ngraph TD\n  VM[\"Vending Machine\n(terminal_type=Vending)\"]\n  SC[\"retail-seven-composite\"]\n  EW[\"Wallet / Balance\"]\n\n  VM --> SC\n  SC --> EW\n  EW -->|200| vend_ok([\"Charge: OK\"])\n  EW -->|non-200| vend_fail([\"Charge: Fail\"])\n  classDef svc    fill:#242930,stroke:#5794c7,stroke-width:2px,color:#fff\n  classDef ok     fill:#1c2c22,stroke:#47a468,stroke-width:2px,color:#fff\n  classDef fail   fill:#2c1e1e,stroke:#cc3333,stroke-width:2px,color:#fff\n  classDef client fill:#2c2020,stroke:#e05252,stroke-width:3px,color:#e05252,font-weight:bold\n  classDef net    fill:#2c251e,stroke:#ff8c42,stroke-width:2px,color:#fff",
+        "links": [],
+        "style": "width:100%;",
+        "useBackground": false,
+        "valueName": "current"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{app_name=\"retail-seven-composite\",terminal_type=\"Vending\",status=\"200\",sof_type=\"BALANCE\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "vend_ok",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{app_name=\"retail-seven-composite\",terminal_type=\"Vending\",status!=\"200\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "vend_fail",
+          "refId": "B"
+        }
+      ],
+      "title": "Vending - Balance Payment Flow (5m window)",
+      "type": "jdbranham-diagram-panel"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน Vending Machine payment สำเร็จ (terminal_type=Vending, sof_type=BALANCE)\n\nดูยังไง: Vending ใช้ Balance เท่านั้น ถ้า drop ให้ตรวจ Wallet service",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 436
+      },
+      "hiddenSeries": false,
+      "id": 2088,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{app_name=\"retail-seven-composite\",terminal_type=\"Vending\",status_code=\"0\",status=\"200\",sof_type=\"BALANCE\"}[1m])) by (status,uri,method,sof_code,status_code,terminal_type)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{terminal_type}} - {{sof_code}} - {{status_code}} - {{status}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "lt",
+          "value": 1,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "Vending Success",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:40",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:41",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน Vending Machine payment fail แยกตาม SoF และ error\n\nดูยังไง: ถ้า fail สูงอาจเป็น Wallet balance ต่ำ หรือ network ระหว่าง Vending Machine กับ TMN",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 436
+      },
+      "hiddenSeries": false,
+      "id": 2089,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{app_name=\"retail-seven-composite\",terminal_type=\"Vending\",status!=\"200\"}[1m])) by (status,uri,method,sof_code,status_code,terminal_type)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{terminal_type}} - {{sof_code}} - {{status_code}} - {{status}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 10,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "Vending Sof Fail",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:40",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:41",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "Average response time ของ retail-seven-composite service\n\nดูยังไง: เป็น aggregate ของทุก SoF ถ้าสูงขึ้นให้ดู Processing Time แยกตาม SoF เพื่อหาตัวที่ช้า",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 444
+      },
+      "hiddenSeries": false,
+      "id": 2090,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "exemplar": true,
+          "expr": "sum(rate(http_server_requests_seconds_sum{app_name=\"retail-seven-composite\",status=\"200\",method=\"POST\",uri=\"/retail-seven-composite/par/v1/charges/{charge-id}\"}[1m])) by (status,uri,method)\n/\nsum(rate(http_server_requests_seconds_count{app_name=\"retail-seven-composite\",status=\"200\",method=\"POST\",uri=\"/retail-seven-composite/par/v1/charges/{charge-id}\"}[1m])) by (status,uri,method)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{method}} - {{uri}} - {{status}}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 0.6,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "Response Time - Seven-Composite",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:40",
+          "format": "s",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:41",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    }
+  ]
+}

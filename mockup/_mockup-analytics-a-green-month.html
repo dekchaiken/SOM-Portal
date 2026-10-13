@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Analytics — Design A: Green Month Faithful</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#F26419;
+  --bg:#F5F6F8; --bg-card:#FFFFFF; --bg-input:#F9F9F9;
+  --text:#1C1C1E; --text-muted:#767676; --text-dim:#9AA0A6;
+  --border:#E5E5E5; --border-soft:#EEEEEE;
+  --good:#16A34A; --good-bg:#DCFCE7;
+  --bad:#DC2626;  --bad-bg:#FEE2E2;
+  --warn:#F59E0B; --warn-bg:#FEF3C7;
+  --font:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--font); font-size:12px}
+
+/* ── Page shell ─────────────────────────── */
+.page{max-width:1360px; margin:0 auto; padding:28px 32px 80px}
+
+/* ── Report header ──────────────────────── */
+.report-head{margin-bottom:22px}
+.report-title{font-size:26px; font-weight:800; letter-spacing:-.02em; color:var(--text); margin:0}
+.report-title .sub{color:var(--text-muted); font-weight:500; font-style:italic; font-size:16px}
+.title-rule{
+  margin-top:12px; height:4px; border-radius:2px;
+  background:linear-gradient(90deg, #EF4444 0%, #F97316 25%, #FFE3D0 60%, transparent 100%);
+}
+
+/* ── KPI hero row ───────────────────────── */
+.kpi-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:32px}
+.kpi{
+  background:var(--bg-card); border:1px solid var(--border); border-radius:14px;
+  padding:20px 22px; box-shadow:0 1px 3px rgba(0,0,0,.03);
+  transition:transform .18s ease, box-shadow .18s ease;
+}
+.kpi:hover{transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.06)}
+.kpi-val{font-size:38px; font-weight:800; letter-spacing:-.02em; line-height:1}
+.kpi-val.bad{color:var(--bad)}
+.kpi-val.warn{color:var(--warn)}
+.kpi-val.good{color:var(--good)}
+.kpi-lbl{margin-top:8px; font-size:13.5px; font-weight:700; color:var(--text)}
+.kpi-sub{margin-top:2px; font-size:11px; color:var(--text-muted)}
+
+/* ── Section head ───────────────────────── */
+.section-head{
+  font-size:11px; font-weight:800; color:var(--text); letter-spacing:.18em;
+  text-transform:uppercase; margin:8px 0 14px;
+}
+
+/* ── Monthly tracker row ────────────────── */
+.month-row{
+  display:grid; grid-template-columns:repeat(12,1fr); gap:10px; margin-bottom:36px;
+}
+.mcell{
+  background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+  padding:14px 10px 12px; display:flex; flex-direction:column; align-items:center;
+  min-height:158px; transition:transform .15s ease;
+}
+.mcell:hover{transform:translateY(-2px)}
+.mcell.clean{background:#EAF9EF; border-color:#BBE7C8}
+.mcell.miss {background:#FFEEEE; border-color:#F6C8C8}
+.mcell.future{background:#F5F5F5; border-color:var(--border-soft)}
+.mcell .m{
+  font-size:14px; font-weight:800; letter-spacing:-.01em;
+}
+.mcell.clean .m{color:#0B7A2C}
+.mcell.miss  .m{color:#B01717}
+.mcell.future .m{color:var(--text-dim)}
+.mcell .badge{
+  margin:10px 0 8px; width:38px; height:38px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; font-weight:800; color:#fff;
+}
+.mcell.clean .badge{background:var(--good)}
+.mcell.miss  .badge{background:#DC2626}
+.mcell.future .badge{background:#D9D9D9; color:#8A8A8A}
+.mcell .mins{font-size:14px; font-weight:800; color:#B01717; margin-top:2px}
+.mcell .cnt{font-size:10.5px; color:#B01717; margin-top:1px}
+.mcell.clean .mins,.mcell.clean .cnt{color:#0B7A2C}
+.mcell.clean .mins{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:lowercase}
+.mcell .tags{margin-top:8px; display:flex; flex-direction:column; gap:2px; align-items:center}
+.mcell .tags span{font-size:9.5px; font-weight:700; color:#8B2020; letter-spacing:.04em}
+
+/* ── Bottom grid (chart + biz impact) ──── */
+.bottom{display:grid; grid-template-columns:1.5fr 1fr; gap:24px}
+.panel{background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:20px 22px}
+.panel h4{margin:0 0 14px; font-size:11px; letter-spacing:.18em; font-weight:800; color:var(--text); text-transform:uppercase}
+
+/* Simple CSS bar chart */
+.bars{display:flex; align-items:flex-end; gap:16px; height:220px; padding:0 8px 24px; border-bottom:1px solid var(--border-soft); position:relative}
+.bar-wrap{flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end}
+.bar-val{font-size:11px; font-weight:800; color:var(--text)}
+.bar-val.zero{color:var(--text-dim)}
+.bar{width:100%; max-width:36px; background:var(--orange); border-radius:4px 4px 0 0; min-height:2px}
+.bar.zero{background:#D9D9D9; height:2px !important}
+.bar-lbl{position:absolute; bottom:2px; font-size:10px; color:var(--text-muted); font-weight:600}
+.bar-scale{display:flex; gap:16px; padding:0 8px; margin-top:6px}
+.bar-scale .lb{flex:1; text-align:center; font-size:10px; color:var(--text-muted); font-weight:600}
+
+/* Business impact list */
+.imp-row{display:flex; align-items:center; justify-content:space-between; padding:12px 4px; border-bottom:1px dashed var(--border-soft)}
+.imp-row:last-child{border-bottom:0}
+.imp-key{display:flex; align-items:center; gap:10px; font-weight:700; font-size:13px}
+.imp-key .dot{width:10px; height:10px; border-radius:50%}
+.imp-key .dot.dtac{background:#E4187C}
+.imp-key .dot.true{background:#F26419}
+.imp-key .dot.tmn {background:#F5C518}
+.imp-val{font-size:11.5px; color:var(--text-muted); font-weight:600}
+.imp-val b{color:var(--text); font-weight:800}
+
+/* Bottom footer */
+.foot{margin-top:22px; display:flex; justify-content:space-between; align-items:center; font-size:10.5px; color:var(--text-muted)}
+.foot .brand{font-size:14px; font-weight:800; letter-spacing:-.01em}
+.foot .brand span{color:var(--bad); font-weight:800}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <header class="report-head">
+    <h1 class="report-title">
+      VAS Topup Service — Green Month Dashboard Y2026
+      <span class="sub">(as of July-2026)</span>
+    </h1>
+    <div class="title-rule"></div>
+  </header>
+
+  <!-- KPI Hero -->
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-val bad">99.66%</div>
+      <div class="kpi-lbl">Overall Service Availability</div>
+      <div class="kpi-sub">All causes of issue</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val warn">1,794</div>
+      <div class="kpi-lbl">Incident Minutes YTD</div>
+      <div class="kpi-sub">from 9 Incident Records</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val good">99.96%</div>
+      <div class="kpi-lbl">Caused by TMN internal</div>
+      <div class="kpi-sub">SLO : 99.95%</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val bad">99.69%</div>
+      <div class="kpi-lbl">Caused by External system</div>
+      <div class="kpi-sub">TRUE / DTAC system</div>
+    </div>
+  </div>
+
+  <!-- Monthly Tracker -->
+  <div class="section-head">Monthly Tracker · SM Detection Miss</div>
+  <div class="month-row">
+    <div class="mcell clean">
+      <div class="m">Jan</div>
+      <div class="badge">&#10003;</div>
+      <div class="mins">0 min</div>
+      <div class="cnt">green</div>
+    </div>
+    <div class="mcell miss">
+      <div class="m">Feb</div>
+      <div class="badge">1</div>
+      <div class="mins">480 min</div>
+      <div class="cnt">1 miss</div>
+      <div class="tags"><span>DTAC</span></div>
+    </div>
+    <div class="mcell miss">
+      <div class="m">Mar</div>
+      <div class="badge">2</div>
+      <div class="mins">781 min</div>
+      <div class="cnt">2 misses</div>
+      <div class="tags"><span>DTAC</span><span>TMN</span></div>
+    </div>
+    <div class="mcell miss">
+      <div class="m">Apr</div>
+      <div class="badge">1</div>
+      <div class="mins">98 min</div>
+      <div class="cnt">1 miss</div>
+      <div class="tags"><span>TRUE</span></div>
+    </div>
+    <div class="mcell miss">
+      <div class="m">May</div>
+      <div class="badge">3</div>
+      <div class="mins">216 min</div>
+      <div class="cnt">3 misses</div>
+      <div class="tags"><span>DTAC</span><span>TRUE</span><span>TMN</span></div>
+    </div>
+    <div class="mcell miss">
+      <div class="m">Jun</div>
+      <div class="badge">1</div>
+      <div class="mins">103 min</div>
+      <div class="cnt">1 miss</div>
+      <div class="tags"><span>DTAC</span></div>
+    </div>
+    <div class="mcell miss">
+      <div class="m">Jul</div>
+      <div class="badge">1</div>
+      <div class="mins">116 min</div>
+      <div class="cnt">1 miss</div>
+      <div class="tags"><span>TMN</span></div>
+    </div>
+    <div class="mcell future"><div class="m">Aug</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+    <div class="mcell future"><div class="m">Sep</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+    <div class="mcell future"><div class="m">Oct</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+    <div class="mcell future"><div class="m">Nov</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+    <div class="mcell future"><div class="m">Dec</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+  </div>
+
+  <!-- Bottom: chart + biz impact -->
+  <div class="bottom">
+    <div class="panel">
+      <h4>Outage Minutes by Month</h4>
+      <div class="bars">
+        <div class="bar-wrap"><div class="bar-val zero">0</div><div class="bar zero" style="height:0"></div></div>
+        <div class="bar-wrap"><div class="bar-val">480</div><div class="bar" style="height:60%"></div></div>
+        <div class="bar-wrap"><div class="bar-val">781</div><div class="bar" style="height:100%"></div></div>
+        <div class="bar-wrap"><div class="bar-val">98</div><div class="bar" style="height:13%"></div></div>
+        <div class="bar-wrap"><div class="bar-val">216</div><div class="bar" style="height:28%"></div></div>
+        <div class="bar-wrap"><div class="bar-val">103</div><div class="bar" style="height:14%"></div></div>
+        <div class="bar-wrap"><div class="bar-val">116</div><div class="bar" style="height:16%"></div></div>
+        <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero" style="height:0"></div></div>
+        <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero" style="height:0"></div></div>
+        <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero" style="height:0"></div></div>
+        <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero" style="height:0"></div></div>
+        <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero" style="height:0"></div></div>
+      </div>
+      <div class="bar-scale">
+        <div class="lb">Jan</div><div class="lb">Feb</div><div class="lb">Mar</div><div class="lb">Apr</div>
+        <div class="lb">May</div><div class="lb">Jun</div><div class="lb">Jul</div><div class="lb">Aug</div>
+        <div class="lb">Sep</div><div class="lb">Oct</div><div class="lb">Nov</div><div class="lb">Dec</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h4>Business Impact (YTD)</h4>
+      <div class="imp-row">
+        <div class="imp-key"><span class="dot dtac"></span>DTAC</div>
+        <div class="imp-val"><b>4 incidents</b> &middot; 1,431 min</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-key"><span class="dot true"></span>TRUE</div>
+        <div class="imp-val"><b>2 incidents</b> &middot; 184 min</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-key"><span class="dot tmn"></span>TRUE MONEY</div>
+        <div class="imp-val"><b>3 incidents</b> &middot; 179 min</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div>&copy; Ascend Money Co., Ltd. All rights reserved.</div>
+    <div class="brand">ascend<span>money</span></div>
+  </div>
+</div>
+</body>
+</html>

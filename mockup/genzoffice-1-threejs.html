@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>GenZ Office — Option 1: Three.js 3D Room</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#080b14; overflow:hidden; font-family:'Space Grotesk',sans-serif; }
+#canvas { display:block; }
+#ui { position:fixed; top:20px; left:50%; transform:translateX(-50%);
+  display:flex; align-items:center; gap:12px; z-index:10; }
+.label { background:rgba(10,12,25,.85); border:1px solid rgba(167,139,250,.3);
+  color:#e2e8f0; padding:6px 14px; border-radius:999px; font-size:11px;
+  font-weight:700; letter-spacing:.06em; backdrop-filter:blur(6px); }
+#hint { position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  color:rgba(167,139,250,.6); font-size:11px; letter-spacing:.08em; text-align:center; }
+#member-card { position:fixed; right:24px; top:50%; transform:translateY(-50%);
+  background:rgba(10,12,25,.9); border:1.5px solid rgba(167,139,250,.4);
+  border-radius:16px; padding:20px; width:200px; backdrop-filter:blur(12px);
+  display:none; }
+#member-card h3 { font-size:15px; font-weight:800; color:#fff; margin-bottom:4px; }
+#member-card .role { font-size:10px; color:#a78bfa; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; margin-bottom:12px; }
+#member-card .stat { display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:6px; font-size:11px; color:#94a3b8; }
+#member-card .stat span { color:#e2e8f0; font-weight:700; }
+#option-tag { position:fixed; bottom:20px; right:20px; color:rgba(167,139,250,.4);
+  font-size:10px; font-weight:800; letter-spacing:.12em; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<div id="ui">
+  <div class="label">✦ GenZ Team Office</div>
+  <div class="label" style="background:rgba(167,139,250,.15);border-color:rgba(167,139,250,.5);color:#a78bfa">4 Members Online</div>
+</div>
+<div id="hint">🖱️ Drag to rotate · Scroll to zoom · Click a desk to see member</div>
+<div id="member-card">
+  <h3 id="mc-name">–</h3>
+  <div class="role" id="mc-role">–</div>
+  <div class="stat">Notes <span id="mc-notes">–</span></div>
+  <div class="stat">Kudos <span id="mc-kudos">–</span></div>
+  <div class="stat">Status <span id="mc-status" style="color:#22c55e">Online</span></div>
+</div>
+<div id="option-tag">OPTION 1 — Three.js 3D</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const canvas = document.getElementById('canvas');
+const W = window.innerWidth, H = window.innerHeight;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setSize(W, H);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x080b14);
+scene.fog = new THREE.Fog(0x080b14, 20, 40);
+
+const camera = new THREE.PerspectiveCamera(55, W/H, 0.1, 100);
+camera.position.set(0, 10, 14);
+camera.lookAt(0, 0, 0);
+
+// Lighting
+const ambient = new THREE.AmbientLight(0x1a0a2e, 3);
+scene.add(ambient);
+const dir = new THREE.DirectionalLight(0xffffff, 2);
+dir.position.set(5, 10, 5);
+dir.castShadow = true;
+dir.shadow.camera.near = 0.1;
+dir.shadow.camera.far = 40;
+dir.shadow.camera.left = -10;
+dir.shadow.camera.right = 10;
+dir.shadow.camera.top = 10;
+dir.shadow.camera.bottom = -10;
+scene.add(dir);
+
+// Purple point lights
+const pl1 = new THREE.PointLight(0xa78bfa, 2, 12);
+pl1.position.set(-4, 4, -4);
+scene.add(pl1);
+const pl2 = new THREE.PointLight(0xf472b6, 1.5, 10);
+pl2.position.set(4, 4, 4);
+scene.add(pl2);
+const pl3 = new THREE.PointLight(0x22d3ee, 1, 8);
+pl3.position.set(0, 3, 0);
+scene.add(pl3);
+
+// Floor
+const floorGeo = new THREE.PlaneGeometry(20, 20, 20, 20);
+const floorMat = new THREE.MeshStandardMaterial({
+  color: 0x0d1117, roughness:.9, metalness:.1,
+  wireframe: false
+});
+const floor = new THREE.Mesh(floorGeo, floorMat);
+floor.rotation.x = -Math.PI/2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// Grid on floor
+const grid = new THREE.GridHelper(20, 20, 0xa78bfa, 0x1e1430);
+grid.position.y = 0.01;
+grid.material.opacity = 0.3;
+grid.material.transparent = true;
+scene.add(grid);
+
+// Walls
+const wallMat = new THREE.MeshStandardMaterial({ color:0x0f0f1e, roughness:1 });
+const wall1 = new THREE.Mesh(new THREE.BoxGeometry(20,.01,0.15), wallMat);
+wall1.position.set(0, 2.5, -10);
+wall1.scale.set(1,50,1);
+scene.add(wall1);
+const wall2 = new THREE.Mesh(new THREE.BoxGeometry(0.15,.01,20), wallMat);
+wall2.position.set(-10, 2.5, 0);
+wall2.scale.set(1,50,1);
+scene.add(wall2);
+const wall3 = wall2.clone();
+wall3.position.set(10, 2.5, 0);
+scene.add(wall3);
+
+// Create desk function
+const deskData = [
+  { name:'Warapon', nick:'(วรพล)', role:'SM Lead', color:0xa78bfa, notes:12, kudos:8, pos:[-3,0,-3] },
+  { name:'Piyaphan', nick:'(เผือก)', role:'SM Dev', color:0xf472b6, notes:7, kudos:5, pos:[3,0,-3] },
+  { name:'Sirirat', nick:'(น้องหมู)', role:'SM Ops', color:0x22d3ee, notes:5, kudos:11, pos:[-3,0,3] },
+  { name:'Thammanoon', nick:'(โน)', role:'SM Ops', color:0xfbbf24, notes:4, kudos:6, pos:[3,0,3] },
+];
+
+const deskMeshes = [];
+const mc = document.getElementById('member-card');
+
+deskData.forEach((d, i) => {
+  const g = new THREE.Group();
+  g.position.set(...d.pos);
+  g.userData = d;
+
+  // Desk surface
+  const deskGeo = new THREE.BoxGeometry(2.4, 0.1, 1.4);
+  const deskMat = new THREE.MeshStandardMaterial({
+    color: 0x1a1a2e, roughness:.4, metalness:.3,
+    emissive: new THREE.Color(d.color), emissiveIntensity:.04
+  });
+  const desk = new THREE.Mesh(deskGeo, deskMat);
+  desk.position.y = 0.8;
+  desk.castShadow = true;
+  desk.receiveShadow = true;
+  g.add(desk);
+
+  // Desk legs
+  [[-0.95,0.4,-0.55],[0.95,0.4,-0.55],[-0.95,0.4,0.55],[0.95,0.4,0.55]].forEach(p => {
+    const leg = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.8, 0.08),
+      new THREE.MeshStandardMaterial({ color:0x111827 })
+    );
+    leg.position.set(...p);
+    g.add(leg);
+  });
+
+  // Monitor
+  const monBase = new THREE.Mesh(new THREE.BoxGeometry(0.1,0.25,0.1),
+    new THREE.MeshStandardMaterial({ color:0x111827 }));
+  monBase.position.set(0, 0.9, -0.35);
+  g.add(monBase);
+  const monScreen = new THREE.Mesh(new THREE.BoxGeometry(1.1,0.65,0.04),
+    new THREE.MeshStandardMaterial({
+      color: new THREE.Color(d.color), emissive: new THREE.Color(d.color),
+      emissiveIntensity:.4, roughness:.1
+    }));
+  monScreen.position.set(0, 1.3, -0.4);
+  g.add(monScreen);
+
+  // Monitor glow
+  const screenLight = new THREE.PointLight(d.color, 0.8, 3);
+  screenLight.position.set(0, 1.3, -0.1);
+  g.add(screenLight);
+
+  // Chair
+  const chairSeat = new THREE.Mesh(new THREE.BoxGeometry(0.8,0.08,0.75),
+    new THREE.MeshStandardMaterial({ color:0x1e2040, roughness:.9 }));
+  chairSeat.position.set(0, 0.55, 0.9);
+  g.add(chairSeat);
+  const chairBack = new THREE.Mesh(new THREE.BoxGeometry(0.8,0.7,0.08),
+    new THREE.MeshStandardMaterial({ color:0x1e2040 }));
+  chairBack.position.set(0, 0.92, 1.25);
+  g.add(chairBack);
+
+  // Name plate (floating)
+  const plateGeo = new THREE.PlaneGeometry(1.6, 0.3);
+  const plateMat = new THREE.MeshBasicMaterial({
+    color: new THREE.Color(d.color), transparent:true, opacity:.9, side:THREE.DoubleSide
+  });
+  const plate = new THREE.Mesh(plateGeo, plateMat);
+  plate.position.set(0, 1.85, 0);
+  plate.rotation.x = -0.3;
+  g.add(plate);
+
+  // Hover indicator (ring)
+  const ringGeo = new THREE.TorusGeometry(1.2, 0.04, 8, 32);
+  const ringMat = new THREE.MeshBasicMaterial({ color: d.color, transparent:true, opacity:0 });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = Math.PI/2;
+  ring.position.y = 0.02;
+  g.add(ring);
+  g.userData.ring = ring;
+  g.userData.ringMat = ringMat;
+
+  scene.add(g);
+  deskMeshes.push(g);
+});
+
+// Raycaster for click/hover
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let hoveredDesk = null;
+let selectedDesk = null;
+
+// Orbit controls (manual)
+let isDragging = false, prevMouse = {x:0,y:0};
+let spherical = { theta: 0.4, phi: 0.9, r: 16 };
+
+canvas.addEventListener('mousedown', e => {
+  isDragging = true; prevMouse = {x:e.clientX, y:e.clientY};
+});
+canvas.addEventListener('mouseup', () => { isDragging = false; });
+canvas.addEventListener('mousemove', e => {
+  if (isDragging) {
+    const dx = e.clientX - prevMouse.x, dy = e.clientY - prevMouse.y;
+    spherical.theta -= dx * 0.005;
+    spherical.phi = Math.max(0.3, Math.min(1.4, spherical.phi + dy * 0.005));
+    prevMouse = {x:e.clientX, y:e.clientY};
+  }
+  mouse.x = (e.clientX/W)*2-1;
+  mouse.y = -(e.clientY/H)*2+1;
+});
+canvas.addEventListener('wheel', e => {
+  spherical.r = Math.max(6, Math.min(22, spherical.r + e.deltaY * 0.02));
+});
+canvas.addEventListener('click', e => {
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(scene.children, true);
+  for (const hit of hits) {
+    let obj = hit.object;
+    while (obj.parent && !obj.parent.userData?.name) obj = obj.parent;
+    if (obj.parent?.userData?.name) {
+      const d = obj.parent.userData;
+      document.getElementById('mc-name').textContent = `${d.name} ${d.nick}`;
+      document.getElementById('mc-role').textContent = d.role;
+      document.getElementById('mc-notes').textContent = d.notes;
+      document.getElementById('mc-kudos').textContent = d.kudos;
+      mc.style.display = 'block';
+      mc.style.borderColor = `#${d.color.toString(16).padStart(6,'0')}66`;
+      if (selectedDesk) selectedDesk.userData.ringMat.opacity = 0;
+      selectedDesk = obj.parent;
+      selectedDesk.userData.ringMat.opacity = 0.8;
+      break;
+    }
+  }
+});
+
+// Animation
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  // Update camera from spherical
+  camera.position.x = spherical.r * Math.sin(spherical.phi) * Math.sin(spherical.theta);
+  camera.position.y = spherical.r * Math.cos(spherical.phi);
+  camera.position.z = spherical.r * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+  camera.lookAt(0, 1, 0);
+
+  // Animate point lights
+  pl1.intensity = 1.5 + Math.sin(t*1.3) * 0.5;
+  pl2.intensity = 1.2 + Math.sin(t*0.9+1) * 0.4;
+
+  // Animate name plates float
+  deskMeshes.forEach((g, i) => {
+    const plate = g.children.find(c => c.geometry?.type === 'PlaneGeometry');
+    if (plate) plate.position.y = 1.85 + Math.sin(t*1.2 + i*1.5) * 0.05;
+    // Animate ring pulse
+    if (g.userData.ringMat.opacity > 0) {
+      g.userData.ringMat.opacity = 0.5 + Math.sin(t*3)*0.3;
+    }
+  });
+
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  const W = window.innerWidth, H = window.innerHeight;
+  camera.aspect = W/H; camera.updateProjectionMatrix();
+  renderer.setSize(W,H);
+});
+</script>
+</body>
+</html>

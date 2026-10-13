@@ -1,0 +1,160 @@
+/* ============================================================
+   genz-theme.css — Minimal GenZ accent.
+   Keep the existing SOM theme intact; add just enough gold to
+   signal "this user is special" without overriding the palette.
+   ============================================================ */
+
+body.is-genz {
+  --gz-gold-1: #f5d97a;
+  --gz-gold-2: #d4af37;
+  --gz-gold-3: #8a6a1a;
+}
+
+/* ── 1. Topbar hairline — original shape, gold single-tone ───── */
+/* One thin static line under the topbar. No animation, no glow spam. */
+body.is-genz .topbar {
+  position: relative;
+  border-bottom-color: var(--gz-gold-2) !important;
+}
+
+/* ── 2. User chip avatar — subtle gold outline (no pulse) ───── */
+body.is-genz .sidebar-user .user-avatar {
+  box-shadow: 0 0 0 2px var(--gz-gold-2);
+}
+
+/* ── 3. GenZ Hub sidebar link — holographic hover + active ────
+   Base = untouched. Hover/active = holographic wash + gradient
+   text + shimmer sweep. Matches the GenZ badge (#05). */
+body.is-genz a[href*="genz-hub.html"] {
+  position: relative;
+  transition: color .2s ease, transform .2s ease;
+}
+
+/* Subtle rainbow left-rail always visible so the entry reads as "special". */
+body.is-genz a[href*="genz-hub.html"]::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 6px; bottom: 6px;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #a78bfa, #f472b6, #fbbf24, #22d3ee);
+  opacity: .55;
+  transition: opacity .2s ease, width .2s ease;
+}
+
+/* Hover: light holo tint + gradient text + brighter rail + gentle slide. */
+body.is-genz a[href*="genz-hub.html"]:hover {
+  background: linear-gradient(90deg,
+    rgba(167, 139, 250, .12),
+    rgba(244, 114, 182, .10) 40%,
+    rgba(251, 191, 36, .08) 70%,
+    transparent) !important;
+  transform: translateX(2px);
+}
+body.is-genz a[href*="genz-hub.html"]:hover::before {
+  opacity: 1;
+  width: 3px;
+  box-shadow: 0 0 10px rgba(244, 114, 182, .55);
+}
+
+/* Text/label picks up the holo gradient on hover.
+   The sidebar item structure varies (svg icon + label span);
+   we target the whole anchor's text via background-clip on hover. */
+body.is-genz a[href*="genz-hub.html"]:hover .nav-item-label,
+body.is-genz a[href*="genz-hub.html"]:hover span:not([class*="badge"]) {
+  background: linear-gradient(90deg, #a78bfa, #f472b6 40%, #fbbf24 70%, #22d3ee);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: genz-nav-holo 3s linear infinite;
+}
+@keyframes genz-nav-holo { to { background-position: -200% 0; } }
+
+/* Icon glow on hover */
+body.is-genz a[href*="genz-hub.html"]:hover svg {
+  filter: drop-shadow(0 0 6px rgba(244, 114, 182, .7));
+  transition: filter .2s ease;
+}
+
+/* Active state (currently on genz-hub.html): sustained holo look. */
+body.is-genz a[href*="genz-hub.html"].active,
+body.is-genz a[href*="genz-hub.html"][aria-current="page"] {
+  background: linear-gradient(90deg,
+    rgba(167, 139, 250, .18),
+    rgba(244, 114, 182, .14) 45%,
+    rgba(251, 191, 36, .10) 75%,
+    transparent) !important;
+}
+body.is-genz a[href*="genz-hub.html"].active::before,
+body.is-genz a[href*="genz-hub.html"][aria-current="page"]::before {
+  opacity: 1;
+  width: 3px;
+  box-shadow: 0 0 10px rgba(244, 114, 182, .55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.is-genz a[href*="genz-hub.html"]:hover .nav-item-label,
+  body.is-genz a[href*="genz-hub.html"]:hover span:not([class*="badge"]) {
+    animation: none;
+  }
+  body.is-genz a[href*="genz-hub.html"]:hover { transform: none; }
+}
+
+/* ── 3b. GenZ nav-section group — subtle holo hairline + label ── */
+body.is-genz .nav-section[data-section-genz="1"] {
+  position: relative;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(167, 139, 250, .28);
+}
+body.is-genz .nav-section-label[data-section-genz="1"] {
+  background: linear-gradient(90deg,
+    #a78bfa 0%,
+    #f472b6 30%,
+    #fbbf24 60%,
+    #22d3ee 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: genz-nav-holo 6s linear infinite;
+  font-weight: 900;
+  letter-spacing: .18em;
+}
+
+/* ── 4. Reusable inline GenZ badge — Holographic edition ─────
+   Rendered by layout.js on the sidebar logo + user chip name;
+   also used inside admin/genz-team.html + genz-hub.html. */
+.genz-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  margin-left: 4px;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  color: white;
+  border-radius: 999px;
+  background: linear-gradient(90deg,
+    #a78bfa 0%,
+    #f472b6 25%,
+    #fbbf24 50%,
+    #22d3ee 75%,
+    #a78bfa 100%);
+  background-size: 200% 100%;
+  animation: genz-holo 3s linear infinite;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .15);
+  text-transform: uppercase;
+  vertical-align: middle;
+  line-height: 1.4;
+  white-space: nowrap;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .25);
+}
+@keyframes genz-holo {
+  to { background-position: -200% 0; }
+}
+/* Respect reduced-motion — freeze the gradient so it still looks colourful. */
+@media (prefers-reduced-motion: reduce) {
+  .genz-badge { animation: none; }
+}

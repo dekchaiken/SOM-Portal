@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paused Alerts — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/grafana-alerts/grafana-alerts.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Paused Alerts</div>
+        <div class="page-sub">Grafana alerting · state = paused · live</div>
+      </div>
+      <div class="topbar-actions">
+        <span id="ga-last-updated" style="font-size:11px;color:var(--text-muted)"></span>
+        <button class="btn btn-ghost" style="font-size:11px;display:inline-flex;align-items:center;gap:6px" onclick="loadPaused()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>รีเฟรช
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="ga-wrap">
+
+        <!-- Loading skeleton -->
+        <div id="ga-loading">
+          <div class="ga-kpi-strip">
+            <div class="ga-kpi"><div class="ga-skel" style="height:14px;width:60%"></div><div class="ga-skel" style="height:30px;width:40%;margin-top:14px"></div><div class="ga-skel" style="height:11px;width:70%;margin-top:12px"></div></div>
+            <div class="ga-kpi"><div class="ga-skel" style="height:14px;width:60%"></div><div class="ga-skel" style="height:30px;width:40%;margin-top:14px"></div><div class="ga-skel" style="height:11px;width:70%;margin-top:12px"></div></div>
+            <div class="ga-kpi"><div class="ga-skel" style="height:14px;width:60%"></div><div class="ga-skel" style="height:30px;width:40%;margin-top:14px"></div><div class="ga-skel" style="height:11px;width:70%;margin-top:12px"></div></div>
+          </div>
+          <div class="ga-skel-card"><div style="display:flex;gap:10px;align-items:center"><div class="ga-skel" style="height:10px;width:10px;border-radius:50%"></div><div class="ga-skel" style="height:15px;width:160px"></div><div class="ga-skel" style="height:22px;width:80px;border-radius:999px;margin-left:auto"></div></div></div>
+          <div class="ga-skel-card"><div style="display:flex;gap:10px;align-items:center"><div class="ga-skel" style="height:10px;width:10px;border-radius:50%"></div><div class="ga-skel" style="height:15px;width:120px"></div><div class="ga-skel" style="height:22px;width:80px;border-radius:999px;margin-left:auto"></div></div></div>
+          <div style="text-align:center;color:var(--text-soft);font-size:12px;margin-top:16px">กำลังดึงสถานะ Paused จาก Grafana ทุก org…</div>
+        </div>
+
+        <!-- Content (revealed after fetch) -->
+        <div id="ga-content" class="ga-hidden">
+          <div class="ga-kpi-strip">
+            <div class="ga-kpi">
+              <div class="ga-kpi-top"><span class="ga-kpi-ico" id="ga-ico-total"></span><span class="ga-kpi-lbl">Total paused</span></div>
+              <div class="ga-kpi-val paused" id="ga-total">–</div>
+              <div class="ga-kpi-sub" id="ga-total-sub"></div>
+            </div>
+            <div class="ga-kpi">
+              <div class="ga-kpi-top"><span class="ga-kpi-ico" id="ga-ico-src"></span><span class="ga-kpi-lbl">Sources</span></div>
+              <div class="ga-kpi-val" id="ga-sources">–</div>
+              <div class="ga-kpi-sub" id="ga-sources-sub"></div>
+            </div>
+            <div class="ga-kpi">
+              <div class="ga-kpi-top"><span class="ga-kpi-ico" id="ga-ico-clock"></span><span class="ga-kpi-lbl">Fetched at</span></div>
+              <div class="ga-kpi-val" id="ga-fetched" style="font-size:22px">–</div>
+              <div class="ga-kpi-sub">Asia/Bangkok</div>
+            </div>
+          </div>
+
+          <div id="ga-sources-list"></div>
+        </div>
+
+        <!-- Hard error -->
+        <div id="ga-error" class="ga-hidden ga-source ga-err"></div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script src="./assets/pages/grafana-alerts/grafana-alerts.js"></script>
+</body>
+</html>

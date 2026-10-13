@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MA Test — Monthly Overview — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/ma-test-overview/ma-test-overview.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="bar-chart"></i> MA Test · Monthly Overview</div>
+        <div class="page-sub">รายงานภาพรวมการเทส MA ประจำเดือน — SM only</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="../ma-test.html" class="mas-topnav-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="8" y="2" rx="1"/></svg>
+          <span>Record Results</span>
+        </a>
+        <button type="button" class="mas-topnav-btn" id="btn-report"><span><i data-icon="file"></i></span><span>Monthly Report</span></button>
+        <button type="button" class="mas-topnav-btn" id="btn-export"><span>Export CSV</span></button>
+        <input type="month" id="month" class="month-picker">
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="bar-chart"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>MA Test — Monthly Overview</h1>
+          <p>สรุปสถานะการเทส MA ของเดือน · ดูว่ามี service ไหนบ้างที่ยังไม่ได้เทส/ผ่าน/ไม่ผ่าน · ใครเป็นคนเทส · แจกแจงตาม Service และ Tool</p>
+        </div>
+      </section>
+
+      <div class="ov-stats" id="stats"></div>
+
+      <div class="ov-breakdown">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i data-icon="package"></i> By Service</span>
+            <span class="badge badge-gray" id="brk-svc-count">—</span>
+          </div>
+          <div class="card-body" style="padding:0" id="brk-service"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i data-icon="wrench"></i> By Tool</span>
+            <span class="badge badge-gray" id="brk-tool-count">—</span>
+          </div>
+          <div class="card-body" style="padding:0" id="brk-tool"></div>
+        </div>
+      </div>
+
+      <div class="ov-toolbar">
+        <input type="search" id="q" class="form-control ov-search" placeholder="ค้นหา name / remark / service…">
+        <select id="f-service" class="form-control">
+          <option value="">All Services</option>
+        </select>
+        <select id="f-tool" class="form-control">
+          <option value="">All Tools</option>
+        </select>
+        <select id="f-priority" class="form-control">
+          <option value="">All Priority</option>
+        </select>
+        <select id="f-status" class="form-control">
+          <option value="">All Status</option>
+          <option value="not_tested">Not tested</option>
+          <option value="pending">Pending</option>
+          <option value="successed">Successed (latest)</option>
+          <option value="failed">Failed (latest)</option>
+        </select>
+        <div class="spacer"></div>
+        <span class="badge badge-orange" id="row-count">0 shown</span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i data-icon="calendar"></i> <span id="detail-title">Monthly detail</span></span>
+          <span class="badge badge-orange" id="detail-count">—</span>
+        </div>
+        <div class="card-body" style="padding:0" id="table-wrap">
+          <div class="ov-empty">Loading…</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═════ Detail Modal ═════ -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal ov-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="detail-modal-title">Test detail</div>
+      <button class="btn-close" data-close>×</button>
+    </div>
+    <div class="modal-body" id="detail-modal-body">
+      —
+    </div>
+    <div class="modal-footer">
+      <a id="detail-record-link" href="../ma-test.html" class="btn btn-outline">Open Record page ↗</a>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" data-close>Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════ Monthly Report Modal ═════ -->
+<div class="modal-overlay" id="modal-report">
+  <div class="modal rp-modal">
+    <div class="modal-header">
+      <div class="modal-title"><i data-icon="file"></i> Monthly Report — <span id="rp-month-title">—</span></div>
+      <button class="btn-close" data-close>×</button>
+    </div>
+    <div class="modal-body">
+      <div class="rp-toolbar no-print">
+        <label><input type="checkbox" id="rp-inc-shots" checked> Include screenshots</label>
+        <label><input type="checkbox" id="rp-inc-untested"> Include untested items</label>
+        <label><input type="checkbox" id="rp-inc-breakdown" checked> Include breakdown tables</label>
+        <div class="spacer"></div>
+        <button class="btn btn-sm btn-primary" id="btn-print"><i data-icon="printer"></i> Print / Save as PDF</button>
+      </div>
+      <div class="rp-body" id="rp-body">—</div>
+    </div>
+    <div class="modal-footer no-print">
+      <div style="flex:1;font-size:11px;color:var(--text-muted)">
+        Tip: กด <b>Print</b> แล้วเลือก "Save as PDF" ใน Destination เพื่อบันทึกเป็นไฟล์
+      </div>
+      <button class="btn btn-ghost" data-close>Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════ Lightbox ═════ -->
+<div class="modal-overlay" id="modal-lightbox">
+  <div class="modal ov-xl">
+    <div class="modal-header">
+      <div class="modal-title">Screenshot</div>
+      <button class="btn-close" data-close>×</button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <img id="lb-img" class="lb-img" alt="">
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/js/ma-test.js"></script>
+<script src="../assets/pages/admin/ma-test-overview/ma-test-overview.js"></script>
+</body>
+</html>

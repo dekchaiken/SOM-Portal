@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit About SOM Page</title>
+  <link rel="icon" href="../favicon.ico">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .ap-section { background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px; }
+    .ap-section-title {
+      font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;
+      color:var(--text-muted);margin-bottom:16px;display:flex;align-items:center;gap:8px;
+    }
+    .ap-row { display:grid;grid-template-columns:1fr 1fr;gap:14px; }
+    @media(max-width:640px){.ap-row{grid-template-columns:1fr}}
+    /* services/contacts list */
+    .ap-item {
+      display:flex;align-items:center;gap:8px;padding:8px 10px;
+      background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;
+    }
+    .ap-item input, .ap-item select { flex:1;min-width:0; }
+    .ap-item-del {
+      background:none;border:1px solid var(--border);border-radius:7px;
+      padding:4px 8px;cursor:pointer;color:var(--text-muted);font-size:13px;flex-shrink:0;
+    }
+    .ap-item-del:hover{color:#ef4444;border-color:rgba(239,68,68,.4)}
+    .ap-add-btn {
+      font-size:12px;font-weight:600;color:var(--orange);background:none;
+      border:1px dashed color-mix(in srgb,var(--orange) 30%,var(--border));
+      border-radius:8px;padding:6px 14px;cursor:pointer;width:100%;margin-top:4px;
+    }
+    .ap-add-btn:hover{background:color-mix(in srgb,var(--orange) 6%,transparent)}
+    /* org team order */
+    .ap-team-chip {
+      display:inline-flex;align-items:center;gap:6px;padding:4px 10px;
+      background:var(--bg);border:1px solid var(--border);border-radius:999px;
+      font-size:11.5px;font-weight:600;color:var(--text);cursor:default;margin:3px;
+    }
+    .ap-team-chip input[type=checkbox]{accent-color:var(--orange);width:13px;height:13px;cursor:pointer}
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="pencil"></i> Edit About SOM Page</div>
+        <div class="page-sub">แก้ไข Mission, Vision, Services, Contact</div>
+      </div>
+      <div class="topbar-actions" style="gap:8px">
+        <a href="../about-som.html" class="btn btn-outline btn-sm" target="_blank">
+          <i data-icon="eye"></i> Preview
+        </a>
+        <button class="btn btn-primary btn-sm" onclick="savePage()" id="save-btn">
+          <i data-icon="save"></i> Save Changes
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- Mission / Vision -->
+      <div class="ap-section">
+        <div class="ap-section-title"><i data-icon="target"></i> Mission &amp; Vision</div>
+        <div class="ap-row">
+          <div class="form-group">
+            <label class="form-label">Mission</label>
+            <textarea id="ap-mission" class="form-control" rows="4" placeholder="ทีม SOM มีหน้าที่…" style="resize:vertical"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Vision</label>
+            <textarea id="ap-vision" class="form-control" rows="4" placeholder="เราต้องการเป็น…" style="resize:vertical"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Services -->
+      <div class="ap-section">
+        <div class="ap-section-title"><i data-icon="layers"></i> Services / What We Do</div>
+        <div id="services-list"></div>
+        <button class="ap-add-btn" onclick="addService()">+ เพิ่ม Service</button>
+      </div>
+
+      <!-- Contacts -->
+      <div class="ap-section">
+        <div class="ap-section-title"><i data-icon="phone"></i> Contact Channels</div>
+        <div id="contacts-list"></div>
+        <button class="ap-add-btn" onclick="addContact()">+ เพิ่ม Contact</button>
+      </div>
+
+      <!-- Managers shown in Org Chart -->
+      <div class="ap-section">
+        <div class="ap-section-title"><i data-icon="shield"></i> Managers ที่แสดงใน Org Chart</div>
+        <div class="form-hint" style="margin-bottom:12px">เลือก Manager ที่จะแสดงในหน้า About — ถ้าไม่เลือกใคร จะแสดงทุกคนที่มี role super_viewer</div>
+        <div id="manager-checks"></div>
+      </div>
+
+      <!-- Org teams shown -->
+      <div class="ap-section">
+        <div class="ap-section-title"><i data-icon="git-branch"></i> ทีมที่แสดงใน Org Chart</div>
+        <div class="form-hint" style="margin-bottom:12px">เลือกทีมที่ต้องการแสดงในหน้า About</div>
+        <div id="org-team-checks"></div>
+      </div>
+
+      <!-- Team descriptions -->
+      <div class="ap-section">
+        <div class="ap-section-title"><i data-icon="file-text"></i> คำอธิบายแต่ละทีม (แสดงเมื่อกดดูทีม)</div>
+        <div id="team-descs-list"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('admin');
+
+const ICON_OPTIONS = ['monitor','bell','server','git-merge','bar-chart','shield','database','cpu','zap','activity','layers','eye','phone','mail','message-circle','calendar','users','settings','star','bookmark'];
+
+// ── Render service rows ──────────────────────────────────────────────────────
+function renderServices(services) {
+  document.getElementById('services-list').innerHTML = (services||[]).map((s,i)=>`
+    <div class="ap-item" id="svc-${i}">
+      <select class="form-control" style="max-width:120px" id="svc-icon-${i}">
+        ${ICON_OPTIONS.map(ic=>`<option value="${ic}"${s.icon===ic?' selected':''}>${ic}</option>`).join('')}
+      </select>
+      <input class="form-control" placeholder="ชื่อ Service" value="${escHtml(s.title||'')}" id="svc-title-${i}">
+      <input class="form-control" placeholder="รายละเอียด" value="${escHtml(s.desc||'')}" id="svc-desc-${i}">
+      <button class="ap-item-del" onclick="delService(${i})">×</button>
+    </div>`).join('');
+}
+function addService() {
+  const svcs = collectServices();
+  svcs.push({icon:'star',title:'',desc:''});
+  renderServices(svcs);
+}
+function delService(i) { const s=collectServices(); s.splice(i,1); renderServices(s); }
+function collectServices() {
+  return [...document.querySelectorAll('[id^="svc-icon-"]')].map((_,i)=>({
+    icon:  document.getElementById(`svc-icon-${i}`)?.value  || 'star',
+    title: document.getElementById(`svc-title-${i}`)?.value.trim() || '',
+    desc:  document.getElementById(`svc-desc-${i}`)?.value.trim()  || '',
+  }));
+}
+
+// ── Render contact rows ──────────────────────────────────────────────────────
+function renderContacts(contacts) {
+  document.getElementById('contacts-list').innerHTML = (contacts||[]).map((c,i)=>`
+    <div class="ap-item" id="con-${i}">
+      <select class="form-control" style="max-width:130px" id="con-icon-${i}">
+        ${ICON_OPTIONS.map(ic=>`<option value="${ic}"${c.icon===ic?' selected':''}>${ic}</option>`).join('')}
+      </select>
+      <input class="form-control" placeholder="Label เช่น Google Chat" value="${escHtml(c.label||'')}" id="con-label-${i}">
+      <input class="form-control" placeholder="Value เช่น som-team@…" value="${escHtml(c.value||'')}" id="con-value-${i}">
+      <button class="ap-item-del" onclick="delContact(${i})">×</button>
+    </div>`).join('');
+}
+function addContact() { const c=collectContacts(); c.push({icon:'phone',label:'',value:''}); renderContacts(c); }
+function delContact(i) { const c=collectContacts(); c.splice(i,1); renderContacts(c); }
+function collectContacts() {
+  return [...document.querySelectorAll('[id^="con-icon-"]')].map((_,i)=>({
+    icon:  document.getElementById(`con-icon-${i}`)?.value  || 'phone',
+    label: document.getElementById(`con-label-${i}`)?.value.trim() || '',
+    value: document.getElementById(`con-value-${i}`)?.value.trim() || '',
+  }));
+}
+
+// ── Org team checkboxes ──────────────────────────────────────────────────────
+let _allTeamSlugs = [];
+function renderOrgChecks(orgTeams, allTeams) {
+  _allTeamSlugs = allTeams.map(t=>t.slug);
+  const checked = new Set(orgTeams);
+  document.getElementById('org-team-checks').innerHTML = allTeams.map(t=>
+    `<label class="ap-team-chip">
+      <input type="checkbox" value="${t.slug}" ${checked.has(t.slug)?'checked':''}>
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${t.color||'#6366f1'}"></span>
+      ${escHtml(t.name)} <span style="font-size:9px;color:var(--text-muted);font-family:monospace">/${t.slug}</span>
+    </label>`
+  ).join('');
+}
+function collectOrgTeams() {
+  return [...document.querySelectorAll('#org-team-checks input[type=checkbox]:checked')].map(el=>el.value);
+}
+
+// ── Manager checkboxes ───────────────────────────────────────────────────────
+function renderManagerChecks(allManagers, managerIds) {
+  const checkedSet = new Set(managerIds || []);
+  document.getElementById('manager-checks').innerHTML = allManagers.length
+    ? allManagers.map(m => {
+        const initials = (m.name||'?').trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2);
+        const av = m.avatar_url
+          ? `<img src="${escHtml(m.avatar_url)}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border)">`
+          : `<span style="width:24px;height:24px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:var(--text-muted);flex-shrink:0">${escHtml(initials)}</span>`;
+        return `<label class="ap-team-chip" style="gap:8px">
+          <input type="checkbox" value="${escHtml(m.id)}" ${(checkedSet.size === 0 || checkedSet.has(m.id)) ? 'checked' : ''}>
+          ${av}
+          <span style="font-size:12px;font-weight:600">${escHtml(m.name)}</span>
+          ${m.nickname ? `<span style="font-size:9.5px;color:var(--text-muted)">(${escHtml(m.nickname)})</span>` : ''}
+        </label>`;
+      }).join('')
+    : '<div style="color:var(--text-muted);font-size:12px">ยังไม่มีผู้ใช้ที่มี role super_viewer</div>';
+}
+function collectManagerIds() {
+  return [...document.querySelectorAll('#manager-checks input[type=checkbox]:checked')].map(el => el.value);
+}
+
+function renderTeamDescs(descs, allTeams, teamLeaders, orgTeams) {
+  document.getElementById('team-descs-list').innerHTML = allTeams.map(t => {
+    // Find members for this team from orgTeams (may be undefined if team not in org chart)
+    const ot = (orgTeams || []).find(o => o.slug === t.slug);
+    const members = ot?.members || [];
+    const currentLeaders = new Set((teamLeaders || {})[t.slug] || []);
+    const leaderSelect = members.length ? `
+      <div style="margin-top:8px">
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px">
+          <i data-icon="crown" style="width:12px;height:12px;color:#f59e0b;flex-shrink:0"></i>
+          <span style="font-size:10.5px;font-weight:700;color:var(--text-muted)">Team Leader <span style="font-weight:400">(เลือกได้หลายคน)</span></span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${members.map(m => {
+            const initials = (m.name||'?').trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2);
+            const av = m.avatar_url
+              ? `<img src="${escHtml(m.avatar_url)}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+              : `<span style="width:20px;height:20px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:7px;font-weight:800;color:var(--text-muted);flex-shrink:0">${escHtml(initials)}</span>`;
+            return `<label class="ap-team-chip" style="gap:6px;padding:3px 10px 3px 6px">
+              <input type="checkbox" class="leader-cb-${t.slug}" value="${escHtml(m.id)}" ${currentLeaders.has(m.id) ? 'checked' : ''}>
+              ${av}
+              <span style="font-size:11px">${escHtml(m.name)}${m.nickname ? ` <span style="color:var(--text-muted);font-size:9.5px">(${escHtml(m.nickname)})</span>` : ''}</span>
+            </label>`;
+          }).join('')}
+        </div>
+      </div>` : '';
+    return `
+    <div class="ap-item" style="flex-direction:column;align-items:flex-start;gap:6px;padding:12px">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--text)">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${t.color||'#6366f1'}"></span>
+        ${escHtml(t.name)} <span style="font-size:9.5px;color:var(--text-muted);font-family:monospace">/${t.slug}</span>
+      </div>
+      <textarea id="td-${t.slug}" class="form-control" rows="2" placeholder="อธิบายว่าทีมนี้ทำอะไรบ้าง…" style="resize:vertical;font-size:12px">${escHtml(descs[t.slug]||'')}</textarea>
+      ${leaderSelect}
+    </div>`;
+  }).join('');
+  if (typeof window.Icons !== 'undefined') window.Icons.replace?.();
+}
+function collectTeamDescs() {
+  const out = {};
+  document.querySelectorAll('[id^="td-"]').forEach(el => {
+    const slug = el.id.slice(3);
+    const val = el.value.trim();
+    if (val) out[slug] = val;
+  });
+  return out;
+}
+function collectTeamLeaders() {
+  const out = {};
+  // Find all unique team slugs that have leader checkboxes
+  document.querySelectorAll('[class^="leader-cb-"]').forEach(cb => {
+    const cls = [...cb.classList].find(c => c.startsWith('leader-cb-'));
+    if (!cls) return;
+    const slug = cls.slice('leader-cb-'.length);
+    if (!out[slug]) out[slug] = [];
+    if (cb.checked) out[slug].push(cb.value);
+  });
+  return out;
+}
+
+// ── Load ─────────────────────────────────────────────────────────────────────
+async function loadPage() {
+  const res = await API.aboutPage.get();
+  if (!res?.ok) { Toast.error('โหลดไม่ได้'); return; }
+  const d = res.data?.data || res.data;
+  // Use all_teams from about-page API — guaranteed to have all org teams
+  // regardless of the calling user's role (sm_admin sees only own team via teams API)
+  const allTeams = d.all_teams || [];
+
+  document.getElementById('ap-mission').value = d.mission || '';
+  document.getElementById('ap-vision').value  = d.vision  || '';
+  renderServices(d.services || []);
+  renderContacts(d.contacts || []);
+  renderManagerChecks(d.all_managers || [], d.manager_ids || []);
+  renderOrgChecks((d.org_teams || []).map(t => t.slug || t), allTeams);
+  renderTeamDescs(d.team_descs || {}, allTeams, d.team_leaders || {}, d.org_teams || []);
+}
+
+// ── Save ─────────────────────────────────────────────────────────────────────
+async function savePage() {
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true; btn.innerHTML = '<i data-icon="loader"></i> Saving…';
+  const body = {
+    mission:      document.getElementById('ap-mission').value.trim(),
+    vision:       document.getElementById('ap-vision').value.trim(),
+    services:     collectServices(),
+    contacts:     collectContacts(),
+    manager_ids:  collectManagerIds(),
+    org_teams:    collectOrgTeams(),
+    team_descs:   collectTeamDescs(),
+    team_leaders: collectTeamLeaders(),
+  };
+  const res = await API.aboutPage.update(body);
+  btn.disabled = false; btn.innerHTML = '<i data-icon="save"></i> Save Changes';
+  if (res?.ok) Toast.success('บันทึกเรียบร้อยแล้ว');
+  else Toast.error(res?.data?.message || 'บันทึกไม่สำเร็จ');
+  if (typeof window.Icons !== 'undefined') window.Icons.replace?.();
+}
+
+loadPage();
+</script>
+</body>
+</html>

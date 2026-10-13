@@ -1,0 +1,1075 @@
+ละตอน<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOM-Portal · System Presentation 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fafaf7;--panel:#ffffff;--ink:#0a0a0a;--muted:#6b6b66;--line:#e7e5df;
+  --accent:#F97316;--accent-soft:#fff1e7;--green:#16a34a;--red:#dc2626;--amber:#d97706;--violet:#7c3aed;--blue:#2563eb;
+  --shadow:0 1px 3px rgba(10,10,10,.06),0 12px 32px rgba(10,10,10,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'JetBrains Mono','IBM Plex Sans Thai',ui-monospace,sans-serif;background:var(--bg);color:var(--ink);overflow:hidden;-webkit-font-smoothing:antialiased}
+:lang(th){letter-spacing:0}
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;background-color:var(--bg);background-image:radial-gradient(rgba(10,10,10,.07) 1.2px,transparent 1.2px);background-size:26px 26px}
+.bg-glow{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(800px 500px at 80% 15%,rgba(249,115,22,.10),transparent 60%)}
+#deck{position:fixed;inset:0;z-index:1}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:clamp(24px,4.5vw,64px) clamp(28px,5vw,72px);opacity:0;transform:translate3d(40px,0,0) scale(.985);transition:opacity .5s cubic-bezier(.22,.61,.36,1),transform .5s cubic-bezier(.22,.61,.36,1);pointer-events:none;overflow:hidden}
+.slide.active{opacity:1;transform:translate3d(0,0,0) scale(1);pointer-events:auto}
+.slide.prev{transform:translate3d(-40px,0,0) scale(.985)}
+.slide-inner{margin:auto;width:100%;max-width:1140px}
+.slide.active [data-rise]{animation:rise .5s cubic-bezier(.22,.61,.36,1) both}
+.slide.active [data-rise="1"]{animation-delay:.04s}.slide.active [data-rise="2"]{animation-delay:.10s}.slide.active [data-rise="3"]{animation-delay:.16s}.slide.active [data-rise="4"]{animation-delay:.22s}.slide.active [data-rise="5"]{animation-delay:.28s}.slide.active [data-rise="6"]{animation-delay:.34s}
+@keyframes rise{from{opacity:0;transform:translate3d(0,16px,0)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.slide,.slide.active [data-rise]{transition:none;animation:none}}
+
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent)}
+.eyebrow::before{content:"";width:9px;height:9px;background:var(--accent);display:inline-block;flex:0 0 auto}
+h1{font-size:clamp(32px,5.6vw,72px);font-weight:800;letter-spacing:-2px;line-height:1.03}
+h2{font-size:clamp(23px,3.1vw,40px);font-weight:800;letter-spacing:-1.1px;line-height:1.1}
+.dot{color:var(--accent)}
+.lead{font-size:clamp(13.5px,1.35vw,16px);color:var(--muted);line-height:1.7;max-width:62ch}
+.kicker{font-size:12px;color:var(--muted)}
+.bracket{position:absolute;width:46px;height:46px;border:2px solid var(--accent);opacity:.55}
+.bracket.tl{top:30px;left:30px;border-right:0;border-bottom:0}
+.bracket.br{bottom:30px;right:30px;border-left:0;border-top:0}
+.section-num{position:absolute;top:clamp(24px,4.5vw,52px);right:clamp(28px,5vw,72px);font-size:13px;font-weight:700;color:var(--accent)}
+
+/* layout */
+.split{display:grid;grid-template-columns:1fr 1.05fr;gap:32px;align-items:center}
+@media(max-width:900px){.split{grid-template-columns:1fr;gap:20px}}
+.split-rev{grid-template-columns:1.05fr 1fr}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{font-size:11.5px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);transition:transform .15s ease,border-color .15s ease}
+.chip:hover{transform:translateY(-1px);border-color:var(--accent)}
+.chip b{color:var(--accent)}
+.chip.hl{border-color:#ffd9bd;background:var(--accent-soft);color:var(--accent);font-weight:700}
+.chip.gn{border-color:#cfead6;background:#eafaef;color:var(--green);font-weight:700}
+.chip.bl{border-color:#c9ddff;background:#eef4ff;color:var(--blue);font-weight:700}
+.chip.vi{border-color:#e2d0ff;background:#f4ecff;color:var(--violet);font-weight:700}
+
+/* lists */
+ul.clean{list-style:none;display:flex;flex-direction:column;gap:9px;margin-top:16px}
+ul.clean li{display:flex;gap:10px;font-size:13.5px;line-height:1.55;word-break:keep-all}
+ul.clean li::before{content:"▸";color:var(--accent);font-weight:700;flex:0 0 auto;transform:translateY(1px)}
+
+/* cards */
+.card{border:1px solid var(--line);border-radius:9px;padding:13px 14px;background:#fff;transition:transform .18s cubic-bezier(.22,.61,.36,1),box-shadow .18s ease,border-color .18s ease}
+.card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(10,10,10,.06);border-color:#dcdad4}
+.card .h{font-size:12.5px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.card .s{font-size:11.5px;color:#3a3a37;line-height:1.65}
+.card .s b{color:var(--ink)}
+.row{display:flex;gap:11px}.col{flex:1;min-width:0}
+
+/* feature grid */
+.fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+@media(max-width:900px){.fgrid{grid-template-columns:repeat(2,1fr)}}
+.fcell{border:1px solid var(--line);border-radius:10px;padding:14px 12px;background:#fff;min-height:96px;transition:transform .18s cubic-bezier(.22,.61,.36,1),border-color .18s ease}
+.fcell:hover{transform:translateY(-2px);border-color:var(--accent)}
+.fcell .ic{width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;color:var(--accent);margin-bottom:8px}
+.fcell .t{font-size:12.5px;font-weight:700;margin-top:0;letter-spacing:.01em}
+.fcell .d{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:2px solid var(--ink)}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{padding:16px 22px 6px;border-left:1px solid var(--line)}
+.stat:first-child{border-left:0;padding-left:2px}
+.stat .n{font-size:clamp(30px,3.7vw,46px);font-weight:800;letter-spacing:-2px;line-height:1}
+.stat .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-top:6px;display:flex;align-items:center;gap:6px;font-weight:600}
+.stat .l::before{content:'';width:6px;height:6px;background:var(--accent);display:inline-block;flex:0 0 auto}
+@media(max-width:900px){.stat{padding:14px 16px 6px}.stat:nth-child(odd){border-left:0;padding-left:2px}}
+
+/* pills */
+.bar{height:7px;border-radius:999px;background:#efeee9;overflow:hidden;margin-top:7px}.bar i{display:block;height:100%;background:var(--accent)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px}
+.pill.ok{background:#e7f7ec;color:var(--green)}.pill.fail{background:#fdeaea;color:var(--red)}.pill.run{background:#fef3e2;color:var(--amber)}.pill.info{background:#eef4ff;color:var(--blue)}
+.dotled{width:8px;height:8px;border-radius:50%;display:inline-block}.led-ok{background:var(--green)}.led-fail{background:var(--red)}.led-run{background:var(--amber)}
+
+/* browser window */
+.win{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;width:100%}
+.win-bar{display:flex;align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid var(--line);background:#fbfbf9}
+.lights{display:flex;gap:7px}.lights i{width:11px;height:11px;border-radius:50%;display:block}
+.lights i:nth-child(1){background:#ff5f57}.lights i:nth-child(2){background:#febc2e}.lights i:nth-child(3){background:#28c840}
+.addr{flex:1;background:#f1f0ec;border:1px solid var(--line);border-radius:7px;padding:5px 11px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px;min-width:0}
+.addr span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.win-body{padding:15px;display:flex;flex-direction:column;gap:10px;background:var(--panel)}
+.appbar{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:700}
+.appbar .mark{width:13px;height:13px;background:var(--accent)}
+.appbar .tabs{margin-left:auto;display:flex;gap:5px}
+.tag{font-size:10px;padding:3px 9px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-weight:500}
+.tag.on{background:var(--accent-soft);border-color:#ffd9bd;color:var(--accent)}
+
+/* mini table */
+table.mini{width:100%;border-collapse:collapse;font-size:11px}
+table.mini th{text-align:left;color:var(--muted);font-weight:500;padding:5px 8px;border-bottom:1px solid var(--line);font-size:9.5px;text-transform:uppercase;letter-spacing:.5px}
+table.mini td{padding:6px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
+table.mini tr:last-child td{border-bottom:0}
+table.mini td b{font-weight:700}
+
+/* flow */
+.n8nflow{display:flex;flex-direction:column;gap:5px}
+.n8nflow .nn{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:#fff;font-size:11.5px}
+.n8nflow .nn .b{width:22px;height:22px;border-radius:6px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:10.5px;flex:0 0 auto}
+.n8nflow .ar{color:var(--accent);text-align:center;font-size:10px;line-height:.5;height:8px}
+.n8nflow .nn.hl{border-color:#ffd9bd;background:var(--accent-soft);font-weight:700;color:var(--accent)}
+
+/* cover */
+.slide.cover{justify-content:center}
+.mark-lg{display:flex;align-items:center;gap:13px;margin-bottom:22px}
+.mark-lg i{width:17px;height:17px;background:var(--accent);display:block}
+.mark-lg span{font-size:12.5px;font-weight:700;letter-spacing:3px;text-transform:uppercase}
+.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:32px;max-width:680px}
+@media(max-width:900px){.hero-stats{grid-template-columns:repeat(2,1fr)}}
+.hero-stats .hs{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff;transition:transform .2s ease,border-color .2s ease}
+.hero-stats .hs:hover{transform:translateY(-3px);border-color:var(--accent)}
+.hero-stats .hs .n{font-size:32px;font-weight:800;letter-spacing:-1px;color:var(--accent);line-height:1}
+.hero-stats .hs .l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-top:6px;font-weight:600}
+.slide.cover h1{background:linear-gradient(135deg,#0a0a0a 0%,#0a0a0a 55%,var(--accent) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* divider slide */
+.slide.divider .slide-inner{max-width:900px;text-align:center;padding:0 30px}
+.divider .kicker-lg{font-size:12px;font-weight:800;letter-spacing:5px;color:var(--accent);text-transform:uppercase;margin-bottom:14px}
+.divider h1.big{font-size:clamp(44px,7vw,88px);font-weight:800;letter-spacing:-2.5px;line-height:1;background:linear-gradient(135deg,#0a0a0a 0%,var(--accent) 90%);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:18px}
+.divider .rule{width:80px;height:4px;background:var(--accent);margin:24px auto 22px;border-radius:2px}
+.divider .sub{font-size:clamp(14px,1.5vw,17px);color:var(--muted);line-height:1.65;max-width:52ch;margin:0 auto}
+.slide.divider::before{content:"";position:absolute;top:-40%;left:-10%;width:60%;height:120%;background:radial-gradient(closest-side,rgba(249,115,22,.10),transparent 70%);pointer-events:none;z-index:0}
+.slide.divider .slide-inner{position:relative;z-index:1}
+
+/* star (highlight) slide */
+.slide.star{background:radial-gradient(1000px 500px at 85% 0%,rgba(249,115,22,.06),transparent 60%),radial-gradient(700px 400px at 10% 100%,rgba(249,115,22,.04),transparent 55%)}
+.slide.star::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent) 0%,#ffb27a 50%,transparent 100%);z-index:2}
+.slide.star .section-num{font-size:15px;padding:5px 10px;background:var(--accent);color:#fff;border-radius:6px;box-shadow:0 4px 10px rgba(249,115,22,.28)}
+.slide.star h2{background:linear-gradient(135deg,#0a0a0a 0%,#0a0a0a 55%,var(--accent) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;font-size:clamp(26px,3.5vw,44px)}
+.slide.star .card{border-left:3px solid transparent}
+.slide.star .card:hover{border-left-color:var(--accent)}
+.slide.star .stats .stat .n{background:linear-gradient(135deg,var(--accent),#c2410c);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* agenda */
+.agenda{display:grid;grid-template-columns:1fr 1fr;gap:9px 28px}
+@media(max-width:900px){.agenda{grid-template-columns:1fr}}
+.ag-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:12.5px;transition:transform .15s ease,border-color .15s ease,background .15s ease}
+.ag-item:hover{transform:translateX(3px);border-color:var(--accent);background:#fffdf9}
+.ag-item .num{font-weight:800;color:var(--accent);min-width:22px}
+.ag-item .ty{margin-left:auto;font-size:9px;padding:2px 7px;border-radius:999px;font-weight:700}
+.ty-prob{background:#fdeaea;color:var(--red)}
+.ty-what{background:var(--accent-soft);color:var(--accent)}
+.ty-arch{background:#eef4ff;color:var(--blue)}
+.ty-feat{background:#eafaef;color:var(--green)}
+.ty-num{background:#f4ecff;color:var(--violet)}
+
+/* badge highlight */
+.hl-badge{display:flex;width:fit-content;align-items:center;gap:8px;font-size:10.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent);background:linear-gradient(135deg,#fff5ec,var(--accent-soft));border:1px solid #ffd0a8;border-radius:999px;padding:6px 14px;margin-bottom:18px;box-shadow:0 4px 12px rgba(249,115,22,.14)}
+.hl-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(249,115,22,.18)}
+
+/* pain point cards */
+.pain-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}
+.pain-card{border:1px solid #f0caca;border-radius:10px;padding:14px;background:#fffafa}
+.pain-card .num{font-size:22px;font-weight:800;color:var(--red);line-height:1;margin-bottom:6px}
+.pain-card .t{font-size:12px;font-weight:700;margin-bottom:4px}
+.pain-card .d{font-size:11px;color:var(--muted);line-height:1.5}
+.pain-card.ok{border-color:#cfead6;background:#f0faf3}
+.pain-card.ok .num{color:var(--green)}
+
+/* hud */
+#hud{position:fixed;z-index:10;left:0;right:0;bottom:0;display:flex;align-items:center;gap:14px;padding:13px clamp(20px,4vw,40px);pointer-events:none}
+.progress{flex:1;height:3px;background:var(--line);border-radius:999px;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .5s cubic-bezier(.22,.61,.36,1)}
+.counter{font-size:12px;color:var(--muted);font-weight:700;min-width:56px;text-align:right;pointer-events:auto}
+.slabel{font-size:11px;color:var(--muted);pointer-events:auto;max-width:28vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-btn{pointer-events:auto;width:33px;height:33px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:transform .2s ease,border-color .2s ease,color .2s ease}
+.nav-btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+.hint{position:fixed;top:16px;right:18px;z-index:10;font-size:10px;color:var(--muted)}
+
+/* dots nav */
+#dots{position:fixed;right:16px;top:50%;transform:translateY(-50%);z-index:10;display:flex;flex-direction:column;gap:4px;pointer-events:auto;padding:14px 8px;background:rgba(255,255,255,.7);backdrop-filter:blur(10px);border:1px solid rgba(231,229,223,.9);border-radius:20px;box-shadow:0 8px 32px rgba(10,10,10,.06)}
+#dots button{width:3px;height:12px;border-radius:3px;border:none;background:#dcd9d1;cursor:pointer;padding:0;transition:width .2s,height .2s,background .2s,box-shadow .2s;opacity:.45;position:relative;flex:0 0 auto;align-self:center}
+#dots button.past,#dots button.active{opacity:1;background:#9c9a92}
+#dots button.active{width:5px;height:22px;background:var(--accent);box-shadow:0 0 0 3px rgba(249,115,22,.18),0 0 14px rgba(249,115,22,.35);opacity:1}
+#dots button:hover{width:5px}
+#dots button::before{content:attr(data-tip);position:absolute;right:calc(100% + 14px);top:50%;transform:translateY(-50%) translateX(6px);background:var(--ink);color:#fff;font-size:11px;padding:6px 11px;border-radius:7px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;font-weight:600;box-shadow:0 6px 18px rgba(10,10,10,.18)}
+#dots button::after{content:'';position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);border:5px solid transparent;border-left-color:var(--ink);opacity:0;transition:opacity .18s;pointer-events:none}
+#dots button:hover::before{opacity:1;transform:translateY(-50%) translateX(0)}
+#dots button:hover::after{opacity:1}
+@media(max-width:700px){#dots{display:none}}
+
+/* typography polish */
+h1,h2{text-wrap:balance}
+.lead,.sub{text-wrap:pretty}
+:lang(th){letter-spacing:-.01em;word-spacing:.02em;word-break:keep-all;line-break:strict;overflow-wrap:break-word}
+.th-nb{display:inline-block;vertical-align:baseline}
+
+/* inline svg */
+.ic-inline{width:1em;height:1em;display:inline-block;vertical-align:-.14em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* problem number callout */
+.prob-num{font-size:clamp(60px,8vw,100px);font-weight:800;color:var(--red);opacity:.12;position:absolute;right:0;bottom:-10px;letter-spacing:-4px;line-height:1;pointer-events:none;user-select:none}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="hint">← → / Space</div>
+
+<div id="deck">
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 1 · COVER
+  ─────────────────────────────────────────────────────────────────────────
+  SCRIPT:
+  "สวัสดีครับทุกคน วันนี้จะมาพรีเซ็นต์ระบบที่ทีม SM สร้างขึ้นเอง
+  ชื่อว่า SOM-Portal หรือที่ทีมเราเรียกว่า SM-Hub
+  เป็น Internal Dashboard ที่รวมศูนย์เครื่องมือทั้งหมดของทีม Service Operations
+  ไว้ในที่เดียว ก่อนจะไปดูว่ามีอะไรบ้าง ขอเริ่มจากที่มาของระบบก่อนนะครับ"
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide cover" data-label="Cover">
+  <div class="bracket tl"></div>
+  <div class="bracket br"></div>
+  <div class="slide-inner">
+    <div data-rise="1" class="mark-lg"><i></i><span>SOM-Portal · Centralize-SOM</span></div>
+    <h1 data-rise="2">Service Operations<span class="dot">.</span><br>Management Hub</h1>
+    <p class="lead" data-rise="3" style="margin-top:14px">
+      Internal dashboard ของทีม SM — รวมศูนย์ Incident, Jira, Jenkins,
+      Monitoring, Logging และการจัดการทีมทั้งหมดไว้ในที่เดียว
+    </p>
+    <div class="hero-stats" data-rise="4">
+      <div class="hs"><div class="n">60+</div><div class="l">User Pages</div></div>
+      <div class="hs"><div class="n">92</div><div class="l">API Modules</div></div>
+      <div class="hs"><div class="n">3</div><div class="l">Roles (RBAC)</div></div>
+      <div class="hs"><div class="n">Multi</div><div class="l">Team Support</div></div>
+    </div>
+    <div class="chips" data-rise="5">
+      <span class="chip hl">Service Board</span>
+      <span class="chip hl">Jira Templates</span>
+      <span class="chip gn">Service Performance</span>
+      <span class="chip gn">Restart Analyzer</span>
+      <span class="chip bl">Log Explorer</span>
+      <span class="chip vi">MA Services</span>
+      <span class="chip">Batch Monitor</span>
+      <span class="chip">Onboarding Portal</span>
+    </div>
+    <p class="kicker" data-rise="6" style="margin-top:20px"><strong>PHP 7.4+</strong> · Vanilla JS · JSON Storage · JWT HS256 · Apache/NGINX</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 2 · AGENDA
+  ─────────────────────────────────────────────────────────────────────────
+  SCRIPT:
+  "วันนี้จะพูดถึง 6 เรื่องหลัก เริ่มจากปัญหาที่ทำให้ต้องสร้างระบบนี้ขึ้นมา
+  แล้วค่อยๆ ไล่ดูสถาปัตยกรรม, feature หลัก ไปจนถึงตัวเลขที่น่าสนใจ"
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide" data-label="Agenda">
+  <div class="section-num">00</div>
+  <div class="slide-inner">
+    <div data-rise="1" class="eyebrow">Agenda</div>
+    <h2 data-rise="2">วันนี้จะพูดถึง<span class="dot">.</span></h2>
+    <p class="lead" data-rise="3" style="margin-top:8px;margin-bottom:24px">6 หัวข้อ จาก problem → solution → features → impact</p>
+    <div class="agenda" data-rise="4">
+      <div class="ag-item"><span class="num">01</span>ปัญหาก่อนมีระบบ — Pain Points<span class="ty ty-prob">Problem</span></div>
+      <div class="ag-item"><span class="num">02</span>SOM-Portal คืออะไร<span class="ty ty-what">Solution</span></div>
+      <div class="ag-item"><span class="num">03</span>สถาปัตยกรรมระบบ<span class="ty ty-arch">Architecture</span></div>
+      <div class="ag-item"><span class="num">04</span>ภาพรวม Features ทั้งหมด<span class="ty ty-feat">Overview</span></div>
+      <div class="ag-item"><span class="num">05</span>Feature Highlights<span class="ty ty-feat">Deep Dive</span></div>
+      <div class="ag-item"><span class="num">06</span>ตัวเลข &amp; สิ่งที่ได้<span class="ty ty-num">Impact</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 3 · PROBLEM (DIVIDER)
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide divider" data-label="Problem">
+  <div class="slide-inner">
+    <div data-rise="1" class="kicker-lg">Before SOM-Portal</div>
+    <h1 class="big" data-rise="2">ปัญหา<span style="color:var(--accent)">.</span></h1>
+    <div class="rule" data-rise="3"></div>
+    <p class="sub" data-rise="4">ก่อนมีระบบ ทีม SM ต้องสลับแท็บหลายตัว ข้อมูลกระจาย ไม่มี single source of truth ทำให้เสียเวลาและเกิด human error</p>
+    <div class="chips" data-rise="5" style="justify-content:center;margin-top:22px">
+      <span class="chip" style="border-color:#f0caca;background:#fdf5f5;color:var(--red)">5+ แท็บต้องเปิดพร้อมกัน</span>
+      <span class="chip" style="border-color:#f0caca;background:#fdf5f5;color:var(--red)">Jira ทำ manual ทีละ field</span>
+      <span class="chip" style="border-color:#f0caca;background:#fdf5f5;color:var(--red)">ข้อมูลกระจายไม่มีที่รวม</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 4 · PAIN POINTS (DETAIL)
+  ─────────────────────────────────────────────────────────────────────────
+  SCRIPT:
+  "ลองนึกภาพว่า... ตีสองมี alert ดัง pod restart loop บน payment-svc
+  สิ่งที่ต้องทำทันที: เปิด Grafana ดู CPU/MEM, เปิด Jenkins ดู build log,
+  เปิด Jira สร้าง ticket ทีละ field, เปิด OpenSearch ค้นหา log,
+  แจ้งทีมใน Google Chat — นั่นคือ 5 แท็บขึ้นไป ในตอนตีสอง
+  นี่คือปัญหาที่เราเจอทุกวัน ไม่มีที่รวม ต้องจำ URL ต่างๆ
+  และทุกอย่างกระจายอยู่ในระบบที่แยกกัน"
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide" data-label="Pain Points">
+  <div class="section-num">01</div>
+  <div class="slide-inner">
+    <div data-rise="1" class="eyebrow">Problem · Before</div>
+    <h2 data-rise="2">ตีสอง<span class="dot">.</span> Alert ดัง<span class="dot">.</span> แล้ว<br>ต้องเปิดกี่แท็บ<span class="dot">?</span></h2>
+    <div class="pain-grid" data-rise="3">
+      <div class="pain-card">
+        <div class="num">5+</div>
+        <div class="t">แท็บที่ต้องเปิดพร้อมกัน</div>
+        <div class="d">Grafana · Jenkins · Jira · OpenSearch · Google Chat — ทุกครั้งที่เกิด incident</div>
+      </div>
+      <div class="pain-card">
+        <div class="num">∞</div>
+        <div class="t">Jira ทำ manual ซ้ำๆ</div>
+        <div class="d">กรอก field เดิมซ้ำทุกครั้ง ไม่มี template, ลืม field บ่อย, ผิดพลาดง่าย</div>
+      </div>
+      <div class="pain-card">
+        <div class="num">0</div>
+        <div class="t">Single Source of Truth</div>
+        <div class="d">ไม่รู้ว่า incident ล่าสุดคืออะไร ใครทำอะไรไปแล้ว ข้อมูลกระจายหมด</div>
+      </div>
+    </div>
+    <div class="row" data-rise="4" style="margin-top:16px">
+      <div class="col card">
+        <div class="h"><span class="dotled led-fail"></span>Diagnose pod restart</div>
+        <div class="s">เปิด Grafana → ดู metric → เปิด Prometheus → เขียน PromQL → เปิด Jenkins → หา log → เปิด OpenSearch → search manual</div>
+      </div>
+      <div class="col card" style="border-color:#cfead6;background:#f0faf3">
+        <div class="h"><span class="dotled led-ok"></span>หลังมี SOM-Portal</div>
+        <div class="s">เปิด <b>service-performance.html</b> → ค้นชื่อ service → เห็น CPU/MEM/Pod สด + Log Explorer + Restart Analyzer ทุกอย่างในหน้าเดียว</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 5 · WHAT IS SOM-PORTAL
+  ─────────────────────────────────────────────────────────────────────────
+  SCRIPT:
+  "SOM-Portal คือคำตอบของปัญหาทั้งหมดนั้น
+  เราเอาทุกเครื่องมือที่ทีม SM ใช้ประจำมาอยู่ใน hub เดียว
+  ตั้งแต่บันทึก incident บน board, สร้าง Jira ticket แบบ one-click,
+  ดู metric สดจาก Grafana Thanos, ค้น log ผ่าน OpenSearch,
+  ไปจนถึงจัดการทีม onboarding คนใหม่ ทั้งหมดในระบบเดียว
+  ไม่ต้องสลับแท็บอีกต่อไป"
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide" data-label="What is SOM-Portal">
+  <div class="section-num">02</div>
+  <div class="slide-inner">
+    <div class="split">
+      <div>
+        <div data-rise="1" class="hl-badge">Solution</div>
+        <h2 data-rise="2">SOM-Portal<span class="dot">.</span><br>One Hub สำหรับทุกอย่าง</h2>
+        <p class="lead" data-rise="3" style="margin-top:12px">
+          ระบบ Central Hub ของทีม SM รวมทุกเครื่องมือไว้ในที่เดียว
+          ลดการสลับแท็บ ลด human error และเป็น single source of truth
+          สำหรับทีม Service Operations
+        </p>
+        <ul class="clean" data-rise="4">
+          <li><strong>รวมทุกเครื่องมือ</strong> — Board · Jira · Jenkins · Grafana · OpenSearch</li>
+          <li><strong>Multi-team</strong> — SM · Dev team ใช้ร่วมกัน ข้อมูลแยกกันสมบูรณ์</li>
+          <li><strong>RBAC 3 ระดับ</strong> — sm_user · sm_lead · sm_admin</li>
+          <li><strong>Security-first</strong> — JWT HS256 · bcrypt · rate limit · audit log</li>
+          <li><strong>No DB required</strong> — JSON file-based ดูแล deploy ง่ายมาก</li>
+        </ul>
+      </div>
+      <div data-rise="5">
+        <div class="n8nflow">
+          <div class="nn"><span class="b">🌐</span><b>Browser</b> · 60+ หน้า User · 69 หน้า Admin</div>
+          <div class="ar">↓</div>
+          <div class="nn"><span class="b">⚙</span><b>/api/*</b> · PHP REST · 92 modules</div>
+          <div class="ar">↓</div>
+          <div class="nn"><span class="b">🔑</span><b>requireAuth() / requireRole()</b> · JWT HS256</div>
+          <div class="ar">↓</div>
+          <div class="nn"><span class="b">⛁</span><b>teamDataPath()</b> · JSON + flock · per-team isolation</div>
+          <div class="ar">↓</div>
+          <div class="nn hl"><span class="b">⇄</span><b>External APIs</b> · Jira · Jenkins · Grafana Thanos · OpenSearch · SMTP</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 6 · ARCHITECTURE
+  ─────────────────────────────────────────────────────────────────────────
+  SCRIPT:
+  "สถาปัตยกรรมเราเลือกแบบเรียบง่ายโดยเจตนา
+  PHP procedural ไม่มี framework หนัก — อ่านง่าย debug ง่าย
+  JSON file-based ไม่ต้องมี database — deploy แค่ php -S localhost:8000
+  ก็รันได้เลย ทีมใหม่เข้ามาก็เข้าใจได้ทันที
+  แต่ถึงจะเรียบง่าย security ไม่ได้ลดทอน
+  JWT HS256, bcrypt, rate limiting, audit log ครบ"
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide" data-label="Architecture">
+  <div class="section-num">03</div>
+  <div class="slide-inner">
+    <div class="split split-rev">
+      <div data-rise="1">
+        <div class="win">
+          <div class="win-bar">
+            <div class="lights"><i></i><i></i><i></i></div>
+            <div class="addr"><span>architecture · request flow</span></div>
+          </div>
+          <div class="win-body">
+            <div class="appbar"><span class="mark"></span>Request Flow</div>
+            <table class="mini">
+              <tr><th>Layer</th><th>Tech</th><th>หน้าที่</th></tr>
+              <tr><td><b>Frontend</b></td><td>HTML + Vanilla JS</td><td>UI · API calls ผ่าน api.js</td></tr>
+              <tr><td><b>Auth</b></td><td>JWT HS256</td><td>requireAuth() · requireRole()</td></tr>
+              <tr><td><b>API</b></td><td>PHP procedural</td><td>92 modules · REST endpoints</td></tr>
+              <tr><td><b>Storage</b></td><td>JSON + flock()</td><td>teamDataPath() isolation</td></tr>
+              <tr><td><b>External</b></td><td>Jira · Jenkins · Grafana</td><td>Basic auth · API token</td></tr>
+            </table>
+            <div class="chips" style="margin-top:4px">
+              <span class="pill ok">Zero build step</span>
+              <span class="pill info">php -S localhost:8000</span>
+              <span class="pill ok">No database</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div data-rise="2" class="eyebrow">Architecture</div>
+        <h2 data-rise="3">เรียบง่าย<span class="dot">.</span><br>แต่ครบ</h2>
+        <ul class="clean" data-rise="4">
+          <li><strong>No Framework</strong> — PHP procedural อ่านง่าย debug ง่าย ไม่มี dependency หนัก</li>
+          <li><strong>File-based Storage</strong> — JSON + flock() ไม่ต้อง setup DB · backup คือ zip เดียว</li>
+          <li><strong>Zero Build Step</strong> — Clone → set .env → php -S · ใช้ได้ทันที</li>
+          <li><strong>JWT + bcrypt</strong> — HS256 signed token · password_hash() · rate limit 120 req/60s</li>
+          <li><strong>Multi-team Isolation</strong> — teamDataPath() แยก data/sm/ data/dev/ ไม่รั่วข้ามทีม</li>
+          <li><strong>Host Cooldown</strong> — Circuit breaker ป้องกัน hammer upstream ที่ล่ม</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 7 · FEATURE MAP DIVIDER
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide divider" data-label="Features">
+  <div class="slide-inner">
+    <div data-rise="1" class="kicker-lg">Feature Overview</div>
+    <h1 class="big" data-rise="2">ทำอะไรได้<span style="color:var(--accent)">?</span></h1>
+    <div class="rule" data-rise="3"></div>
+    <p class="sub" data-rise="4">ครอบคลุมทุก workflow ของทีม Ops ตั้งแต่ incident management ไปจนถึง analytics และ team knowledge</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 8 · FEATURE MAP (fgrid)
+  ─────────────────────────────────────────────────────────────────────────
+  SCRIPT:
+  "ระบบมีฟีเจอร์ครอบคลุมกว่า 20 โมดูล ขอไฮไลท์โมดูลหลักๆ
+  ทางซ้ายคือ core operations tools — board, jira, monitoring, batch
+  ทางขวาคือ advanced tools ที่เพิ่งเพิ่มมา — service performance,
+  restart analyzer, log explorer ที่เชื่อมกัน ไล่ trace ข้าม service ได้"
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide" data-label="Feature Map">
+  <div class="section-num">04</div>
+  <div class="slide-inner">
+    <div data-rise="1" class="eyebrow" style="margin-bottom:10px">Feature Map · 20+ Modules</div>
+    <div class="fgrid" data-rise="2">
+      <div class="fcell">
+        <div class="ic">
+          <svg class="ic-inline" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </div>
+        <div class="t">Dashboard</div>
+        <div class="d">Activity · Presence · Notifications</div>
+      </div>
+      <div class="fcell">
+        <div class="ic">
+          <svg class="ic-inline" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="t">Web Board</div>
+        <div class="d">Incident · How-to · Comments</div>
+      </div>
+      <div class="fcell">
+        <div class="ic">
+          <svg class="ic-inline" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <div class="t">Jira Templates</div>
+        <div class="d">One-click ticket · Custom fields</div>
+      </div>
+      <div class="fcell">
+        <div class="ic">
+          <svg class="ic-inline" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="t">Monitoring</div>
+        <div class="d">Grafana · Polywall 3×3</div>
+      </div>
+      <div class="fcell" style="border-color:#ffd9bd;background:linear-gradient(135deg,#fffaf5,#fff5ec)">
+        <div class="ic"><svg class="ic-inline" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+        <div class="t" style="color:var(--accent)">Service Performance</div>
+        <div class="d">CPU/MEM/Pod · Grafana Thanos</div>
+      </div>
+      <div class="fcell" style="border-color:#ffd9bd;background:linear-gradient(135deg,#fffaf5,#fff5ec)">
+        <div class="ic"><svg class="ic-inline" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+        <div class="t" style="color:var(--accent)">Log Explorer</div>
+        <div class="d">OpenSearch · CORRELATION_ID</div>
+      </div>
+      <div class="fcell" style="border-color:#ffd9bd;background:linear-gradient(135deg,#fffaf5,#fff5ec)">
+        <div class="ic"><svg class="ic-inline" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+        <div class="t" style="color:var(--accent)">Restart Analyzer</div>
+        <div class="d">OOM · Crash · SIGTERM auto-diagnose</div>
+      </div>
+      <div class="fcell">
+        <div class="ic"><svg class="ic-inline" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></div>
+        <div class="t">Batch Monitor</div>
+        <div class="d">Jenkins jobs · Dependency-aware</div>
+      </div>
+      <div class="fcell">
+        <div class="ic"><svg class="ic-inline" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+        <div class="t">MA Services</div>
+        <div class="d">Use case · Cutoff · Live status</div>
+      </div>
+      <div class="fcell">
+        <div class="ic"><svg class="ic-inline" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+        <div class="t">Schedule</div>
+        <div class="d">Shift · Leave · PW Schedule</div>
+      </div>
+      <div class="fcell">
+        <div class="ic"><svg class="ic-inline" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+        <div class="t">Team Inbox</div>
+        <div class="d">SMTP · Reply · Forward</div>
+      </div>
+      <div class="fcell">
+        <div class="ic"><svg class="ic-inline" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+        <div class="t">Onboarding</div>
+        <div class="d">5 chapters · Lead-verified</div>
+      </div>
+      <div class="fcell">
+        <div class="ic"><svg class="ic-inline" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        <div class="t">Analytics</div>
+        <div class="d">Weekly Report · Alert Monitor</div>
+      </div>
+      <div class="fcell">
+        <div class="ic"><svg class="ic-inline" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></div>
+        <div class="t">MA Status Live</div>
+        <div class="d">NANO CDN · Jenkins · OAuth</div>
+      </div>
+      <div class="fcell">
+        <div class="ic"><svg class="ic-inline" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="t">Security + Audit</div>
+        <div class="d">Rate limit · bcrypt · Logs</div>
+      </div>
+      <div class="fcell">
+        <div class="ic"><svg class="ic-inline" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        </div>
+        <div class="t">UI Themes + Icons</div>
+        <div class="d">4 themes · 147 SVG icons</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 9 · FEATURE HIGHLIGHT DIVIDER
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide divider" data-label="Highlights">
+  <div class="slide-inner">
+    <div data-rise="1" class="kicker-lg">Feature Highlights</div>
+    <h1 class="big" data-rise="2">ของเด่น<span style="color:var(--accent)">.</span></h1>
+    <div class="rule" data-rise="3"></div>
+    <p class="sub" data-rise="4">ไฮไลท์ 4 ฟีเจอร์ที่แก้ปัญหาหลักได้ตรงจุดที่สุด</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 10 · WEB BOARD + JIRA TEMPLATES
+  ─────────────────────────────────────────────────────────────────────────
+  SCRIPT:
+  "สองฟีเจอร์แรกที่ทุกคนใช้ทุกวัน
+  Web Board คือที่บันทึก incident, how-to ของทีม
+  มี comment, @mention, pin, search full-text ครบ
+  และ Jira Templates ที่แก้ปัญหา 'กรอก field ซ้ำ' โดยตรง
+  เลือก template → pre-filled ทุก field → กด submit → ได้ Jira ticket
+  จาก 5 นาทีเหลือ 30 วินาที"
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide" data-label="Board + Jira">
+  <div class="section-num">05–A</div>
+  <div class="slide-inner">
+    <div class="split">
+      <div>
+        <div data-rise="1" class="eyebrow">Feature 01</div>
+        <h2 data-rise="2">Web Board &amp;<br><span class="dot">Jira</span> Templates</h2>
+        <ul class="clean" data-rise="3">
+          <li><strong>Web Board</strong> — โพสต์ Incident / How-to พร้อม status open → in_progress → resolved</li>
+          <li><strong>Pin + Star</strong> — Pin โพสต์สำคัญ, bookmark ส่วนตัว, comment + @mention</li>
+          <li><strong>Search full-text</strong> — ค้นหาข้ามทุกโพสต์ได้ทันที</li>
+          <li><strong>Template System</strong> — Pre-fill ทุก field บันทึกเป็น template ใช้ซ้ำได้</li>
+          <li><strong>One-click Jira</strong> — เลือก template → Submit → ได้ ticket ใน SMC ทันที</li>
+          <li><strong>Custom Field Mapping</strong> — Admin config field ไหน map กับ customfield_xxxxx</li>
+        </ul>
+      </div>
+      <div data-rise="4">
+        <div class="win">
+          <div class="win-bar">
+            <div class="lights"><i></i><i></i><i></i></div>
+            <div class="addr"><span>som-portal / board</span></div>
+          </div>
+          <div class="win-body">
+            <div class="appbar">
+              <span class="mark"></span>Service Board
+              <div class="tabs">
+                <span class="tag on">All</span>
+                <span class="tag">Incident</span>
+                <span class="tag">How-to</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="h"><span class="dotled led-fail"></span>payment-svc pod restart loop — EKS <span class="pill fail" style="margin-left:auto">open</span></div>
+              <div class="s">📌 pinned · 💬 3 · เปิด 14:22 น. · by @warapon</div>
+            </div>
+            <div class="card">
+              <div class="h"><span class="dotled led-run"></span>SCB Reconcile mismatch <span class="pill run" style="margin-left:auto">in_progress</span></div>
+              <div class="s">💬 7 comments · @ken กำลัง investigate</div>
+            </div>
+            <div class="card" style="border-color:#cfead6">
+              <div class="h"><span class="dotled led-ok"></span>วิธี trigger MA ผ่าน Portal <span class="pill ok" style="margin-left:auto">resolved</span></div>
+              <div class="s">How-to · ★ starred by 4 คน</div>
+            </div>
+            <div class="card" style="border-color:#ffd9bd;background:var(--accent-soft)">
+              <div class="h" style="color:var(--accent)">⚡ Jira Template → Reconcile Issue</div>
+              <div class="s" style="color:var(--accent)">Summary [auto] · Priority High · 3rd Party ✓ → <b>Create in SMC</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 11 · SERVICE PERFORMANCE (STAR / FLAGSHIP)
+  ─────────────────────────────────────────────────────────────────────────
+  SCRIPT:
+  "นี่คือฟีเจอร์ที่เราภูมิใจมากที่สุด — Service Performance Dashboard
+  พิมพ์ชื่อ service → เห็น CPU, Memory, Pod count สดๆ จาก Grafana Thanos
+  พร้อม CSV drift comparison — เปรียบเทียบ config ปัจจุบันกับ baseline
+  เห็นทันทีว่า replica เปลี่ยน, memory limit เปลี่ยน อะไรบ้าง
+  และยังมี subsystem tabs — DB Pool, Tomcat, Runtime, Transaction
+  ทุกอย่างใน Command Center 3-column layout ไม่ต้องเปิด Grafana แยกอีกต่อไป"
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide star" data-label="Service Performance">
+  <div class="section-num">05–B</div>
+  <div class="slide-inner">
+    <div class="split">
+      <div>
+        <div data-rise="1" class="hl-badge">Flagship Feature</div>
+        <h2 data-rise="2">Service<br>Performance<span class="dot">.</span></h2>
+        <ul class="clean" data-rise="3">
+          <li><strong>Search-first UX</strong> — พิมพ์ชื่อ service → เห็น metric ทันที</li>
+          <li><strong>Live Metrics</strong> — CPU · MEM · Pod count สด จาก Grafana Thanos</li>
+          <li><strong>CSV Drift</strong> — เปรียบ config ปัจจุบัน vs baseline เห็น drift ทันที</li>
+          <li><strong>Subsystem Tabs</strong> — DB Pool · Tomcat · Runtime · Transaction + health chips</li>
+          <li><strong>Command Center</strong> — 3-column layout: Overview · Live Metrics · Actions</li>
+          <li><strong>Admin CSV Upload</strong> — อัปโหลด inventory + auto-backup history</li>
+        </ul>
+        <div class="chips" data-rise="4">
+          <span class="chip hl">Grafana Thanos · PromQL</span>
+          <span class="chip gn">CSV baseline diff</span>
+          <span class="chip bl">kube-state-metrics</span>
+        </div>
+      </div>
+      <div data-rise="5">
+        <div class="win">
+          <div class="win-bar">
+            <div class="lights"><i></i><i></i><i></i></div>
+            <div class="addr"><span>som-portal / service-performance</span></div>
+          </div>
+          <div class="win-body">
+            <div class="appbar">
+              <span class="mark"></span>payment-gateway
+              <div class="tabs">
+                <span class="tag on">Overview</span>
+                <span class="tag">DB Pool</span>
+                <span class="tag">Tomcat</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col card">
+                <div class="h">CPU Usage</div>
+                <svg viewBox="0 0 120 32" style="width:100%;height:34px"><polyline fill="none" stroke="var(--accent)" stroke-width="2" points="0,26 20,20 40,23 60,14 80,17 100,9 120,13"/></svg>
+                <div class="s">62% avg · <span class="pill run">watch</span></div>
+              </div>
+              <div class="col card">
+                <div class="h">Memory</div>
+                <svg viewBox="0 0 120 32" style="width:100%;height:34px"><polyline fill="none" stroke="#7c3aed" stroke-width="2" points="0,20 20,21 40,18 60,19 80,16 100,17 120,15"/></svg>
+                <div class="s">1.8 / 2 GB · <span class="pill fail">high</span></div>
+              </div>
+              <div class="col card">
+                <div class="h">Pods</div>
+                <div style="font-size:24px;font-weight:800;color:var(--accent);margin:4px 0">4/4</div>
+                <div class="s"><span class="pill ok">healthy</span></div>
+              </div>
+            </div>
+            <div class="card" style="border-color:#ffd9bd;background:var(--accent-soft)">
+              <div class="s" style="color:var(--accent)"><b>CSV Drift detected</b> — replica 3→4 · maxHeap 1.5→2 GB</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 12 · RESTART ANALYZER + LOG EXPLORER
+  ─────────────────────────────────────────────────────────────────────────
+  SCRIPT:
+  "เมื่อ pod restart เราไม่ต้องเดาอีกต่อไป
+  Restart Analyzer วิเคราะห์อัตโนมัติว่าเพราะ OOM, Crash, SIGTERM หรือ Eviction
+  ดึง timeline จาก Prometheus พร้อมบอกว่า memory ตอน OOM เท่าไร
+  และ Log Explorer ให้ query OpenSearch ด้วย typed DSL
+  เชื่อมผ่าน CORRELATION_ID trace ข้าม service ได้
+  สองตัวนี้ทำงานร่วมกัน — เห็น restart ใน Analyzer แล้ว
+  กดไปที่ CORRELATION_ID ใน Log Explorer ได้เลย"
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide" data-label="Debug Tools">
+  <div class="section-num">05–C</div>
+  <div class="slide-inner">
+    <div data-rise="1" class="eyebrow" style="margin-bottom:14px">Feature 03 · Debugging Powertools</div>
+    <div class="row" data-rise="2" style="gap:16px;align-items:flex-start">
+      <div class="col">
+        <div class="card">
+          <div class="h">
+            <svg class="ic-inline" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Restart Analyzer
+            <span class="pill fail" style="margin-left:auto">Auto Root-cause</span>
+          </div>
+          <div class="s" style="margin-bottom:10px">วิเคราะห์สาเหตุ pod restart อัตโนมัติจาก kube-state-metrics + Prometheus</div>
+          <table class="mini">
+            <tr><th>เวลา</th><th>สาเหตุ</th><th>Signal</th></tr>
+            <tr><td>14:22</td><td><b>OOMKilled</b></td><td>exit 137 · 2.0/2.0 GB</td></tr>
+            <tr><td>14:35</td><td>OOMKilled</td><td>exit 137</td></tr>
+            <tr><td>14:51</td><td>CrashLoopBackOff</td><td>exit 1 · panic</td></tr>
+          </table>
+          <div class="card" style="margin-top:10px;border-color:#ffd9bd;background:var(--accent-soft)">
+            <div class="s" style="color:var(--accent)"><b>แนะนำ:</b> เพิ่ม memory limit เป็น 3 GB · ดู CORRELATION_ID <b>abc-123</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="h">
+            <svg class="ic-inline" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Log Explorer
+            <span class="pill info" style="margin-left:auto">OpenSearch · Per-user Creds</span>
+          </div>
+          <div class="s" style="margin-bottom:10px">Query OpenSearch ด้วย DSL · histogram + status code summary · CORRELATION_ID trace</div>
+          <div class="addr" style="background:#f7f6f3"><span>service:"payment-svc" AND level:"ERROR" AND @timestamp:[now-1h TO now]</span></div>
+          <svg viewBox="0 0 280 40" style="width:100%;height:44px;margin-top:8px"><g fill="var(--accent)" opacity=".8"><rect x="0" y="30" width="16" height="8"/><rect x="20" y="22" width="16" height="16"/><rect x="40" y="10" width="16" height="28"/><rect x="60" y="18" width="16" height="20"/><rect x="80" y="26" width="16" height="12"/><rect x="100" y="16" width="16" height="22"/><rect x="120" y="24" width="16" height="14"/><rect x="140" y="12" width="16" height="26"/><rect x="160" y="6" width="16" height="32"/><rect x="180" y="14" width="16" height="24"/></g></svg>
+          <div class="chips" style="margin-top:4px">
+            <span class="pill ok"><b>200</b> · 1.2k</span>
+            <span class="pill fail"><b>500</b> · 84</span>
+            <span class="pill run"><b>timeout</b> · 12</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row" data-rise="3" style="margin-top:12px">
+      <div class="col card" style="border-color:#cfead6">
+        <div class="s"><b style="color:var(--green)">Per-user Creds</b> — AES-256 encrypted credentials ไม่ใช้ shared admin cred</div>
+      </div>
+      <div class="col card" style="border-color:#cfead6">
+        <div class="s"><b style="color:var(--green)">SM-shared Searches</b> — SM บันทึก saved search · ทีมอื่นใช้ร่วมได้</div>
+      </div>
+      <div class="col card" style="border-color:#cfead6">
+        <div class="s"><b style="color:var(--green)">Linked</b> — Restart Analyzer → คลิก CORRELATION_ID → เปิด Log Explorer ได้เลย</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 13 · MULTI-TEAM ARCHITECTURE
+  ─────────────────────────────────────────────────────────────────────────
+  SCRIPT:
+  "ระบบออกแบบให้รองรับหลายทีมตั้งแต่แรก
+  หัวใจคือ teamDataPath() — JWT มี team claim
+  ทุก call ที่เข้ามาจะ resolve path ตาม team อัตโนมัติ
+  data/sm/links.json กับ data/dev/links.json แยกกันสมบูรณ์
+  ไม่มีทางรั่วข้ามกัน
+  SM-shared คือ pattern พิเศษ — SM เป็นเจ้าของ
+  ทีมอื่น read ได้แต่ write ไม่ได้
+  ตอนนี้มี SM team และ Dev team ใช้อยู่แล้ว
+  เพิ่มทีมใหม่แค่ add JWT team claim"
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide" data-label="Multi-team">
+  <div class="section-num">05–D</div>
+  <div class="slide-inner">
+    <div class="split">
+      <div>
+        <div data-rise="1" class="eyebrow">Feature 04</div>
+        <h2 data-rise="2">Multi-team<br><span class="dot">Architecture</span></h2>
+        <ul class="clean" data-rise="3">
+          <li><strong>JWT team claim</strong> — ทุก request resolve data path ตาม team อัตโนมัติ</li>
+          <li><strong>Zero data leak</strong> — data/sm/ · data/dev/ แยกกันสมบูรณ์ เขียน code ผิดก็ไม่รั่ว</li>
+          <li><strong>SM-shared pattern</strong> — SM เป็นเจ้าของ ทีมอื่น read-only (เช่น monitoring config)</li>
+          <li><strong>Per-team menus</strong> — menu-permissions.json แยก per role per team</li>
+          <li><strong>Host cooldown</strong> — Circuit breaker ป้องกัน hammer upstream ที่ล่ม (Jenkins/Grafana)</li>
+        </ul>
+        <div class="chips" data-rise="4">
+          <span class="chip gn">SM Team · active</span>
+          <span class="chip bl">Dev Team · active</span>
+          <span class="chip">+ ทีมใหม่ได้เสมอ</span>
+        </div>
+      </div>
+      <div data-rise="5">
+        <div class="n8nflow" style="max-width:560px">
+          <div class="nn"><span class="b">🔑</span><b>JWT</b> · claim <code style="color:var(--accent)">team: "sm"</code></div>
+          <div class="ar">↓</div>
+          <div class="nn"><span class="b">fn</span><b>teamDataPath("links.json")</b> · resolve ตาม team</div>
+          <div class="ar">↓</div>
+          <div class="nn hl"><span class="b">⛁</span><b>data/sm/links.json</b> · ไม่แตะ data/dev/</div>
+          <div class="ar">↓</div>
+          <div class="nn"><span class="b">⇄</span><b>SM-shared</b> · smSharedFiles() · everyone reads, SM owns</div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <div class="col card">
+            <div class="h">SM Team</div>
+            <div class="s">sm_user · sm_lead · sm_admin<br>Full access to all SM features</div>
+          </div>
+          <div class="col card">
+            <div class="h">Dev Team</div>
+            <div class="s">dev_user · 29 sub-teams<br>Read-only: Service Perf · Restart Monitor</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 14 · BY THE NUMBERS (STAR)
+  ─────────────────────────────────────────────────────────────────────────
+  SCRIPT:
+  "มาดูตัวเลขที่บอกขนาดของระบบ
+  60+ หน้า user, 69 หน้า admin, 92 API modules
+  147 SVG icons ที่ sweep ไปกว่า 2,400 emoji ทั่วระบบ
+  4 UI themes ที่ switch ได้ทันที
+  และทั้งหมดนี้บน PHP + JSON ไม่มี database ไม่มี framework
+  deploy ง่ายมาก ดูแลง่าย เพิ่ม feature ได้เร็ว"
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide star" data-label="By the Numbers">
+  <div class="section-num">06</div>
+  <div class="slide-inner">
+    <div data-rise="1" class="eyebrow" style="margin-bottom:12px">By the Numbers · 2026</div>
+    <div class="stats" data-rise="2">
+      <div class="stat"><div class="n">60+</div><div class="l">User Pages</div></div>
+      <div class="stat"><div class="n">69</div><div class="l">Admin Pages</div></div>
+      <div class="stat"><div class="n">92</div><div class="l">API Modules</div></div>
+      <div class="stat"><div class="n">3</div><div class="l">RBAC Roles</div></div>
+    </div>
+    <div class="stats" data-rise="3" style="border-top:1px solid var(--line);margin-top:0">
+      <div class="stat"><div class="n">147</div><div class="l">SVG Icons</div></div>
+      <div class="stat"><div class="n">4</div><div class="l">UI Themes</div></div>
+      <div class="stat"><div class="n">2,400+</div><div class="l">Emoji ถูก replace</div></div>
+      <div class="stat"><div class="n">2+</div><div class="l">Teams Active</div></div>
+    </div>
+    <div class="row" data-rise="4" style="margin-top:18px">
+      <div class="col card">
+        <div class="h">
+          <svg class="ic-inline" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Integrations ที่ต่อจริง
+        </div>
+        <div class="chips">
+          <span class="chip hl">Jira Cloud · SMC</span>
+          <span class="chip gn">Grafana Thanos · PromQL</span>
+          <span class="chip bl">OpenSearch · DSL</span>
+          <span class="chip vi">Jenkins · Multi-server</span>
+          <span class="chip">SMTP · Email</span>
+          <span class="chip">Teamup Calendar</span>
+          <span class="chip">NANO CDN · MA Status</span>
+          <span class="chip">Keycloak OAuth · ACM</span>
+        </div>
+      </div>
+      <div class="col card" style="border-color:#ffd9bd;background:var(--accent-soft)">
+        <div class="h" style="color:var(--accent)">
+          <svg class="ic-inline" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Tech Stack · ทำไมถึงเลือกแบบนี้
+        </div>
+        <div class="s" style="color:var(--accent)">
+          <b>PHP procedural + JSON</b> — ไม่มี framework ไม่มี DB<br>
+          → อ่านง่าย · debug ง่าย · deploy ง่าย<br>
+          → clone → set .env → php -S · พร้อมใช้ใน 30 วินาที<br>
+          → backup คือ zip เดียว · restore ใน 2 นาที
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  SLIDE 15 · THANK YOU / Q&A
+  ─────────────────────────────────────────────────────────────────────────
+  SCRIPT:
+  "สรุปคร่าวๆ SOM-Portal เกิดมาจากความเจ็บปวดของทีม Ops
+  ที่ต้องสลับแท็บหลายตัว ข้อมูลกระจาย ไม่มีที่รวม
+  เราแก้ด้วยการรวมทุกอย่างในระบบเดียว ตั้งแต่ incident management
+  ไปจนถึง live metrics จาก Grafana, log search, restart diagnosis
+  บน stack ที่เรียบง่ายแต่ production-grade
+  ขอบคุณที่ฟังครับ มีคำถามอะไรเพิ่มเติมไหมครับ?"
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide cover" data-label="Thank You">
+  <div class="bracket tl"></div>
+  <div class="bracket br"></div>
+  <div class="slide-inner">
+    <div data-rise="1" class="mark-lg"><i></i><span>Centralize-SOM · SM Team</span></div>
+    <h1 data-rise="2">Thank <span class="dot">You</span><span class="dot">.</span></h1>
+    <p class="lead" data-rise="3" style="margin-top:12px">
+      Built for Ascend / TrueMoney Engineering Team<br>
+      One hub สำหรับทุก workflow ของทีม Service Operations
+    </p>
+
+    <div class="row" data-rise="4" style="margin-top:28px;max-width:760px">
+      <div class="col card" style="text-align:center">
+        <div style="font-size:32px;font-weight:800;color:var(--accent)">60+</div>
+        <div class="kicker">User Pages</div>
+      </div>
+      <div class="col card" style="text-align:center">
+        <div style="font-size:32px;font-weight:800;color:var(--accent)">92</div>
+        <div class="kicker">API Modules</div>
+      </div>
+      <div class="col card" style="text-align:center">
+        <div style="font-size:32px;font-weight:800;color:var(--accent)">2+</div>
+        <div class="kicker">Teams Active</div>
+      </div>
+      <div class="col card" style="text-align:center">
+        <div style="font-size:32px;font-weight:800;color:var(--accent)">0</div>
+        <div class="kicker">Database needed</div>
+      </div>
+    </div>
+
+    <div class="chips" data-rise="5" style="margin-top:20px">
+      <span class="chip">PHP 7.4+</span>
+      <span class="chip">Vanilla JS</span>
+      <span class="chip">JWT HS256 · bcrypt</span>
+      <span class="chip">JSON + flock · no DB</span>
+      <span class="chip">Apache + mod_rewrite</span>
+      <span class="chip hl">Deploy: php -S localhost:8000</span>
+    </div>
+    <p class="kicker" data-rise="6" style="margin-top:22px">
+      <strong>Stack:</strong> PHP + JS + JSON &nbsp;·&nbsp; <strong>Auth:</strong> JWT HS256 &nbsp;·&nbsp; <strong>Deploy:</strong> Apache / NGINX / php -S
+    </p>
+  </div>
+</div>
+
+</div><!-- /#deck -->
+
+<!-- Nav dots -->
+<nav id="dots" aria-label="slide navigation"></nav>
+
+<!-- HUD -->
+<div id="hud">
+  <button class="nav-btn" id="prev" aria-label="previous">‹</button>
+  <div class="progress"><i id="prog"></i></div>
+  <div class="slabel" id="slabel"></div>
+  <button class="nav-btn" id="next" aria-label="next">›</button>
+  <div class="counter" id="counter"></div>
+</div>
+
+<script>
+/* ── Navigation ── */
+const slides = Array.from(document.querySelectorAll('#deck .slide'));
+const TOTAL  = slides.length;
+let cur = 0, anim = false;
+
+const progEl   = document.getElementById('prog');
+const ctrEl    = document.getElementById('counter');
+const slabelEl = document.getElementById('slabel');
+const dotsEl   = document.getElementById('dots');
+
+/* Build dots */
+slides.forEach((s, i) => {
+  const btn = document.createElement('button');
+  btn.setAttribute('data-tip', s.dataset.label || ('Slide '+(i+1)));
+  btn.onclick = () => goTo(i);
+  dotsEl.appendChild(btn);
+});
+
+function updateUI() {
+  dotsEl.querySelectorAll('button').forEach((b, i) => {
+    b.classList.toggle('active', i === cur);
+    b.classList.toggle('past', i < cur);
+  });
+  progEl.style.width = ((cur+1)/TOTAL*100)+'%';
+  ctrEl.textContent  = String(cur+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  slabelEl.textContent = slides[cur].dataset.label || '';
+}
+
+function goTo(n) {
+  if (anim || n === cur || n < 0 || n >= TOTAL) return;
+  anim = true;
+  const dir = n > cur ? 1 : -1;
+  const out = slides[cur], inn = slides[n];
+
+  /* remove active/prev from all */
+  slides.forEach(s => { s.classList.remove('active','prev'); });
+
+  inn.style.transition = 'none';
+  inn.style.transform  = `translate3d(${dir>0?40:-40}px,0,0) scale(.985)`;
+  inn.style.opacity    = '0';
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    inn.style.transition = '';
+    inn.style.transform  = '';  /* clear inline — let CSS class take over */
+    inn.style.opacity    = '';
+    out.classList.add('prev');
+    inn.classList.add('active');
+    cur = n;
+    updateUI();
+    setTimeout(() => {
+      out.classList.remove('prev');
+      anim = false;
+    }, 560);
+  }));
+}
+
+function go(dir) { goTo(cur+dir); }
+
+/* Keyboard */
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' ') { e.preventDefault(); go(1); }
+  if (e.key==='ArrowLeft' ||e.key==='ArrowUp')                { e.preventDefault(); go(-1); }
+  if (e.key==='Home') goTo(0);
+  if (e.key==='End')  goTo(TOTAL-1);
+});
+
+/* Touch swipe */
+let tx=0;
+document.addEventListener('touchstart', e=>{ tx=e.touches[0].clientX; },{passive:true});
+document.addEventListener('touchend',   e=>{ const dx=e.changedTouches[0].clientX-tx; if(Math.abs(dx)>50) go(dx<0?1:-1); },{passive:true});
+
+/* Init first slide */
+slides[0].classList.add('active');
+updateUI();
+
+/* Thai no-break helper — wrap compound words in inline-block to prevent mid-word break */
+function nobreakThai(root) {
+  root = root || document.body;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+  const thaiRe = /[฀-๿]+/g;
+  let node, toReplace = [];
+  while ((node = walker.nextNode())) {
+    if (!thaiRe.test(node.textContent)) continue;
+    if (['SCRIPT','STYLE','CODE'].includes(node.parentElement.tagName)) continue;
+    toReplace.push(node);
+  }
+  toReplace.forEach(node => {
+    const span = document.createElement('span');
+    span.innerHTML = node.textContent.replace(thaiRe, m => '<span class="th-nb">'+m+'</span>');
+    node.parentNode.replaceChild(span, node);
+  });
+}
+nobreakThai();
+</script>
+</body>
+</html>

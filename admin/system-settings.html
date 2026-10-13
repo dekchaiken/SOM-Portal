@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Settings — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/system-settings/system-settings.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="settings"></i> System Settings</div>
+        <div class="page-sub">Site configuration, security policy, session management</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" id="save-btn" onclick="saveSettings()">
+          <span id="save-text">Save Changes</span>
+          <span id="save-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content" style="overflow-y:auto">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="settings"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>System Settings</h1>
+          <p>Site configuration · security policy · session management · rate limits · password policy</p>
+        </div>
+      </section>
+
+      <div id="settings-loading"><div data-skel="settings" data-rows="4"></div></div>
+
+      <div id="settings-content" style="display:none">
+        <div class="settings-grid">
+
+          <!-- ── Site Information ─────────────────────────── -->
+          <div class="settings-card">
+            <div class="sc-head">
+              <div class="sc-icon" style="background:rgba(242,100,25,.1)"><i data-icon="globe"></i></div>
+              <div>
+                <div class="sc-title">Site Information</div>
+                <div class="sc-sub">Displayed across the application</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div class="setting-row" style="flex-direction:column;gap:8px">
+                <div>
+                  <div class="setting-label">Site Name</div>
+                  <div class="setting-hint">Appears in sidebar logo and browser tab</div>
+                </div>
+                <input class="setting-text" id="s-site_name" style="width:100%" placeholder="e.g. SOM-Portal" oninput="markDirty()">
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row" style="flex-direction:column;gap:8px">
+                <div>
+                  <div class="setting-label">Site Tagline</div>
+                  <div class="setting-hint">Subtitle shown below the logo</div>
+                </div>
+                <input class="setting-text" id="s-site_tagline" style="width:100%" placeholder="e.g. Service Operations Management" oninput="markDirty()">
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Session & Auth ──────────────────────────── -->
+          <div class="settings-card">
+            <div class="sc-head">
+              <div class="sc-icon" style="background:rgba(124,58,237,.1)"><i data-icon="lock"></i></div>
+              <div>
+                <div class="sc-title">Session & Authentication</div>
+                <div class="sc-sub">JWT token lifetime and login policy</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Session Timeout
+                    <span class="session-live" id="session-live-badge">⏱ —</span>
+                  </div>
+                  <div class="setting-hint">How long a user stays logged in after signing in (1–168 hours)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-session_timeout_hours',-1)">−</button>
+                    <input class="num-input" type="number" id="s-session_timeout_hours" min="1" max="168" oninput="markDirty();updateSessionBadge()">
+                    <span class="num-unit">hr</span>
+                    <button class="num-btn" onclick="nudge('s-session_timeout_hours',1)">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Remember Me Duration</div>
+                  <div class="setting-hint">How long "Remember Me" sessions last (1–90 days)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-remember_me_days',-1)">−</button>
+                    <input class="num-input" type="number" id="s-remember_me_days" min="1" max="90" oninput="markDirty()">
+                    <span class="num-unit">days</span>
+                    <button class="num-btn" onclick="nudge('s-remember_me_days',1)">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Max Login Attempts</div>
+                  <div class="setting-hint">Failed attempts before IP is temporarily blocked (3–20)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-max_login_attempts',-1)">−</button>
+                    <input class="num-input" type="number" id="s-max_login_attempts" min="3" max="20" oninput="markDirty()">
+                    <span class="num-unit">tries</span>
+                    <button class="num-btn" onclick="nudge('s-max_login_attempts',1)">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Lockout Duration</div>
+                  <div class="setting-hint">Minutes to block IP after exceeding max attempts (5–1440)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-lockout_minutes',-5)">−</button>
+                    <input class="num-input" type="number" id="s-lockout_minutes" min="5" max="1440" oninput="markDirty()">
+                    <span class="num-unit">min</span>
+                    <button class="num-btn" onclick="nudge('s-lockout_minutes',5)">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Password Policy ─────────────────────────── -->
+          <div class="settings-card">
+            <div class="sc-head">
+              <div class="sc-icon" style="background:rgba(239,68,68,.1)"><i data-icon="key"></i></div>
+              <div>
+                <div class="sc-title">Password Policy</div>
+                <div class="sc-sub">Expiry, reuse prevention, rotation</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Password Expiry</div>
+                  <div class="setting-hint">Days before password must be changed (7–365). Users are prompted on next login.</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-password_expiry_days',-10)">−</button>
+                    <input class="num-input" type="number" id="s-password_expiry_days" min="7" max="365" oninput="markDirty()">
+                    <span class="num-unit">days</span>
+                    <button class="num-btn" onclick="nudge('s-password_expiry_days',10)">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Password History</div>
+                  <div class="setting-hint">Number of previous passwords that cannot be reused (1–20)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-password_history_count',-1)">−</button>
+                    <input class="num-input" type="number" id="s-password_history_count" min="1" max="20" oninput="markDirty()">
+                    <span class="num-unit">prev</span>
+                    <button class="num-btn" onclick="nudge('s-password_history_count',1)">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── API Rate Limiting ───────────────────────── -->
+          <div class="settings-card">
+            <div class="sc-head">
+              <div class="sc-icon" style="background:rgba(59,130,246,.1)"><i data-icon="circle"></i></div>
+              <div>
+                <div class="sc-title">API Rate Limiting</div>
+                <div class="sc-sub">ป้องกัน spam และ abuse per-user</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Max Requests per Window</div>
+                  <div class="setting-hint">จำนวน request สูงสุดต่อ user ต่อ endpoint group (board, comments, upload) ภายใน window ที่กำหนด</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-api_rate_limit_requests',-10)">−</button>
+                    <input class="num-input" type="number" id="s-api_rate_limit_requests" min="10" max="1000" oninput="markDirty()">
+                    <span class="num-unit">req</span>
+                    <button class="num-btn" onclick="nudge('s-api_rate_limit_requests',10)">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Window Duration</div>
+                  <div class="setting-hint">ระยะเวลาของ window สำหรับนับ request (10–3600 วินาที)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-api_rate_limit_window_seconds',-10)">−</button>
+                    <input class="num-input" type="number" id="s-api_rate_limit_window_seconds" min="10" max="3600" oninput="markDirty()">
+                    <span class="num-unit">sec</span>
+                    <button class="num-btn" onclick="nudge('s-api_rate_limit_window_seconds',10)">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Content & Trash ─────────────────────────── -->
+          <div class="settings-card">
+            <div class="sc-head">
+              <div class="sc-icon" style="background:rgba(168,85,247,.1)"><i data-icon="trash"></i></div>
+              <div>
+                <div class="sc-title">Content Settings</div>
+                <div class="sc-sub">Soft delete, Markdown, การจัดการเนื้อหา</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Trash Retention</div>
+                  <div class="setting-hint">จำนวนวันที่เก็บโพสต์/comment ที่ถูกลบไว้ใน Trash ก่อนลบถาวร (1–365 วัน)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-trash_retention_days',-5)">−</button>
+                    <input class="num-input" type="number" id="s-trash_retention_days" min="1" max="365" oninput="markDirty()">
+                    <span class="num-unit">days</span>
+                    <button class="num-btn" onclick="nudge('s-trash_retention_days',5)">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Enable Markdown</div>
+                  <div class="setting-hint">อนุญาตให้ใช้ Markdown formatting ในโพสต์และ comment (bold, code, lists, links)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                    <input type="checkbox" id="s-enable_markdown" onchange="markDirty()" style="width:16px;height:16px;accent-color:var(--orange)">
+                    <span style="font-size:11px;color:var(--text-muted)">Enable</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Google Chat Webhooks ────────────────────── -->
+          <div class="settings-card">
+            <div class="sc-head">
+              <div class="sc-icon" style="background:rgba(66,133,244,.1)"><i data-icon="message-circle"></i></div>
+              <div>
+                <div class="sc-title">Google Chat Webhooks</div>
+                <div class="sc-sub">URL ปลายทางสำหรับส่งการ์ดแจ้งเตือน — 1 URL ต่อบรรทัด</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:6px">
+                <div class="setting-info" style="width:100%">
+                  <div class="setting-label"><i data-icon="megaphone"></i> Email Noti Broadcast (default)</div>
+                  <div class="setting-hint">ใช้เป็นค่าเริ่มต้นในหน้า Email Noti เมื่อ admin เปิดโหมด "ส่ง Google Chat ควบคู่" — override ได้รายครั้ง</div>
+                </div>
+                <textarea id="s-email_noti_chat_webhooks" class="form-control" rows="3"
+                          placeholder="https://chat.googleapis.com/v1/spaces/.../messages?key=...&token=..."
+                          style="font-family:monospace;font-size:11px;line-height:1.6;resize:vertical"
+                          oninput="markDirty()"></textarea>
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:6px">
+                <div class="setting-info" style="width:100%">
+                  <div class="setting-label"><i data-icon="bell"></i> Exam Reminder (default)</div>
+                  <div class="setting-hint">ใช้เป็นค่าเริ่มต้นในหน้า Exam Reminder — override ได้รายครั้ง</div>
+                </div>
+                <textarea id="s-exam_reminder_chat_webhooks" class="form-control" rows="3"
+                          placeholder="https://chat.googleapis.com/v1/spaces/.../messages?key=...&token=..."
+                          style="font-family:monospace;font-size:11px;line-height:1.6;resize:vertical"
+                          oninput="markDirty()"></textarea>
+              </div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:8px;line-height:1.6">
+                <i data-icon="alert-triangle"></i> เก็บเฉพาะ URL ที่ขึ้นต้นด้วย <code>https://chat.googleapis.com/</code> เท่านั้น — URL อื่นจะถูกกรองออกอัตโนมัติ
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Current Config Summary ──────────────────── -->
+          <div class="settings-card">
+            <div class="sc-head">
+              <div class="sc-icon" style="background:rgba(34,197,94,.1)"><i data-icon="clipboard"></i></div>
+              <div>
+                <div class="sc-title">Active Policy Summary</div>
+                <div class="sc-sub">Current configuration at a glance</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div id="policy-summary" style="display:flex;flex-direction:column;gap:10px">
+                <!-- Populated by JS -->
+              </div>
+              <div class="sc-divider"></div>
+              <div style="font-size:10.5px;color:var(--text-muted);line-height:1.6">
+                <i data-icon="alert-triangle"></i> Changing <strong>Session Timeout</strong> takes effect on next login.<br>
+                <i data-icon="alert-triangle"></i> Changing <strong>Password Expiry</strong> applies to all users immediately.
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /settings-grid -->
+
+        <!-- Save bar -->
+        <div class="save-bar">
+          <div class="save-bar-hint">
+            <span class="save-bar-dot" id="dirty-dot"></span>
+            <span id="dirty-label">All changes saved</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-ghost btn-sm" onclick="loadSettings()">↺ Reset</button>
+            <button class="btn btn-primary" id="save-btn2" onclick="saveSettings()">
+              <span id="save-text2">Save Changes</span>
+              <span id="save-spin2" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /settings-content -->
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/system-settings/system-settings.js"></script>
+
+</body>
+</html>

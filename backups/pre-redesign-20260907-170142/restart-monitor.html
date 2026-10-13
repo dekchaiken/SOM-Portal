@@ -1,0 +1,4563 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EKS Restart Monitor — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <style>
+    /* ──────────────────────────────────────────────────────────────
+       Theme refresh — blocks.so / shadcn-inspired palette
+       Scoped to .rm-wrap so the rest of the app keeps its theme.
+       ────────────────────────────────────────────────────────────── */
+    .rm-wrap {
+      /* Light-mode palette (zinc family, near-neutral) */
+      --bg-card:       #ffffff;
+      --border:        #e4e4e7;   /* zinc-200  */
+      --text:          #09090b;   /* zinc-950  */
+      --text-muted:    #71717a;   /* zinc-500  */
+
+      /* Local tokens reused below */
+      --rm-bg-subtle:  #fafafa;
+      --rm-hover:      rgba(9,9,11,.04);
+      --rm-r-card:     12px;
+      --rm-r-input:    8px;
+      --rm-r-tag:      6px;
+      --rm-shadow:     0 1px 2px rgba(9,9,11,.04);
+
+      /* Severity (slightly desaturated to match shadcn’s flatter look) */
+      --rm-c-crit:     #dc2626;
+      --rm-c-warn:     #d97706;
+      --rm-c-info:     #71717a;
+      --rm-c-oom:      #9333ea;
+      --rm-c-ok:       #16a34a;
+    }
+    html[data-theme="dark"] .rm-wrap {
+      --bg-card:       #0a0a0a;   /* near-black surface */
+      --border:        #27272a;   /* zinc-800 */
+      --text:          #fafafa;   /* zinc-50  */
+      --text-muted:    #a1a1aa;   /* zinc-400 */
+      --rm-bg-subtle:  #18181b;   /* zinc-900 */
+      --rm-hover:      rgba(255,255,255,.05);
+      --rm-shadow:     none;
+
+      --rm-c-crit:     #f87171;
+      --rm-c-warn:     #fbbf24;
+      --rm-c-info:     #a1a1aa;
+      --rm-c-oom:      #c084fc;
+      --rm-c-ok:       #4ade80;
+    }
+
+    /* Round larger surfaces a touch more; lift slightly in light mode */
+    .rm-wrap .rm-card,
+    .rm-wrap .rm-kpi-strip,
+    .rm-wrap .rm-mo-kpi,
+    .rm-wrap .rm-stat-grid { border-radius: var(--rm-r-card); box-shadow: var(--rm-shadow); }
+
+    /* Inputs / buttons / pills share one radius */
+    .rm-wrap .rm-tab-btn,
+    .rm-wrap .rm-day-select,
+    .rm-wrap .rm-day-date,
+    .rm-wrap .rm-mo-btn,
+    .rm-wrap .rm-mo-add input,
+    .rm-wrap .rm-nav-btn,
+    .rm-wrap .rm-link-list li { border-radius: var(--rm-r-input); }
+
+    .rm-wrap .rm-tag,
+    .rm-wrap .rm-mo-chip { border-radius: var(--rm-r-tag); }
+
+    /* Theme-aware hover that works in both modes */
+    .rm-wrap .rm-table tbody tr.clickable:hover,
+    .rm-wrap .rm-link-list li:hover,
+    .rm-wrap .rm-tab-btn:hover { background: var(--rm-hover); }
+
+    /* Tighter tracking + tabular figures on the big numbers */
+    .rm-wrap .rm-kpi-val,
+    .rm-wrap .rm-summary-total,
+    .rm-wrap .rm-mo-kpi-val,
+    .rm-wrap .rm-stat-grid .val,
+    .rm-wrap .rm-stat-row .val {
+      letter-spacing: -.025em;
+      font-feature-settings: 'tnum' 1, 'cv11' 1;
+    }
+
+    /* Severity colors route through tokens so dark/light shift cleanly */
+    .rm-wrap .rm-num-crit,
+    .rm-wrap .rm-day-overview .stat .val.crit,
+    .rm-wrap .rm-mo-kpi-val.crit              { color: var(--rm-c-crit); }
+    .rm-wrap .rm-num-warn,
+    .rm-wrap .rm-day-overview .stat .val.warn { color: var(--rm-c-warn); }
+    .rm-wrap .rm-num-oom,
+    .rm-wrap .rm-day-overview .stat .val.oom  { color: var(--rm-c-oom); }
+    .rm-wrap .rm-mo-kpi-sub.up                { color: var(--rm-c-crit); }
+    .rm-wrap .rm-mo-kpi-sub.down              { color: var(--rm-c-ok); }
+
+    /* Tag backgrounds derived from the same tokens (color-mix is widely
+       supported now — falls back to readable text-only on older browsers) */
+    .rm-wrap .rm-tag.crit { background: color-mix(in srgb, var(--rm-c-crit) 12%, transparent); color: var(--rm-c-crit); }
+    .rm-wrap .rm-tag.warn { background: color-mix(in srgb, var(--rm-c-warn) 12%, transparent); color: var(--rm-c-warn); }
+    .rm-wrap .rm-tag.info { background: color-mix(in srgb, var(--rm-c-info) 14%, transparent); color: var(--text-muted); }
+    .rm-wrap .rm-tag.oom  { background: color-mix(in srgb, var(--rm-c-oom)  12%, transparent); color: var(--rm-c-oom); }
+    .rm-wrap .rm-tag.done { background: color-mix(in srgb, var(--rm-c-ok)   12%, transparent); color: var(--rm-c-ok); }
+    .rm-wrap .rm-tag.err  { background: color-mix(in srgb, var(--rm-c-crit) 12%, transparent); color: var(--rm-c-crit); }
+
+    /* Section title — quieter, looser tracking (shadcn-ish) */
+    .rm-wrap .rm-section-title {
+      font-size: 11px;
+      letter-spacing: .04em;
+      font-weight: 600;
+    }
+
+    /* Day pill: monochrome filled active (shadcn primary button vibe) */
+    .rm-wrap .rm-day-pill { padding: 6px 14px; }
+    .rm-wrap .rm-day-pill.active {
+      border-color: var(--text);
+      background: var(--text);
+      color: var(--bg-card);
+    }
+
+    /* ── Runway sub-tab bar (per-ORG splitter inside Analyzed / Raw) ────── */
+    .rm-runway-bar {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding: 6px;
+      background: var(--rm-bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .rm-runway-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: -.005em;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color .12s, background .12s, border-color .12s, box-shadow .12s;
+      font-family: inherit;
+    }
+    .rm-runway-btn:hover { color: var(--text); background: var(--rm-hover); }
+    .rm-runway-btn.active {
+      background: var(--bg-card);
+      border-color: var(--border);
+      color: var(--text);
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    .rm-rw-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      display: inline-block;
+    }
+    .rm-rw-dot.rw-tmn  { background: #3b82f6; }
+    .rm-rw-dot.rw-nano { background: #a855f7; }
+    .rm-rw-dot.rw-ocp  { background: #14b8a6; }
+    .rm-runway-hint {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+      padding-right: 8px;
+    }
+
+    /* ── Month filter bar (blocks.so-style segmented tabs) ────────── */
+    .rm-month-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 20px;
+      flex-wrap: wrap;
+    }
+    .rm-month-bar-lbl {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .rm-month-tabs {
+      display: inline-flex;
+      gap: 4px;
+      background: var(--rm-bg-subtle);
+      padding: 4px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      flex-wrap: wrap;
+    }
+    .rm-month-tab {
+      padding: 5px 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color .12s, background .12s, border-color .12s, box-shadow .12s;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      letter-spacing: -.005em;
+    }
+    .rm-month-tab:hover {
+      color: var(--text);
+      background: var(--rm-hover);
+    }
+    .rm-month-tab.active {
+      background: var(--bg-card);
+      border-color: var(--border);
+      color: var(--text);
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    .rm-month-tab .cnt {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+      opacity: .8;
+      font-variant-numeric: tabular-nums;
+    }
+    .rm-month-tab.active .cnt { opacity: 1; }
+
+    /* ── Custom-range panel that opens below the preset pills ─── */
+    .rm-period-custom {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 0 0 0;
+      padding: 8px 10px;
+      background: var(--rm-bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      flex-wrap: wrap;
+    }
+    .rm-period-custom .rm-range-sep {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+    .rm-period-custom-label {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      letter-spacing: .04em;
+      margin-right: 4px;
+    }
+    .rm-period-badge {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      margin-left: 4px;
+    }
+    .rm-period-badge b { color: var(--text); font-weight: 600; }
+    /* Highlight the "กำหนดเอง" pill when the custom panel is open */
+    .rm-month-tab[data-preset="custom"].active { padding-right: 10px; }
+
+    /* ── Pods view toggle (รวมช่วง / รายวัน) ────────────────── */
+    .rm-view-toggle {
+      display: inline-flex;
+      gap: 2px;
+      padding: 3px;
+      background: var(--rm-bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+    }
+    .rm-view-toggle button {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: 0;
+      text-transform: none;
+      transition: color .12s, background .12s, border-color .12s;
+    }
+    .rm-view-toggle button:hover { color: var(--text); }
+    .rm-view-toggle button.active {
+      background: var(--bg-card);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .rm-view-toggle button:disabled {
+      opacity: .35;
+      cursor: not-allowed;
+      background: transparent;
+      border-color: transparent;
+    }
+
+    /* ── Service filter combobox ─────────────────────────────── */
+    .rm-svc-combo {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+    }
+    .rm-svc-combo input {
+      font-family: inherit;
+      font-size: 11.5px;
+      padding: 5px 26px 5px 10px;
+      background: var(--rm-bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      min-width: 220px;
+      outline: none;
+      transition: border-color .12s, background .12s;
+    }
+    .rm-svc-combo input:focus {
+      border-color: var(--accent, #3b82f6);
+      background: var(--bg-card);
+    }
+    .rm-svc-combo input::placeholder {
+      color: var(--text-muted);
+      opacity: .8;
+    }
+    .rm-svc-clear {
+      position: absolute;
+      right: 5px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      border: 0;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0;
+      border-radius: 4px;
+      display: none;
+    }
+    .rm-svc-clear:hover { color: var(--text); background: rgba(255,255,255,.08); }
+    .rm-svc-combo.has-value .rm-svc-clear { display: inline-flex; align-items: center; justify-content: center; }
+    .rm-svc-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      min-width: 100%;
+      max-width: 380px;
+      max-height: 300px;
+      overflow-y: auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.28);
+      z-index: 40;
+      padding: 4px;
+    }
+    .rm-svc-dropdown-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 10px;
+      font-size: 11.5px;
+      color: var(--text);
+      cursor: pointer;
+      border-radius: 5px;
+      font-family: ui-monospace, Menlo, monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .rm-svc-dropdown-item:hover,
+    .rm-svc-dropdown-item.active { background: rgba(59,130,246,.12); }
+    .rm-svc-dropdown-item .cnt {
+      color: var(--text-muted);
+      font-size: 10.5px;
+      font-family: inherit;
+      flex-shrink: 0;
+    }
+    .rm-svc-dropdown-empty {
+      padding: 10px 12px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* ── Layout ───────────────────────────────────────────────── */
+    .rm-wrap {
+      margin: 0 auto;
+      width: 100%;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Section header ───────────────────────────────────────── */
+    .rm-section-title {
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 0 0 10px 2px;
+    }
+
+    /* ── KPI strip (minimal, no borders, just typography) ─────── */
+    .rm-kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 32px;
+    }
+    .rm-kpi-cell {
+      padding: 16px 20px;
+      border-right: 1px solid var(--border);
+    }
+    .rm-kpi-cell:last-child { border-right: 0; }
+    .rm-kpi-label {
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: .04em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .rm-kpi-val {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      line-height: 1;
+      color: var(--text);
+    }
+    .rm-kpi-val.muted { color: var(--text-muted); }
+    .rm-kpi-delta {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ── Table ─────────────────────────────────────────────────── */
+    .rm-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .rm-table thead th {
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+    }
+    .rm-table thead th.num { text-align: right; }
+    .rm-table tbody td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .rm-table tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .rm-table tbody td.muted { color: var(--text-muted); }
+    .rm-table tbody tr:last-child td { border-bottom: 0; }
+    .rm-table tbody tr.clickable { cursor: pointer; transition: background .12s; }
+    .rm-table tbody tr.clickable:hover { background: rgba(255,255,255,.025); }
+
+    /* numbers in cells with severity */
+    .rm-num-crit { color: #ef4444; font-weight: 600; }
+    .rm-num-warn { color: #f59e0b; font-weight: 600; }
+    .rm-num-oom  { color: #a855f7; font-weight: 600; }
+    .rm-num-zero { color: var(--text-muted); }
+
+    /* ── Card shell (matches uptime, but quieter) ──────────────── */
+    .rm-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .rm-card-head {
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .rm-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -.005em;
+      color: var(--text);
+    }
+    .rm-card-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ── Empty state ──────────────────────────────────────────── */
+    .rm-empty {
+      padding: 48px 20px;
+      text-align: center;
+    }
+    .rm-empty-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .rm-empty-sub {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    /* ── Badges (very subtle) ─────────────────────────────────── */
+    .rm-tag {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: 0;
+      vertical-align: middle;
+    }
+    .rm-tag.crit { background: rgba(239,68,68,.10); color: #ef4444; }
+    .rm-tag.warn { background: rgba(245,158,11,.10); color: #f59e0b; }
+    .rm-tag.info { background: rgba(156,163,175,.10); color: var(--text-muted); }
+    .rm-tag.oom  { background: rgba(168,85,247,.10); color: #a855f7; }
+    .rm-tag.err  { background: rgba(244,63,94,.10);  color: #fb7185; }
+    .rm-tag.done { background: rgba(34,197,94,.10);  color: #22c55e; }
+
+    /* ── Memory cell ──────────────────────────────────────────── */
+    .rm-mem {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+    .rm-mem-bar {
+      width: 60px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .rm-mem-bar > i {
+      display: block;
+      height: 100%;
+      background: var(--text-muted);
+      transition: width .3s;
+    }
+    .rm-mem-bar > i.warn { background: #f59e0b; }
+    .rm-mem-bar > i.crit { background: #ef4444; }
+
+    /* ── Mono pod name ────────────────────────────────────────── */
+    .rm-pod {
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+      font-size: 11.5px;
+    }
+
+    /* ── Modal sizing (uses shared .modal-overlay / .modal classes) ── */
+    .modal-xl { max-width: min(1380px, 96vw); }
+    #detail-modal .modal-body { max-height: 70vh; overflow-y: auto; padding: 0; }
+    #detail-modal .modal-title { font-weight: 700; font-size: 14px; }
+    #detail-sub {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Inner sections inside modal — match modal-header padding (24px sides) */
+    .rm-section {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .rm-section:last-child { border-bottom: 0; }
+    .rm-section-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* Summary layout — Total | By severity | By reason */
+    .rm-summary-grid {
+      display: grid;
+      grid-template-columns: auto 1fr 1fr;
+      gap: 0;
+      align-items: stretch;
+    }
+    .rm-summary-cell {
+      padding: 14px 24px 14px 0;
+      border-right: 1px solid var(--border);
+    }
+    .rm-summary-cell:first-child { padding-left: 0; min-width: 110px; }
+    .rm-summary-cell:not(:first-child) { padding-left: 24px; }
+    .rm-summary-cell:last-child { border-right: 0; padding-right: 0; }
+    .rm-summary-cell-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .rm-summary-total {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      color: var(--text);
+    }
+    .rm-summary-total + .rm-summary-sub {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .rm-stat-row {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .rm-stat-row > div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .rm-stat-row .lbl {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .rm-stat-row .lbl::before {
+      content: '';
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text-muted);
+    }
+    .rm-stat-row .lbl.crit::before { background: #ef4444; }
+    .rm-stat-row .lbl.warn::before { background: #f59e0b; }
+    .rm-stat-row .lbl.info::before { background: #94a3b8; }
+    .rm-stat-row .lbl.oom::before  { background: #a855f7; }
+    .rm-stat-row .lbl.err::before  { background: #fb7185; }
+    .rm-stat-row .lbl.done::before { background: #22c55e; }
+    .rm-stat-row .val {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -.01em;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+    .rm-stat-row .val.zero { color: var(--text-muted); font-weight: 500; }
+
+    /* Glossary (legend) section */
+    .rm-glossary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px 24px;
+    }
+    .rm-glossary-col h4 {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 0 0 8px;
+    }
+    .rm-glossary-col dl { margin: 0; }
+    .rm-glossary-col dt {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .rm-glossary-col dt::before {
+      content: '';
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text-muted);
+    }
+    .rm-glossary-col dt.crit::before { background: #ef4444; }
+    .rm-glossary-col dt.warn::before { background: #f59e0b; }
+    .rm-glossary-col dt.info::before { background: #94a3b8; }
+    .rm-glossary-col dt.oom::before  { background: #a855f7; }
+    .rm-glossary-col dt.err::before  { background: #fb7185; }
+    .rm-glossary-col dt.done::before { background: #22c55e; }
+    .rm-glossary-col dd {
+      margin: 2px 0 0 12px;
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 720px) {
+      .rm-summary-grid { grid-template-columns: 1fr; }
+      .rm-summary-cell {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+        padding: 14px 0 !important;
+      }
+      .rm-summary-cell:last-child { border-bottom: 0; }
+      .rm-glossary-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Date toolbar ────────────────────────────────────── */
+    .rm-day-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .rm-day-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .rm-nav-btn {
+      width: 28px; height: 28px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all .12s;
+      font-family: inherit;
+      padding: 0;
+    }
+    .rm-nav-btn:hover:not(:disabled) {
+      border-color: var(--text-muted);
+      color: var(--text);
+    }
+    .rm-nav-btn:disabled {
+      opacity: .35;
+      cursor: not-allowed;
+    }
+    .rm-day-select {
+      height: 28px;
+      padding: 0 10px;
+      font-size: 12px;
+      font-family: inherit;
+      font-variant-numeric: tabular-nums;
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      min-width: 140px;
+    }
+    .rm-day-select:hover { border-color: var(--text-muted); }
+    .rm-day-date {
+      height: 28px;
+      padding: 0 8px;
+      font-size: 12px;
+      font-family: inherit;
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .rm-day-recent {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+      min-width: 200px;
+    }
+    .rm-day-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .rm-day-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: transparent;
+      font-size: 11.5px;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all .15s;
+      font-family: inherit;
+    }
+    .rm-day-pill:hover {
+      border-color: var(--text-muted);
+      color: var(--text);
+    }
+    .rm-day-pill.active {
+      border-color: var(--text);
+      background: var(--text);
+      color: var(--bg-card);
+      font-weight: 600;
+    }
+    .rm-day-pill .badge {
+      display: inline-block;
+      min-width: 16px;
+      padding: 1px 5px;
+      border-radius: 6px;
+      font-size: 10px;
+      background: rgba(239,68,68,.15);
+      color: #ef4444;
+      font-weight: 700;
+    }
+    .rm-day-pill.active .badge {
+      background: rgba(255,255,255,.18);
+      color: inherit;
+    }
+
+    /* Full pods table — scrollable horizontally if needed */
+    .rm-table-scroll { overflow-x: auto; }
+    .rm-table-scroll .rm-table { min-width: 1080px; }
+    .rm-table.compact thead th { padding: 9px 10px; font-size: 10px; }
+    .rm-table.compact tbody td { padding: 10px; font-size: 12px; }
+    .rm-table.compact tbody td.num { white-space: nowrap; }
+    .rm-table.compact .rm-pod { font-size: 11px; word-break: break-all; }
+
+    /* Inline day summary inside its card */
+    .rm-day-overview {
+      padding: 14px 18px;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .rm-day-overview .meta { font-size: 11.5px; color: var(--text-muted); }
+    .rm-day-overview .meta b { color: var(--text); font-weight: 600; }
+    .rm-day-overview .stat {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12px;
+    }
+    .rm-day-overview .stat .lbl { color: var(--text-muted); }
+    .rm-day-overview .stat .val { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .rm-day-overview .stat .val.crit { color: #ef4444; }
+    .rm-day-overview .stat .val.warn { color: #f59e0b; }
+    .rm-day-overview .stat .val.oom  { color: #a855f7; }
+
+    /* ─── Pod detail view (drill-down inside modal) ─────────── */
+    .rm-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      background: none;
+      border: 0;
+      cursor: pointer;
+      padding: 0;
+      margin-bottom: 8px;
+    }
+    .rm-back:hover { color: var(--text); }
+    .rm-back::before { content: '←'; font-size: 14px; }
+
+    .rm-pod-title {
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+      font-size: 13px;
+      font-weight: 700;
+      word-break: break-all;
+      line-height: 1.4;
+    }
+    .rm-pod-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .rm-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .rm-stat-grid > div {
+      padding: 12px 14px;
+      border-right: 1px solid var(--border);
+    }
+    .rm-stat-grid > div:last-child { border-right: 0; }
+    .rm-stat-grid .lbl {
+      font-size: 10px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .rm-stat-grid .val {
+      font-size: 16px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.01em;
+    }
+    .rm-stat-grid .sub {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Big memory bar inside pod detail */
+    .rm-mem-big {
+      margin-top: 6px;
+    }
+    .rm-mem-big-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .rm-mem-big-bar > i {
+      display: block;
+      height: 100%;
+      background: var(--text-muted);
+      transition: width .4s;
+    }
+    .rm-mem-big-bar > i.warn { background: #f59e0b; }
+    .rm-mem-big-bar > i.crit { background: #ef4444; }
+    .rm-mem-big-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* External links list */
+    .rm-link-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 6px;
+    }
+    .rm-link-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      transition: border-color .15s, background .15s;
+    }
+    .rm-link-list li:hover {
+      border-color: var(--text-muted);
+      background: rgba(127,127,127,.04);
+    }
+    .rm-link-list .name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .rm-link-list .desc {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+    .rm-link-list a {
+      color: #3b82f6;
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+    .rm-link-list a:hover { text-decoration: underline; }
+    .rm-link-list a::after { content: '↗'; font-size: 10px; }
+
+    /* Modal table — edge to edge with header padding alignment (24px) */
+    #detail-modal .rm-table thead th:first-child,
+    #detail-modal .rm-table tbody td:first-child { padding-left: 24px; }
+    #detail-modal .rm-table thead th:last-child,
+    #detail-modal .rm-table tbody td:last-child { padding-right: 24px; }
+
+    /* Recommendations — same rhythm as the rest */
+    .rm-rec-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .rm-rec-list li {
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--text);
+      padding-left: 12px;
+      border-left: 2px solid var(--border);
+    }
+    .rm-rec-list li.crit { border-left-color: #ef4444; }
+    .rm-rec-list li code {
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .rm-rec-list li .why {
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    @media (max-width: 768px) {
+      .rm-kpi-strip { grid-template-columns: repeat(2, 1fr); }
+      .rm-kpi-cell { border-right: 0; border-bottom: 1px solid var(--border); }
+      .rm-kpi-cell:nth-child(2n) { border-right: 0; }
+      .rm-kpi-cell:nth-last-child(-n+2) { border-bottom: 0; }
+    }
+
+    /* ── Tab bar ───────────────────────────────────────────────── */
+    .rm-tabs-bar {
+      display: flex;
+      gap: 4px;
+      padding-bottom: 20px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .rm-tab-btn {
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color .12s, background .12s, border-color .12s;
+      letter-spacing: .01em;
+    }
+    .rm-tab-btn:hover { color: var(--text); background: rgba(255,255,255,.05); }
+    .rm-tab-btn.active {
+      background: var(--bg-card);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .rm-tab-badge {
+      display: inline-block;
+      font-size: 10px;
+      background: rgba(239,68,68,.18);
+      color: #ef4444;
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: 5px;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+    .rm-tab-badge:empty { display: none; }
+
+    /* ── Monthly tab ─────────────────────────────────────────── */
+    .rm-month-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .rm-month-toolbar .rm-day-select { min-width: 180px; }
+    .rm-mo-kpi {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .rm-mo-kpi-cell {
+      padding: 16px 20px;
+      border-right: 1px solid var(--border);
+    }
+    .rm-mo-kpi-cell:last-child { border-right: 0; }
+    .rm-mo-kpi-lbl {
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: .04em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .rm-mo-kpi-val {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      line-height: 1;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .rm-mo-kpi-val.crit { color: #ef4444; }
+    .rm-mo-kpi-val.small { font-size: 16px; }
+    .rm-mo-kpi-sub {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .rm-mo-kpi-sub.up { color: #ef4444; }
+    .rm-mo-kpi-sub.down { color: #22c55e; }
+    .rm-mo-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 760px) {
+      .rm-mo-kpi { grid-template-columns: repeat(2, 1fr); }
+      .rm-mo-kpi-cell:nth-child(2) { border-right: 0; }
+      .rm-mo-grid-2 { grid-template-columns: 1fr; }
+    }
+    .rm-mo-card-body { padding: 14px 18px; }
+    .rm-mo-chart-wrap { position: relative; width: 100%; height: 220px; margin-top: 8px; }
+    .rm-mo-chart-wrap.donut { height: 180px; }
+    .rm-mo-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+    .rm-mo-legend .sw {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 2px;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    .rm-mo-ns-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .rm-mo-ns-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .rm-mo-ns-bar > i {
+      display: block;
+      height: 100%;
+      background: #3266ad;
+    }
+
+    /* Recipients chips */
+    .rm-mo-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .rm-mo-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 11.5px;
+      color: var(--text);
+    }
+    .rm-mo-chip button {
+      background: none;
+      border: 0;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0;
+      font-size: 13px;
+      line-height: 1;
+    }
+    .rm-mo-chip button:hover { color: #ef4444; }
+    .rm-mo-add {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .rm-mo-add input {
+      height: 26px;
+      padding: 0 8px;
+      font-size: 11.5px;
+      font-family: inherit;
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      min-width: 220px;
+    }
+    .rm-mo-btn {
+      height: 28px;
+      padding: 0 12px;
+      font-size: 12px;
+      font-family: inherit;
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .rm-mo-btn:hover { border-color: var(--text-muted); }
+    .rm-mo-btn.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+    .rm-mo-btn.primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+    .rm-mo-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .rm-mo-auto-pill {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 8px;
+      background: rgba(37,99,235,.12);
+      color: #60a5fa;
+      border-radius: 10px;
+      letter-spacing: .02em;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">EKS Restart Monitor</div>
+        <div class="page-sub">acm-tmn-eks-prod · daily 09:00 ICT</div>
+      </div>
+      <div class="topbar-actions">
+        <span id="last-updated" style="font-size:11px;color:var(--text-muted)"></span>
+        <button class="btn btn-ghost rm-monthly-btn" data-action="write" style="font-size:11px" onclick="openMonthlyModal()">รายงานรายเดือน</button>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="loadReports()">รีเฟรช</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- Tab toggle -->
+      <div class="rm-tabs-bar">
+        <button class="rm-tab-btn active" data-tab="analyzed" onclick="switchTab('analyzed')">
+          Analyzed <span class="rm-tab-badge" id="tab-badge-analyzed"></span>
+        </button>
+        <button class="rm-tab-btn" data-tab="raw" onclick="switchTab('raw')">
+          Raw / Auto <span class="rm-tab-badge" id="tab-badge-raw"></span>
+        </button>
+      </div>
+
+      <!-- ── Tab: Analyzed (Claude data) ── -->
+      <div id="tab-analyzed" class="rm-tab-panel">
+      <div class="rm-wrap">
+
+        <!-- Runway sub-tabs -->
+        <div class="rm-runway-bar" id="analyzed-runway-bar">
+          <button class="rm-runway-btn active" data-rw="EKS TMN"  onclick="switchAnalyzedRunway('EKS TMN')"><span class="rm-rw-dot rw-tmn"></span> EKS TMN</button>
+          <button class="rm-runway-btn"        data-rw="EKS NANO" onclick="switchAnalyzedRunway('EKS NANO')"><span class="rm-rw-dot rw-nano"></span> EKS NANO</button>
+          <button class="rm-runway-btn"        data-rw="OCP"      onclick="switchAnalyzedRunway('OCP')"><span class="rm-rw-dot rw-ocp"></span> OCP</button>
+          <span class="rm-runway-hint" id="analyzed-runway-hint">acm-tmn-eks-prod</span>
+        </div>
+
+        <!-- Period filter (preset pills + custom range panel) -->
+        <div class="rm-month-bar">
+          <span class="rm-month-bar-lbl">ช่วง</span>
+          <div class="rm-month-tabs" id="analyzed-period-tabs">
+            <span style="font-size:11px;color:var(--text-muted);padding:5px 8px">—</span>
+          </div>
+        </div>
+        <div class="rm-period-custom" id="analyzed-period-custom" style="display:none">
+          <span class="rm-period-custom-label">จาก</span>
+          <input type="date" id="analyzed-range-from" class="rm-day-date" onchange="onAnalyzedRangeChange()">
+          <span class="rm-range-sep">—</span>
+          <span class="rm-period-custom-label">ถึง</span>
+          <input type="date" id="analyzed-range-to" class="rm-day-date" onchange="onAnalyzedRangeChange()">
+          <span class="rm-period-badge" id="analyzed-range-badge"></span>
+        </div>
+
+        <!-- KPI Strip -->
+        <div class="rm-section-title">Overview</div>
+        <section class="rm-kpi-strip">
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label" id="kpi-lbl-restarts">Restarts · 7d</div>
+            <div class="rm-kpi-val" id="kpi-7d">—</div>
+          </div>
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label" id="kpi-lbl-crit">Critical · 7d</div>
+            <div class="rm-kpi-val" id="kpi-crit">—</div>
+          </div>
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label" id="kpi-lbl-oom">OOMKilled · 30d</div>
+            <div class="rm-kpi-val" id="kpi-oom">—</div>
+          </div>
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label">Days tracked</div>
+            <div class="rm-kpi-val" id="kpi-days">—</div>
+          </div>
+        </section>
+
+        <!-- Daily reports — date toolbar (scales for 100+ days) -->
+        <div class="rm-section-title" id="daily-reports-title">Daily reports</div>
+        <section class="rm-card" id="daily-reports-card" style="padding:12px 14px">
+          <div class="rm-day-toolbar">
+            <!-- Prev / Date picker / Next -->
+            <div class="rm-day-nav">
+              <button class="rm-nav-btn" id="day-prev" onclick="navigateDay(-1)" title="วันก่อน (←)">←</button>
+              <input
+                type="date"
+                id="day-date-input"
+                class="rm-day-date"
+                onchange="if(this.value)loadDay(this.value)"
+                title="เลือกวันด้วย calendar">
+              <button class="rm-nav-btn" id="day-next" onclick="navigateDay(1)" title="วันถัดไป (→)">→</button>
+              <span id="day-count" style="font-size:10.5px;color:var(--text-muted);margin-left:6px"></span>
+            </div>
+
+            <!-- Recent shortcuts -->
+            <div class="rm-day-recent">
+              <button id="analyzed-sort-btn" onclick="toggleAnalyzedSort()" style="font-size:10.5px;padding:2px 8px;margin-right:6px;background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;color:var(--text-muted);white-space:nowrap;flex-shrink:0" title="สลับเรียงจากเก่า→ใหม่ / ใหม่→เก่า">↓ ใหม่→เก่า</button>
+              <div id="day-pills" class="rm-day-pills">
+                <span style="font-size:11px;color:var(--text-muted)">—</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Day summary -->
+        <div class="rm-section-title" id="selected-day-title" style="margin-top:24px">Selected day</div>
+        <section class="rm-card" id="day-summary-card">
+          <div id="day-summary-body" style="padding:18px;color:var(--text-muted);font-size:12px">เลือกวันที่ด้านบน</div>
+        </section>
+
+        <!-- Pods / Pod detail — swap content in same card -->
+        <div class="rm-section-title" id="pods-title" style="margin-top:24px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span id="pods-title-text">Pods</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="rm-svc-combo" id="analyzed-svc-combo">
+              <input type="text"
+                     id="analyzed-svc-input"
+                     autocomplete="off"
+                     spellcheck="false"
+                     placeholder="🔍 กรอง service…"
+                     oninput="onAnalyzedSvcInput(this.value)"
+                     onfocus="openAnalyzedSvcDropdown()"
+                     onkeydown="onAnalyzedSvcKeydown(event)">
+              <button type="button" class="rm-svc-clear" onclick="clearAnalyzedSvcFilter()" title="ล้าง filter">×</button>
+              <div class="rm-svc-dropdown" id="analyzed-svc-dropdown" style="display:none"></div>
+            </div>
+            <div class="rm-view-toggle" id="analyzed-view-toggle" style="display:none">
+              <button type="button" data-view="agg" onclick="setAnalyzedRangeView('agg')">รวมช่วง</button>
+              <button type="button" data-view="day" onclick="setAnalyzedRangeView('day')">รายวัน</button>
+            </div>
+            <button id="pod-close-btn"
+                    onclick="closePodDetail()"
+                    style="display:none;background:none;border:1px solid var(--border);color:var(--text-muted);font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer;letter-spacing:0;text-transform:none;font-weight:500"
+                    title="กลับไปดู table (ESC)">
+              ← Back to table
+            </button>
+          </div>
+        </div>
+        <section class="rm-card" id="pods-section-card">
+          <div id="pods-table-wrap"></div>
+          <div id="pod-detail-wrap" style="display:none"></div>
+        </section>
+
+        <p style="font-size:10.5px;color:var(--text-muted);margin-top:24px;text-align:center">
+          Auto-refresh every 5 min · ← → คีย์ลัดเปลี่ยนวัน · ESC ปิด pod detail
+        </p>
+
+      </div>
+      </div><!-- /tab-analyzed -->
+
+      <!-- ── Tab: Raw / Auto (server cron, no AI) ── -->
+      <div id="tab-raw" class="rm-tab-panel" style="display:none">
+      <div class="rm-wrap">
+
+        <!-- Runway sub-tabs -->
+        <div class="rm-runway-bar" id="raw-runway-bar">
+          <button class="rm-runway-btn active" data-rw="EKS TMN"  onclick="switchRawRunway('EKS TMN')"><span class="rm-rw-dot rw-tmn"></span> EKS TMN</button>
+          <button class="rm-runway-btn"        data-rw="EKS NANO" onclick="switchRawRunway('EKS NANO')"><span class="rm-rw-dot rw-nano"></span> EKS NANO</button>
+          <button class="rm-runway-btn"        data-rw="OCP"      onclick="switchRawRunway('OCP')"><span class="rm-rw-dot rw-ocp"></span> OCP</button>
+          <span class="rm-runway-hint" id="raw-runway-hint">acm-tmn-eks-prod</span>
+        </div>
+
+        <!-- Period filter (preset pills + custom range panel) -->
+        <div class="rm-month-bar">
+          <span class="rm-month-bar-lbl">ช่วง</span>
+          <div class="rm-month-tabs" id="raw-period-tabs">
+            <span style="font-size:11px;color:var(--text-muted);padding:5px 8px">—</span>
+          </div>
+        </div>
+        <div class="rm-period-custom" id="raw-period-custom" style="display:none">
+          <span class="rm-period-custom-label">จาก</span>
+          <input type="date" id="raw-range-from" class="rm-day-date" onchange="onRawRangeChange()">
+          <span class="rm-range-sep">—</span>
+          <span class="rm-period-custom-label">ถึง</span>
+          <input type="date" id="raw-range-to" class="rm-day-date" onchange="onRawRangeChange()">
+          <span class="rm-period-badge" id="raw-range-badge"></span>
+        </div>
+
+        <!-- KPI strip -->
+        <div class="rm-section-title">Overview</div>
+        <section class="rm-kpi-strip">
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label" id="raw-kpi-lbl-restarts">Restart events · 7d</div>
+            <div class="rm-kpi-val" id="raw-kpi-restarts">—</div>
+          </div>
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label" id="raw-kpi-lbl-crit">Critical · 7d</div>
+            <div class="rm-kpi-val" id="raw-kpi-crit">—</div>
+          </div>
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label" id="raw-kpi-lbl-oom">OOMKilled · 30d</div>
+            <div class="rm-kpi-val" id="raw-kpi-oom">—</div>
+          </div>
+          <div class="rm-kpi-cell">
+            <div class="rm-kpi-label">Days tracked</div>
+            <div class="rm-kpi-val" id="raw-kpi-days">—</div>
+          </div>
+        </section>
+
+        <!-- Day picker -->
+        <div class="rm-section-title" id="raw-daily-reports-title">Daily reports</div>
+        <section class="rm-card" id="raw-daily-reports-card" style="padding:12px 14px">
+          <div class="rm-day-toolbar">
+            <div class="rm-day-nav">
+              <button class="rm-nav-btn" id="raw-day-prev" onclick="rawNavigateDay(-1)">←</button>
+              <input type="date" id="raw-day-date" class="rm-day-date" onchange="if(this.value)loadRawDay(this.value)">
+              <button class="rm-nav-btn" id="raw-day-next" onclick="rawNavigateDay(1)">→</button>
+              <span id="raw-day-count" style="font-size:10.5px;color:var(--text-muted);margin-left:6px"></span>
+            </div>
+            <div class="rm-day-recent">
+              <button id="raw-sort-btn" onclick="toggleRawSort()" style="font-size:10.5px;padding:2px 8px;margin-right:6px;background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;color:var(--text-muted);white-space:nowrap;flex-shrink:0" title="สลับเรียงจากเก่า→ใหม่ / ใหม่→เก่า">↓ ใหม่→เก่า</button>
+              <div id="raw-day-pills" class="rm-day-pills"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Day summary -->
+        <div class="rm-section-title" id="raw-selected-day-title" style="margin-top:24px">Selected day</div>
+        <section class="rm-card" id="raw-summary-card">
+          <div id="raw-summary-body" style="padding:18px;color:var(--text-muted);font-size:12px">เลือกวันที่ด้านบน</div>
+        </section>
+
+        <!-- Pods table -->
+        <div class="rm-section-title" id="raw-pods-title" style="margin-top:24px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span id="raw-pods-title-text">Pods</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="rm-svc-combo" id="raw-svc-combo">
+              <input type="text"
+                     id="raw-svc-input"
+                     autocomplete="off"
+                     spellcheck="false"
+                     placeholder="🔍 กรอง service…"
+                     oninput="onRawSvcInput(this.value)"
+                     onfocus="openRawSvcDropdown()"
+                     onkeydown="onRawSvcKeydown(event)">
+              <button type="button" class="rm-svc-clear" onclick="clearRawSvcFilter()" title="ล้าง filter">×</button>
+              <div class="rm-svc-dropdown" id="raw-svc-dropdown" style="display:none"></div>
+            </div>
+            <div class="rm-view-toggle" id="raw-view-toggle" style="display:none">
+              <button type="button" data-view="agg" onclick="setRawRangeView('agg')">รวมช่วง</button>
+              <button type="button" data-view="day" onclick="setRawRangeView('day')">รายวัน</button>
+            </div>
+          </div>
+        </div>
+        <section class="rm-card">
+          <div id="raw-pods-table"></div>
+        </section>
+
+        <p style="font-size:10.5px;color:var(--text-muted);margin-top:24px;text-align:center">
+          Source: cron/restart-monitor-fetch.php · runs daily 08:45 ICT · no AI analysis
+        </p>
+
+      </div>
+      </div><!-- /tab-raw -->
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Monthly Report Modal ── -->
+<div id="monthly-modal" class="modal-overlay" onclick="if(event.target===this)closeMonthlyModal()">
+  <div class="modal modal-xl" style="background:var(--bg-card)">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="mo-title">รายงานรายเดือน — Pod Restarts ของ EKS TMN</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Cluster <code id="mo-cluster" style="font-family:monospace">acm-tmn-eks-prod</code></div>
+      </div>
+      <button class="btn-close" onclick="closeMonthlyModal()" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body" style="padding:20px 24px">
+
+      <div class="rm-wrap">
+
+        <!-- Runway sub-tabs -->
+        <div class="rm-runway-bar" id="mo-runway-bar" style="margin-bottom:14px">
+          <button class="rm-runway-btn active" data-rw="EKS TMN"  onclick="switchMonthlyRunway('EKS TMN')"><span class="rm-rw-dot rw-tmn"></span> EKS TMN</button>
+          <button class="rm-runway-btn"        data-rw="EKS NANO" onclick="switchMonthlyRunway('EKS NANO')"><span class="rm-rw-dot rw-nano"></span> EKS NANO</button>
+          <button class="rm-runway-btn"        data-rw="OCP"      onclick="switchMonthlyRunway('OCP')"><span class="rm-rw-dot rw-ocp"></span> OCP</button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="rm-month-toolbar">
+          <span style="font-size:10.5px;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase">เดือน</span>
+          <select id="mo-select" class="rm-day-select" onchange="loadMonthly(this.value)">
+            <option>กำลังโหลด…</option>
+          </select>
+          <button class="rm-mo-btn" id="mo-refresh" onclick="loadMonthly(document.getElementById('mo-select').value)">
+            รีเฟรช
+          </button>
+          <div style="flex:1"></div>
+          <span style="font-size:10.5px;color:var(--text-muted);margin-right:6px">รวม (ทุก runway)</span>
+          <button class="rm-mo-btn" onclick="previewMonthlyEmail()" id="mo-preview-btn" disabled>
+            พรีวิว
+          </button>
+          <button class="rm-mo-btn primary" onclick="sendMonthlyEmail()" id="mo-send-btn" disabled>
+            ส่งอีเมล
+          </button>
+        </div>
+
+        <!-- Empty state -->
+        <div id="mo-empty" class="rm-card" style="display:none">
+          <div class="rm-empty">
+            <div class="rm-empty-title">ยังไม่มีข้อมูลของเดือนนี้</div>
+            <div class="rm-empty-sub">รอข้อมูล daily อย่างน้อย 1 วันก่อน</div>
+          </div>
+        </div>
+
+        <div id="mo-content" style="display:none">
+
+          <!-- KPI strip -->
+          <div class="rm-section-title">ภาพรวม</div>
+          <section class="rm-mo-kpi">
+            <div class="rm-mo-kpi-cell">
+              <div class="rm-mo-kpi-lbl">Restart ทั้งหมด</div>
+              <div class="rm-mo-kpi-val" id="mo-kpi-total">—</div>
+              <div class="rm-mo-kpi-sub" id="mo-kpi-delta">—</div>
+            </div>
+            <div class="rm-mo-kpi-cell">
+              <div class="rm-mo-kpi-lbl">Critical</div>
+              <div class="rm-mo-kpi-val crit" id="mo-kpi-crit">—</div>
+              <div class="rm-mo-kpi-sub" id="mo-kpi-crit-pct">—</div>
+            </div>
+            <div class="rm-mo-kpi-cell">
+              <div class="rm-mo-kpi-lbl">Pod ที่ไม่ซ้ำ</div>
+              <div class="rm-mo-kpi-val" id="mo-kpi-pods">—</div>
+              <div class="rm-mo-kpi-sub" id="mo-kpi-ns">—</div>
+            </div>
+            <div class="rm-mo-kpi-cell">
+              <div class="rm-mo-kpi-lbl">วันที่แย่ที่สุด</div>
+              <div class="rm-mo-kpi-val small" id="mo-kpi-worst">—</div>
+              <div class="rm-mo-kpi-sub" id="mo-kpi-worst-sub">—</div>
+            </div>
+          </section>
+
+          <!-- Daily trend -->
+          <div class="rm-section-title">แนวโน้ม Restart รายวัน</div>
+          <section class="rm-card">
+            <div class="rm-card-head">
+              <div class="rm-card-title">แยกตามความรุนแรง (Stacked)</div>
+              <div class="rm-card-sub">Critical · Warning · Info</div>
+            </div>
+            <div class="rm-mo-card-body">
+              <div class="rm-mo-legend">
+                <span><span class="sw" style="background:#ef4444"></span>Critical <span id="lg-crit" style="color:var(--text);font-weight:600;margin-left:2px">0</span></span>
+                <span><span class="sw" style="background:#f59e0b"></span>Warning <span id="lg-warn" style="color:var(--text);font-weight:600;margin-left:2px">0</span></span>
+                <span><span class="sw" style="background:#94a3b8"></span>Info <span id="lg-info" style="color:var(--text);font-weight:600;margin-left:2px">0</span></span>
+              </div>
+              <div class="rm-mo-chart-wrap">
+                <canvas id="mo-trend" role="img" aria-label="Daily restart trend stacked by severity"></canvas>
+              </div>
+            </div>
+          </section>
+
+          <!-- Reason + Top namespaces -->
+          <div class="rm-mo-grid-2" style="margin-top:24px">
+            <section class="rm-card">
+              <div class="rm-card-head">
+                <div class="rm-card-title">แยกตามสาเหตุ</div>
+              </div>
+              <div class="rm-mo-card-body">
+                <div class="rm-mo-chart-wrap donut">
+                  <canvas id="mo-reason" role="img" aria-label="Donut of restart reasons"></canvas>
+                </div>
+                <div id="mo-reason-legend" class="rm-mo-legend" style="flex-direction:column;gap:6px;margin-top:12px"></div>
+              </div>
+            </section>
+
+            <section class="rm-card">
+              <div class="rm-card-head">
+                <div class="rm-card-title">Namespace อันดับสูงสุด</div>
+              </div>
+              <div class="rm-mo-card-body">
+                <div id="mo-ns-list">
+                  <div style="color:var(--text-muted);font-size:11.5px;padding:8px 0">—</div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Top offenders -->
+          <div class="rm-section-title" style="margin-top:24px">Pod ที่มีปัญหามากที่สุด</div>
+          <section class="rm-card">
+            <div id="mo-pods-wrap">
+              <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:12px">—</div>
+            </div>
+          </section>
+
+          <!-- Email distribution -->
+          <div class="rm-section-title" style="margin-top:24px">การส่งอีเมล</div>
+          <section class="rm-card">
+            <div class="rm-mo-card-body">
+              <div style="font-size:10.5px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">ผู้รับ (To)</div>
+              <div class="rm-mo-chips" id="mo-to-chips">
+                <span style="font-size:11px;color:var(--text-muted)">กำลังโหลด…</span>
+              </div>
+              <div class="rm-mo-add">
+                <input type="email" id="mo-new-to" placeholder="recipient@ascendcorp.com" onkeydown="if(event.key==='Enter')addRecipient('to')">
+                <button class="rm-mo-btn" onclick="addRecipient('to')">+ เพิ่ม To</button>
+              </div>
+
+              <div style="font-size:10.5px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin:18px 0 6px">ผู้รับสำเนา (CC)</div>
+              <div class="rm-mo-chips" id="mo-cc-chips">
+                <span style="font-size:11px;color:var(--text-muted)">—</span>
+              </div>
+              <div class="rm-mo-add">
+                <input type="email" id="mo-new-cc" placeholder="cc@ascendcorp.com" onkeydown="if(event.key==='Enter')addRecipient('cc')">
+                <button class="rm-mo-btn" onclick="addRecipient('cc')">+ เพิ่ม CC</button>
+                <button class="rm-mo-btn primary" onclick="saveRecipients()" id="mo-save-rcpt" style="display:none;margin-left:auto">บันทึก</button>
+                <span id="mo-rcpt-status" style="font-size:10.5px;color:var(--text-muted);margin-left:6px"></span>
+              </div>
+            </div>
+          </section>
+
+          <p style="font-size:10.5px;color:var(--text-muted);margin-top:24px;text-align:center">
+            รวมข้อมูลจากไฟล์ Analyzed JSON รายวัน
+          </p>
+
+        </div><!-- /mo-content -->
+
+      </div><!-- /rm-wrap -->
+
+    </div><!-- /modal-body -->
+  </div><!-- /modal -->
+</div><!-- /monthly-modal -->
+
+<!-- ── Email Preview Modal ── -->
+<div id="email-preview-modal" class="modal-overlay" onclick="if(event.target===this)closeEmailPreview()">
+  <div class="modal modal-xl" style="background:var(--bg-card);display:flex;flex-direction:column;height:min(90vh,calc(100dvh - 40px));max-height:none;overflow:hidden">
+    <div class="modal-header" style="flex-shrink:0">
+      <div>
+        <div class="modal-title">พรีวิวอีเมล</div>
+        <div id="email-preview-subtitle" style="font-size:11px;color:var(--text-muted);margin-top:2px"></div>
+      </div>
+      <button class="btn-close" onclick="closeEmailPreview()" aria-label="Close">×</button>
+    </div>
+    <div style="flex:1;min-height:0;overflow:hidden;padding:0;position:relative">
+      <div id="email-preview-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px">
+        กำลังโหลดพรีวิว…
+      </div>
+      <iframe id="email-preview-frame"
+        style="display:none;position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff"
+        sandbox="allow-same-origin"></iframe>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+  Auth.requireAuth();
+  Layout.render('restart-monitor');
+
+  // ── Read-only mode for non-SM teams ──────────────────────────
+  // Runway config + daily/raw restart data live under data/sm/ (SM-shared).
+  // Non-SM viewers see the same dashboards but must not send emails, edit
+  // recipients, or trigger a Grafana fetch. Backend enforces via
+  // requireSmForShared(); this only hides the UI (matches ma-services.js).
+  function isReadOnlyView() {
+    const user = (Auth && Auth.getUser && Auth.getUser()) || {};
+    if (user.role === 'super_admin') {
+      const ctxTeam = (API && API.getAdminTeam && API.getAdminTeam()) || null;
+      return !!ctxTeam && ctxTeam !== 'sm';
+    }
+    return !!user.team && user.team !== 'sm';
+  }
+  (function applyRestartMonitorReadOnly() {
+    if (!isReadOnlyView()) return;
+    document.body.classList.add('rm-readonly');
+    const style = document.createElement('style');
+    style.textContent = `
+      body.rm-readonly .rm-monthly-btn { display: none !important; }
+      body.rm-readonly .rm-readonly-banner {
+        display: flex; align-items: center; gap: 8px;
+        margin: 0 0 14px;
+        padding: 8px 14px; border-radius: 6px;
+        background: var(--warning-bg, #fff7e6);
+        border: 1px solid var(--warning, #f5a623);
+        color: var(--warning, #a5711a);
+        font-size: 11px; font-weight: 600;
+      }
+    `;
+    document.head.appendChild(style);
+    const banner = document.createElement('div');
+    banner.className = 'rm-readonly-banner';
+    const who = (Auth?.getUser?.()?.team) || (API?.getAdminTeam?.()) || 'your team';
+    banner.textContent = `View-only — Restart Monitor data is managed by the SM team. Team "${who}" cannot send emails or edit recipients.`;
+    const main = document.querySelector('main.page-content');
+    if (main && main.firstChild) main.insertBefore(banner, main.firstChild);
+  })();
+
+  // ── Runway state (per-panel selection) ───────────────────────
+  // Default to EKS TMN since that's where existing data lives.
+  let _analyzedRunway = 'EKS TMN';
+  let _rawRunway      = 'EKS TMN';
+
+  // Slug + cluster hint used for UI labels (kept in sync with grafana-runways.json)
+  const RUNWAY_META = {
+    'EKS TMN':  { slug: 'EKS-TMN',  cluster: 'acm-tmn-eks-prod' },
+    'EKS NANO': { slug: 'EKS-NANO', cluster: 'nano-eks-prod'   },
+    'OCP':      { slug: 'OCP',      cluster: 'ocp (multi-namespace)' },
+  };
+  function rwSlug(name)    { return RUNWAY_META[name]?.slug    || ''; }
+  function rwCluster(name) { return RUNWAY_META[name]?.cluster || ''; }
+  function rwParam(name)   { return name ? ('&runway=' + encodeURIComponent(name)) : ''; }
+
+  function switchAnalyzedRunway(name) {
+    if (_analyzedRunway === name) return;
+    _analyzedRunway = name;
+    _currentDate = null;   // force reload of latest day for new runway
+    _analyzedMonth  = null;
+    _analyzedRange  = null; // dates from a different cluster won't line up
+    _analyzedPreset = null; // let loadReports() pick the latest month
+    resetAnalyzedSvcFilterState();
+    resetAnalyzedRangeInputs();
+    const cp = document.getElementById('analyzed-period-custom');
+    if (cp) cp.style.display = 'none';
+    document.querySelectorAll('#analyzed-runway-bar .rm-runway-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.rw === name));
+    const hint = document.getElementById('analyzed-runway-hint');
+    if (hint) hint.textContent = rwCluster(name);
+    const sub = document.querySelector('.page-sub');
+    if (sub) sub.textContent = rwCluster(name) + ' · daily 09:00 ICT';
+    loadReports();
+  }
+  function switchRawRunway(name) {
+    if (_rawRunway === name) return;
+    _rawRunway = name;
+    _rawCurrentDate = null;
+    _rawMonth  = null;
+    _rawRange  = null;
+    _rawPreset = null; // let loadRawReports() pick the latest month
+    resetRawSvcFilterState();
+    resetRawRangeInputs();
+    const cp = document.getElementById('raw-period-custom');
+    if (cp) cp.style.display = 'none';
+    document.querySelectorAll('#raw-runway-bar .rm-runway-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.rw === name));
+    const hint = document.getElementById('raw-runway-hint');
+    if (hint) hint.textContent = rwCluster(name);
+    loadRawReports();
+  }
+
+  // ── Format helpers ───────────────────────────────────────────
+  function fmtMem(ratio) {
+    if (ratio === null || ratio === undefined) return '<span style="color:var(--text-muted)">—</span>';
+    const pct  = (ratio * 100).toFixed(1);
+    const cls  = ratio >= 0.85 ? 'crit' : ratio >= 0.70 ? 'warn' : '';
+    const w    = Math.min(100, ratio * 100);
+    return `<span class="rm-mem">
+      <span class="rm-mem-bar"><i class="${cls}" style="width:${w}%"></i></span>
+      <span>${pct}%</span>
+    </span>`;
+  }
+
+  function reasonTag(reason) {
+    if (!reason) return '<span class="rm-tag info">—</span>';
+    const r = reason.toLowerCase();
+    if (r === 'oomkilled') return '<span class="rm-tag oom">OOMKilled</span>';
+    if (r === 'error')     return '<span class="rm-tag err">Error</span>';
+    if (r === 'completed') return '<span class="rm-tag done">Completed</span>';
+    return `<span class="rm-tag info">${reason}</span>`;
+  }
+
+  function sevTag(sev) {
+    if (sev === 'critical') return '<span class="rm-tag crit">critical</span>';
+    if (sev === 'warning')  return '<span class="rm-tag warn">warning</span>';
+    return '<span class="rm-tag info">info</span>';
+  }
+
+  function fmtNum(n, type) {
+    if (n === 0 || n === null || n === undefined) {
+      return `<span class="rm-num-zero">0</span>`;
+    }
+    if (type === 'crit') return `<span class="rm-num-crit">${n}</span>`;
+    if (type === 'warn') return `<span class="rm-num-warn">${n}</span>`;
+    if (type === 'oom')  return `<span class="rm-num-oom">${n}</span>`;
+    return n;
+  }
+
+  function fmtDateTime(iso) {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString('th-TH', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+    } catch { return iso; }
+  }
+
+  // ── State ────────────────────────────────────────────────────
+  let _allReports = [];              // full list from API, newest first (unfiltered)
+  let _allDates = [];                // dates of the currently-visible month (drives nav)
+  let _currentDate = null;           // currently selected date
+  let _currentDayData = null;        // full data of the day currently displayed
+  let _currentPod = null;            // pod name currently selected
+  let _pillSort = 'desc';            // 'desc' = newest first, 'asc' = oldest first
+  let _svcPodSort = {};              // svcIdx → 'desc'|'asc' for inner pod tables
+  let _analyzedMonth  = null;        // 'YYYY-MM' | 'all' | null (derived from preset)
+  let _analyzedRange  = null;        // { from, to } — derived from preset (7d/30d/custom)
+  let _analyzedPreset = null;        // 'YYYY-MM' | '7d' | '30d' | 'all' | 'custom' | null
+  let _analyzedRangeView = 'agg';    // 'agg' | 'day' — only meaningful when >1 day visible
+  let _analyzedSvcFilter = '';       // active service filter (substring, case-insensitive)
+  let _analyzedSvcList   = [];       // [{name, count}] available services in current view
+  let _analyzedSvcHi     = -1;       // highlighted dropdown index (for arrow-key nav)
+  let _rawSvcFilter      = '';
+  let _rawSvcList        = [];
+  let _rawSvcHi          = -1;
+
+  // ── Month helpers (shared by analyzed + raw tabs) ────────────
+  function extractMonths(reports) {
+    const seen = new Map();
+    for (const r of reports) {
+      const m = (r.date || '').slice(0, 7);
+      if (!/^\d{4}-\d{2}$/.test(m)) continue;
+      seen.set(m, (seen.get(m) || 0) + 1);
+    }
+    return Array.from(seen.entries())
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => b.month.localeCompare(a.month));
+  }
+  function fmtMonthShort(ym) {
+    if (ym === 'all') return 'ทั้งหมด';
+    const [y, m] = String(ym || '').split('-').map(Number);
+    if (!y || !m) return String(ym || '—');
+    return new Date(y, m - 1, 1).toLocaleDateString('th-TH', { month: 'short', year: '2-digit' });
+  }
+  function periodSuffix(month) {
+    return month === 'all' ? 'ทั้งหมด' : fmtMonthShort(month);
+  }
+  function filterReportsByMonth(reports, month) {
+    if (!month || month === 'all') return reports;
+    return reports.filter(r => (r.date || '').startsWith(month + '-'));
+  }
+  function filterReportsByRange(reports, range) {
+    if (!range || !range.from || !range.to) return reports;
+    const from = range.from, to = range.to;
+    return reports.filter(r => {
+      const d = r.date || '';
+      return d >= from && d <= to;
+    });
+  }
+  function fmtRangeSuffix(range) {
+    return `${range.from} → ${range.to}`;
+  }
+  // Sync date-input bounds so the calendar UI limits picks to the data
+  // range (min = oldest report, max = newest report). Called after
+  // reports load and after month/range changes.
+  function syncRangeInputBounds(reports, fromId, toId) {
+    const from = document.getElementById(fromId);
+    const to   = document.getElementById(toId);
+    if (!from || !to) return;
+    if (!reports.length) {
+      from.removeAttribute('min'); from.removeAttribute('max');
+      to.removeAttribute('min');   to.removeAttribute('max');
+      return;
+    }
+    const oldest = reports[reports.length - 1].date;
+    const newest = reports[0].date;
+    from.min = oldest; from.max = newest;
+    to.min   = oldest; to.max   = newest;
+  }
+  function computeMonthKpis(reports) {
+    let restarts = 0, critical = 0, oom = 0;
+    for (const r of reports) {
+      restarts += r.totalRestarts || 0;
+      critical += r.severitySummary?.critical || 0;
+      oom      += r.reasonSummary?.OOMKilled  || 0;
+    }
+    return { restarts, critical, oom, days: reports.length };
+  }
+  function renderMonthTabs(reports, activeMonth, containerId, onSelect) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const months = extractMonths(reports);
+    if (!months.length) {
+      container.innerHTML = '<span style="font-size:11px;color:var(--text-muted);padding:5px 8px">—</span>';
+      return;
+    }
+    const totalDays = reports.length;
+    let html = `<button type="button" class="rm-month-tab ${activeMonth === 'all' ? 'active' : ''}" data-month="all">ทั้งหมด <span class="cnt">${totalDays}d</span></button>`;
+    for (const { month, count } of months) {
+      const cls = month === activeMonth ? 'active' : '';
+      html += `<button type="button" class="rm-month-tab ${cls}" data-month="${month}">${fmtMonthShort(month)} <span class="cnt">${count}d</span></button>`;
+    }
+    container.innerHTML = html;
+    container.querySelectorAll('.rm-month-tab').forEach(btn => {
+      btn.addEventListener('click', () => onSelect(btn.dataset.month));
+    });
+  }
+  // Preset-pill bar: quick presets (7d/30d) + month buttons + ทั้งหมด + custom.
+  // Only one pill is visually active at a time; onSelect(preset) is invoked
+  // with the chosen key.
+  function renderPeriodTabs(reports, activePreset, containerId, onSelect) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (!reports.length) {
+      container.innerHTML = '<span style="font-size:11px;color:var(--text-muted);padding:5px 8px">—</span>';
+      return;
+    }
+    const months = extractMonths(reports);
+    const totalDays = reports.length;
+    const cls = (k) => (k === activePreset ? 'active' : '');
+    const pill = (preset, label, cnt) =>
+      `<button type="button" class="rm-month-tab ${cls(preset)}" data-preset="${preset}">${label}${cnt ? ` <span class="cnt">${cnt}</span>` : ''}</button>`;
+
+    let html = '';
+    // Quick spans — always visible even if <7 days of data (they clamp to what's available)
+    html += pill('7d',  '7 วัน',  Math.min(7,  totalDays) + 'd');
+    html += pill('30d', '30 วัน', Math.min(30, totalDays) + 'd');
+    // Per-month
+    for (const { month, count } of months) {
+      html += pill(month, fmtMonthShort(month), count + 'd');
+    }
+    html += pill('all',    'ทั้งหมด', totalDays + 'd');
+    html += pill('custom', 'กำหนดเอง ▾', '');
+
+    container.innerHTML = html;
+    container.querySelectorAll('.rm-month-tab').forEach(btn => {
+      btn.addEventListener('click', () => onSelect(btn.dataset.preset));
+    });
+  }
+  // Turn a preset key into a human-readable label used for KPI captions
+  // and empty-state messages.
+  function presetSuffix(preset, range) {
+    if (preset === '7d')     return '7 วัน';
+    if (preset === '30d')    return '30 วัน';
+    if (preset === 'all')    return 'ทั้งหมด';
+    if (preset === 'custom' && range) return fmtRangeSuffix(range);
+    if (preset === 'custom') return 'กำหนดเอง (ยังไม่ระบุ)';
+    if (/^\d{4}-\d{2}$/.test(preset || '')) return fmtMonthShort(preset);
+    return '—';
+  }
+  // Given the full report list (newest-first) and a preset, produce
+  // { month, range } to feed the existing filter helpers.
+  function derivePeriodFromPreset(reports, preset, customRange) {
+    if (preset === '7d' || preset === '30d') {
+      const n = preset === '7d' ? 7 : 30;
+      const slice = reports.slice(0, n);
+      if (!slice.length) return { month: null, range: null };
+      return { month: null, range: { from: slice[slice.length - 1].date, to: slice[0].date } };
+    }
+    if (preset === 'custom') return { month: null, range: customRange || null };
+    if (preset === 'all')    return { month: 'all', range: null };
+    if (/^\d{4}-\d{2}$/.test(preset || '')) return { month: preset, range: null };
+    return { month: null, range: null };
+  }
+
+  // ── Range aggregation: fetch details for many days in parallel and
+  //    group pods across those days by service. Used when the user picks
+  //    a multi-day period so the "Pods" section can show the whole span
+  //    at once instead of drilling one day at a time. ────────────────
+  const _analyzedDetailCache = new Map();  // key: runway::date → detail
+  const _rawDetailCache      = new Map();
+
+  async function fetchDetailsWithConcurrency(dates, endpointPath, runway, cache, concurrency = 6) {
+    const results = new Array(dates.length);
+    let idx = 0;
+    async function worker() {
+      while (true) {
+        const my = idx++;
+        if (my >= dates.length) return;
+        const date = dates[my];
+        const key = runway + '::' + date;
+        if (cache.has(key)) {
+          results[my] = { date, data: cache.get(key) };
+          continue;
+        }
+        try {
+          const res = await API.get(endpointPath + '&date=' + encodeURIComponent(date) + rwParam(runway));
+          const data = res?.data?.data || null;
+          if (data) cache.set(key, data);
+          results[my] = { date, data };
+        } catch (err) {
+          results[my] = { date, data: null, error: err };
+        }
+      }
+    }
+    const workers = [];
+    for (let w = 0; w < Math.min(concurrency, dates.length); w++) workers.push(worker());
+    await Promise.all(workers);
+    return results;
+  }
+
+  function aggregatePodsAcrossDays(dayResults) {
+    const svcMap    = new Map();
+    const sevOrder  = { critical: 0, warning: 1, info: 2 };
+    for (const { date, data } of dayResults) {
+      if (!data?.pods) continue;
+      for (const p of data.pods) {
+        const svc = extractServiceName(p.pod);
+        let s = svcMap.get(svc);
+        if (!s) {
+          s = {
+            service: svc,
+            namespace: p.namespace || '',
+            uniquePods: new Set(),
+            restartsTotal: 0,
+            daysAffected: new Set(),
+            reasons: new Set(),
+            maxSev: 'info',
+            entries: [],
+          };
+          svcMap.set(svc, s);
+        }
+        s.uniquePods.add(p.pod);
+        s.restartsTotal += p.restartCount || 0;
+        s.daysAffected.add(date);
+        if (p.terminationReason) s.reasons.add(p.terminationReason);
+        if ((sevOrder[p.severity] ?? 9) < (sevOrder[s.maxSev] ?? 9)) s.maxSev = p.severity;
+        s.entries.push({ ...p, date });
+      }
+    }
+    const arr = [];
+    for (const s of svcMap.values()) {
+      arr.push({
+        service: s.service,
+        namespace: s.namespace,
+        podCount: s.uniquePods.size,
+        restartSum: s.restartsTotal,
+        daysAffected: s.daysAffected.size,
+        reasons: Array.from(s.reasons),
+        maxSev: s.maxSev,
+        entries: s.entries,
+      });
+    }
+    arr.sort((a, b) => {
+      const sa = sevOrder[a.maxSev] ?? 9;
+      const sb = sevOrder[b.maxSev] ?? 9;
+      if (sa !== sb) return sa - sb;
+      return b.restartSum - a.restartSum;
+    });
+    return { services: arr };
+  }
+
+  function renderAggEntriesTable(entries) {
+    // Sort by full timestamp (newest first) — falls back to date if no time.
+    const sorted = entries.slice().sort((a, b) => {
+      const ta = a.restartedAt ? new Date(a.restartedAt).getTime() : 0;
+      const tb = b.restartedAt ? new Date(b.restartedAt).getTime() : 0;
+      if (ta !== tb) return tb - ta;
+      if (a.date !== b.date) return b.date.localeCompare(a.date);
+      return (b.restartCount || 0) - (a.restartCount || 0);
+    });
+    const rows = sorted.map(p => {
+      let timeStr = '';
+      if (p.restartedAt) {
+        const d = new Date(p.restartedAt);
+        if (!isNaN(d)) {
+          timeStr = d.toLocaleTimeString('th-TH', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+          });
+        }
+      }
+      const dateCell = timeStr
+        ? `${p.date} <span style="opacity:.65;font-size:10.5px">${timeStr}</span>`
+        : p.date;
+      return `<tr>
+        <td class="muted" style="font-size:11px;white-space:nowrap" title="${p.restartedAt || ''}">${dateCell}</td>
+        <td class="rm-pod">${p.pod || '—'}</td>
+        <td class="num">${p.restartCount ?? 0}</td>
+        <td>${reasonTag(p.terminationReason)}</td>
+        <td>${sevTag(p.severity)}</td>
+      </tr>`;
+    }).join('');
+    return `<table class="rm-table compact" style="min-width:600px;margin:4px 0">
+      <thead><tr><th style="width:150px">Date · Time</th><th>Pod</th><th class="num">Restarts</th><th>Reason</th><th>Severity</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  function renderAggregatedPodsTable(wrapId, services, dayCount, from, to) {
+    const wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    if (!services.length) {
+      wrap.innerHTML = `<div class="rm-empty">
+        <div class="rm-empty-title">ไม่มี pod restart ในช่วงนี้</div>
+        <div class="rm-empty-sub">${from} → ${to}</div>
+      </div>`;
+      return;
+    }
+    let html = `<div class="rm-table-scroll"><table class="rm-table compact" style="min-width:840px">
+      <thead>
+        <tr>
+          <th style="width:28px"></th>
+          <th style="width:30px">#</th>
+          <th>Service</th>
+          <th>Namespace</th>
+          <th class="num" title="จำนวนวันที่ service นี้มี restart / ทั้งช่วง">Days</th>
+          <th class="num" title="Unique pod names ในช่วงนี้">Pods</th>
+          <th class="num" title="Total restart events รวมทั้งช่วง">Restarts</th>
+          <th>Reason</th>
+          <th>Severity</th>
+        </tr>
+      </thead>
+      <tbody>`;
+    services.forEach((s, i) => {
+      const sevHtml     = sevTag(s.maxSev);
+      const reasonTags  = s.reasons.map(r => reasonTag(r)).join(' ');
+      const restartCls  = s.restartSum > 10 ? 'rm-num-crit'
+                        : s.restartSum > 5  ? 'rm-num-warn' : '';
+      const nsShort     = (s.namespace || '').replace('truemoney-', '').replace('-production', '');
+      html += `<tr class="clickable" onclick="toggleAggSvc('${wrapId}',${i})">
+        <td class="muted" style="font-size:11px"><span id="${wrapId}-agg-arrow-${i}"><i data-icon="play"></i></span></td>
+        <td class="muted">${i + 1}</td>
+        <td><b style="font-family:ui-monospace,Menlo,monospace;font-size:12px">${s.service}</b></td>
+        <td class="muted" style="font-size:11px">${nsShort}</td>
+        <td class="num">${s.daysAffected}/${dayCount}</td>
+        <td class="num">${s.podCount}</td>
+        <td class="num ${restartCls}">${s.restartSum}</td>
+        <td>${reasonTags || '—'}</td>
+        <td>${sevHtml}</td>
+      </tr>
+      <tr id="${wrapId}-agg-expand-${i}" style="display:none">
+        <td colspan="9" style="padding:0;background:rgba(0,0,0,.015)">
+          ${renderAggEntriesTable(s.entries)}
+        </td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+    wrap.innerHTML = html;
+  }
+
+  function toggleAggSvc(wrapId, idx) {
+    const row   = document.getElementById(`${wrapId}-agg-expand-${idx}`);
+    const arrow = document.getElementById(`${wrapId}-agg-arrow-${idx}`);
+    if (!row) return;
+    const isOpen = row.style.display !== 'none';
+    row.style.display = isOpen ? 'none' : '';
+    if (arrow) arrow.innerHTML = isOpen ? '<i data-icon="play"></i>' : '▼';
+  }
+
+  // ── Load list of reports + auto-select latest day ───────────
+  async function loadReports() {
+    try {
+      const res = await API.get('/restart-monitor/index.php?action=list' + rwParam(_analyzedRunway));
+      const payload = res?.data?.data || {};
+      const reports = payload.reports || [];
+      _allReports = reports;
+
+      // Default preset = latest month, or 'all' if there's no month data.
+      // If the previously selected month/preset is gone, fall back to latest.
+      const months = extractMonths(reports);
+      const validPresets = new Set(['7d', '30d', 'all', 'custom', ...months.map(m => m.month)]);
+      if (!_analyzedPreset || !validPresets.has(_analyzedPreset)) {
+        _analyzedPreset = months[0]?.month || 'all';
+      }
+      const derived = derivePeriodFromPreset(reports, _analyzedPreset, _analyzedRange);
+      _analyzedMonth = derived.month;
+      _analyzedRange = derived.range;
+
+      renderAnalyzedPeriodTabs();
+      await applyAnalyzedFilter();
+
+      document.getElementById('last-updated').textContent =
+        new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+    } catch (err) {
+      console.error('[RestartMonitor] Load failed:', err);
+      Utils.toast('โหลด report ไม่สำเร็จ: ' + (err.message || err), 'error');
+    }
+  }
+
+  function renderAnalyzedPeriodTabs() {
+    renderPeriodTabs(_allReports, _analyzedPreset, 'analyzed-period-tabs', selectAnalyzedPreset);
+    syncRangeInputBounds(_allReports, 'analyzed-range-from', 'analyzed-range-to');
+  }
+
+  function selectAnalyzedPreset(preset) {
+    const customPanel = document.getElementById('analyzed-period-custom');
+    // Same pill clicked twice (except 'custom') — no-op
+    if (_analyzedPreset === preset && preset !== 'custom') return;
+
+    _analyzedPreset = preset;
+    _analyzedRangeView = 'agg'; // reset to aggregated when the period changes
+    _currentDate = null; // force reload of latest day in the new period
+    resetAnalyzedSvcFilterState();
+
+    if (preset === 'custom') {
+      // Open the panel; don't filter yet — wait for user to fill both inputs.
+      if (customPanel) customPanel.style.display = '';
+      renderAnalyzedPeriodTabs();
+      // If range already filled from a previous session, apply now
+      const from = document.getElementById('analyzed-range-from')?.value;
+      const to   = document.getElementById('analyzed-range-to')?.value;
+      if (from && to && from <= to) {
+        _analyzedRange = { from, to };
+        applyAnalyzedFilter();
+      }
+      return;
+    }
+
+    // Non-custom preset → close custom panel & clear its inputs
+    if (customPanel) customPanel.style.display = 'none';
+    resetAnalyzedRangeInputs();
+
+    const derived = derivePeriodFromPreset(_allReports, preset, null);
+    _analyzedMonth = derived.month;
+    _analyzedRange = derived.range;
+
+    renderAnalyzedPeriodTabs();
+    applyAnalyzedFilter();
+  }
+
+  // ── Show/hide sections based on view mode ────────────────────
+  function showAnalyzedAggView(from, to, dayCount) {
+    closePodDetail();
+    document.getElementById('daily-reports-title').style.display = 'none';
+    document.getElementById('daily-reports-card').style.display  = 'none';
+    document.getElementById('selected-day-title').style.display  = 'none';
+    document.getElementById('day-summary-card').style.display    = 'none';
+    document.getElementById('pods-title-text').textContent =
+      `Pods · รวม ${dayCount} วัน (${from} → ${to})`;
+  }
+  function showAnalyzedDayView() {
+    document.getElementById('daily-reports-title').style.display = '';
+    document.getElementById('daily-reports-card').style.display  = '';
+    document.getElementById('selected-day-title').style.display  = '';
+    document.getElementById('day-summary-card').style.display    = '';
+    document.getElementById('pods-title-text').textContent = 'Pods';
+  }
+  function updateAnalyzedViewToggle(visible, activeMode) {
+    const toggle = document.getElementById('analyzed-view-toggle');
+    if (!toggle) return;
+    toggle.style.display = visible ? '' : 'none';
+    toggle.querySelectorAll('button[data-view]').forEach(b => {
+      b.classList.toggle('active', b.dataset.view === activeMode);
+    });
+  }
+  function setAnalyzedRangeView(mode) {
+    if (mode !== 'agg' && mode !== 'day') return;
+    if (_analyzedRangeView === mode) return;
+    _analyzedRangeView = mode;
+    applyAnalyzedFilter();
+  }
+
+  async function renderAnalyzedAggregatedView(reports) {
+    const wrap = document.getElementById('pods-table-wrap');
+    wrap.innerHTML = `<div class="rm-empty"><div class="rm-empty-sub">กำลังโหลด ${reports.length} วัน…</div></div>`;
+    const dates = reports.map(r => r.date);
+    const from  = reports[reports.length - 1].date;
+    const to    = reports[0].date;
+    const results = await fetchDetailsWithConcurrency(
+      dates,
+      '/restart-monitor/index.php?action=detail',
+      _analyzedRunway,
+      _analyzedDetailCache
+    );
+    const { services } = aggregatePodsAcrossDays(results);
+    _analyzedSvcList = services.map(s => ({ name: s.service, count: s.podCount }));
+    const shown = _analyzedSvcFilter
+      ? services.filter(s => svcMatches(s.service, _analyzedSvcFilter))
+      : services;
+    if (_analyzedSvcFilter && !shown.length) {
+      wrap.innerHTML = `<div class="rm-empty">
+        <div class="rm-empty-title">ไม่พบ service ที่ตรงกับ "${escapeHtml(_analyzedSvcFilter)}"</div>
+        <div class="rm-empty-sub">มี ${services.length} service ในช่วงนี้ · กด × เพื่อล้าง filter</div>
+      </div>`;
+      return;
+    }
+    renderAggregatedPodsTable('pods-table-wrap', shown, reports.length, from, to);
+  }
+
+  async function applyAnalyzedFilter() {
+    const filtered = _analyzedRange
+      ? filterReportsByRange(_allReports, _analyzedRange)
+      : filterReportsByMonth(_allReports, _analyzedMonth);
+    _allDates = filtered.map(r => r.date);
+
+    // KPIs — computed from the currently visible slice
+    const k = computeMonthKpis(filtered);
+    document.getElementById('kpi-7d').textContent   = k.restarts;
+    document.getElementById('kpi-crit').textContent = k.critical;
+    document.getElementById('kpi-oom').textContent  = k.oom;
+    document.getElementById('kpi-days').textContent = k.days;
+
+    // Labels — reflect the selected period
+    const suffix = presetSuffix(_analyzedPreset, _analyzedRange);
+    document.getElementById('kpi-lbl-restarts').textContent = 'Restarts · ' + suffix;
+    document.getElementById('kpi-lbl-crit').textContent     = 'Critical · ' + suffix;
+    document.getElementById('kpi-lbl-oom').textContent      = 'OOMKilled · ' + suffix;
+
+    // ── Range mode (>1 day) → toggle between aggregated and per-day view
+    if (filtered.length > 1) {
+      updateAnalyzedViewToggle(true, _analyzedRangeView);
+      if (_analyzedRangeView === 'agg') {
+        _currentDate = null;
+        _currentDayData = null;
+        showAnalyzedAggView(filtered[filtered.length - 1].date, filtered[0].date, filtered.length);
+        await renderAnalyzedAggregatedView(filtered);
+        return;
+      }
+      // 'day' mode within a range → show day toolbar + drill into the current/first day
+      showAnalyzedDayView();
+      renderDayToolbar(filtered);
+      const dateToLoad = (_currentDate && _allDates.includes(_currentDate))
+        ? _currentDate
+        : filtered[0]?.date;
+      if (dateToLoad) await loadDay(dateToLoad);
+      return;
+    }
+
+    // ── Single day (or empty) → existing per-day view (no toggle needed)
+    updateAnalyzedViewToggle(false, 'day');
+    showAnalyzedDayView();
+    renderDayToolbar(filtered);
+
+    const dateToLoad = (_currentDate && _allDates.includes(_currentDate))
+      ? _currentDate
+      : filtered[0]?.date;
+    if (dateToLoad) {
+      await loadDay(dateToLoad);
+    } else {
+      _currentDate = null;
+      _currentDayData = null;
+      closePodDetail();
+      const label = presetSuffix(_analyzedPreset, _analyzedRange);
+      document.getElementById('day-summary-body').innerHTML =
+        `<div style="padding:18px;color:var(--text-muted);font-size:12px">ไม่มีข้อมูลของ ${label}</div>`;
+      document.getElementById('pods-table-wrap').innerHTML = `
+        <div class="rm-empty">
+          <div class="rm-empty-title">ไม่มี report ในช่วงที่เลือก</div>
+          <div class="rm-empty-sub">ลองเลือกช่วงอื่นด้านบน หรือกด "กำหนดเอง"</div>
+        </div>`;
+    }
+  }
+
+  // ── Toggle sort order for Analyzed tab ──────────────────────
+  function toggleAnalyzedSort() {
+    _pillSort = _pillSort === 'desc' ? 'asc' : 'desc';
+    const btn = document.getElementById('analyzed-sort-btn');
+    if (btn) btn.textContent = _pillSort === 'asc' ? '↑ เก่า→ใหม่' : '↓ ใหม่→เก่า';
+    const currentSlice = _analyzedRange
+      ? filterReportsByRange(_allReports, _analyzedRange)
+      : filterReportsByMonth(_allReports, _analyzedMonth);
+    renderDayToolbar(currentSlice);
+    if (_currentDate) highlightActiveDate(_currentDate);
+  }
+
+  // ── Custom-range handlers (Analyzed) ─────────────────────────
+  function resetAnalyzedRangeInputs() {
+    const f = document.getElementById('analyzed-range-from');
+    const t = document.getElementById('analyzed-range-to');
+    const b = document.getElementById('analyzed-range-badge');
+    if (f) f.value = '';
+    if (t) t.value = '';
+    if (b) b.innerHTML = '';
+  }
+  function onAnalyzedRangeChange() {
+    // Any interaction with the custom inputs implies "custom" preset.
+    const from = document.getElementById('analyzed-range-from').value;
+    const to   = document.getElementById('analyzed-range-to').value;
+    _analyzedPreset = 'custom';
+    document.getElementById('analyzed-period-custom').style.display = '';
+    if (!from || !to) {
+      renderAnalyzedPeriodTabs();
+      return;                                       // wait until both are filled
+    }
+    if (from > to) {
+      Utils.toast('วันที่เริ่มต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุด', 'warning');
+      return;
+    }
+    _analyzedRange = { from, to };
+    _analyzedMonth = null;
+    _currentDate = null;
+    resetAnalyzedSvcFilterState();
+    const badge = document.getElementById('analyzed-range-badge');
+    if (badge) badge.innerHTML = `<b>${daysBetweenInclusive(from, to)}</b> วัน`;
+    renderAnalyzedPeriodTabs();
+    applyAnalyzedFilter();
+  }
+  function daysBetweenInclusive(from, to) {
+    const a = new Date(from), b = new Date(to);
+    const ms = b - a;
+    if (isNaN(ms) || ms < 0) return 0;
+    return Math.round(ms / 86400000) + 1;
+  }
+
+  // ── Render date toolbar (date input + pills + counter) ──────
+  function renderDayToolbar(reports) {
+    const dateIn = document.getElementById('day-date-input');
+    const pills  = document.getElementById('day-pills');
+    const count  = document.getElementById('day-count');
+
+    if (!reports.length) {
+      pills.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">—</span>';
+      count.textContent = '';
+      return;
+    }
+
+    // reports from API is always newest-first; reverse when asc
+    const sorted = _pillSort === 'asc' ? [...reports].reverse() : reports;
+
+    // Date input range (always min=oldest, max=newest regardless of sort)
+    dateIn.min = reports[reports.length - 1].date;
+    dateIn.max = reports[0].date;
+
+    // Pills — 7 from the "recent" end of the current sort direction
+    const pillSlice = sorted.slice(0, 7);
+    pills.innerHTML = pillSlice.map(r => {
+      const crit  = r.severitySummary?.critical ?? 0;
+      const badge = crit > 0 ? `<span class="badge">${crit}</span>` : '';
+      const short = r.date.slice(5);  // MM-DD only
+      return `<button class="rm-day-pill" data-date="${r.date}" onclick="loadDay('${r.date}')" title="${r.date}">
+        ${short}${badge}
+      </button>`;
+    }).join('');
+
+    // Total count
+    count.textContent = `${reports.length} day${reports.length !== 1 ? 's' : ''} tracked`;
+  }
+
+  function highlightActiveDate(date) {
+    document.querySelectorAll('.rm-day-pill').forEach(p => {
+      p.classList.toggle('active', p.dataset.date === date);
+    });
+    const dateIn = document.getElementById('day-date-input');
+    if (dateIn) dateIn.value = date;
+    // Prev/Next disabled state
+    const idx = _allDates.indexOf(date);
+    document.getElementById('day-prev').disabled = (idx === _allDates.length - 1 || idx === -1);
+    document.getElementById('day-next').disabled = (idx <= 0);
+  }
+
+  // ── Navigate prev/next day ───────────────────────────────────
+  // _allDates is newest-first, so:
+  //   prev day = next index (older)
+  //   next day = previous index (newer)
+  function navigateDay(direction) {
+    if (!_currentDate || !_allDates.length) return;
+    const idx = _allDates.indexOf(_currentDate);
+    if (idx === -1) return;
+    const newIdx = idx - direction; // -1 = next (newer), +1 = prev (older) — confusing, fix below
+    // Convention: direction=-1 means "previous day" (older), +1 = "next day" (newer)
+    const targetIdx = direction === -1 ? idx + 1 : idx - 1;
+    if (targetIdx < 0 || targetIdx >= _allDates.length) return;
+    loadDay(_allDates[targetIdx]);
+  }
+
+  // ── Load + render a specific day ─────────────────────────────
+  async function loadDay(date) {
+    _currentDate = date;
+    highlightActiveDate(date);
+    document.getElementById('day-summary-body').innerHTML =
+      `<div style="padding:18px;color:var(--text-muted);font-size:12px">กำลังโหลด ${date}…</div>`;
+    document.getElementById('pods-table-wrap').innerHTML =
+      `<div class="rm-empty"><div class="rm-empty-sub">กำลังโหลด…</div></div>`;
+    // reset pod detail when switching days
+    closePodDetail();
+
+    try {
+      const res = await API.get('/restart-monitor/index.php?action=detail&date=' + encodeURIComponent(date) + rwParam(_analyzedRunway));
+      const data = res?.data?.data || {};
+      _currentDayData = data;
+      renderDaySummary(data);
+      renderPodsTable(data);
+    } catch (err) {
+      console.error('[RestartMonitor] Load day failed:', err);
+      document.getElementById('day-summary-body').innerHTML =
+        `<div style="padding:18px;color:#ef4444;font-size:12px">โหลดไม่สำเร็จ: ${err.message || err}</div>`;
+    }
+  }
+
+  // ── Render day summary card ──────────────────────────────────
+  function renderDaySummary(data) {
+    const sev    = data.severitySummary || {};
+    const reason = data.reasonSummary   || {};
+    const html = `
+      <div class="rm-day-overview">
+        <div class="meta"><b>${data.date}</b> · ${data.cluster} · ${data.scanWindowHours}h window</div>
+        <div class="stat"><span class="lbl">Total</span><span class="val">${data.totalRestarts ?? 0}</span></div>
+        <div class="stat"><span class="lbl">Critical</span><span class="val crit">${sev.critical ?? 0}</span></div>
+        <div class="stat"><span class="lbl">Warning</span><span class="val warn">${sev.warning ?? 0}</span></div>
+        <div class="stat"><span class="lbl">OOMKilled</span><span class="val oom">${reason.OOMKilled ?? 0}</span></div>
+        <div class="stat"><span class="lbl">Error</span><span class="val">${reason.Error ?? 0}</span></div>
+        <div class="stat"><span class="lbl">Completed</span><span class="val">${reason.Completed ?? 0}</span></div>
+      </div>`;
+    document.getElementById('day-summary-body').innerHTML = html;
+  }
+
+  // ── Extract service name from pod name (strip ReplicaSet hash + pod suffix) ──
+  function extractServiceName(podName) {
+    if (!podName) return '?';
+    // Match -<8-12 hex chars>-<5 alphanum>  at end → strip
+    const m = podName.match(/^(.+?)-[a-f0-9]{8,12}-[a-z0-9]{5}$/);
+    return m ? m[1] : podName;
+  }
+
+  // ── Service filter combobox (shared logic for Analyzed + Raw) ──
+  function svcMatches(name, q) {
+    if (!q) return true;
+    return String(name || '').toLowerCase().includes(q.toLowerCase());
+  }
+  // Sync combo UI state (input value + × visibility) with stored filter.
+  function syncSvcComboUi(comboId, inputId, filterValue) {
+    const combo = document.getElementById(comboId);
+    const input = document.getElementById(inputId);
+    if (!combo || !input) return;
+    if (document.activeElement !== input) input.value = filterValue || '';
+    combo.classList.toggle('has-value', !!filterValue);
+  }
+  // Render the dropdown suggestion list for a combobox.
+  //   svcList: full list of {name, count} available in the current view
+  //   query:   what the user has typed (used to filter suggestions)
+  //   hiIdx:   currently keyboard-highlighted index (-1 = none)
+  //   onPick:  string of JS to execute when a suggestion is clicked (receives name)
+  function renderSvcDropdown(dropdownId, svcList, query, hiIdx, pickFn) {
+    const dd = document.getElementById(dropdownId);
+    if (!dd) return [];
+    const q = (query || '').toLowerCase();
+    const matches = svcList.filter(s => !q || s.name.toLowerCase().includes(q));
+    if (!matches.length) {
+      dd.innerHTML = `<div class="rm-svc-dropdown-empty">
+        ${svcList.length ? 'ไม่พบ service ที่ตรงกับ "' + escapeHtml(query) + '"' : 'ไม่มี service ในช่วงที่เลือก'}
+      </div>`;
+      return matches;
+    }
+    const items = matches.slice(0, 200).map((s, i) => {
+      const cls = i === hiIdx ? 'active' : '';
+      const nameHtml = q
+        ? highlightMatch(s.name, query)
+        : escapeHtml(s.name);
+      // JSON.stringify wraps the name in double quotes; escapeHtml turns
+      // those into &quot; so the attribute value parses correctly even for
+      // names with quotes/special chars.
+      const arg = escapeHtml(JSON.stringify(s.name));
+      return `<div class="rm-svc-dropdown-item ${cls}" data-idx="${i}"
+        onmousedown="event.preventDefault(); ${pickFn}(${arg})">
+        <span>${nameHtml}</span>
+        <span class="cnt">${s.count}</span>
+      </div>`;
+    }).join('');
+    dd.innerHTML = items;
+    return matches;
+  }
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+  function highlightMatch(name, query) {
+    const esc = escapeHtml(name);
+    if (!query) return esc;
+    const q = query.toLowerCase();
+    const lower = name.toLowerCase();
+    const idx = lower.indexOf(q);
+    if (idx < 0) return esc;
+    // Recompute on the escaped string to preserve indices — safe because
+    // escapeHtml never removes chars, only replaces one-to-many.
+    const before = escapeHtml(name.slice(0, idx));
+    const hit    = escapeHtml(name.slice(idx, idx + query.length));
+    const after  = escapeHtml(name.slice(idx + query.length));
+    return `${before}<b style="color:var(--accent,#3b82f6)">${hit}</b>${after}`;
+  }
+  function closeSvcDropdownSoon(dropdownId) {
+    // Delay so mousedown-on-item can fire first.
+    setTimeout(() => {
+      const dd = document.getElementById(dropdownId);
+      if (dd) dd.style.display = 'none';
+    }, 150);
+  }
+  // Close dropdowns when clicking outside either combobox.
+  document.addEventListener('click', (e) => {
+    ['analyzed', 'raw'].forEach(tab => {
+      const combo = document.getElementById(tab + '-svc-combo');
+      const dd    = document.getElementById(tab + '-svc-dropdown');
+      if (!combo || !dd) return;
+      if (!combo.contains(e.target)) dd.style.display = 'none';
+    });
+  });
+
+  // ── Analyzed tab combobox ──────────────────────────────────
+  function onAnalyzedSvcInput(val) {
+    _analyzedSvcFilter = val || '';
+    _analyzedSvcHi = -1;
+    syncSvcComboUi('analyzed-svc-combo', 'analyzed-svc-input', _analyzedSvcFilter);
+    renderSvcDropdown('analyzed-svc-dropdown', _analyzedSvcList, _analyzedSvcFilter, _analyzedSvcHi, 'selectAnalyzedSvc');
+    document.getElementById('analyzed-svc-dropdown').style.display = '';
+    reapplyAnalyzedFilterView();
+  }
+  function openAnalyzedSvcDropdown() {
+    renderSvcDropdown('analyzed-svc-dropdown', _analyzedSvcList, _analyzedSvcFilter, _analyzedSvcHi, 'selectAnalyzedSvc');
+    document.getElementById('analyzed-svc-dropdown').style.display = '';
+  }
+  function selectAnalyzedSvc(name) {
+    _analyzedSvcFilter = name;
+    const input = document.getElementById('analyzed-svc-input');
+    if (input) input.value = name;
+    syncSvcComboUi('analyzed-svc-combo', 'analyzed-svc-input', _analyzedSvcFilter);
+    document.getElementById('analyzed-svc-dropdown').style.display = 'none';
+    reapplyAnalyzedFilterView();
+  }
+  // Clear filter state + UI only. Used when the caller will re-render
+  // the table on its own (e.g. runway/period switch).
+  function resetAnalyzedSvcFilterState() {
+    _analyzedSvcFilter = '';
+    _analyzedSvcHi = -1;
+    const input = document.getElementById('analyzed-svc-input');
+    if (input) input.value = '';
+    syncSvcComboUi('analyzed-svc-combo', 'analyzed-svc-input', '');
+    const dd = document.getElementById('analyzed-svc-dropdown');
+    if (dd) dd.style.display = 'none';
+  }
+  function clearAnalyzedSvcFilter() {
+    resetAnalyzedSvcFilterState();
+    reapplyAnalyzedFilterView();
+  }
+  function onAnalyzedSvcKeydown(e) {
+    const dd = document.getElementById('analyzed-svc-dropdown');
+    const matches = _analyzedSvcList.filter(s => svcMatches(s.name, _analyzedSvcFilter));
+    if (e.key === 'ArrowDown') {
+      _analyzedSvcHi = Math.min(matches.length - 1, _analyzedSvcHi + 1);
+      renderSvcDropdown('analyzed-svc-dropdown', _analyzedSvcList, _analyzedSvcFilter, _analyzedSvcHi, 'selectAnalyzedSvc');
+      if (dd) dd.style.display = '';
+      e.preventDefault();
+    } else if (e.key === 'ArrowUp') {
+      _analyzedSvcHi = Math.max(-1, _analyzedSvcHi - 1);
+      renderSvcDropdown('analyzed-svc-dropdown', _analyzedSvcList, _analyzedSvcFilter, _analyzedSvcHi, 'selectAnalyzedSvc');
+      e.preventDefault();
+    } else if (e.key === 'Enter') {
+      if (_analyzedSvcHi >= 0 && matches[_analyzedSvcHi]) {
+        selectAnalyzedSvc(matches[_analyzedSvcHi].name);
+        e.preventDefault();
+      } else if (matches.length === 1) {
+        selectAnalyzedSvc(matches[0].name);
+        e.preventDefault();
+      }
+    } else if (e.key === 'Escape') {
+      if (dd) dd.style.display = 'none';
+      e.target.blur();
+    }
+  }
+  // Re-apply current view (agg vs day) so the filter takes effect without a
+  // full data reload — filtering is client-side.
+  // Note: agg mode is active when the toggle is visible AND set to 'agg',
+  // regardless of _analyzedRange (which is null for 'all' / month presets —
+  // those use _analyzedMonth instead).
+  function reapplyAnalyzedFilterView() {
+    const inAggMode = _analyzedRangeView === 'agg'
+                   && (_analyzedRange || _analyzedMonth)
+                   && !_currentDate;
+    if (inAggMode) {
+      renderAnalyzedAggFromCache();
+    } else if (_currentDayData) {
+      renderPodsTable(_currentDayData);
+    }
+  }
+  // Re-render agg table using whatever's currently in cache for the visible range.
+  function renderAnalyzedAggFromCache() {
+    const filtered = _analyzedRange
+      ? filterReportsByRange(_allReports, _analyzedRange)
+      : filterReportsByMonth(_allReports, _analyzedMonth);
+    if (!filtered.length) return;
+    const dates = filtered.map(r => r.date);
+    const from  = filtered[filtered.length - 1].date;
+    const to    = filtered[0].date;
+    const results = dates.map(d => ({ date: d, data: _analyzedDetailCache.get(_analyzedRunway + '::' + d) || null }));
+    const { services } = aggregatePodsAcrossDays(results);
+    _analyzedSvcList = services.map(s => ({ name: s.service, count: s.podCount }));
+    const shown = _analyzedSvcFilter
+      ? services.filter(s => svcMatches(s.service, _analyzedSvcFilter))
+      : services;
+    renderAggregatedPodsTable('pods-table-wrap', shown, filtered.length, from, to);
+  }
+
+  // ── Raw tab combobox ──────────────────────────────────────
+  function onRawSvcInput(val) {
+    _rawSvcFilter = val || '';
+    _rawSvcHi = -1;
+    syncSvcComboUi('raw-svc-combo', 'raw-svc-input', _rawSvcFilter);
+    renderSvcDropdown('raw-svc-dropdown', _rawSvcList, _rawSvcFilter, _rawSvcHi, 'selectRawSvc');
+    document.getElementById('raw-svc-dropdown').style.display = '';
+    reapplyRawFilterView();
+  }
+  function openRawSvcDropdown() {
+    renderSvcDropdown('raw-svc-dropdown', _rawSvcList, _rawSvcFilter, _rawSvcHi, 'selectRawSvc');
+    document.getElementById('raw-svc-dropdown').style.display = '';
+  }
+  function selectRawSvc(name) {
+    _rawSvcFilter = name;
+    const input = document.getElementById('raw-svc-input');
+    if (input) input.value = name;
+    syncSvcComboUi('raw-svc-combo', 'raw-svc-input', _rawSvcFilter);
+    document.getElementById('raw-svc-dropdown').style.display = 'none';
+    reapplyRawFilterView();
+  }
+  function resetRawSvcFilterState() {
+    _rawSvcFilter = '';
+    _rawSvcHi = -1;
+    const input = document.getElementById('raw-svc-input');
+    if (input) input.value = '';
+    syncSvcComboUi('raw-svc-combo', 'raw-svc-input', '');
+    const dd = document.getElementById('raw-svc-dropdown');
+    if (dd) dd.style.display = 'none';
+  }
+  function clearRawSvcFilter() {
+    resetRawSvcFilterState();
+    reapplyRawFilterView();
+  }
+  function onRawSvcKeydown(e) {
+    const dd = document.getElementById('raw-svc-dropdown');
+    const matches = _rawSvcList.filter(s => svcMatches(s.name, _rawSvcFilter));
+    if (e.key === 'ArrowDown') {
+      _rawSvcHi = Math.min(matches.length - 1, _rawSvcHi + 1);
+      renderSvcDropdown('raw-svc-dropdown', _rawSvcList, _rawSvcFilter, _rawSvcHi, 'selectRawSvc');
+      if (dd) dd.style.display = '';
+      e.preventDefault();
+    } else if (e.key === 'ArrowUp') {
+      _rawSvcHi = Math.max(-1, _rawSvcHi - 1);
+      renderSvcDropdown('raw-svc-dropdown', _rawSvcList, _rawSvcFilter, _rawSvcHi, 'selectRawSvc');
+      e.preventDefault();
+    } else if (e.key === 'Enter') {
+      if (_rawSvcHi >= 0 && matches[_rawSvcHi]) {
+        selectRawSvc(matches[_rawSvcHi].name);
+        e.preventDefault();
+      } else if (matches.length === 1) {
+        selectRawSvc(matches[0].name);
+        e.preventDefault();
+      }
+    } else if (e.key === 'Escape') {
+      if (dd) dd.style.display = 'none';
+      e.target.blur();
+    }
+  }
+  function reapplyRawFilterView() {
+    const inAggMode = _rawRangeView === 'agg'
+                   && (_rawRange || _rawMonth)
+                   && !_rawCurrentDate;
+    if (inAggMode) {
+      renderRawAggFromCache();
+    } else if (_rawCurrentData) {
+      renderRawPodsTable(_rawCurrentData);
+    }
+  }
+  function renderRawAggFromCache() {
+    const filtered = _rawRange
+      ? filterReportsByRange(_rawReports, _rawRange)
+      : filterReportsByMonth(_rawReports, _rawMonth);
+    if (!filtered.length) return;
+    const dates = filtered.map(r => r.date);
+    const from  = filtered[filtered.length - 1].date;
+    const to    = filtered[0].date;
+    const results = dates.map(d => ({ date: d, data: _rawDetailCache.get(_rawRunway + '::' + d) || null }));
+    const { services } = aggregatePodsAcrossDays(results);
+    _rawSvcList = services.map(s => ({ name: s.service, count: s.podCount }));
+    const shown = _rawSvcFilter
+      ? services.filter(s => svcMatches(s.service, _rawSvcFilter))
+      : services;
+    renderAggregatedPodsTable('raw-pods-table', shown, filtered.length, from, to);
+  }
+
+  // ── Group pods by service + compute aggregate / pattern hint ───
+  // Mirrors api/restart-monitor/_notify.php groupPodsByService():
+  // classifier uses podAge + restartCount + reason (spread is a fallback
+  // for non-Completed reasons only).
+  function groupPodsByService(pods, hpaEvents) {
+    hpaEvents = hpaEvents || {};
+    const groups = new Map();
+    for (const p of pods) {
+      const svc = extractServiceName(p.pod);
+      if (!groups.has(svc)) {
+        groups.set(svc, {
+          service: svc,
+          namespace: p.namespace || '',
+          pods: [],
+        });
+      }
+      groups.get(svc).pods.push(p);
+    }
+
+    // Compute aggregates per service
+    const arr = [];
+    for (const g of groups.values()) {
+      const restartSum = g.pods.reduce((s, p) => s + (p.restartCount || 0), 0);
+      const reasons    = Array.from(new Set(g.pods.map(p => p.terminationReason).filter(Boolean)));
+      const sevOrder   = { critical: 0, warning: 1, info: 2 };
+      const maxSev     = g.pods.reduce((acc, p) =>
+        (sevOrder[p.severity] ?? 9) < (sevOrder[acc] ?? 9) ? p.severity : acc, 'info');
+
+      const times      = g.pods.map(p => p.restartedAtUnix).filter(t => typeof t === 'number');
+      const maxRestart = Math.max(0, ...g.pods.map(p => p.restartCount || 0));
+      const ages       = g.pods.map(p => p.podAgeSeconds).filter(t => typeof t === 'number');
+      const minAge     = ages.length ? Math.min(...ages) : null;
+      const spread     = times.length >= 2 ? Math.max(...times) - Math.min(...times) : 0;
+      const completedOnly = reasons.length === 1 && reasons[0] === 'Completed';
+
+      let pattern = null;
+      if (completedOnly) {
+        if (minAge !== null && minAge < 1800 && maxRestart >= 3) {
+          pattern = { kind: 'startup-failure', icon: '<i data-icon=\"badge\"></i>',
+                      label: 'Startup failure — pod ใหม่ boot ไม่ผ่าน (age < 30m, restart ≥3×)',
+                      hint: 'เช็ค startup dependency (downstream API, DB, CircuitBreaker) และ readiness probe' };
+        } else if (minAge !== null && minAge >= 1800 && maxRestart >= 3) {
+          pattern = { kind: 'midlife-loop', icon: '<i data-icon=\"alert-triangle\"></i>',
+                      label: 'Mid-life exit loop — pod เก่า restart ถี่ผิดปกติ (age ≥30m, restart ≥3×)',
+                      hint: 'pod ที่รันอยู่แล้วเริ่ม exit ถี่ — เช็ค downstream dependency / liveness probe / config change ล่าสุด' };
+        } else if (minAge !== null && minAge >= 21600 && maxRestart <= 2) {
+          pattern = { kind: 'cronjob', icon: '⏰', label: 'CronJob ทำงานปกติ — ไม่ใช่ปัญหา', hint: '' };
+        } else {
+          pattern = { kind: 'completed-generic', icon: '<i data-icon=\"help-circle\"></i>', label: 'Completed pattern — เช็ค application log', hint: '' };
+        }
+      } else {
+        let reasonHint = '';
+        if (reasons.includes('OOMKilled'))   reasonHint = 'มี OOMKilled → เพิ่ม memory limit หรือหา memory leak';
+        else if (reasons.includes('Error'))  reasonHint = 'มี Error → เช็ค application log + recent deploys';
+
+        if (spread > 0 && spread <= 60) {
+          pattern = { kind: 'deploy', icon: '<i data-icon=\"rocket\"></i>', label: 'น่าจะเป็น rolling deploy (restart พร้อมกันใน ' + spread + 's)', hint: reasonHint };
+        } else if (spread > 60 && spread <= 300) {
+          pattern = { kind: 'deploy', icon: '<i data-icon=\"rocket\"></i>', label: 'น่าจะเป็น rolling deploy (ภายใน ' + Math.round(spread/60) + ' นาที)', hint: reasonHint };
+        } else if (spread >= 3600) {
+          pattern = { kind: 'scattered', icon: '⏳', label: 'scattered (ห่างกัน ' + (spread/3600).toFixed(1) + 'h — น่าจะ memory leak หรือ app bug)', hint: reasonHint };
+        } else if (reasonHint) {
+          const isOom = reasons.includes('OOMKilled');
+          pattern = { kind: 'reason-hint', icon: isOom ? '<i data-icon=\"zap\"></i>' : '<i data-icon=\"ban\"></i>',
+                      label: isOom ? 'OOMKilled pattern' : 'Error pattern',
+                      hint: reasonHint };
+        }
+      }
+
+      arr.push({
+        ...g,
+        restartSum,
+        reasons,
+        maxSev,
+        pattern,
+        podCount: g.pods.length,
+        minPodAge: minAge,
+        hpa: hpaEvents[g.service] || null,
+      });
+    }
+
+    // Sort: critical first → highest restart sum
+    const sevOrder = { critical: 0, warning: 1, info: 2 };
+    arr.sort((a, b) => {
+      const sa = sevOrder[a.maxSev] ?? 9;
+      const sb = sevOrder[b.maxSev] ?? 9;
+      if (sa !== sb) return sa - sb;
+      return b.restartSum - a.restartSum;
+    });
+
+    return arr;
+  }
+
+  // ── Render service-grouped table (default collapsed) ──────────
+  function renderPodsTable(data) {
+    const wrap = document.getElementById('pods-table-wrap');
+    const pods = data.pods || [];
+
+    if (!pods.length) {
+      _analyzedSvcList = [];
+      wrap.innerHTML = `<div class="rm-empty"><div class="rm-empty-title">ไม่มี pod restart ในวันนี้</div></div>`;
+      return;
+    }
+
+    const allServices = groupPodsByService(pods, data.hpaEvents || {});
+    _analyzedSvcList = allServices.map(s => ({ name: s.service, count: s.podCount }));
+    const services = _analyzedSvcFilter
+      ? allServices.filter(s => svcMatches(s.service, _analyzedSvcFilter))
+      : allServices;
+
+    if (!services.length) {
+      wrap.innerHTML = `<div class="rm-empty">
+        <div class="rm-empty-title">ไม่พบ service ที่ตรงกับ "${escapeHtml(_analyzedSvcFilter)}"</div>
+        <div class="rm-empty-sub">มี ${allServices.length} service ในวันนี้ · กด × เพื่อล้าง filter</div>
+      </div>`;
+      return;
+    }
+
+    let html = `<div class="rm-table-scroll"><table class="rm-table compact" style="min-width:760px">
+      <thead>
+        <tr>
+          <th style="width:28px"></th>
+          <th style="width:30px">#</th>
+          <th>Service</th>
+          <th>Namespace</th>
+          <th class="num">Pods</th>
+          <th class="num">Restarts</th>
+          <th>Reason</th>
+          <th>Severity</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+    services.forEach((s, i) => {
+      const sevTagHtml = sevTag(s.maxSev);
+      const reasonTags = s.reasons.map(r => reasonTag(r)).join(' ');
+      const isExpanded = false;  // default collapsed
+      html += `<tr class="clickable rm-svc-row" data-svc-idx="${i}" onclick="toggleService(${i})">
+        <td class="muted" style="font-size:11px"><span id="svc-arrow-${i}"><i data-icon=\"play\"></i></span></td>
+        <td class="muted">${i + 1}</td>
+        <td><b style="font-family:ui-monospace,Menlo,monospace;font-size:12px">${s.service}</b></td>
+        <td class="muted" style="font-size:11px">${(s.namespace || '').replace('truemoney-', '').replace('-production', '')}</td>
+        <td class="num">${s.podCount}</td>
+        <td class="num">${s.restartSum > 2 ? `<span class="rm-num-crit">${s.restartSum}</span>` : s.restartSum}</td>
+        <td>${reasonTags || '—'}</td>
+        <td>${sevTagHtml}</td>
+      </tr>
+      <tr id="svc-expand-${i}" style="display:none">
+        <td colspan="8" style="padding:0;background:rgba(0,0,0,.015)">
+          ${renderServicePodsTable(s, i)}
+        </td>
+      </tr>`;
+    });
+
+    html += `</tbody></table></div>`;
+    wrap.innerHTML = html;
+  }
+
+  // ── Toggle sort on inner pod table (Analyzed tab) ────────────
+  function toggleSvcPodSort(svcIdx) {
+    const cur = _svcPodSort[svcIdx] || 'desc';
+    _svcPodSort[svcIdx] = cur === 'desc' ? 'asc' : 'desc';
+    if (!_currentDayData) return;
+    const services = groupPodsByService(_currentDayData.pods || [], _currentDayData.hpaEvents || {});
+    const svc = services[svcIdx];
+    if (!svc) return;
+    const row = document.getElementById('svc-expand-' + svcIdx);
+    if (row) row.querySelector('td').innerHTML = renderServicePodsTable(svc, svcIdx);
+  }
+
+  // ── Inner table: pods of one service (shown when expanded) ────
+  function renderServicePodsTable(svc, svcIdx) {
+    let html = '';
+
+    // HPA badge (cyan info bar) — only when service had scale activity in 24h
+    if (svc.hpa && (svc.hpa.scaleEvents24h || 0) > 0) {
+      // Timeline row (only when fetch.php's range-query pass captured per-event detail).
+      // Show up to 6 events inline + "+N more" tail for chatty HPAs like ecatalog-composite.
+      let timelineHtml = '';
+      const tl = Array.isArray(svc.hpa.scaleTimeline) ? svc.hpa.scaleTimeline : [];
+      if (tl.length) {
+        const parts = tl.slice(0, 6).map(ev => {
+          const arrow = (ev.to || 0) > (ev.from || 0) ? '↑' : '↓';
+          return `${escapeHtml(ev.time || '')} ${arrow} (${ev.from}→${ev.to})`;
+        });
+        let text = parts.join(' · ');
+        if (tl.length > 6) text += ` · +${tl.length - 6} more`;
+        timelineHtml = `<div style="margin-top:4px;font-size:11px;font-family:var(--font-mono,monospace);color:#0e7490">${text}</div>`;
+      }
+      html += `<div style="padding:8px 18px;font-size:11.5px;color:#0e7490;border-bottom:1px solid var(--border);background:rgba(8,145,178,.08)">
+        <b><i data-icon=\"refresh-cw\"></i> HPA scaled ${svc.hpa.scaleEvents24h}× today</b>
+        <span class="muted"> · current replicas: ${svc.hpa.currentReplicas ?? '?'}</span>
+        ${timelineHtml}
+      </div>`;
+    }
+
+    // Pattern hint (yellow info bar) — new structured format with icon + optional hint
+    if (svc.pattern) {
+      const icon = svc.pattern.icon || '';
+      const hint = svc.pattern.hint
+        ? `<div style="margin-top:4px;color:var(--text-muted);font-style:italic">→ ${escapeHtml(svc.pattern.hint)}</div>`
+        : '';
+      html += `<div style="padding:8px 18px;font-size:11.5px;color:var(--text-muted);border-bottom:1px solid var(--border);background:rgba(245,158,11,.06)">
+        <b>Pattern:</b> ${icon} ${escapeHtml(svc.pattern.label)}${hint}
+      </div>`;
+    }
+
+    // Sort pods by restartedAtUnix — direction from _svcPodSort
+    const dir = _svcPodSort[svcIdx] || 'desc';
+    const sortedPods = svc.pods.slice().sort((a, b) =>
+      dir === 'asc'
+        ? (a.restartedAtUnix || 0) - (b.restartedAtUnix || 0)
+        : (b.restartedAtUnix || 0) - (a.restartedAtUnix || 0));
+
+    const sortArrow = dir === 'asc' ? '↑' : '↓';
+
+    html += `<table class="rm-table compact" style="min-width:auto;font-size:11.5px;background:transparent">
+      <thead>
+        <tr>
+          <th style="width:30px;padding-left:24px"></th>
+          <th>Pod</th>
+          <th class="num">Restart</th>
+          <th>Reason</th>
+          <th style="cursor:pointer;user-select:none;white-space:nowrap" onclick="toggleSvcPodSort(${svcIdx})" title="คลิกเพื่อเรียงตามเวลา">Restarted at ${sortArrow}</th>
+          <th class="num">Age</th>
+          <th class="num">Mem used / limit</th>
+          <th class="num">Mem %</th>
+          <th class="num">CPU used / limit</th>
+          <th class="num">CPU %</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+    sortedPods.forEach((p, j) => {
+      const restartStyled = p.restartCount > 2
+        ? `<span class="rm-num-crit">${p.restartCount}</span>`
+        : p.restartCount;
+      const memRatio = p.memoryUsageRatio ?? 0;
+      const memCls   = memRatio >= 0.85 ? 'crit' : memRatio >= 0.70 ? 'warn' : '';
+      const cpuRatio = p.cpuUsageRatio ?? 0;
+      const cpuCls   = cpuRatio >= 0.85 ? 'crit' : cpuRatio >= 0.70 ? 'warn' : '';
+      const podEsc   = (p.pod || '').replace(/'/g, "\\'");
+      // Get pod suffix (last 5 alphanumeric)
+      const suffix   = (p.pod || '').match(/-([a-z0-9]{5})$/)?.[1] || p.pod;
+
+      // Age cell — highlight pods born within last 30 min (startup-failure candidates)
+      const ageCell = p.podAgeSeconds != null
+        ? (p.podAgeSeconds < 1800
+            ? `<span style="color:#0891b2;font-weight:600" title="pod เพิ่งเกิด — อาจเป็น scale-up หรือ redeploy"><i data-icon="badge"></i> ${fmtAge(p.podAgeSeconds)}</span>`
+            : fmtAge(p.podAgeSeconds))
+        : '—';
+
+      html += `<tr class="clickable" onclick="showPodDetail('${podEsc}')">
+        <td style="padding-left:24px"></td>
+        <td class="rm-pod" style="font-size:11px">…${suffix}</td>
+        <td class="num">${restartStyled}</td>
+        <td>${reasonTag(p.terminationReason)}</td>
+        <td class="muted" style="font-size:11px;white-space:nowrap" title="${p.restartedAt ?? ''}">${fmtRestartTime(p.restartedAt)}</td>
+        <td class="num muted">${ageCell}</td>
+        <td class="num" style="font-size:11px">${fmtBytes(p.memoryUsedBytes)} <span class="muted">/ ${fmtBytes(p.memoryLimitBytes)}</span></td>
+        <td class="num ${memCls === 'crit' ? 'rm-num-crit' : memCls === 'warn' ? 'rm-num-warn' : ''}">${(memRatio * 100).toFixed(1)}%</td>
+        <td class="num" style="font-size:11px">${p.cpuUsedCores != null ? p.cpuUsedCores.toFixed(3) : '—'} <span class="muted">/ ${p.cpuLimitCores ?? '—'}</span></td>
+        <td class="num ${cpuCls === 'crit' ? 'rm-num-crit' : cpuCls === 'warn' ? 'rm-num-warn' : ''}">${p.cpuUsageRatio != null ? (cpuRatio * 100).toFixed(1) + '%' : '—'}</td>
+      </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    return html;
+  }
+
+  // ── Toggle service expand/collapse ────────────────────────────
+  function toggleService(idx) {
+    const row    = document.getElementById('svc-expand-' + idx);
+    const arrow  = document.getElementById('svc-arrow-' + idx);
+    if (!row) return;
+    const isOpen = row.style.display !== 'none';
+    row.style.display = isOpen ? 'none' : '';
+    if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
+  }
+
+  // ── Grafana Explore URL builder ──────────────────────────────
+  const GRAFANA_BASE = 'https://grafana-thanos.truemoney.com';
+  const THANOS_UID   = 'tOZ1JoTMk';
+  const THANOS_ORG   = 3;                                    // ← ThanosQuerier lives in orgId=3
+  const DS_REF       = { type: 'prometheus', uid: THANOS_UID };
+
+  function buildExploreUrl(expr, fromRel = 'now-1h', toRel = 'now') {
+    // Grafana 10+ requires datasource OBJECT inside each query.
+    // Must also pass &orgId because the datasource is org-scoped — without it,
+    // Grafana falls back to the user's current-org default (often TestData / Random Walk).
+    const state = {
+      datasource: THANOS_UID,
+      queries: [{
+        refId: 'A',
+        expr,
+        datasource: DS_REF
+      }],
+      range: { from: fromRel, to: toRel }
+    };
+    return `${GRAFANA_BASE}/explore?orgId=${THANOS_ORG}&left=${encodeURIComponent(JSON.stringify(state))}`;
+  }
+
+  // ── Bytes formatter ──────────────────────────────────────────
+  function fmtBytes(b) {
+    if (b == null) return '—';
+    if (b >= 1024 * 1024 * 1024) return (b / (1024 ** 3)).toFixed(2) + ' GB';
+    if (b >= 1024 * 1024)        return (b / (1024 ** 2)).toFixed(1) + ' MB';
+    if (b >= 1024)               return (b / 1024).toFixed(1) + ' KB';
+    return b + ' B';
+  }
+
+  function fmtAge(seconds) {
+    if (seconds == null) return '—';
+    const days = seconds / 86400;
+    if (days >= 1) return days.toFixed(1) + ' days';
+    const hours = seconds / 3600;
+    if (hours >= 1) return hours.toFixed(1) + ' hr';
+    return Math.round(seconds / 60) + ' min';
+  }
+
+  // Format ISO 8601 restart time → compact display + relative "X hr ago"
+  function fmtRestartTime(iso) {
+    if (!iso) return '<span style="color:var(--text-muted)">—</span>';
+    try {
+      const d = new Date(iso);
+      const time = d.toLocaleString('th-TH', {
+        day: '2-digit', month: 'short',
+        hour: '2-digit', minute: '2-digit',
+        hour12: false,
+      });
+      // relative
+      const diffMs = Date.now() - d.getTime();
+      const diffH  = diffMs / 3600000;
+      let rel = '';
+      if (diffH < 1)         rel = Math.round(diffMs / 60000) + 'm ago';
+      else if (diffH < 24)   rel = Math.round(diffH) + 'h ago';
+      else                   rel = Math.round(diffH / 24) + 'd ago';
+      return `${time}<br><span style="opacity:.6;font-size:10px">${rel}</span>`;
+    } catch {
+      return iso;
+    }
+  }
+
+  // ── Pod detail view (swap content in place — no scroll) ─────
+  function showPodDetail(podName) {
+    if (!_currentDayData) return;
+    const pod = (_currentDayData.pods || []).find(p => p.pod === podName);
+    if (!pod) return;
+    _currentPod = podName;
+    renderPodDetail(pod, _currentDayData);
+    // Swap: hide table, show detail (in same card)
+    document.getElementById('pods-table-wrap').style.display = 'none';
+    document.getElementById('pod-detail-wrap').style.display = '';
+    // Update section title + show back button
+    document.getElementById('pods-title-text').textContent = 'Pod detail · ' + podName;
+    document.getElementById('pods-title-text').style.fontFamily = 'ui-monospace, Menlo, monospace';
+    document.getElementById('pods-title-text').style.textTransform = 'none';
+    document.getElementById('pods-title-text').style.letterSpacing = '0';
+    document.getElementById('pod-close-btn').style.display = '';
+  }
+
+  function closePodDetail() {
+    // Swap back: show table, hide detail
+    document.getElementById('pods-table-wrap').style.display = '';
+    document.getElementById('pod-detail-wrap').style.display = 'none';
+    document.getElementById('pods-title-text').textContent = 'Pods';
+    document.getElementById('pods-title-text').style.fontFamily = '';
+    document.getElementById('pods-title-text').style.textTransform = '';
+    document.getElementById('pods-title-text').style.letterSpacing = '';
+    document.getElementById('pod-close-btn').style.display = 'none';
+    _currentPod = null;
+  }
+
+  function renderPodDetail(p, report) {
+    const memCls   = p.memoryUsageRatio >= 0.85 ? 'crit' : p.memoryUsageRatio >= 0.70 ? 'warn' : '';
+    const memPct   = (p.memoryUsageRatio * 100).toFixed(2);
+    const ns       = p.namespace || '';
+    const podRegex = p.pod.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Pre-build Grafana Explore URLs for this pod
+    const memQuery = `max by (pod) (container_memory_working_set_bytes{cluster="acm-tmn-eks-prod",pod="${p.pod}",container!="",container!="POD"})`;
+    const memRatioQuery = `${memQuery} / max by (pod) (kube_pod_container_resource_limits{cluster="acm-tmn-eks-prod",pod="${p.pod}",resource="memory"})`;
+    const cpuQuery = `sum by (pod) (rate(container_cpu_usage_seconds_total{cluster="acm-tmn-eks-prod",pod="${p.pod}",container!="",container!="POD"}[5m]))`;
+    const restartQuery = `kube_pod_container_status_restarts_total{cluster="acm-tmn-eks-prod",pod="${p.pod}"}`;
+    const reasonQuery = `kube_pod_container_status_last_terminated_reason{cluster="acm-tmn-eks-prod",pod="${p.pod}"}`;
+
+    const memLink6h    = buildExploreUrl(memRatioQuery, 'now-6h', 'now');
+    const memLink24h   = buildExploreUrl(memRatioQuery, 'now-24h', 'now');
+    const memBytesLink = buildExploreUrl(memQuery, 'now-6h', 'now');
+    const cpuLink      = buildExploreUrl(cpuQuery, 'now-6h', 'now');
+    const restartLink  = buildExploreUrl(restartQuery, 'now-7d', 'now');
+    const reasonLink   = buildExploreUrl(reasonQuery, 'now-7d', 'now');
+
+    // Today's snapshot range
+    const startUnix = Math.floor(new Date(report.scanRangeStart || `${report.date}T02:00:00Z`).getTime());
+    const endUnix   = Math.floor(new Date(report.scanRangeEnd   || `${report.date}T09:00:00+07:00`).getTime());
+    const snapshotLink = `${GRAFANA_BASE}/explore?orgId=${THANOS_ORG}&left=${encodeURIComponent(JSON.stringify({
+      datasource: THANOS_UID,
+      queries: [{ refId: 'A', expr: memRatioQuery, datasource: DS_REF }],
+      range: { from: String(startUnix), to: String(endUnix) }
+    }))}`;
+
+    // CPU ratio link
+    const cpuRatioQuery = `(${cpuQuery}) / max by (pod) (kube_pod_container_resource_limits{cluster="acm-tmn-eks-prod",pod="${p.pod}",resource="cpu"})`;
+    const cpuRatioLink  = buildExploreUrl(cpuRatioQuery, 'now-24h', 'now');
+
+    // ── Build CPU section (kept as a plain string — avoids template-literal IIFE quirks) ──
+    let cpuSection = '';
+    if (p.cpuUsedCores != null && p.cpuLimitCores != null) {
+      const cpuPct = (p.cpuUsageRatio * 100).toFixed(2);
+      const cpuCls = p.cpuUsageRatio >= 0.85 ? 'crit' : p.cpuUsageRatio >= 0.70 ? 'warn' : '';
+      const cpuValClass = cpuCls === 'crit' ? 'rm-num-crit' : cpuCls === 'warn' ? 'rm-num-warn' : '';
+      cpuSection = `
+        <div class="rm-section">
+          <div class="rm-section-label">CPU usage at snapshot</div>
+          <div class="rm-stat-grid">
+            <div>
+              <div class="lbl">Used</div>
+              <div class="val">${p.cpuUsedCores.toFixed(4)} <span style="font-size:11px;color:var(--text-muted)">cores</span></div>
+              <div class="sub">≈ ${(p.cpuUsedCores * 1000).toFixed(0)}m</div>
+            </div>
+            <div>
+              <div class="lbl">Limit</div>
+              <div class="val">${p.cpuLimitCores} <span style="font-size:11px;color:var(--text-muted)">cores</span></div>
+              <div class="sub">≈ ${(p.cpuLimitCores * 1000).toFixed(0)}m</div>
+            </div>
+            <div style="grid-column: span 2">
+              <div class="lbl">Usage ratio</div>
+              <div class="val ${cpuValClass}">${cpuPct}%</div>
+              <div class="rm-mem-big">
+                <div class="rm-mem-big-bar"><i class="${cpuCls}" style="width:${Math.min(100, p.cpuUsageRatio * 100)}%"></i></div>
+                <div class="rm-mem-big-info">
+                  <span>0</span>
+                  <span>${p.cpuLimitCores} cores (limit)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    let html = `
+      <div class="rm-section">
+        <div class="rm-pod-title">${p.pod}</div>
+        <div class="rm-pod-meta">${ns} · ${sevTag(p.severity)} · ${reasonTag(p.terminationReason)}</div>
+      </div>
+
+      <div class="rm-section">
+        <div class="rm-section-label">Stats at snapshot (${report.date} 09:00 +07)</div>
+        <div class="rm-stat-grid">
+          <div>
+            <div class="lbl">Restarts (24h)</div>
+            <div class="val ${p.restartCount > 2 ? 'rm-num-crit' : ''}">${p.restartCount}</div>
+            <div class="sub">in ${report.scanWindowHours}h window</div>
+          </div>
+          <div>
+            <div class="lbl">Pod age</div>
+            <div class="val">${(p.podAgeDays ?? 0).toFixed(1)}d</div>
+            <div class="sub">${fmtAge(p.podAgeSeconds)}</div>
+          </div>
+          <div>
+            <div class="lbl">Reason</div>
+            <div class="val" style="font-size:13px">${p.terminationReason || '—'}</div>
+            <div class="sub">last container exit</div>
+          </div>
+          <div>
+            <div class="lbl">Severity</div>
+            <div class="val" style="font-size:13px">${(p.severity || '').toUpperCase()}</div>
+            <div class="sub">computed locally</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rm-section">
+        <div class="rm-section-label">When did this pod restart?</div>
+        <div class="rm-stat-grid">
+          <div style="grid-column: span 2">
+            <div class="lbl">Restarted at</div>
+            <div class="val" style="font-size:14px;font-family:ui-monospace,Menlo,monospace">${p.restartedAt ?? '—'}</div>
+            <div class="sub">timestamp of last container exit (ISO 8601 +07:00)</div>
+          </div>
+          <div style="grid-column: span 2">
+            <div class="lbl">Time since restart</div>
+            <div class="val">${
+              p.restartedAtUnix
+                ? (() => {
+                    const ago = (Date.now()/1000 - p.restartedAtUnix);
+                    if (ago < 3600) return Math.round(ago/60) + ' min ago';
+                    if (ago < 86400) return (ago/3600).toFixed(1) + ' hr ago';
+                    return (ago/86400).toFixed(1) + ' days ago';
+                  })()
+                : '—'
+            }</div>
+            <div class="sub">how long ago the container died</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rm-section">
+        <div class="rm-section-label">Memory usage at snapshot</div>
+        <div class="rm-stat-grid">
+          <div>
+            <div class="lbl">Used</div>
+            <div class="val">${fmtBytes(p.memoryUsedBytes)}</div>
+            <div class="sub">${p.memoryUsedBytes != null ? p.memoryUsedBytes.toLocaleString() + ' B' : ''}</div>
+          </div>
+          <div>
+            <div class="lbl">Limit</div>
+            <div class="val">${fmtBytes(p.memoryLimitBytes)}</div>
+            <div class="sub">${p.memoryLimitBytes != null ? p.memoryLimitBytes.toLocaleString() + ' B' : ''}</div>
+          </div>
+          <div style="grid-column: span 2">
+            <div class="lbl">Usage ratio</div>
+            <div class="val ${memCls === 'crit' ? 'rm-num-crit' : memCls === 'warn' ? 'rm-num-warn' : ''}">${memPct}%</div>
+            <div class="rm-mem-big">
+              <div class="rm-mem-big-bar"><i class="${memCls}" style="width:${Math.min(100, p.memoryUsageRatio * 100)}%"></i></div>
+              <div class="rm-mem-big-info">
+                <span>0</span>
+                <span>${fmtBytes(p.memoryLimitBytes)} (limit)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      ${cpuSection}
+
+      <div class="rm-section">
+        <div class="rm-section-label">Verify in Grafana · เปิดในแท็บใหม่</div>
+        <p style="font-size:11px;color:var(--text-muted);margin:-6px 0 12px;line-height:1.5">
+          แต่ละลิงก์ pre-fill query + datasource + time range ให้แล้ว — คลิกแล้วเห็นกราฟจริง ๆ ของ pod ตัวนี้ ไม่ต้อง type query เอง
+        </p>
+        <ul class="rm-link-list">
+
+          <li>
+            <div>
+              <div class="name">Memory ratio — 6 ชั่วโมงล่าสุด</div>
+              <div class="desc">
+                <b>หน่วย: %</b> (0–100, &gt;85 = วิกฤต) ·
+                memory ที่ใช้ ÷ memory ที่ allow ·
+                <span style="opacity:.7">ใช้ดู trend ก่อน restart</span>
+              </div>
+            </div>
+            <a href="${memLink6h}" target="_blank" rel="noopener">Open in Grafana</a>
+          </li>
+
+          <li>
+            <div>
+              <div class="name">Memory ratio — 24 ชั่วโมง</div>
+              <div class="desc">
+                <b>หน่วย: %</b> (0–100) ·
+                <span style="opacity:.7">ดูเห็น pattern memory leak (กราฟไต่ขึ้นช้า ๆ) หรือ spike (พุ่งขึ้นทันที)</span>
+              </div>
+            </div>
+            <a href="${memLink24h}" target="_blank" rel="noopener">Open in Grafana</a>
+          </li>
+
+          <li>
+            <div>
+              <div class="name">Memory ที่ใช้จริง (bytes) — 6 ชั่วโมง</div>
+              <div class="desc">
+                <b>หน่วย: bytes</b> (Grafana auto-format → KB / MB / GB) ·
+                <span style="opacity:.7">ดู memory ดิบ ไม่หาร limit · ปกติ 100M–1G สำหรับ JVM service</span>
+              </div>
+            </div>
+            <a href="${memBytesLink}" target="_blank" rel="noopener">Open in Grafana</a>
+          </li>
+
+          <li>
+            <div>
+              <div class="name">CPU ที่ใช้จริง — 6 ชั่วโมง</div>
+              <div class="desc">
+                <b>หน่วย: cores</b> (1.0 = 1 vCPU เต็ม, 0.5 = ครึ่ง core) ·
+                <span style="opacity:.7">เปรียบเทียบ: 0.1 = ใช้ 100m (พอใช้ทั่วไป), 0.4+ = ภาระสูง</span>
+              </div>
+            </div>
+            <a href="${cpuLink}" target="_blank" rel="noopener">Open in Grafana</a>
+          </li>
+
+          <li>
+            <div>
+              <div class="name">CPU ratio — 24 ชั่วโมง</div>
+              <div class="desc">
+                <b>หน่วย: %</b> (0–100, &gt;85 = throttle/saturate) ·
+                CPU ที่ใช้ ÷ CPU limit ·
+                <span style="opacity:.7">ถ้าใกล้ 100% นาน ๆ = app ช้า/timeout → crash</span>
+              </div>
+            </div>
+            <a href="${cpuRatioLink}" target="_blank" rel="noopener">Open in Grafana</a>
+          </li>
+
+          <li>
+            <div>
+              <div class="name">Restart count — 7 วัน</div>
+              <div class="desc">
+                <b>หน่วย: ครั้ง</b> (cumulative, ขึ้นทีละ +1 ทุก crash) ·
+                <span style="opacity:.7">เส้นแนวระดับ = stable, เส้นไต่ = ปัญหาเรื้อรัง</span>
+              </div>
+            </div>
+            <a href="${restartLink}" target="_blank" rel="noopener">Open in Grafana</a>
+          </li>
+
+          <li>
+            <div>
+              <div class="name">Termination reason — 7 วัน</div>
+              <div class="desc">
+                <b>หน่วย: label</b> = OOMKilled / Error / Completed / OOMKilling ·
+                <span style="opacity:.7">เห็นว่าตายด้วยเหตุผลเดิมซ้ำ ๆ หรือเปลี่ยน pattern</span>
+              </div>
+            </div>
+            <a href="${reasonLink}" target="_blank" rel="noopener">Open in Grafana</a>
+          </li>
+
+          <li>
+            <div>
+              <div class="name">Snapshot window — 24h ก่อน 09:00 (ตรงกับ report)</div>
+              <div class="desc">
+                <b>หน่วย: %</b> (memory ratio) ·
+                <span style="opacity:.7">ดู memory เฉพาะช่วงเวลาที่ scheduled task scan = compare กับเลขใน table ได้</span>
+              </div>
+            </div>
+            <a href="${snapshotLink}" target="_blank" rel="noopener">Open in Grafana</a>
+          </li>
+
+        </ul>
+      </div>
+
+      <div class="rm-section">
+        <div class="rm-section-label">Action checklist</div>
+        <ul class="rm-rec-list">
+          ${p.terminationReason === 'OOMKilled' ? `
+            <li class="crit">
+              <code>kubectl -n ${ns} describe pod ${p.pod}</code>
+              <span class="why">— ดู event ของ OOMKilled + node ที่ pod อยู่</span>
+            </li>
+            <li class="crit">
+              <code>kubectl -n ${ns} top pod ${p.pod} --containers</code>
+              <span class="why">— ดู memory จริงตอนนี้</span>
+            </li>
+            <li class="crit">
+              <code>kubectl -n ${ns} edit deployment</code>
+              <span class="why">— เพิ่ม resources.limits.memory (ปัจจุบัน ${fmtBytes(p.memoryLimitBytes)})</span>
+            </li>
+          ` : p.restartCount > 2 ? `
+            <li class="crit">
+              <code>kubectl -n ${ns} logs ${p.pod} --previous</code>
+              <span class="why">— อ่าน log ของ container ก่อน crash</span>
+            </li>
+            <li class="crit">
+              <code>kubectl -n ${ns} get events --field-selector involvedObject.name=${p.pod}</code>
+              <span class="why">— เช็ค K8s events</span>
+            </li>
+          ` : `
+            <li>
+              <code>kubectl -n ${ns} logs ${p.pod} --tail=200</code>
+              <span class="why">— ดู application log ล่าสุด</span>
+            </li>
+          `}
+        </ul>
+      </div>`;
+
+    document.getElementById('pod-detail-wrap').innerHTML = html;
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Legacy renderDetail / closeDetail removed — replaced by
+  // in-page flow: loadDay() + renderPodsTable() + showPodDetail()
+  // The block below is retained only as historical scaffolding
+  // and is unreachable. Kept inside an IIFE to silence the parser.
+  // ──────────────────────────────────────────────────────────────
+  (function _legacy_unused() {
+  function renderDetail(data) {
+    document.getElementById('detail-sub').textContent =
+      `${data.cluster} · ${data.scanWindowHours}h · ${data.totalRestarts} pods`;
+
+    const pods = (data.pods || []).slice().sort((a, b) => {
+      const order = { critical: 0, warning: 1, info: 2 };
+      return (order[a.severity] ?? 9) - (order[b.severity] ?? 9);
+    });
+
+    const sev = data.severitySummary || {};
+    const reason = data.reasonSummary || {};
+    const crit = pods.filter(p => p.severity === 'critical');
+
+    const numClass = n => (n === 0 || n == null) ? 'zero' : '';
+
+    // ── Section 1: Summary (Total | By severity | By reason) ──
+    let html = `
+      <div class="rm-section">
+        <div class="rm-section-label">Summary</div>
+        <div class="rm-summary-grid">
+
+          <div class="rm-summary-cell">
+            <div class="rm-summary-cell-label">Total pods</div>
+            <div class="rm-summary-total">${data.totalRestarts ?? 0}</div>
+            <div class="rm-summary-sub">in ${data.scanWindowHours ?? 24}h</div>
+          </div>
+
+          <div class="rm-summary-cell">
+            <div class="rm-summary-cell-label">By severity</div>
+            <div class="rm-stat-row">
+              <div>
+                <span class="lbl crit">Critical</span>
+                <span class="val ${numClass(sev.critical)}">${sev.critical ?? 0}</span>
+              </div>
+              <div>
+                <span class="lbl warn">Warning</span>
+                <span class="val ${numClass(sev.warning)}">${sev.warning ?? 0}</span>
+              </div>
+              <div>
+                <span class="lbl info">Info</span>
+                <span class="val ${numClass(sev.info)}">${sev.info ?? 0}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rm-summary-cell">
+            <div class="rm-summary-cell-label">By reason</div>
+            <div class="rm-stat-row">
+              <div>
+                <span class="lbl oom">OOMKilled</span>
+                <span class="val ${numClass(reason.OOMKilled)}">${reason.OOMKilled ?? 0}</span>
+              </div>
+              <div>
+                <span class="lbl err">Error</span>
+                <span class="val ${numClass(reason.Error)}">${reason.Error ?? 0}</span>
+              </div>
+              <div>
+                <span class="lbl done">Completed</span>
+                <span class="val ${numClass(reason.Completed)}">${reason.Completed ?? 0}</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>`;
+
+    // ── Section 2: Pods table ──
+    html += `
+      <div class="rm-section" style="padding-left:0;padding-right:0">
+        <div class="rm-section-label" style="padding:0 24px">Pods</div>
+        <table class="rm-table">
+          <thead>
+            <tr>
+              <th>Pod</th>
+              <th>Namespace</th>
+              <th class="num">Restart</th>
+              <th>Reason</th>
+              <th class="num">Age</th>
+              <th>Memory</th>
+              <th>Severity</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+    for (const p of pods) {
+      const restartStyled = p.restartCount > 2
+        ? `<span class="rm-num-crit">${p.restartCount}</span>`
+        : p.restartCount;
+      const podEsc = (p.pod || '').replace(/'/g, "\\'");
+      html += `<tr class="clickable" onclick="openPodDetail('${podEsc}')" title="คลิกดู detail + Grafana link">
+        <td class="rm-pod">${p.pod}</td>
+        <td class="muted" style="font-size:11px">${(p.namespace || '').replace('truemoney-', '').replace('-production', '')}</td>
+        <td class="num">${restartStyled}</td>
+        <td>${reasonTag(p.terminationReason)}</td>
+        <td class="num muted" style="font-size:11.5px">${(p.podAgeDays ?? 0).toFixed(1)}d</td>
+        <td>${fmtMem(p.memoryUsageRatio)}</td>
+        <td>${sevTag(p.severity)}</td>
+      </tr>`;
+    }
+    html += `      </tbody>
+        </table>
+      </div>`;
+
+    // ── Section 3: Recommendations ──
+    if (crit.length) {
+      html += `
+        <div class="rm-section">
+          <div class="rm-section-label">Recommended actions · ${crit.length} pod</div>
+          <ul class="rm-rec-list">`;
+      for (const p of crit) {
+        const why = p.terminationReason === 'OOMKilled'
+          ? 'OOMKilled — เพิ่ม memory limit หรือสืบ memory leak'
+          : p.restartCount > 2
+            ? `Restart ${p.restartCount} ครั้ง — เช็ค application log`
+            : `Memory ${(p.memoryUsageRatio*100).toFixed(0)}% — ใกล้ limit`;
+        html += `<li class="crit"><code>${p.pod}</code><span class="why">— ${why}</span></li>`;
+      }
+      html += `  </ul>
+        </div>`;
+    }
+
+    // ── Section 4: Legend (severity + reason explained) ──
+    html += `
+      <div class="rm-section">
+        <div class="rm-section-label">Legend</div>
+        <div class="rm-glossary-grid">
+          <div class="rm-glossary-col">
+            <h4>Severity</h4>
+            <dl>
+              <dt class="crit">Critical</dt>
+              <dd>OOMKilled หรือ restart > 2 ครั้ง — ต้องตามทันที</dd>
+              <dt class="warn">Warning</dt>
+              <dd>Memory ใช้ > 85% ของ limit — ใกล้ตาย</dd>
+              <dt class="info">Info</dt>
+              <dd>Restart แค่ 1 ครั้ง memory ปกติ — ติดตามดูได้</dd>
+            </dl>
+          </div>
+          <div class="rm-glossary-col">
+            <h4>Reason (Kubernetes)</h4>
+            <dl>
+              <dt class="oom">OOMKilled</dt>
+              <dd>Container ใช้ memory เกิน <code>limits.memory</code> → kernel kill -9</dd>
+              <dt class="err">Error</dt>
+              <dd>Container exit code ≠ 0 (crash, exception, signal)</dd>
+              <dt class="done">Completed</dt>
+              <dd>Container exit code = 0 — job/cronjob จบงานปกติ</dd>
+            </dl>
+          </div>
+        </div>
+      </div>`;
+
+    // ── Section 5: Services (unique services explained) ──
+    const SERVICE_INFO = {
+      'acm-ac-stm-consumer':     { team: 'Settlement', desc: 'Kafka consumer process settlement transactions (ACM)' },
+      'policy-service':          { team: 'Insurance', desc: 'จัดการ policy data ของประกัน (CRUD policies, claims)' },
+      'insure-miniapp-gateway':  { team: 'Insurance', desc: 'API gateway สำหรับ insurance miniapp ฝั่ง mobile' },
+      'insurance-auth-server':   { team: 'Insurance', desc: 'Authentication / authorization ของ insurance services' },
+      'acm-face-recog-service':  { team: 'Face Recog', desc: 'Face verification ML service สำหรับ KYC' },
+      'acn-dp-generic-log-etl':  { team: 'Data Platform', desc: 'ETL pipeline: application log → data warehouse' },
+      'grape-sftp-downloader':   { team: 'Alipay GN',    desc: 'SFTP downloader ดึงไฟล์ batch จาก Alipay Global Network' },
+    };
+
+    // Extract unique service names from pods (strip hash suffix)
+    const uniqueSvcs = new Map();
+    for (const p of pods) {
+      const base = (p.pod || '').replace(/-[a-f0-9]{8,12}-[a-z0-9]{5}$/, '').replace(/-[0-9]+-[a-z0-9]{5}$/, '');
+      // Try to find matching key in SERVICE_INFO
+      const key = Object.keys(SERVICE_INFO).find(k => p.pod && p.pod.startsWith(k));
+      if (key && !uniqueSvcs.has(key)) {
+        uniqueSvcs.set(key, { count: 1, info: SERVICE_INFO[key] });
+      } else if (key) {
+        uniqueSvcs.get(key).count++;
+      }
+    }
+
+    if (uniqueSvcs.size) {
+      html += `
+        <div class="rm-section">
+          <div class="rm-section-label">Services in this report</div>
+          <ul class="rm-rec-list">`;
+      for (const [svc, { count, info }] of uniqueSvcs) {
+        html += `<li><code>${svc}</code>
+          <span class="why">— ${info.desc} <span style="opacity:.65">· team: ${info.team} · ${count} pod${count > 1 ? 's' : ''}</span></span>
+        </li>`;
+      }
+      html += `  </ul>
+        </div>`;
+    }
+
+    document.getElementById('detail-body').innerHTML = html;
+  }
+
+  function closeDetail() { /* legacy no-op */ }
+  })(); // end of _legacy_unused IIFE
+
+  // ── Tab switching ────────────────────────────────────────────
+  function switchTab(tab) {
+    document.querySelectorAll('.rm-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.rm-tab-panel').forEach(p => {
+      p.style.display = p.id === 'tab-' + tab ? '' : 'none';
+    });
+    if (tab === 'raw' && _rawReports.length === 0) loadRawReports();
+  }
+
+  // ── Monthly modal open/close ─────────────────────────────────
+  function openMonthlyModal() {
+    document.getElementById('monthly-modal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    if (!_moInited) initMonthly();
+  }
+  function closeMonthlyModal() {
+    document.getElementById('monthly-modal').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  // ── Monthly tab ──────────────────────────────────────────────
+  let _moInited       = false;
+  let _moSummary      = null;
+  let _moTo           = [];
+  let _moCc           = [];
+  let _moRecipientsDirty = false;
+  let _monthlyRunway  = 'EKS TMN';     // currently selected runway in modal
+
+  function switchMonthlyRunway(name) {
+    if (_monthlyRunway === name) return;
+    _monthlyRunway = name;
+    document.querySelectorAll('#mo-runway-bar .rm-runway-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.rw === name));
+    document.getElementById('mo-title').textContent = `รายงานรายเดือน — Pod Restarts ของ ${name}`;
+    document.getElementById('mo-cluster').textContent = rwCluster(name);
+    // Reload month list (different runway = different available months)
+    initMonthly(true);
+  }
+  let _moTrendChart   = null;
+  let _moReasonChart  = null;
+
+  const MO_REASON_COLORS = {
+    OOMKilled: '#a855f7',
+    Error:     '#fb7185',
+    Completed: '#22c55e',
+    Unknown:   '#94a3b8',
+  };
+
+  async function initMonthly(skipRecipientsLoad = false) {
+    _moInited = true;
+    // Allow ?tab=monthly&month=YYYY-MM deep-link
+    const urlParams = new URLSearchParams(location.search);
+    const wantMonth = urlParams.get('month');
+
+    try {
+      const res = await API.get('/restart-monitor/monthly.php?action=months' + rwParam(_monthlyRunway));
+      const months = (res?.data?.data?.months) || [];
+
+      // Always include current month if missing (for newly-started months)
+      const todayMo = new Date().toISOString().slice(0, 7);
+      if (!months.find(m => m.month === todayMo)) {
+        months.unshift({ month: todayMo, days: 0 });
+      }
+
+      const sel = document.getElementById('mo-select');
+      sel.innerHTML = months.map(m =>
+        `<option value="${m.month}">${fmtMonthLabel(m.month)} · ${m.days} วัน</option>`
+      ).join('');
+
+      const target = (wantMonth && months.find(m => m.month === wantMonth)) ? wantMonth : (months[0]?.month || todayMo);
+      sel.value = target;
+      const tasks = [loadMonthly(target)];
+      if (!skipRecipientsLoad) tasks.push(loadRecipients());
+      await Promise.all(tasks);
+    } catch (e) {
+      console.error('initMonthly failed', e);
+    }
+  }
+
+  function fmtMonthLabel(ym) {
+    if (!ym) return '—';
+    const [y, m] = ym.split('-').map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+  }
+
+  async function loadMonthly(month) {
+    if (!month) return;
+    try {
+      const res = await API.get(`/restart-monitor/monthly.php?action=summary&month=${month}` + rwParam(_monthlyRunway));
+      const s   = res?.data?.data;
+      if (!s) return;
+      _moSummary = s;
+      renderMonthly(s);
+    } catch (e) {
+      console.error('loadMonthly failed', e);
+    }
+  }
+
+  function renderMonthly(s) {
+    const empty = document.getElementById('mo-empty');
+    const body  = document.getElementById('mo-content');
+    if (s.daysWithData === 0) {
+      empty.style.display = '';
+      body.style.display  = 'none';
+      document.getElementById('mo-send-btn').disabled = true;
+      document.getElementById('mo-preview-btn').disabled = true;
+      return;
+    }
+    empty.style.display = 'none';
+    body.style.display  = '';
+    document.getElementById('mo-send-btn').disabled = false;
+    document.getElementById('mo-preview-btn').disabled = false;
+
+    // KPIs
+    document.getElementById('mo-kpi-total').textContent = s.totalRestarts.toLocaleString();
+    const delta = s.deltaVsPrev?.restartsPct;
+    const dEl   = document.getElementById('mo-kpi-delta');
+    if (delta === null || delta === undefined) {
+      dEl.textContent = `เทียบกับ ${fmtMonthLabel(s.previousMonth?.month)}: ไม่มีข้อมูล`;
+      dEl.className = 'rm-mo-kpi-sub';
+    } else {
+      const arrow = delta > 0 ? '▲' : (delta < 0 ? '▼' : '·');
+      dEl.textContent = `${arrow} ${Math.abs(delta).toFixed(1)}% เทียบกับ ${fmtMonthLabel(s.previousMonth?.month)}`;
+      dEl.className = 'rm-mo-kpi-sub ' + (delta > 0 ? 'up' : delta < 0 ? 'down' : '');
+    }
+
+    document.getElementById('mo-kpi-crit').textContent = s.severitySummary.critical.toLocaleString();
+    document.getElementById('mo-kpi-crit-pct').textContent =
+      s.totalRestarts > 0 ? `${(s.severitySummary.critical / s.totalRestarts * 100).toFixed(1)}% จากทั้งหมด` : '—';
+
+    document.getElementById('mo-kpi-pods').textContent = s.uniquePods.toLocaleString();
+    document.getElementById('mo-kpi-ns').textContent   = `${s.uniqueNamespaces} namespaces`;
+
+    const worst = s.worstDay;
+    document.getElementById('mo-kpi-worst').textContent =
+      worst ? new Date(worst.date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : '—';
+    document.getElementById('mo-kpi-worst-sub').textContent =
+      worst ? `${worst.restarts} restarts · ${worst.critical} critical` : '—';
+
+    // Legend totals
+    document.getElementById('lg-crit').textContent = s.severitySummary.critical;
+    document.getElementById('lg-warn').textContent = s.severitySummary.warning;
+    document.getElementById('lg-info').textContent = s.severitySummary.info;
+
+    // Tab badge = critical count
+    const badge = document.getElementById('tab-badge-monthly');
+    if (badge) badge.textContent = s.severitySummary.critical > 0 ? s.severitySummary.critical : '';
+
+    drawTrend(s.dailyTrend);
+    drawReason(s.reasonSummary);
+    renderNamespaces(s.topNamespaces);
+    renderPods(s.topPods);
+  }
+
+  function drawTrend(trend) {
+    if (_moTrendChart) _moTrendChart.destroy();
+    const labels = trend.map(d => Number(d.date.slice(-2)));
+    const ctx = document.getElementById('mo-trend');
+    _moTrendChart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [
+        { label: 'Critical', data: trend.map(d => d.critical), backgroundColor: '#ef4444', stack: 's', borderWidth: 0 },
+        { label: 'Warning',  data: trend.map(d => d.warning),  backgroundColor: '#f59e0b', stack: 's', borderWidth: 0 },
+        { label: 'Info',     data: trend.map(d => d.info),     backgroundColor: '#94a3b8', stack: 's', borderWidth: 0 },
+      ] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { title: items => `วันที่ ${items[0].label}` } },
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { color: '#888', font: { size: 10 }, maxRotation: 0, autoSkip: true } },
+          y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(128,128,128,.12)' }, ticks: { color: '#888', font: { size: 10 }, precision: 0 } },
+        },
+      },
+    });
+  }
+
+  function drawReason(reasonSummary) {
+    if (_moReasonChart) _moReasonChart.destroy();
+    const entries = Object.entries(reasonSummary);
+    const labels  = entries.map(([k]) => k);
+    const data    = entries.map(([, v]) => v);
+    const colors  = labels.map(k => MO_REASON_COLORS[k] || '#94a3b8');
+    const total   = data.reduce((a, b) => a + b, 0) || 1;
+
+    const ctx = document.getElementById('mo-reason');
+    _moReasonChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { display: false } } },
+    });
+
+    document.getElementById('mo-reason-legend').innerHTML = entries.map(([k, v]) => `
+      <span style="display:flex;align-items:center;width:100%;gap:6px">
+        <span class="sw" style="background:${MO_REASON_COLORS[k] || '#94a3b8'}"></span>
+        <span style="color:var(--text)">${k}</span>
+        <span style="margin-left:auto;color:var(--text-muted)">${v} · ${(v/total*100).toFixed(1)}%</span>
+      </span>`).join('');
+  }
+
+  function renderNamespaces(list) {
+    const max = list[0]?.restarts || 1;
+    document.getElementById('mo-ns-list').innerHTML = list.length ? list.map(n => {
+      const pct = Math.round(n.restarts / max * 100);
+      const shortNs = n.namespace.replace(/^truemoney-/, '');
+      return `
+        <div class="rm-mo-ns-row">
+          <span style="color:var(--text)">${shortNs}</span>
+          <span style="color:var(--text-muted);font-variant-numeric:tabular-nums">${n.restarts}</span>
+        </div>
+        <div class="rm-mo-ns-bar"><i style="width:${pct}%"></i></div>`;
+    }).join('') : `<div style="color:var(--text-muted);font-size:11.5px;padding:8px 0">—</div>`;
+  }
+
+  function renderPods(pods) {
+    if (!pods.length) {
+      document.getElementById('mo-pods-wrap').innerHTML =
+        `<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:12px">ไม่มีข้อมูล pod</div>`;
+      return;
+    }
+    const rows = pods.map(p => {
+      const tagCls = ({OOMKilled:'oom', Error:'err', Completed:'done', Unknown:'info'})[p.dominant] || 'info';
+      const ns = (p.namespace || '').replace(/^truemoney-/, '');
+      return `<tr>
+        <td><span class="rm-pod">${escapeHtml(p.pod)}</span></td>
+        <td class="muted" style="font-size:11px">${escapeHtml(ns)}</td>
+        <td class="num"><span style="font-weight:600">${p.restarts}</span></td>
+        <td class="num"><span style="color:#ef4444;font-weight:600">${p.critical||0}</span></td>
+        <td><span class="rm-tag ${tagCls}">${escapeHtml(p.dominant)}</span></td>
+      </tr>`;
+    }).join('');
+    document.getElementById('mo-pods-wrap').innerHTML = `
+      <div class="rm-table-scroll">
+        <table class="rm-table compact" style="min-width:680px">
+          <thead><tr>
+            <th>Pod</th>
+            <th>Namespace</th>
+            <th class="num">Restart</th>
+            <th class="num">วัน Critical</th>
+            <th>สาเหตุหลัก</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ── Recipients (To + CC) ─────────────────────────────────────
+  async function loadRecipients() {
+    try {
+      const res = await API.get('/restart-monitor/monthly-recipients.php');
+      const d = res?.data?.data || {};
+      // Backward compat: old config stored a single `recipients` array.
+      _moTo = d.to || d.recipients || [];
+      _moCc = d.cc || [];
+      _moRecipientsDirty = false;
+      renderRecipients();
+    } catch (e) { console.error('loadRecipients failed', e); }
+  }
+
+  function renderRecipients() {
+    const renderList = (list, field, emptyLabel) => list.length
+      ? list.map((e, i) =>
+          `<span class="rm-mo-chip">${escapeHtml(e)}<button onclick="removeRecipient('${field}', ${i})" title="ลบ">×</button></span>`
+        ).join('')
+      : `<span style="font-size:11px;color:var(--text-muted)">${emptyLabel}</span>`;
+
+    document.getElementById('mo-to-chips').innerHTML = renderList(_moTo, 'to', 'ยังไม่มีผู้รับ');
+    document.getElementById('mo-cc-chips').innerHTML = renderList(_moCc, 'cc', '—');
+    document.getElementById('mo-save-rcpt').style.display = _moRecipientsDirty ? '' : 'none';
+  }
+
+  function addRecipient(field) {
+    const inputId = field === 'cc' ? 'mo-new-cc' : 'mo-new-to';
+    const input   = document.getElementById(inputId);
+    const status  = document.getElementById('mo-rcpt-status');
+    const v = input.value.trim();
+    if (!v) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+      status.textContent = 'อีเมลไม่ถูกต้อง';
+      return;
+    }
+    const list = field === 'cc' ? _moCc : _moTo;
+    const other = field === 'cc' ? _moTo : _moCc;
+    if (list.includes(v) || other.includes(v)) {
+      status.textContent = 'มีอยู่แล้ว (ใน To หรือ CC)';
+      return;
+    }
+    list.push(v);
+    _moRecipientsDirty = true;
+    input.value = '';
+    status.textContent = '';
+    renderRecipients();
+  }
+
+  function removeRecipient(field, idx) {
+    const list = field === 'cc' ? _moCc : _moTo;
+    list.splice(idx, 1);
+    _moRecipientsDirty = true;
+    renderRecipients();
+  }
+
+  async function saveRecipients() {
+    try {
+      document.getElementById('mo-rcpt-status').textContent = 'กำลังบันทึก…';
+      const res = await API.post('/restart-monitor/monthly-recipients.php', { to: _moTo, cc: _moCc });
+      const d = res?.data?.data || {};
+      _moTo = d.to || _moTo;
+      _moCc = d.cc || _moCc;
+      _moRecipientsDirty = false;
+      renderRecipients();
+      document.getElementById('mo-rcpt-status').textContent = 'บันทึกแล้ว';
+      setTimeout(() => { document.getElementById('mo-rcpt-status').textContent = ''; }, 2000);
+    } catch (e) {
+      document.getElementById('mo-rcpt-status').textContent = 'บันทึกไม่สำเร็จ';
+    }
+  }
+
+  // ── Styled alert modal (used for send result) ────────────────
+  // Returns a Promise that resolves when the user clicks OK or backdrop.
+  function rmAlert({ title = 'แจ้งเตือน', bodyHtml = '', variant = 'success' } = {}) {
+    return new Promise(resolve => {
+      const accent = variant === 'error' ? '#ef4444' : (variant === 'warning' ? '#f59e0b' : '#22c55e');
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay active';
+      overlay.innerHTML = `
+        <div class="modal" style="max-width:440px;border-radius:14px;padding:0;overflow:hidden;background:var(--bg-card)">
+          <div style="padding:20px 22px 12px;border-left:3px solid ${accent}">
+            <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:8px">${escHtml(title)}</div>
+            <div style="font-size:12.5px;color:var(--text-muted);line-height:1.65">${bodyHtml}</div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--border);background:var(--bg)">
+            <button class="btn btn-primary btn-sm" id="_rm-alert-ok">ตกลง</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      const close = () => { overlay.remove(); resolve(); };
+      overlay.querySelector('#_rm-alert-ok').addEventListener('click', close);
+      overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+      // Focus the OK button so Enter key dismisses
+      setTimeout(() => overlay.querySelector('#_rm-alert-ok')?.focus(), 30);
+    });
+  }
+
+  // ── Send / Preview ───────────────────────────────────────────
+  async function sendMonthlyEmail() {
+    if (!_moSummary) return;
+    if (_moRecipientsDirty) {
+      const ok = await confirmDialog(
+        'รายชื่อผู้รับยังไม่ได้บันทึก — บันทึกก่อนส่งหรือไม่?',
+        'ยังไม่ได้บันทึก',
+        { confirmText: 'บันทึกแล้วส่ง', cancelText: 'ยกเลิก', variant: 'primary' }
+      );
+      if (!ok) return;
+      await saveRecipients();
+    }
+    if (!_moTo.length) {
+      Toast.warning('ยังไม่มีผู้รับใน To');
+      return;
+    }
+    const btn = document.getElementById('mo-send-btn');
+    btn.disabled = true;
+    btn.textContent = 'กำลังส่ง…';
+    try {
+      // Combined report: sends ALL runways in a single email (overview + per-runway sections)
+      const res = await API.post('/restart-monitor/send-monthly.php', {
+        month:  _moSummary.month,
+        runway: 'all',
+        to:     _moTo,
+        cc:     _moCc,
+      });
+      const d = res?.data?.data;
+      if (d?.sent) {
+        const toList = d.to || d.recipients || [];
+        const ccList = d.cc || [];
+        const renderChips = (list) => list.length
+          ? list.map(e => `<span style="display:inline-block;padding:3px 9px;margin:2px 4px 2px 0;border-radius:999px;background:var(--bg);border:1px solid var(--border);font-family:monospace;font-size:11.5px;color:var(--text)">${escHtml(e)}</span>`).join('')
+          : '<span style="color:var(--text-muted)">—</span>';
+        const body = `
+          <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px">
+            <div style="font-weight:600;color:var(--text);min-width:32px;font-size:11.5px;padding-top:4px">To</div>
+            <div style="flex:1">${renderChips(toList)}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start">
+            <div style="font-weight:600;color:var(--text);min-width:32px;font-size:11.5px;padding-top:4px">CC</div>
+            <div style="flex:1">${renderChips(ccList)}</div>
+          </div>`;
+        await rmAlert({ title: 'ส่งสำเร็จ', bodyHtml: body, variant: 'success' });
+      } else {
+        await rmAlert({
+          title: 'ส่งไม่สำเร็จ',
+          bodyHtml: `<div>${escHtml(d?.reason || 'unknown error')}</div>`,
+          variant: 'error',
+        });
+      }
+    } catch (e) {
+      await rmAlert({
+        title: 'ส่งไม่สำเร็จ',
+        bodyHtml: `<div>${escHtml(e.message || String(e))}</div>`,
+        variant: 'error',
+      });
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'ส่งอีเมล';
+    }
+  }
+
+  async function previewMonthlyEmail() {
+    if (!_moSummary) return;
+    const m = _moSummary.month;
+    const overlay = document.getElementById('email-preview-modal');
+    const frame   = document.getElementById('email-preview-frame');
+    const loading = document.getElementById('email-preview-loading');
+    const sub     = document.getElementById('email-preview-subtitle');
+
+    sub.textContent = `รายงานรายเดือน — Restart ทุก Runway · ${m}`;
+    frame.style.display   = 'none';
+    loading.style.display = 'flex';
+    loading.textContent   = 'กำลังโหลดพรีวิว…';
+    overlay.classList.add('active');
+
+    try {
+      const apiBase = API_BASE; // resolved by api.js for any deploy folder name
+      const token = Auth.getToken?.() || '';
+      const res   = await fetch(
+        `${apiBase}/restart-monitor/preview-monthly.php?month=${encodeURIComponent(m)}&runway=all`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const html = await res.text();
+      // Write HTML directly to the iframe document. Avoids two problems:
+      //   1. srcdoc truncates very large HTML in some browsers
+      //   2. blob: URLs are blocked by our CSP frame-src
+      frame.removeAttribute('srcdoc');
+      frame.removeAttribute('src');
+      frame.style.display   = '';
+      loading.style.display = 'none';
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
+    } catch (e) {
+      loading.textContent = `ไม่สามารถโหลด preview ได้: ${e.message}`;
+    }
+  }
+
+  function closeEmailPreview() {
+    const overlay = document.getElementById('email-preview-modal');
+    overlay.classList.remove('active');
+    const frame = document.getElementById('email-preview-frame');
+    // Clear contents so reopening doesn't briefly show stale data
+    try {
+      const doc = frame.contentDocument || frame.contentWindow?.document;
+      if (doc) { doc.open(); doc.write(''); doc.close(); }
+    } catch (_) {}
+    frame.removeAttribute('srcdoc');
+    frame.removeAttribute('src');
+    frame.style.display = 'none';
+  }
+
+  // ── Raw tab state ─────────────────────────────────────────────
+  let _rawReports     = [];
+  let _rawDates       = [];          // dates of the currently-visible month (drives nav)
+  let _rawCurrentDate = null;
+  let _rawCurrentData = null;        // cached last-loaded raw day data for re-sort
+  let _rawPillSort    = 'desc';      // 'desc' = newest first, 'asc' = oldest first
+  let _rawPodSortDir  = 'desc';      // sort direction for pods table rows
+  let _rawMonth       = null;        // 'YYYY-MM' | 'all' | null (derived from preset)
+  let _rawRange       = null;        // { from, to } — derived from preset
+  let _rawPreset      = null;        // 'YYYY-MM' | '7d' | '30d' | 'all' | 'custom' | null
+  let _rawRangeView   = 'agg';       // 'agg' | 'day' — only meaningful when >1 day
+
+  async function loadRawReports() {
+    try {
+      const res     = await API.get('/restart-monitor/index.php?action=raw-list' + rwParam(_rawRunway));
+      const payload = res?.data?.data || {};
+      const reports = payload.reports || [];
+      _rawReports = reports;
+
+      // Badge on tab button
+      const badge = document.getElementById('tab-badge-raw');
+      if (badge) badge.textContent = reports.length > 0 ? reports.length : '';
+
+      // Default preset = latest month, or 'all' if there's no month data.
+      const months = extractMonths(reports);
+      const validPresets = new Set(['7d', '30d', 'all', 'custom', ...months.map(m => m.month)]);
+      if (!_rawPreset || !validPresets.has(_rawPreset)) {
+        _rawPreset = months[0]?.month || 'all';
+      }
+      const derived = derivePeriodFromPreset(reports, _rawPreset, _rawRange);
+      _rawMonth = derived.month;
+      _rawRange = derived.range;
+
+      renderRawPeriodTabs();
+      await applyRawFilter();
+    } catch (err) {
+      Utils.toast('โหลด raw report ไม่สำเร็จ: ' + (err.message || err), 'error');
+    }
+  }
+
+  function renderRawPeriodTabs() {
+    renderPeriodTabs(_rawReports, _rawPreset, 'raw-period-tabs', selectRawPreset);
+    syncRangeInputBounds(_rawReports, 'raw-range-from', 'raw-range-to');
+  }
+
+  function selectRawPreset(preset) {
+    const customPanel = document.getElementById('raw-period-custom');
+    if (_rawPreset === preset && preset !== 'custom') return;
+
+    _rawPreset = preset;
+    _rawRangeView = 'agg';
+    _rawCurrentDate = null;
+    resetRawSvcFilterState();
+
+    if (preset === 'custom') {
+      if (customPanel) customPanel.style.display = '';
+      renderRawPeriodTabs();
+      const from = document.getElementById('raw-range-from')?.value;
+      const to   = document.getElementById('raw-range-to')?.value;
+      if (from && to && from <= to) {
+        _rawRange = { from, to };
+        applyRawFilter();
+      }
+      return;
+    }
+
+    if (customPanel) customPanel.style.display = 'none';
+    resetRawRangeInputs();
+
+    const derived = derivePeriodFromPreset(_rawReports, preset, null);
+    _rawMonth = derived.month;
+    _rawRange = derived.range;
+
+    renderRawPeriodTabs();
+    applyRawFilter();
+  }
+
+  // ── Show/hide sections based on view mode (Raw) ──────────────
+  function showRawAggView(from, to, dayCount) {
+    document.getElementById('raw-daily-reports-title').style.display = 'none';
+    document.getElementById('raw-daily-reports-card').style.display  = 'none';
+    document.getElementById('raw-selected-day-title').style.display  = 'none';
+    document.getElementById('raw-summary-card').style.display        = 'none';
+    document.getElementById('raw-pods-title-text').textContent =
+      `Pods · รวม ${dayCount} วัน (${from} → ${to})`;
+  }
+  function showRawDayView() {
+    document.getElementById('raw-daily-reports-title').style.display = '';
+    document.getElementById('raw-daily-reports-card').style.display  = '';
+    document.getElementById('raw-selected-day-title').style.display  = '';
+    document.getElementById('raw-summary-card').style.display        = '';
+    document.getElementById('raw-pods-title-text').textContent = 'Pods';
+  }
+  function updateRawViewToggle(visible, activeMode) {
+    const toggle = document.getElementById('raw-view-toggle');
+    if (!toggle) return;
+    toggle.style.display = visible ? '' : 'none';
+    toggle.querySelectorAll('button[data-view]').forEach(b => {
+      b.classList.toggle('active', b.dataset.view === activeMode);
+    });
+  }
+  function setRawRangeView(mode) {
+    if (mode !== 'agg' && mode !== 'day') return;
+    if (_rawRangeView === mode) return;
+    _rawRangeView = mode;
+    applyRawFilter();
+  }
+
+  async function renderRawAggregatedView(reports) {
+    const wrap = document.getElementById('raw-pods-table');
+    wrap.innerHTML = `<div class="rm-empty"><div class="rm-empty-sub">กำลังโหลด ${reports.length} วัน…</div></div>`;
+    const dates = reports.map(r => r.date);
+    const from  = reports[reports.length - 1].date;
+    const to    = reports[0].date;
+    const results = await fetchDetailsWithConcurrency(
+      dates,
+      '/restart-monitor/index.php?action=raw-detail',
+      _rawRunway,
+      _rawDetailCache
+    );
+    const { services } = aggregatePodsAcrossDays(results);
+    _rawSvcList = services.map(s => ({ name: s.service, count: s.podCount }));
+    const shown = _rawSvcFilter
+      ? services.filter(s => svcMatches(s.service, _rawSvcFilter))
+      : services;
+    if (_rawSvcFilter && !shown.length) {
+      wrap.innerHTML = `<div class="rm-empty">
+        <div class="rm-empty-title">ไม่พบ service ที่ตรงกับ "${escapeHtml(_rawSvcFilter)}"</div>
+        <div class="rm-empty-sub">มี ${services.length} service ในช่วงนี้ · กด × เพื่อล้าง filter</div>
+      </div>`;
+      return;
+    }
+    renderAggregatedPodsTable('raw-pods-table', shown, reports.length, from, to);
+  }
+
+  async function applyRawFilter() {
+    const filtered = _rawRange
+      ? filterReportsByRange(_rawReports, _rawRange)
+      : filterReportsByMonth(_rawReports, _rawMonth);
+    _rawDates = filtered.map(r => r.date);
+
+    // KPIs — computed from the currently visible slice
+    const k = computeMonthKpis(filtered);
+    document.getElementById('raw-kpi-restarts').textContent = k.restarts;
+    document.getElementById('raw-kpi-crit').textContent     = k.critical;
+    document.getElementById('raw-kpi-oom').textContent      = k.oom;
+    document.getElementById('raw-kpi-days').textContent     = k.days;
+
+    // Labels
+    const suffix = presetSuffix(_rawPreset, _rawRange);
+    document.getElementById('raw-kpi-lbl-restarts').textContent = 'Restart events · ' + suffix;
+    document.getElementById('raw-kpi-lbl-crit').textContent     = 'Critical · ' + suffix;
+    document.getElementById('raw-kpi-lbl-oom').textContent      = 'OOMKilled · ' + suffix;
+
+    // ── Range mode → toggle between aggregated and per-day view
+    if (filtered.length > 1) {
+      updateRawViewToggle(true, _rawRangeView);
+      if (_rawRangeView === 'agg') {
+        _rawCurrentDate = null;
+        _rawCurrentData = null;
+        showRawAggView(filtered[filtered.length - 1].date, filtered[0].date, filtered.length);
+        await renderRawAggregatedView(filtered);
+        return;
+      }
+      showRawDayView();
+      renderRawDayToolbar(filtered);
+      const dateToLoad = (_rawCurrentDate && _rawDates.includes(_rawCurrentDate))
+        ? _rawCurrentDate : filtered[0]?.date;
+      if (dateToLoad) await loadRawDay(dateToLoad);
+      return;
+    }
+
+    // ── Single day (or empty) → existing per-day view
+    updateRawViewToggle(false, 'day');
+    showRawDayView();
+    renderRawDayToolbar(filtered);
+
+    const dateToLoad = (_rawCurrentDate && _rawDates.includes(_rawCurrentDate))
+      ? _rawCurrentDate : filtered[0]?.date;
+    if (dateToLoad) {
+      await loadRawDay(dateToLoad);
+    } else {
+      _rawCurrentDate = null;
+      _rawCurrentData = null;
+      const label = presetSuffix(_rawPreset, _rawRange);
+      document.getElementById('raw-summary-body').innerHTML =
+        `<div style="padding:18px;color:var(--text-muted);font-size:12px">ไม่มีข้อมูลของ ${label}</div>`;
+      document.getElementById('raw-pods-table').innerHTML =
+        `<div class="rm-empty"><div class="rm-empty-title">ไม่มี raw report ในช่วงที่เลือก</div><div class="rm-empty-sub">ลองเลือกช่วงอื่นด้านบน หรือกด "กำหนดเอง"</div></div>`;
+    }
+  }
+
+  // ── Toggle sort order for Raw tab ───────────────────────────
+  function toggleRawSort() {
+    _rawPillSort = _rawPillSort === 'desc' ? 'asc' : 'desc';
+    const btn = document.getElementById('raw-sort-btn');
+    if (btn) btn.textContent = _rawPillSort === 'asc' ? '↑ เก่า→ใหม่' : '↓ ใหม่→เก่า';
+    const currentSlice = _rawRange
+      ? filterReportsByRange(_rawReports, _rawRange)
+      : filterReportsByMonth(_rawReports, _rawMonth);
+    renderRawDayToolbar(currentSlice);
+    if (_rawCurrentDate) highlightRawDate(_rawCurrentDate);
+  }
+
+  // ── Custom-range handlers (Raw) ─────────────────────────────
+  function resetRawRangeInputs() {
+    const f = document.getElementById('raw-range-from');
+    const t = document.getElementById('raw-range-to');
+    const b = document.getElementById('raw-range-badge');
+    if (f) f.value = '';
+    if (t) t.value = '';
+    if (b) b.innerHTML = '';
+  }
+  function onRawRangeChange() {
+    const from = document.getElementById('raw-range-from').value;
+    const to   = document.getElementById('raw-range-to').value;
+    _rawPreset = 'custom';
+    document.getElementById('raw-period-custom').style.display = '';
+    if (!from || !to) {
+      renderRawPeriodTabs();
+      return;
+    }
+    if (from > to) {
+      Utils.toast('วันที่เริ่มต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุด', 'warning');
+      return;
+    }
+    _rawRange = { from, to };
+    _rawMonth = null;
+    _rawCurrentDate = null;
+    resetRawSvcFilterState();
+    const badge = document.getElementById('raw-range-badge');
+    if (badge) badge.innerHTML = `<b>${daysBetweenInclusive(from, to)}</b> วัน`;
+    renderRawPeriodTabs();
+    applyRawFilter();
+  }
+
+  function renderRawDayToolbar(reports) {
+    const dateIn = document.getElementById('raw-day-date');
+    const pills  = document.getElementById('raw-day-pills');
+    const count  = document.getElementById('raw-day-count');
+    if (!reports.length) {
+      pills.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">—</span>';
+      count.textContent = '';
+      return;
+    }
+
+    // reports from API is always newest-first; reverse when asc
+    const sorted = _rawPillSort === 'asc' ? [...reports].reverse() : reports;
+
+    dateIn.min = reports[reports.length - 1].date;
+    dateIn.max = reports[0].date;
+    pills.innerHTML = sorted.slice(0, 7).map(r => {
+      const short = r.date.slice(5);
+      return `<button class="rm-day-pill" data-rawdate="${r.date}" onclick="loadRawDay('${r.date}')">${short}</button>`;
+    }).join('');
+    count.textContent = `${reports.length} day${reports.length !== 1 ? 's' : ''} tracked`;
+  }
+
+  function highlightRawDate(date) {
+    document.querySelectorAll('[data-rawdate]').forEach(p => p.classList.toggle('active', p.dataset.rawdate === date));
+    const dateIn = document.getElementById('raw-day-date');
+    if (dateIn) dateIn.value = date;
+    const idx = _rawDates.indexOf(date);
+    document.getElementById('raw-day-prev').disabled = idx >= _rawDates.length - 1;
+    document.getElementById('raw-day-next').disabled = idx <= 0;
+  }
+
+  function rawNavigateDay(direction) {
+    if (!_rawCurrentDate || !_rawDates.length) return;
+    const idx = _rawDates.indexOf(_rawCurrentDate);
+    if (idx === -1) return;
+    const targetIdx = direction === -1 ? idx + 1 : idx - 1;
+    if (targetIdx < 0 || targetIdx >= _rawDates.length) return;
+    loadRawDay(_rawDates[targetIdx]);
+  }
+
+  // ── Toggle sort on raw pods table ────────────────────────────
+  function toggleRawPodSort() {
+    _rawPodSortDir = _rawPodSortDir === 'desc' ? 'asc' : 'desc';
+    if (_rawCurrentData) renderRawPodsTable(_rawCurrentData);
+  }
+
+  async function loadRawDay(date) {
+    _rawCurrentDate = date;
+    highlightRawDate(date);
+    document.getElementById('raw-summary-body').innerHTML =
+      `<div style="padding:18px;color:var(--text-muted);font-size:12px">กำลังโหลด ${date}…</div>`;
+    document.getElementById('raw-pods-table').innerHTML =
+      '<div class="rm-empty"><div class="rm-empty-sub">กำลังโหลด…</div></div>';
+    try {
+      const res  = await API.get('/restart-monitor/index.php?action=raw-detail&date=' + encodeURIComponent(date) + rwParam(_rawRunway));
+      const data = res?.data?.data || {};
+      _rawCurrentData = data;
+      renderRawSummary(data);
+      renderRawPodsTable(data);
+    } catch (err) {
+      document.getElementById('raw-summary-body').innerHTML =
+        `<div style="padding:18px;color:#ef4444;font-size:12px">โหลดไม่สำเร็จ: ${err.message || err}</div>`;
+    }
+  }
+
+  function renderRawSummary(data) {
+    const rs  = data.reasonSummary   || {};
+    const sev = data.severitySummary || {};
+    document.getElementById('raw-summary-body').innerHTML = `
+      <div class="rm-day-overview">
+        <div class="meta"><b>${data.date}</b> · ${data.cluster} · ${data.scanWindowHours}h window
+          <span class="badge">cron · no AI</span>
+        </div>
+        <div class="stats">
+          <span><b>${data.totalPods ?? 0}</b> pods</span>
+          <span><b>${data.totalRestarts ?? 0}</b> restart events</span>
+          ${sev.critical ? `<span class="rm-num-crit"><b>${sev.critical}</b> critical</span>` : ''}
+          ${sev.warning  ? `<span class="rm-num-warn"><b>${sev.warning}</b> warning</span>`   : ''}
+          ${sev.info     ? `<span class="muted"><b>${sev.info}</b> info</span>`              : ''}
+          ${rs.OOMKilled ? `<span class="rm-num-oom"><b>${rs.OOMKilled}</b> OOMKilled</span>` : ''}
+          ${rs.Error     ? `<span class="rm-num-crit"><b>${rs.Error}</b> Error</span>` : ''}
+          ${rs.Completed ? `<span class="rm-num-zero"><b>${rs.Completed}</b> Completed</span>` : ''}
+        </div>
+        <div class="meta" style="font-size:10.5px;color:var(--text-muted);margin-top:4px">Generated: ${fmtDateTime(data.generatedAt)}</div>
+      </div>`;
+  }
+
+  function renderRawPodsTable(data) {
+    const allPods = data.pods || [];
+    if (!allPods.length) {
+      _rawSvcList = [];
+      document.getElementById('raw-pods-table').innerHTML =
+        '<div class="rm-empty"><div class="rm-empty-title">ไม่มี pod restart วันนี้</div></div>';
+      return;
+    }
+
+    // Build service list from pods for the combobox
+    const svcCounts = new Map();
+    for (const p of allPods) {
+      const svc = extractServiceName(p.pod);
+      svcCounts.set(svc, (svcCounts.get(svc) || 0) + 1);
+    }
+    _rawSvcList = Array.from(svcCounts.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Apply service filter (match against extracted service name)
+    const filteredPods = _rawSvcFilter
+      ? allPods.filter(p => svcMatches(extractServiceName(p.pod), _rawSvcFilter))
+      : allPods;
+
+    if (!filteredPods.length) {
+      document.getElementById('raw-pods-table').innerHTML = `<div class="rm-empty">
+        <div class="rm-empty-title">ไม่พบ service ที่ตรงกับ "${escapeHtml(_rawSvcFilter)}"</div>
+        <div class="rm-empty-sub">มี ${_rawSvcList.length} service ในวันนี้ · กด × เพื่อล้าง filter</div>
+      </div>`;
+      return;
+    }
+
+    // Sort by restartedAt based on _rawPodSortDir
+    const pods = filteredPods.slice().sort((a, b) => {
+      const ta = a.restartedAt ? new Date(a.restartedAt).getTime() : 0;
+      const tb = b.restartedAt ? new Date(b.restartedAt).getTime() : 0;
+      return _rawPodSortDir === 'asc' ? ta - tb : tb - ta;
+    });
+
+    const sortArrow = _rawPodSortDir === 'asc' ? '↑' : '↓';
+
+    const rows = pods.map(p => {
+      const ns      = (p.namespace || '').replace('truemoney-', '').replace('-production', '');
+      const memHtml = fmtMem(p.memoryUsageRatio);
+      const cpuHtml = p.cpuUsageRatio !== null && p.cpuUsageRatio !== undefined
+        ? `<span>${(p.cpuUsageRatio * 100).toFixed(1)}%</span>`
+        : '<span style="color:var(--text-muted)">—</span>';
+      const rc      = p.restartCount ?? 0;
+      const rcHtml  = rc >= 3 ? `<span class="rm-num-crit">${rc}</span>`
+                    : rc >= 2 ? `<span class="rm-num-warn">${rc}</span>` : rc;
+      return `<tr>
+        <td class="rm-pod">${p.pod || '—'}</td>
+        <td class="muted" style="font-size:11px">${ns}</td>
+        <td>${sevTag(p.severity)}</td>
+        <td>${fmtDateTime(p.restartedAt)}</td>
+        <td class="num">${rcHtml}</td>
+        <td>${reasonTag(p.terminationReason)}</td>
+        <td class="num">${memHtml}</td>
+        <td class="num">${cpuHtml}</td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('raw-pods-table').innerHTML = `
+      <div class="rm-table-scroll">
+        <table class="rm-table compact" style="min-width:920px">
+          <thead><tr>
+            <th>Pod</th>
+            <th>Namespace</th>
+            <th>Severity</th>
+            <th style="cursor:pointer;user-select:none;white-space:nowrap" onclick="toggleRawPodSort()" title="คลิกเพื่อเรียงตามเวลา">Restarted At ${sortArrow}</th>
+            <th class="num">Count</th>
+            <th>Reason</th>
+            <th class="num">Mem %</th>
+            <th class="num">CPU %</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  // ── Init ──
+  loadReports();
+  setInterval(loadReports, 5 * 60 * 1000);
+
+  // Deep link: ?tab=raw, or ?tab=monthly[&month=YYYY-MM] auto-opens modal
+  const _initParams = new URLSearchParams(location.search);
+  const _initTab = _initParams.get('tab');
+  if (_initTab === 'raw') switchTab('raw');
+  if (_initTab === 'monthly') openMonthlyModal();
+
+  document.addEventListener('keydown', e => {
+    // Don't hijack if user is typing in an input
+    const t = e.target;
+    const isInput = t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA';
+    if (isInput) return;
+
+    if (e.key === 'Escape' && document.getElementById('monthly-modal')?.classList.contains('active')) {
+      closeMonthlyModal();
+      e.preventDefault();
+      return;
+    }
+    if (e.key === 'Escape' && _currentPod) {
+      closePodDetail();
+      e.preventDefault();
+    } else if (e.key === 'ArrowLeft' && !_currentPod) {
+      navigateDay(-1); // older
+      e.preventDefault();
+    } else if (e.key === 'ArrowRight' && !_currentPod) {
+      navigateDay(1);  // newer
+      e.preventDefault();
+    }
+  });
+</script>
+</body>
+</html>

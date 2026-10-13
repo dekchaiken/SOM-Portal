@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Settings — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ── Settings layout ─────────────────────────────────── */
+    .settings-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px; }
+    .settings-card {
+      background:var(--bg-card);border:1.5px solid var(--border);border-radius:14px;
+      overflow:hidden;transition:box-shadow .15s;
+    }
+    .settings-card:hover { box-shadow:0 4px 18px rgba(0,0,0,.07); }
+    .sc-head {
+      display:flex;align-items:center;gap:10px;
+      padding:15px 20px 13px;border-bottom:1px solid var(--border);
+      background:linear-gradient(135deg,var(--bg) 0%,rgba(242,100,25,.03) 100%);
+    }
+    .sc-icon {
+      width:34px;height:34px;border-radius:9px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:17px;flex-shrink:0;
+    }
+    .sc-title  { font-size:12px;font-weight:800;color:var(--text);letter-spacing:.02em; }
+    .sc-sub    { font-size:10px;color:var(--text-muted);margin-top:1px; }
+    .sc-body   { padding:18px 20px;display:flex;flex-direction:column;gap:16px; }
+
+    /* ── Setting row ───────────────────────────────────────── */
+    .setting-row {
+      display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+    }
+    .setting-info { flex:1;min-width:0; }
+    .setting-label { font-size:12px;font-weight:700;color:var(--text); }
+    .setting-hint  { font-size:10.5px;color:var(--text-muted);margin-top:2px;line-height:1.45; }
+    .setting-ctrl  { flex-shrink:0;min-width:120px;display:flex;justify-content:flex-end; }
+
+    /* ── Number input with unit ────────────────────────────── */
+    .num-wrap {
+      display:flex;align-items:center;gap:0;
+      border:1.5px solid var(--border);border-radius:8px;overflow:hidden;
+      background:#fff;transition:border-color .15s;
+    }
+    .num-wrap:focus-within { border-color:var(--orange); }
+    .num-input {
+      width:62px;padding:6px 10px;border:none;outline:none;
+      font-family:var(--font);font-size:13px;font-weight:700;
+      color:var(--text);background:transparent;text-align:center;
+      -moz-appearance:textfield;
+    }
+    .num-input::-webkit-outer-spin-button,
+    .num-input::-webkit-inner-spin-button { -webkit-appearance:none; }
+    .num-unit {
+      padding:6px 10px 6px 0;font-size:10px;font-weight:600;
+      color:var(--text-muted);white-space:nowrap;background:transparent;
+    }
+    .num-btn {
+      width:28px;height:100%;display:flex;align-items:center;justify-content:center;
+      background:var(--bg);border:none;border-right:1.5px solid var(--border);
+      cursor:pointer;color:var(--text-muted);font-size:14px;font-weight:700;
+      transition:background .12s,color .12s;user-select:none;
+    }
+    .num-btn:last-child { border-right:none;border-left:1.5px solid var(--border); }
+    .num-btn:hover { background:var(--orange-dim);color:var(--orange); }
+
+    /* ── Text input ────────────────────────────────────────── */
+    .setting-text {
+      width:220px;padding:7px 11px;border:1.5px solid var(--border);border-radius:8px;
+      font-family:var(--font);font-size:12px;color:var(--text);outline:none;
+      background:#fff;transition:border-color .15s;
+    }
+    .setting-text:focus { border-color:var(--orange); }
+
+    /* ── Divider ───────────────────────────────────────────── */
+    .sc-divider { height:1px;background:var(--border);margin:0 -0px; }
+
+    /* ── Save bar ──────────────────────────────────────────── */
+    .save-bar {
+      position:sticky;bottom:0;
+      background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
+      border-top:1.5px solid var(--border);padding:14px 0;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      margin-top:20px;z-index:10;
+    }
+    .save-bar-hint { font-size:10.5px;color:var(--text-muted);display:flex;align-items:center;gap:6px; }
+    .save-bar-dot  { width:6px;height:6px;border-radius:50%;background:var(--warning);flex-shrink:0; }
+    .save-bar-dot.saved { background:var(--success); }
+
+    /* ── Live badge ────────────────────────────────────────── */
+    .session-live {
+      display:inline-flex;align-items:center;gap:5px;
+      font-size:10px;font-weight:700;color:#7c3aed;
+      background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);
+      border-radius:5px;padding:2px 8px;margin-left:8px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="settings"></i> System Settings</div>
+        <div class="page-sub">Site configuration, security policy, session management</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" id="save-btn" onclick="saveSettings()">
+          <span id="save-text">Save Changes</span>
+          <span id="save-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content" style="overflow-y:auto">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="settings"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>System Settings</h1>
+          <p>Site configuration · security policy · session management · rate limits · password policy</p>
+        </div>
+      </section>
+
+      <div id="settings-loading"><div data-skel="settings" data-rows="4"></div></div>
+
+      <div id="settings-content" style="display:none">
+        <div class="settings-grid">
+
+          <!-- ── Site Information ─────────────────────────── -->
+          <div class="settings-card">
+            <div class="sc-head">
+              <div class="sc-icon" style="background:rgba(242,100,25,.1)"><i data-icon="globe"></i></div>
+              <div>
+                <div class="sc-title">Site Information</div>
+                <div class="sc-sub">Displayed across the application</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div class="setting-row" style="flex-direction:column;gap:8px">
+                <div>
+                  <div class="setting-label">Site Name</div>
+                  <div class="setting-hint">Appears in sidebar logo and browser tab</div>
+                </div>
+                <input class="setting-text" id="s-site_name" style="width:100%" placeholder="e.g. SOM-Portal" oninput="markDirty()">
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row" style="flex-direction:column;gap:8px">
+                <div>
+                  <div class="setting-label">Site Tagline</div>
+                  <div class="setting-hint">Subtitle shown below the logo</div>
+                </div>
+                <input class="setting-text" id="s-site_tagline" style="width:100%" placeholder="e.g. Service Operations Management" oninput="markDirty()">
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Session & Auth ──────────────────────────── -->
+          <div class="settings-card">
+            <div class="sc-head">
+              <div class="sc-icon" style="background:rgba(124,58,237,.1)"><i data-icon="lock"></i></div>
+              <div>
+                <div class="sc-title">Session & Authentication</div>
+                <div class="sc-sub">JWT token lifetime and login policy</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Session Timeout
+                    <span class="session-live" id="session-live-badge">⏱ —</span>
+                  </div>
+                  <div class="setting-hint">How long a user stays logged in after signing in (1–168 hours)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-session_timeout_hours',-1)">−</button>
+                    <input class="num-input" type="number" id="s-session_timeout_hours" min="1" max="168" oninput="markDirty();updateSessionBadge()">
+                    <span class="num-unit">hr</span>
+                    <button class="num-btn" onclick="nudge('s-session_timeout_hours',1)">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Remember Me Duration</div>
+                  <div class="setting-hint">How long "Remember Me" sessions last (1–90 days)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-remember_me_days',-1)">−</button>
+                    <input class="num-input" type="number" id="s-remember_me_days" min="1" max="90" oninput="markDirty()">
+                    <span class="num-unit">days</span>
+                    <button class="num-btn" onclick="nudge('s-remember_me_days',1)">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Max Login Attempts</div>
+                  <div class="setting-hint">Failed attempts before IP is temporarily blocked (3–20)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-max_login_attempts',-1)">−</button>
+                    <input class="num-input" type="number" id="s-max_login_attempts" min="3" max="20" oninput="markDirty()">
+                    <span class="num-unit">tries</span>
+                    <button class="num-btn" onclick="nudge('s-max_login_attempts',1)">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Lockout Duration</div>
+                  <div class="setting-hint">Minutes to block IP after exceeding max attempts (5–1440)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-lockout_minutes',-5)">−</button>
+                    <input class="num-input" type="number" id="s-lockout_minutes" min="5" max="1440" oninput="markDirty()">
+                    <span class="num-unit">min</span>
+                    <button class="num-btn" onclick="nudge('s-lockout_minutes',5)">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Password Policy ─────────────────────────── -->
+          <div class="settings-card">
+            <div class="sc-head">
+              <div class="sc-icon" style="background:rgba(239,68,68,.1)"><i data-icon="key"></i></div>
+              <div>
+                <div class="sc-title">Password Policy</div>
+                <div class="sc-sub">Expiry, reuse prevention, rotation</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Password Expiry</div>
+                  <div class="setting-hint">Days before password must be changed (7–365). Users are prompted on next login.</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-password_expiry_days',-10)">−</button>
+                    <input class="num-input" type="number" id="s-password_expiry_days" min="7" max="365" oninput="markDirty()">
+                    <span class="num-unit">days</span>
+                    <button class="num-btn" onclick="nudge('s-password_expiry_days',10)">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Password History</div>
+                  <div class="setting-hint">Number of previous passwords that cannot be reused (1–20)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-password_history_count',-1)">−</button>
+                    <input class="num-input" type="number" id="s-password_history_count" min="1" max="20" oninput="markDirty()">
+                    <span class="num-unit">prev</span>
+                    <button class="num-btn" onclick="nudge('s-password_history_count',1)">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── API Rate Limiting ───────────────────────── -->
+          <div class="settings-card">
+            <div class="sc-head">
+              <div class="sc-icon" style="background:rgba(59,130,246,.1)"><i data-icon="circle"></i></div>
+              <div>
+                <div class="sc-title">API Rate Limiting</div>
+                <div class="sc-sub">ป้องกัน spam และ abuse per-user</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Max Requests per Window</div>
+                  <div class="setting-hint">จำนวน request สูงสุดต่อ user ต่อ endpoint group (board, comments, upload) ภายใน window ที่กำหนด</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-api_rate_limit_requests',-10)">−</button>
+                    <input class="num-input" type="number" id="s-api_rate_limit_requests" min="10" max="1000" oninput="markDirty()">
+                    <span class="num-unit">req</span>
+                    <button class="num-btn" onclick="nudge('s-api_rate_limit_requests',10)">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Window Duration</div>
+                  <div class="setting-hint">ระยะเวลาของ window สำหรับนับ request (10–3600 วินาที)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-api_rate_limit_window_seconds',-10)">−</button>
+                    <input class="num-input" type="number" id="s-api_rate_limit_window_seconds" min="10" max="3600" oninput="markDirty()">
+                    <span class="num-unit">sec</span>
+                    <button class="num-btn" onclick="nudge('s-api_rate_limit_window_seconds',10)">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Content & Trash ─────────────────────────── -->
+          <div class="settings-card">
+            <div class="sc-head">
+              <div class="sc-icon" style="background:rgba(168,85,247,.1)"><i data-icon="trash"></i></div>
+              <div>
+                <div class="sc-title">Content Settings</div>
+                <div class="sc-sub">Soft delete, Markdown, การจัดการเนื้อหา</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Trash Retention</div>
+                  <div class="setting-hint">จำนวนวันที่เก็บโพสต์/comment ที่ถูกลบไว้ใน Trash ก่อนลบถาวร (1–365 วัน)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <div class="num-wrap">
+                    <button class="num-btn" onclick="nudge('s-trash_retention_days',-5)">−</button>
+                    <input class="num-input" type="number" id="s-trash_retention_days" min="1" max="365" oninput="markDirty()">
+                    <span class="num-unit">days</span>
+                    <button class="num-btn" onclick="nudge('s-trash_retention_days',5)">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Enable Markdown</div>
+                  <div class="setting-hint">อนุญาตให้ใช้ Markdown formatting ในโพสต์และ comment (bold, code, lists, links)</div>
+                </div>
+                <div class="setting-ctrl">
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                    <input type="checkbox" id="s-enable_markdown" onchange="markDirty()" style="width:16px;height:16px;accent-color:var(--orange)">
+                    <span style="font-size:11px;color:var(--text-muted)">Enable</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Google Chat Webhooks ────────────────────── -->
+          <div class="settings-card">
+            <div class="sc-head">
+              <div class="sc-icon" style="background:rgba(66,133,244,.1)"><i data-icon="message-circle"></i></div>
+              <div>
+                <div class="sc-title">Google Chat Webhooks</div>
+                <div class="sc-sub">URL ปลายทางสำหรับส่งการ์ดแจ้งเตือน — 1 URL ต่อบรรทัด</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:6px">
+                <div class="setting-info" style="width:100%">
+                  <div class="setting-label"><i data-icon="megaphone"></i> Email Noti Broadcast (default)</div>
+                  <div class="setting-hint">ใช้เป็นค่าเริ่มต้นในหน้า Email Noti เมื่อ admin เปิดโหมด "ส่ง Google Chat ควบคู่" — override ได้รายครั้ง</div>
+                </div>
+                <textarea id="s-email_noti_chat_webhooks" class="form-control" rows="3"
+                          placeholder="https://chat.googleapis.com/v1/spaces/.../messages?key=...&token=..."
+                          style="font-family:monospace;font-size:11px;line-height:1.6;resize:vertical"
+                          oninput="markDirty()"></textarea>
+              </div>
+              <div class="sc-divider"></div>
+              <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:6px">
+                <div class="setting-info" style="width:100%">
+                  <div class="setting-label"><i data-icon="bell"></i> Exam Reminder (default)</div>
+                  <div class="setting-hint">ใช้เป็นค่าเริ่มต้นในหน้า Exam Reminder — override ได้รายครั้ง</div>
+                </div>
+                <textarea id="s-exam_reminder_chat_webhooks" class="form-control" rows="3"
+                          placeholder="https://chat.googleapis.com/v1/spaces/.../messages?key=...&token=..."
+                          style="font-family:monospace;font-size:11px;line-height:1.6;resize:vertical"
+                          oninput="markDirty()"></textarea>
+              </div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:8px;line-height:1.6">
+                <i data-icon="alert-triangle"></i> เก็บเฉพาะ URL ที่ขึ้นต้นด้วย <code>https://chat.googleapis.com/</code> เท่านั้น — URL อื่นจะถูกกรองออกอัตโนมัติ
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Current Config Summary ──────────────────── -->
+          <div class="settings-card">
+            <div class="sc-head">
+              <div class="sc-icon" style="background:rgba(34,197,94,.1)"><i data-icon="clipboard"></i></div>
+              <div>
+                <div class="sc-title">Active Policy Summary</div>
+                <div class="sc-sub">Current configuration at a glance</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div id="policy-summary" style="display:flex;flex-direction:column;gap:10px">
+                <!-- Populated by JS -->
+              </div>
+              <div class="sc-divider"></div>
+              <div style="font-size:10.5px;color:var(--text-muted);line-height:1.6">
+                <i data-icon="alert-triangle"></i> Changing <strong>Session Timeout</strong> takes effect on next login.<br>
+                <i data-icon="alert-triangle"></i> Changing <strong>Password Expiry</strong> applies to all users immediately.
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /settings-grid -->
+
+        <!-- Save bar -->
+        <div class="save-bar">
+          <div class="save-bar-hint">
+            <span class="save-bar-dot" id="dirty-dot"></span>
+            <span id="dirty-label">All changes saved</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-ghost btn-sm" onclick="loadSettings()">↺ Reset</button>
+            <button class="btn btn-primary" id="save-btn2" onclick="saveSettings()">
+              <span id="save-text2">Save Changes</span>
+              <span id="save-spin2" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /settings-content -->
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+  if (!Auth.requireAdmin()) {}
+  Layout.render('admin');
+
+  let _dirty = false;
+  let _current = {};
+
+  // ── Load ───────────────────────────────────────────────
+  async function loadSettings() {
+    document.getElementById('settings-loading').style.display = 'block';
+    document.getElementById('settings-content').style.display = 'none';
+
+    const res = await API.systemSettings.get();
+    if (!res?.ok) { Toast.error('Failed to load settings'); return; }
+
+    _current = res.data.data || {};
+    applyToForm(_current);
+
+    document.getElementById('settings-loading').style.display = 'none';
+    document.getElementById('settings-content').style.display = 'block';
+    setDirty(false);
+    updateSessionBadge();
+    renderSummary();
+  }
+
+  function applyToForm(s) {
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; };
+    const chk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+    set('s-site_name',                      s.site_name);
+    set('s-site_tagline',                   s.site_tagline);
+    set('s-session_timeout_hours',          s.session_timeout_hours);
+    set('s-remember_me_days',               s.remember_me_days ?? 30);
+    set('s-password_expiry_days',           s.password_expiry_days);
+    set('s-password_history_count',         s.password_history_count);
+    set('s-max_login_attempts',             s.max_login_attempts);
+    set('s-lockout_minutes',                s.lockout_minutes);
+    set('s-api_rate_limit_requests',        s.api_rate_limit_requests);
+    set('s-api_rate_limit_window_seconds',  s.api_rate_limit_window_seconds);
+    set('s-trash_retention_days',           s.trash_retention_days);
+    chk('s-enable_markdown',               s.enable_markdown);
+    // Webhook URL arrays — one per line
+    const asLines = a => Array.isArray(a) ? a.join('\n') : '';
+    set('s-email_noti_chat_webhooks',       asLines(s.email_noti_chat_webhooks));
+    set('s-exam_reminder_chat_webhooks',    asLines(s.exam_reminder_chat_webhooks));
+  }
+
+  function collectForm() {
+    const n = id => parseInt(document.getElementById(id)?.value) || 0;
+    const s = id => (document.getElementById(id)?.value || '').trim();
+    const b = id => !!(document.getElementById(id)?.checked);
+    return {
+      site_name:                      s('s-site_name'),
+      site_tagline:                   s('s-site_tagline'),
+      session_timeout_hours:          n('s-session_timeout_hours'),
+      remember_me_days:               n('s-remember_me_days') || 30,
+      password_expiry_days:           n('s-password_expiry_days'),
+      password_history_count:         n('s-password_history_count'),
+      max_login_attempts:             n('s-max_login_attempts'),
+      lockout_minutes:                n('s-lockout_minutes'),
+      api_rate_limit_requests:        n('s-api_rate_limit_requests'),
+      api_rate_limit_window_seconds:  n('s-api_rate_limit_window_seconds'),
+      trash_retention_days:           n('s-trash_retention_days'),
+      enable_markdown:                b('s-enable_markdown'),
+      email_noti_chat_webhooks:       linesOf('s-email_noti_chat_webhooks'),
+      exam_reminder_chat_webhooks:    linesOf('s-exam_reminder_chat_webhooks'),
+    };
+  }
+
+  // Split a textarea by newlines, trim, drop empties
+  function linesOf(id) {
+    const raw = (document.getElementById(id)?.value || '');
+    return raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  }
+
+  // ── Save ───────────────────────────────────────────────
+  async function saveSettings() {
+    const data = collectForm();
+    if (!data.site_name) { Toast.warning('Site name cannot be empty'); return; }
+
+    ['save-btn','save-btn2'].forEach(id => document.getElementById(id).disabled = true);
+    ['save-spin','save-spin2'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+    ['save-text','save-text2'].forEach(id => document.getElementById(id).textContent = 'Saving...');
+
+    const res = await API.systemSettings.save(data);
+
+    ['save-btn','save-btn2'].forEach(id => document.getElementById(id).disabled = false);
+    ['save-spin','save-spin2'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    ['save-text','save-text2'].forEach(id => document.getElementById(id).textContent = 'Save Changes');
+
+    if (res?.ok) {
+      _current = res.data.data || data;
+      Toast.success('Settings saved successfully');
+      setDirty(false);
+      updateSessionBadge();
+      renderSummary();
+    } else {
+      Toast.error(res?.data?.message || 'Failed to save');
+    }
+  }
+
+  // ── Dirty state ────────────────────────────────────────
+  function markDirty() { setDirty(true); renderSummary(); }
+
+  function setDirty(val) {
+    _dirty = val;
+    const dot = document.getElementById('dirty-dot');
+    const lbl = document.getElementById('dirty-label');
+    if (dot)  { dot.classList.toggle('saved', !val); }
+    if (lbl)  lbl.textContent = val ? 'You have unsaved changes' : 'All changes saved';
+  }
+
+  // ── Nudge +/− ──────────────────────────────────────────
+  function nudge(id, delta) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const min = parseInt(el.min) || 1;
+    const max = parseInt(el.max) || 9999;
+    el.value = Math.max(min, Math.min(max, (parseInt(el.value) || 0) + delta));
+    markDirty();
+    updateSessionBadge();
+  }
+
+  // ── Session badge ──────────────────────────────────────
+  function updateSessionBadge() {
+    const hrs = parseInt(document.getElementById('s-session_timeout_hours')?.value) || 0;
+    const badge = document.getElementById('session-live-badge');
+    if (!badge) return;
+    const label = hrs >= 24 ? `${(hrs/24).toFixed(hrs % 24 === 0 ? 0 : 1)}d` : `${hrs}h`;
+    badge.textContent = '⏱ ' + label;
+  }
+
+  // ── Policy summary cards ───────────────────────────────
+  function renderSummary() {
+    const el = document.getElementById('policy-summary');
+    if (!el) return;
+    const d = collectForm();
+    const rows = [
+      { icon:'<i data-icon="lock"></i>', label:'Session',         val: d.session_timeout_hours >= 24
+          ? `${(d.session_timeout_hours/24).toFixed(1)} days` : `${d.session_timeout_hours} hours`,
+        color:'#7c3aed' },
+      { icon:'<i data-icon="refresh-cw"></i>', label:'Remember Me',     val: `${d.remember_me_days || 30} days`, color:'#0891b2' },
+      { icon:'<i data-icon="key"></i>', label:'PW Expires',      val: `Every ${d.password_expiry_days} days`,  color:'#ef4444' },
+      { icon:'<i data-icon="ban"></i>', label:'PW Reuse Block',  val: `Last ${d.password_history_count} passwords`, color:'#f59e0b' },
+      { icon:'<i data-icon="shield"></i>',  label:'Lockout After',  val: `${d.max_login_attempts} attempts → ${d.lockout_minutes}min`, color:'#059669' },
+      { icon:'<i data-icon="circle"></i>', label:'API Rate Limit',  val: `${d.api_rate_limit_requests} req / ${d.api_rate_limit_window_seconds}s`, color:'#3b82f6' },
+      { icon:'<i data-icon="trash"></i>', label:'Trash Retention', val: `${d.trash_retention_days} days`, color:'#a855f7' },
+      { icon:'<i data-icon="edit"></i>', label:'Markdown',        val: d.enable_markdown ? 'Enabled' : 'Disabled', color: d.enable_markdown ? '#059669' : '#9ca3af' },
+    ];
+    el.innerHTML = rows.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+        <div style="width:28px;height:28px;border-radius:7px;background:${r.color}18;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${r.icon}</div>
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">${r.label}</div>
+          <div style="font-size:12.5px;font-weight:800;color:var(--text)">${r.val}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Warn before leaving with unsaved changes
+  window.addEventListener('beforeunload', e => {
+    if (_dirty) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  loadSettings();
+</script>
+
+</body>
+</html>

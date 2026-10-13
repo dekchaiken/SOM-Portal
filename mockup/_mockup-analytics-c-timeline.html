@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Analytics — Design C: Timeline Ribbon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#F26419;
+  --bg:#F5F6F8; --bg-card:#FFFFFF;
+  --text:#1C1C1E; --text-muted:#767676; --text-dim:#9AA0A6;
+  --border:#E5E5E5; --border-soft:#EEEEEE;
+  --good:#16A34A; --good-line:#22C55E;
+  --bad:#DC2626;  --bad-line:#EF4444;
+  --warn:#F59E0B;
+  --font:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--font); font-size:12px}
+.page{max-width:1360px; margin:0 auto; padding:28px 32px 80px}
+
+/* Header */
+.head{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:12px}
+.head h1{margin:0; font-size:22px; font-weight:800; letter-spacing:-.02em}
+.head .sub{color:var(--text-muted); font-size:12px; margin-top:3px}
+.head .tools{display:flex; gap:8px}
+.btn{border:1px solid var(--border); background:var(--bg-card); font-family:var(--font); font-size:11px; font-weight:700; color:var(--text); padding:8px 12px; border-radius:8px; cursor:pointer}
+.btn.primary{background:var(--text); color:#fff; border-color:var(--text)}
+
+/* KPI mini row */
+.kpi-row{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:26px}
+.kpi{background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px}
+.kpi .l{font-size:10.5px; text-transform:uppercase; font-weight:800; letter-spacing:.12em; color:var(--text-muted); margin-bottom:4px}
+.kpi .v{font-size:24px; font-weight:800; letter-spacing:-.02em}
+.kpi .s{font-size:10.5px; color:var(--text-muted); font-weight:600; margin-top:2px}
+.kpi .icon{width:38px; height:38px; border-radius:10px; background:#F1F1F1; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:800}
+.kpi.good .v{color:var(--good)}   .kpi.good .icon{background:#DCFCE7; color:var(--good)}
+.kpi.bad  .v{color:var(--bad)}    .kpi.bad  .icon{background:#FEE2E2; color:var(--bad)}
+.kpi.warn .v{color:var(--warn)}   .kpi.warn .icon{background:#FEF3C7; color:var(--warn)}
+.kpi.orange .v{color:var(--orange)} .kpi.orange .icon{background:#FFE4D2; color:var(--orange)}
+
+/* Ribbon */
+.ribbon-wrap{background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:18px 22px 22px; margin-bottom:22px}
+.ribbon-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px}
+.ribbon-title{font-size:11px; letter-spacing:.18em; font-weight:800; text-transform:uppercase}
+.ribbon-legend{font-size:10.5px; color:var(--text-muted); font-weight:600; display:flex; gap:14px}
+.ribbon-legend span{display:inline-flex; align-items:center; gap:5px}
+.ribbon-legend .dot{width:9px; height:9px; border-radius:50%}
+.dot.g{background:var(--good-line)} .dot.b{background:var(--bad-line)} .dot.f{background:#D9D9D9}
+
+.ribbon{
+  position:relative; padding:26px 8px 40px;
+}
+.ribbon .track{
+  position:absolute; left:20px; right:20px; top:52px; height:6px; border-radius:3px;
+  background:linear-gradient(90deg,
+    var(--good-line) 0%, var(--good-line) 8.33%,
+    var(--bad-line) 8.33%, var(--bad-line) 58.3%,
+    #D9D9D9 58.3%, #D9D9D9 100%);
+}
+.months{display:grid; grid-template-columns:repeat(12,1fr); gap:8px; position:relative; z-index:1}
+.mstop{
+  position:relative; display:flex; flex-direction:column; align-items:center;
+}
+.mstop .node{
+  width:44px; height:44px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; font-weight:800; color:#fff;
+  box-shadow:0 0 0 4px var(--bg-card), 0 2px 8px rgba(0,0,0,.08);
+  cursor:pointer; transition:transform .15s ease;
+}
+.mstop .node:hover{transform:scale(1.08)}
+.mstop .node.g{background:var(--good-line)}
+.mstop .node.b{background:var(--bad-line)}
+.mstop .node.f{background:#D9D9D9; color:#8B8B8B}
+.mstop .name{font-size:11.5px; font-weight:800; margin-top:10px; color:var(--text)}
+.mstop .name.mut{color:var(--text-dim)}
+.mstop .sub{font-size:10px; color:var(--text-muted); font-weight:600; margin-top:2px}
+.mstop .sub.bad{color:var(--bad); font-weight:700}
+
+/* Detail cards below ribbon */
+.month-detail{
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+  gap:14px;
+}
+.dcard{
+  background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+  padding:14px 16px 12px; position:relative; overflow:hidden;
+}
+.dcard.g{border-left:4px solid var(--good-line)}
+.dcard.b{border-left:4px solid var(--bad-line)}
+.dcard.f{border-left:4px solid #D9D9D9; opacity:.55}
+
+.dcard .row1{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px}
+.dcard .mo{font-size:13px; font-weight:800; letter-spacing:-.01em}
+.dcard .mo small{display:block; font-size:10px; color:var(--text-muted); font-weight:600; margin-top:2px}
+.dcard .pill{font-size:10px; font-weight:800; padding:3px 8px; border-radius:999px; letter-spacing:.06em}
+.dcard.g .pill{background:#DCFCE7; color:var(--good)}
+.dcard.b .pill{background:#FEE2E2; color:var(--bad)}
+.dcard.f .pill{background:#F1F1F1; color:var(--text-muted)}
+.dcard .big{font-size:26px; font-weight:800; letter-spacing:-.02em; margin:2px 0 6px}
+.dcard.g .big{color:var(--good)}
+.dcard.b .big{color:var(--bad)}
+.dcard.f .big{color:var(--text-dim)}
+.dcard .meta{display:flex; gap:12px; font-size:10.5px; color:var(--text-muted); font-weight:700; margin-bottom:10px}
+.dcard .meta b{color:var(--text)}
+.dcard .incs{display:flex; flex-direction:column; gap:5px}
+.dcard .inc{display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text); font-weight:600; padding:5px 8px; background:#FAFAFA; border-radius:6px; border:1px solid var(--border-soft)}
+.dcard .inc .sev{font-size:9px; font-weight:800; padding:2px 6px; border-radius:3px; letter-spacing:.06em; color:#fff}
+.dcard .inc .sev.s1{background:var(--bad)} .dcard .inc .sev.s2{background:var(--warn)} .dcard .inc .sev.s3{background:#3B82F6}
+.dcard .inc .tag{margin-left:auto; font-size:9.5px; color:var(--text-muted); font-weight:700}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="head">
+    <div>
+      <h1>SM Detection · Yearly Timeline</h1>
+      <div class="sub">แต่ละเดือน SM หลุดกี่ตัว &middot; hover node เพื่อดู detail &middot; as of 11 Aug 2026</div>
+    </div>
+    <div class="tools">
+      <button class="btn">2025</button>
+      <button class="btn primary">2026</button>
+      <button class="btn">Export PDF</button>
+    </div>
+  </header>
+
+  <!-- KPI mini row -->
+  <div class="kpi-row">
+    <div class="kpi good">
+      <div><div class="l">SM Detection</div><div class="v">92.4%</div><div class="s">vs OKR 90%</div></div>
+      <div class="icon">&#10003;</div>
+    </div>
+    <div class="kpi bad">
+      <div><div class="l">Total SM Missed</div><div class="v">9</div><div class="s">out of 118 tickets</div></div>
+      <div class="icon">!</div>
+    </div>
+    <div class="kpi warn">
+      <div><div class="l">Outage Min YTD</div><div class="v">1,794</div><div class="s">7 of 12 months</div></div>
+      <div class="icon">&#9201;</div>
+    </div>
+    <div class="kpi orange">
+      <div><div class="l">Green Streak</div><div class="v">1 mo</div><div class="s">Jan only</div></div>
+      <div class="icon">&#127811;</div>
+    </div>
+  </div>
+
+  <!-- Ribbon -->
+  <div class="ribbon-wrap">
+    <div class="ribbon-head">
+      <div class="ribbon-title">Monthly Timeline · Green vs Miss</div>
+      <div class="ribbon-legend">
+        <span><span class="dot g"></span>green month</span>
+        <span><span class="dot b"></span>SM missed</span>
+        <span><span class="dot f"></span>future / no data</span>
+      </div>
+    </div>
+    <div class="ribbon">
+      <div class="track"></div>
+      <div class="months">
+        <div class="mstop">
+          <div class="node g">&#10003;</div>
+          <div class="name">Jan</div>
+          <div class="sub">clean</div>
+        </div>
+        <div class="mstop">
+          <div class="node b">1</div>
+          <div class="name">Feb</div>
+          <div class="sub bad">480 min</div>
+        </div>
+        <div class="mstop">
+          <div class="node b">2</div>
+          <div class="name">Mar</div>
+          <div class="sub bad">781 min</div>
+        </div>
+        <div class="mstop">
+          <div class="node b">1</div>
+          <div class="name">Apr</div>
+          <div class="sub bad">98 min</div>
+        </div>
+        <div class="mstop">
+          <div class="node b">3</div>
+          <div class="name">May</div>
+          <div class="sub bad">216 min</div>
+        </div>
+        <div class="mstop">
+          <div class="node b">1</div>
+          <div class="name">Jun</div>
+          <div class="sub bad">103 min</div>
+        </div>
+        <div class="mstop">
+          <div class="node b">1</div>
+          <div class="name">Jul</div>
+          <div class="sub bad">116 min</div>
+        </div>
+        <div class="mstop"><div class="node f">&mdash;</div><div class="name mut">Aug</div><div class="sub">&mdash;</div></div>
+        <div class="mstop"><div class="node f">&mdash;</div><div class="name mut">Sep</div><div class="sub">&mdash;</div></div>
+        <div class="mstop"><div class="node f">&mdash;</div><div class="name mut">Oct</div><div class="sub">&mdash;</div></div>
+        <div class="mstop"><div class="node f">&mdash;</div><div class="name mut">Nov</div><div class="sub">&mdash;</div></div>
+        <div class="mstop"><div class="node f">&mdash;</div><div class="name mut">Dec</div><div class="sub">&mdash;</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Month detail cards -->
+  <div class="month-detail">
+
+    <div class="dcard g">
+      <div class="row1"><div class="mo">January<small>0 SM misses</small></div><span class="pill">GREEN</span></div>
+      <div class="big">0</div>
+      <div class="meta"><span>outage <b>0 min</b></span><span>tickets <b>14</b></span></div>
+      <div class="incs"><div class="inc" style="justify-content:center; color:var(--text-muted)">All incidents detected by SM &#10003;</div></div>
+    </div>
+
+    <div class="dcard b">
+      <div class="row1"><div class="mo">February<small>1 SM miss</small></div><span class="pill">MISS</span></div>
+      <div class="big">1</div>
+      <div class="meta"><span>outage <b>480 min</b></span><span>tickets <b>16</b></span></div>
+      <div class="incs">
+        <div class="inc"><span class="sev s1">S1</span>DTAC upstream outage<span class="tag">SMC-1042</span></div>
+      </div>
+    </div>
+
+    <div class="dcard b">
+      <div class="row1"><div class="mo">March<small>2 SM misses</small></div><span class="pill">MISS</span></div>
+      <div class="big">2</div>
+      <div class="meta"><span>outage <b>781 min</b></span><span>tickets <b>19</b></span></div>
+      <div class="incs">
+        <div class="inc"><span class="sev s1">S1</span>DTAC circuit down<span class="tag">SMC-1087</span></div>
+        <div class="inc"><span class="sev s2">S2</span>TMN pod restart storm<span class="tag">SMC-1094</span></div>
+      </div>
+    </div>
+
+    <div class="dcard b">
+      <div class="row1"><div class="mo">April<small>1 SM miss</small></div><span class="pill">MISS</span></div>
+      <div class="big">1</div>
+      <div class="meta"><span>outage <b>98 min</b></span><span>tickets <b>18</b></span></div>
+      <div class="incs">
+        <div class="inc"><span class="sev s2">S2</span>TRUE API 5xx spike<span class="tag">SMC-1131</span></div>
+      </div>
+    </div>
+
+    <div class="dcard b">
+      <div class="row1"><div class="mo">May<small>3 SM misses</small></div><span class="pill">MISS</span></div>
+      <div class="big">3</div>
+      <div class="meta"><span>outage <b>216 min</b></span><span>tickets <b>17</b></span></div>
+      <div class="incs">
+        <div class="inc"><span class="sev s1">S1</span>DTAC upstream flap<span class="tag">SMC-1178</span></div>
+        <div class="inc"><span class="sev s2">S2</span>TRUE cert expiry<span class="tag">SMC-1189</span></div>
+        <div class="inc"><span class="sev s2">S2</span>TMN worker OOM<span class="tag">SMC-1201</span></div>
+      </div>
+    </div>
+
+    <div class="dcard b">
+      <div class="row1"><div class="mo">June<small>1 SM miss</small></div><span class="pill">MISS</span></div>
+      <div class="big">1</div>
+      <div class="meta"><span>outage <b>103 min</b></span><span>tickets <b>18</b></span></div>
+      <div class="incs">
+        <div class="inc"><span class="sev s1">S1</span>DTAC upstream drop<span class="tag">SMC-1244</span></div>
+      </div>
+    </div>
+
+    <div class="dcard b">
+      <div class="row1"><div class="mo">July<small>1 SM miss</small></div><span class="pill">MISS</span></div>
+      <div class="big">1</div>
+      <div class="meta"><span>outage <b>116 min</b></span><span>tickets <b>16</b></span></div>
+      <div class="incs">
+        <div class="inc"><span class="sev s2">S2</span>TMN cache miss cascade<span class="tag">SMC-1289</span></div>
+      </div>
+    </div>
+
+    <div class="dcard f"><div class="row1"><div class="mo">August<small>in progress</small></div><span class="pill">TBD</span></div><div class="big">&mdash;</div><div class="meta"><span>no data yet</span></div></div>
+    <div class="dcard f"><div class="row1"><div class="mo">September<small>future</small></div><span class="pill">TBD</span></div><div class="big">&mdash;</div><div class="meta"><span>&mdash;</span></div></div>
+
+  </div>
+
+</div>
+</body>
+</html>

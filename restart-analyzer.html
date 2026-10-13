@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restart Analyzer — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/restart-analyzer/restart-analyzer.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">วิเคราะห์ Restart ของ Service</div>
+        <div class="page-sub">ใส่ชื่อ service → ระบบเดินตรวจ 10+ ขั้น + ให้คะแนน hypothesis 5 อันดับ + คลิก pod เพื่อ zoom กราฟก่อนตาย</div>
+      </div>
+      <div class="topbar-actions">
+        <button type="button" class="ra-docs-btn" onclick="RA.openDocs()" title="ดู PromQL / metrics ที่ใช้ในแต่ละ phase">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>คู่มือค่า / Metrics</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="ra">
+
+        <div class="ra-hero">
+          <div>
+            <div class="ra-hero-lbl">ชื่อ Service</div>
+            <div class="ra-searchbox">
+              <span class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
+              <input id="ra-input" type="text" autocomplete="off" spellcheck="false"
+                     placeholder="เช่น ecatalog-web, mobile-auth-service, acm-kyc-service-api …" />
+            </div>
+          </div>
+          <div>
+            <div class="ra-hero-lbl">ช่วงเวลา</div>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+              <div class="ra-range" role="radiogroup">
+                <button type="button" class="on" data-range="1h">1 ชม.</button>
+                <button type="button"        data-range="6h">6 ชม.</button>
+                <button type="button"        data-range="24h">24 ชม.</button>
+                <button type="button"        data-range="7d">7 วัน</button>
+                <button type="button" id="ra-range-custom" data-custom="1"
+                        onclick="RA.openPicker()">Custom…</button>
+              </div>
+              <button id="ra-go" class="ra-go" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                เริ่มสืบสวน
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="ra-results" class="ra-results">
+          <div class="ra-empty">
+            ใส่ชื่อ service แล้วกด <b>เริ่มสืบสวน</b><br>
+            <span style="font-size:11.5px; color:var(--ra-text-soft)">รองรับ service ทุกตัวบน EKS TMN / OCP TH ที่ scrape kube-state-metrics</span>
+          </div>
+        </div>
+
+        <!-- Docs modal — topbar button opens this. Lists all PromQL / metrics
+             used by each phase so users can verify + copy queries. -->
+        <div id="ra-docs" class="ra-docs-ovl" onclick="if(event.target===this) RA.closeDocs()">
+          <div class="ra-docs-card">
+            <div class="ra-docs-head">
+              <div>
+                <div class="ra-docs-title">คู่มือค่า / Metrics ในหน้านี้</div>
+                <div class="ra-docs-sub">ทุกค่าบนหน้าจอ — มาจาก PromQL อะไร · จาก metric ตัวไหน · datasource อะไร</div>
+              </div>
+              <button type="button" class="ra-docs-close" onclick="RA.closeDocs()" title="ปิด (Esc)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+              </button>
+            </div>
+            <div id="ra-docs-body" class="ra-docs-body"></div>
+          </div>
+        </div>
+
+        <!-- Custom range picker — mirrors service-performance's picker so
+             users get consistent behavior across the toolset. -->
+        <div id="ra-picker" class="ra-picker-ovl" onclick="if(event.target===this) RA.closePicker()">
+          <div class="ra-picker-card">
+            <div class="ra-picker-title">เลือกช่วงเวลาแบบกำหนดเอง</div>
+            <div class="ra-picker-presets">
+              <button type="button" onclick="RA._pickerPreset('today')">วันนี้</button>
+              <button type="button" onclick="RA._pickerPreset('yesterday')">เมื่อวาน</button>
+              <button type="button" onclick="RA._pickerPreset('last3d')">3 วันย้อนหลัง</button>
+              <button type="button" onclick="RA._pickerPreset('last7d')">7 วันย้อนหลัง</button>
+              <button type="button" onclick="RA._pickerPreset('last30d')">30 วันย้อนหลัง</button>
+            </div>
+            <div class="ra-picker-row">
+              <label for="ra-picker-from">จาก</label>
+              <input id="ra-picker-from" type="datetime-local" step="60">
+            </div>
+            <div class="ra-picker-row">
+              <label for="ra-picker-to">ถึง</label>
+              <input id="ra-picker-to" type="datetime-local" step="60">
+            </div>
+            <div id="ra-picker-err" class="ra-picker-err"></div>
+            <div class="ra-picker-actions">
+              <button type="button" onclick="RA.closePicker()">ยกเลิก</button>
+              <button type="button" class="primary" onclick="RA.applyPicker()">ใช้ช่วงนี้</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js?v=20260810-ra5"></script>
+<script src="assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script src="./assets/pages/restart-analyzer/restart-analyzer.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Docs — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/sheets/sheets.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content" style="display:flex;flex-direction:column;overflow:hidden;height:100vh">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">⊞ Team Docs</div>
+        <div class="page-sub">Google Sheets, Docs, Slides — เปิดดูในหน้าเดียว</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" data-action="add" onclick="openDocModal()">+ เพิ่มเอกสาร</button>
+      </div>
+    </header>
+
+    <main class="page-content sheets-page-content">
+      <div class="sheets-split" id="sheets-split">
+        <!-- ── Left sidebar (list) ── -->
+        <aside class="sh-sidebar">
+          <div class="sh-sidebar-head">
+            <div class="sh-search-row">
+              <div class="search-wrap">
+                <span class="search-icon">⌕</span>
+                <input type="text" id="search-input" class="form-control" placeholder="ค้นหาเอกสาร...">
+              </div>
+            </div>
+            <div class="sh-type-tabs" id="type-tabs">
+              <div class="sh-type-tab active" data-type=""      onclick="setType(this,'')">All</div>
+              <div class="sh-type-tab"        data-type="sheet" onclick="setType(this,'sheet')"><i data-icon="book"></i> Sheet</div>
+              <div class="sh-type-tab"        data-type="doc"   onclick="setType(this,'doc')"><i data-icon="book"></i> Doc</div>
+              <div class="sh-type-tab"        data-type="slide" onclick="setType(this,'slide')"><i data-icon="book"></i> Slide</div>
+            </div>
+          </div>
+
+          <div class="sh-sidebar-body" id="sidebar-body">
+            <div style="padding:40px 12px;text-align:center;font-size:11px;color:var(--text-muted)">
+              Loading...
+            </div>
+          </div>
+
+          <div class="sh-sidebar-foot">
+            <button class="btn btn-ghost" data-action="add" onclick="openDocModal()">+ เพิ่มเอกสาร</button>
+          </div>
+        </aside>
+
+        <!-- ── Right pane (iframe / empty state) ── -->
+        <section class="sh-main" id="main-pane">
+          <!-- Populated by renderMainPane() -->
+          <div class="sh-empty">
+            <div class="sh-empty-icon">⊞</div>
+            <div class="sh-empty-title">เลือกเอกสารจากรายการทางซ้าย</div>
+            <div class="sh-empty-sub">คลิกเอกสารเพื่อดู preview ที่นี่ — Google Sheet/Doc/Slide จะเปิดในหน้านี้เลย ไม่ต้องเปลี่ยนหน้า</div>
+          </div>
+        </section>
+
+        <!-- Collapse toggle (child of split, auto-tracks sidebar width) -->
+        <button class="sh-collapse-btn" onclick="toggleSidebar()" title="ย่อ/ขยาย sidebar">◂</button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ── Add / Edit Modal ── -->
+<div class="modal-overlay" id="doc-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title" id="doc-modal-title">เพิ่มเอกสาร</span>
+      <button class="btn-close" onclick="Modal.close('doc-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:0">
+      <input type="hidden" id="edit-doc-id">
+
+      <div class="form-group">
+        <label class="form-label">ชื่อเอกสาร <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="doc-name" class="form-control" placeholder="เช่น Weekly Report, Team Roster" maxlength="120">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">URL <span style="color:var(--danger)">*</span></label>
+        <input type="url" id="doc-url" class="form-control" placeholder="https://docs.google.com/...">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">ประเภท</label>
+          <select id="doc-type" class="form-control">
+            <option value="sheet">Google Sheet</option>
+            <option value="doc">Google Doc</option>
+            <option value="slide">Google Slide</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">หมวดหมู่</label>
+          <select id="doc-category" class="form-control">
+            <option value="">— ไม่ระบุ —</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">รายละเอียด</label>
+        <textarea id="doc-desc" class="form-control" rows="3" placeholder="อธิบายเอกสารนี้..." maxlength="300"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('doc-modal')">Cancel</button>
+      <button class="btn btn-primary" id="doc-save-btn" onclick="saveDoc()">
+        <span id="doc-save-text">บันทึก</span>
+        <span id="doc-save-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/skeletons.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/analytics.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script src="./assets/pages/sheets/sheets.js"></script>
+</body>
+</html>

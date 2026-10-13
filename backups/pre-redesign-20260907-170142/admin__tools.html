@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sidebar Tools — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .tools-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .tools-table th {
+      text-align: left; padding: 10px 12px;
+      background: var(--sidebar-bg); color: var(--text-muted);
+      font-weight: 600; border-bottom: 1px solid var(--border);
+    }
+    .tools-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .tools-table tr:last-child td { border-bottom: none; }
+    .tools-table tr:hover td { background: var(--bg); }
+
+    .type-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600;
+    }
+    .type-internal { background: rgba(242,100,25,.1); color: var(--orange); border: 1px solid rgba(242,100,25,.2); }
+    .type-external { background: rgba(59,130,246,.1); color: #2563eb; border: 1px solid rgba(59,130,246,.2); }
+
+    .url-cell { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
+    .action-btn-group { display: flex; gap: 6px; }
+
+    /* Toggle */
+    .toggle { position:relative;width:32px;height:18px;background:var(--border);border-radius:20px;cursor:pointer;transition:background .2s;flex-shrink:0; }
+    .toggle.on { background:var(--orange); }
+    .toggle::after { content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2); }
+    .toggle.on::after { left:16px; }
+    .toggle-wrap { display:flex;align-items:center;gap:6px; }
+
+    /* Drag */
+    .drag-handle { cursor:grab;color:var(--text-muted);font-size:14px;padding:0 4px;user-select:none; }
+    .drag-handle:active { cursor:grabbing; }
+    tr.dragging { opacity:.4; }
+    tr.drag-over td { border-top:2px solid var(--orange); }
+
+    /* Modal */
+    .modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1100;align-items:center;justify-content:center; }
+    .modal-overlay.open {
+      display: flex !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    .modal-box { background:#fff;border-radius:var(--radius-lg);width:500px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.18); }
+    .modal-header { padding:18px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; }
+    .modal-title { font-size:14px;font-weight:700; }
+    .modal-close { background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted);line-height:1; }
+    .modal-body { padding:20px;overflow-y:auto;flex:1; }
+    .modal-footer { padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end; }
+
+    .form-row { margin-bottom:14px; }
+    .form-label { display:block;font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px; }
+    .form-input, .form-select { width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font);font-size:12px;background:var(--bg);color:var(--text);box-sizing:border-box;transition:border-color .15s; }
+    .form-input:focus, .form-select:focus { outline:none;border-color:var(--orange); }
+    .form-row-2 { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px; }
+    .icon-preview-row { display:flex;align-items:center;gap:10px; }
+    .icon-preview-box { width:40px;height:40px;border:1px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--bg); }
+
+    /* Link type selector */
+    .type-selector { display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:0; }
+    .type-option { border:2px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .15s;position:relative; }
+    .type-option.selected { border-color:var(--orange);background:rgba(242,100,25,.04); }
+    .type-option-icon { font-size:18px;margin-bottom:4px; }
+    .type-option-label { font-size:12px;font-weight:700;color:var(--text); }
+    .type-option-desc { font-size:10px;color:var(--text-muted);margin-top:2px;line-height:1.4; }
+    .type-option-check { position:absolute;top:8px;right:8px;width:16px;height:16px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .15s; }
+    .type-option.selected .type-option-check { border-color:var(--orange);background:var(--orange);color:#fff; }
+
+    .hint { font-size:11px;color:var(--text-muted);margin-top:4px; }
+    .divider { border:none;border-top:1px solid var(--border);margin:16px 0; }
+    .empty-table { text-align:center;padding:40px;color:var(--text-muted);font-size:12px; }
+
+    .info-bar { display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-bottom:16px;font-size:11px;color:var(--text-muted); }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="plus-circle"></i> Sidebar Tools</div>
+        <div class="page-sub">จัดการ Tools ทุกประเภทใน Sidebar — Internal pages &amp; External links</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openCreateModal()">+ Add Tool</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="plus-circle"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Sidebar Tools</h1>
+          <p>จัดการ Tools ทุกประเภทใน Sidebar — Internal pages &amp; External links · ลาก ⠿ เรียงลำดับได้</p>
+        </div>
+      </section>
+
+      <div class="info-bar">
+        <span style="font-size:14px"><i data-icon="lightbulb"></i></span>
+        <span>
+          <strong>Internal</strong> — หน้าใน App (ไม่มี ↗) &nbsp;·&nbsp;
+          <strong>External</strong> — เปิด New Tab (มี ↗) &nbsp;·&nbsp;
+          ลาก <strong>⠿</strong> เพื่อเรียงลำดับ &nbsp;·&nbsp;
+          Toggle เพื่อเปิด/ปิด
+        </span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i data-icon="plus-circle"></i> All Sidebar Tools</span>
+          <span class="badge badge-gray" id="tool-count">—</span>
+        </div>
+        <div class="card-body" style="padding:0" id="table-container">
+          <div data-skel="table" data-rows="5"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══ Create / Edit Modal ═══ -->
+<div class="modal-overlay" id="modal-tool">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Add Tool</span>
+      <button class="modal-close" onclick="closeModal('modal-tool')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Link Type selector -->
+      <div class="form-row">
+        <label class="form-label">ประเภท Tool *</label>
+        <div class="type-selector">
+          <div class="type-option selected" id="type-opt-internal" onclick="setLinkType('internal')">
+            <div class="type-option-check"><i data-icon="check"></i></div>
+            <div class="type-option-icon">⬡</div>
+            <div class="type-option-label">Internal</div>
+            <div class="type-option-desc">หน้าใน App<br>ไม่เปิด new tab</div>
+          </div>
+          <div class="type-option" id="type-opt-external" onclick="setLinkType('external')">
+            <div class="type-option-check"><i data-icon="check"></i></div>
+            <div class="type-option-icon">↗</div>
+            <div class="type-option-label">External</div>
+            <div class="type-option-desc">Link ภายนอก<br>เปิด new tab เสมอ</div>
+          </div>
+          <div class="type-option" id="type-opt-embedded" onclick="setLinkType('embedded')">
+            <div class="type-option-check"><i data-icon="check"></i></div>
+            <div class="type-option-icon">⧉</div>
+            <div class="type-option-label">Embedded</div>
+            <div class="type-option-desc">URL เปิดใน App<br>แบบ iframe</div>
+          </div>
+        </div>
+        <input type="hidden" id="f-link-type" value="internal">
+      </div>
+
+      <hr class="divider">
+
+      <!-- Common: name + icon -->
+      <div class="form-row">
+        <label class="form-label">ชื่อ *</label>
+        <input class="form-input" id="f-name" type="text" placeholder="เช่น Monitoring, Board SM">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Icon (Emoji)</label>
+        <div class="icon-preview-row">
+          <div class="icon-preview-box" id="icon-preview"><i data-icon="plus-circle"></i></div>
+          <input class="form-input" id="f-icon" type="text" placeholder="⊕" maxlength="4"
+            oninput="document.getElementById('icon-preview').textContent = this.value || '⊕'"
+            style="flex:1">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">คำอธิบาย <span style="font-weight:400">(tooltip)</span></label>
+        <input class="form-input" id="f-desc" type="text" placeholder="เช่น Grafana Dashboards — Real-time">
+      </div>
+
+      <!-- Internal fields -->
+      <div id="fields-internal">
+        <hr class="divider">
+        <div class="form-row">
+          <label class="form-label">Path <span style="font-weight:400;color:var(--text-muted)">(relative to root)</span></label>
+          <input class="form-input" id="f-path" type="text" placeholder="เช่น monitoring.html, test-service.html">
+          <div class="hint">เขียน path จาก root ของ project เช่น <code>monitoring.html</code></div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Page ID <span style="font-weight:400;color:var(--text-muted)">(สำหรับ active state)</span></label>
+          <input class="form-input" id="f-page-id" type="text" placeholder="เช่น monitoring, test-service">
+          <div class="hint">ต้องตรงกับค่าที่หน้านั้นส่งใน <code>Layout.render('<strong>id</strong>')</code></div>
+        </div>
+      </div>
+
+      <!-- Embedded fields -->
+      <div id="fields-embedded" style="display:none">
+        <hr class="divider">
+        <div class="form-row">
+          <label class="form-label">URL *</label>
+          <input class="form-input" id="f-embed-url" type="url" placeholder="https://...">
+          <div class="hint">จะเปิดเป็น iframe ภายใน App — บาง site อาจบล็อก embed ด้วย X-Frame-Options</div>
+        </div>
+      </div>
+
+      <!-- External fields -->
+      <div id="fields-external" style="display:none">
+        <hr class="divider">
+        <div class="form-row">
+          <label class="form-label">URL *</label>
+          <input class="form-input" id="f-url" type="url" placeholder="https://...">
+          <div class="hint">จะเปิดใน New Tab เสมอ — ใส่ URL เต็ม</div>
+        </div>
+        <div class="form-row-2">
+          <div>
+            <label class="form-label">Badge Text</label>
+            <input class="form-input" id="f-badge-text" type="text" placeholder="เช่น Jira, Confluence">
+          </div>
+          <div>
+            <label class="form-label">Badge Color</label>
+            <select class="form-select" id="f-badge-type">
+              <option value="gray">Gray</option>
+              <option value="orange">Orange</option>
+              <option value="green">Green</option>
+              <option value="blue">Blue</option>
+              <option value="red">Red</option>
+              <option value="yellow">Yellow</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Order + enabled -->
+      <div class="form-row-2">
+        <div>
+          <label class="form-label">ลำดับ</label>
+          <input class="form-input" id="f-order" type="number" min="1" placeholder="Auto">
+        </div>
+        <div>
+          <label class="form-label">สถานะ</label>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+            <div class="toggle on" id="f-enabled-toggle" onclick="toggleEnabled()"></div>
+            <span id="f-enabled-label" style="font-size:12px">เปิดใช้งาน</span>
+          </div>
+          <input type="hidden" id="f-enabled" value="true">
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-tool')">Cancel</button>
+      <button class="btn btn-primary" id="modal-save-btn" onclick="saveTool()">Save Tool</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Delete Confirm ═══ -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-header">
+      <span class="modal-title" style="color:#dc2626">Delete Tool</span>
+      <button class="modal-close" onclick="closeModal('modal-delete')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text);margin:0">ต้องการลบ <strong id="delete-tool-name"></strong> ใช่ไหม?</p>
+      <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0">Tool จะหายออกจาก Sidebar ทันที</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-delete')">Cancel</button>
+      <button class="btn" style="background:#dc2626;color:#fff" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+  if (!Auth.requireAdmin()) {}
+  Layout.render('admin-tools');
+
+  let currentTools = [];
+  let editingId    = null;
+  let deletingId   = null;
+
+  // ─── Load ───────────────────────────────────────────────
+  async function loadTools() {
+    const container = document.getElementById('table-container');
+    container.innerHTML = Skeleton.table(5);
+
+    const res = await API.sidebarTools.list();
+    if (!res?.ok) { container.innerHTML = '<div class="empty-table">โหลดข้อมูลไม่สำเร็จ</div>'; return; }
+
+    currentTools = res.data.data || [];
+    document.getElementById('tool-count').textContent = `${currentTools.length} tools`;
+
+    if (!currentTools.length) {
+      container.innerHTML = '<div class="empty-table">ยังไม่มี Tool — กด "+ Add Tool"</div>'; return;
+    }
+
+    container.innerHTML = `
+      <table class="tools-table">
+        <thead>
+          <tr>
+            <th style="width:32px"></th>
+            <th style="width:44px">Icon</th>
+            <th>ชื่อ</th>
+            <th style="width:80px">Type</th>
+            <th>Path / URL</th>
+            <th style="width:80px">Status</th>
+            <th style="width:110px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tools-tbody">
+          ${currentTools.map(t => renderRow(t)).join('')}
+        </tbody>
+      </table>`;
+
+    initDragSort();
+
+    container.addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      if (btn.dataset.action === 'edit')   openEditModal(btn.dataset.id);
+      if (btn.dataset.action === 'delete') openDeleteModal(btn.dataset.id, btn.dataset.name);
+      if (btn.dataset.action === 'toggle') quickToggle(btn.dataset.id);
+    });
+  }
+
+  function renderRow(t) {
+    const isExt      = t.link_type === 'external';
+    const isEmbedded = t.link_type === 'embedded';
+    const typeHtml   = isExt      ? '<span class="type-badge type-external">↗ External</span>'
+                     : isEmbedded ? '<span class="type-badge" style="background:rgba(8,145,178,.1);color:#0891b2;border:1px solid rgba(8,145,178,.2)">⧉ Embedded</span>'
+                     :              '<span class="type-badge type-internal">⬡ Internal</span>';
+    const target     = (isExt || isEmbedded) ? (t.url || '—') : (t.path || '—');
+
+    return `<tr data-id="${escHtml(t.id)}" draggable="true">
+      <td><span class="drag-handle" title="ลากเรียงลำดับ">⠿</span></td>
+      <td style="font-size:18px;text-align:center">${renderIcon(t.icon, '<i data-icon="plus-circle"></i>')}</td>
+      <td>
+        <div style="font-weight:600">${escHtml(t.name)}</div>
+        ${t.description ? `<div style="font-size:10px;color:var(--text-muted);margin-top:1px">${escHtml(t.description)}</div>` : ''}
+      </td>
+      <td>${typeHtml}</td>
+      <td>
+        <div class="url-cell" title="${escHtml(target)}">${escHtml(target)}</div>
+        ${!isExt && t.page_id ? `<div style="font-size:10px;color:var(--text-muted);margin-top:1px">page_id: ${escHtml(t.page_id)}</div>` : ''}
+        ${isExt && t.badge_text ? `<span class="badge badge-${escHtml(t.badge_type||'gray')}" style="margin-top:3px;display:inline-block">${escHtml(t.badge_text)}</span>` : ''}
+      </td>
+      <td>
+        <div class="toggle-wrap">
+          <div class="toggle ${t.enabled !== false ? 'on' : ''}" data-action="toggle" data-id="${escHtml(t.id)}"></div>
+          <span style="font-size:10px;color:var(--text-muted)">${t.enabled !== false ? 'On' : 'Off'}</span>
+        </div>
+      </td>
+      <td>
+        <div class="action-btn-group">
+          <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" data-action="edit" data-id="${escHtml(t.id)}">Edit</button>
+          <button class="btn" style="padding:5px 10px;font-size:11px;background:#fee2e2;color:#dc2626;border:none" data-action="delete" data-id="${escHtml(t.id)}" data-name="${escHtml(t.name)}">Del</button>
+        </div>
+      </td>
+    </tr>`;
+  }
+
+  // ─── Quick toggle ───────────────────────────────────────
+  async function quickToggle(id) {
+    const t = currentTools.find(x => x.id === id);
+    if (!t) return;
+    const next = t.enabled === false;
+    const res  = await API.sidebarTools.update(id, { enabled: next });
+    if (!res?.ok) { Toast.error('อัพเดทไม่สำเร็จ'); return; }
+    t.enabled = next;
+    const row = document.querySelector(`tr[data-id="${CSS.escape(id)}"]`);
+    if (row) row.outerHTML = renderRow(t);
+    Toast.success(next ? 'เปิดใช้งานแล้ว' : 'ปิดใช้งานแล้ว');
+    Layout.bustCache();
+    initDragSort();
+  }
+
+  // ─── Drag-sort ──────────────────────────────────────────
+  function initDragSort() {
+    const tbody = document.getElementById('tools-tbody');
+    if (!tbody) return;
+    let dragging = null;
+
+    tbody.querySelectorAll('tr[draggable]').forEach(row => {
+      row.addEventListener('dragstart', () => { dragging = row; setTimeout(() => row.classList.add('dragging'), 0); });
+      row.addEventListener('dragend', async () => {
+        row.classList.remove('dragging');
+        const rows = [...tbody.querySelectorAll('tr[data-id]')];
+        const ups  = rows.map((r, i) => {
+          const t = currentTools.find(x => x.id === r.dataset.id);
+          if (t) t.order = i + 1;
+          return API.sidebarTools.update(r.dataset.id, { order: i + 1 });
+        });
+        await Promise.all(ups);
+        Layout.bustCache();
+        dragging = null;
+      });
+      row.addEventListener('dragover', e => { e.preventDefault(); if (dragging && dragging !== row) { tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over')); row.classList.add('drag-over'); } });
+      row.addEventListener('drop', e => { e.preventDefault(); row.classList.remove('drag-over'); if (dragging && dragging !== row) { const rows = [...tbody.querySelectorAll('tr')]; rows.indexOf(dragging) < rows.indexOf(row) ? row.after(dragging) : row.before(dragging); } });
+    });
+  }
+
+  // ─── Link type toggle ───────────────────────────────────
+  function setLinkType(type) {
+    document.getElementById('f-link-type').value = type;
+    document.getElementById('type-opt-internal').classList.toggle('selected', type === 'internal');
+    document.getElementById('type-opt-external').classList.toggle('selected', type === 'external');
+    document.getElementById('type-opt-embedded').classList.toggle('selected', type === 'embedded');
+    document.getElementById('fields-internal').style.display = type === 'internal' ? '' : 'none';
+    document.getElementById('fields-external').style.display = type === 'external' ? '' : 'none';
+    document.getElementById('fields-embedded').style.display = type === 'embedded' ? '' : 'none';
+  }
+
+  // ─── Modal helpers ──────────────────────────────────────
+  function openModal(id)  { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  function toggleEnabled() {
+    const cur  = document.getElementById('f-enabled').value === 'true';
+    const next = !cur;
+    document.getElementById('f-enabled').value = String(next);
+    document.getElementById('f-enabled-toggle').classList.toggle('on', next);
+    document.getElementById('f-enabled-label').textContent = next ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+  }
+
+  function resetForm() {
+    ['f-name','f-icon','f-desc','f-path','f-page-id','f-url','f-embed-url','f-badge-text','f-order'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('f-badge-type').value = 'gray';
+    document.getElementById('f-enabled').value = 'true';
+    document.getElementById('f-enabled-toggle').classList.add('on');
+    document.getElementById('f-enabled-label').textContent = 'เปิดใช้งาน';
+    document.getElementById('icon-preview').innerHTML = '<i data-icon="plus-circle"></i>';
+    setLinkType('internal');
+  }
+
+  function openCreateModal() {
+    editingId = null;
+    resetForm();
+    document.getElementById('modal-title').textContent = 'Add Tool';
+    document.getElementById('modal-save-btn').textContent = 'Save Tool';
+    openModal('modal-tool');
+    setTimeout(() => document.getElementById('f-name').focus(), 100);
+  }
+
+  function openEditModal(id) {
+    const t = currentTools.find(x => x.id === id);
+    if (!t) return;
+    editingId = id;
+
+    setLinkType(t.link_type || 'internal');
+    document.getElementById('f-name').value       = t.name        || '';
+    document.getElementById('f-icon').value       = t.icon        || '';
+    document.getElementById('f-desc').value       = t.description || '';
+    document.getElementById('f-path').value       = t.path        || '';
+    document.getElementById('f-page-id').value    = t.page_id     || '';
+    document.getElementById('f-url').value        = t.link_type !== 'embedded' ? (t.url || '') : '';
+    document.getElementById('f-embed-url').value  = t.link_type === 'embedded' ? (t.url || '') : '';
+    document.getElementById('f-badge-text').value = t.badge_text  || '';
+    document.getElementById('f-badge-type').value = t.badge_type  || 'gray';
+    document.getElementById('f-order').value      = t.order       ?? '';
+    document.getElementById('icon-preview').innerHTML = t.icon || '<i data-icon="plus-circle"></i>';
+
+    const en = t.enabled !== false;
+    document.getElementById('f-enabled').value = String(en);
+    document.getElementById('f-enabled-toggle').classList.toggle('on', en);
+    document.getElementById('f-enabled-label').textContent = en ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+
+    document.getElementById('modal-title').textContent = 'Edit Tool';
+    document.getElementById('modal-save-btn').textContent = 'Save Changes';
+    openModal('modal-tool');
+  }
+
+  // ─── Save ───────────────────────────────────────────────
+  async function saveTool() {
+    const linkType = document.getElementById('f-link-type').value;
+    const name     = document.getElementById('f-name').value.trim();
+    const icon     = document.getElementById('f-icon').value.trim()  || '<i data-icon="plus-circle"></i>';
+    const desc     = document.getElementById('f-desc').value.trim();
+    const path     = document.getElementById('f-path').value.trim();
+    const pageId   = document.getElementById('f-page-id').value.trim();
+    const url      = linkType === 'embedded'
+                     ? document.getElementById('f-embed-url').value.trim()
+                     : document.getElementById('f-url').value.trim();
+    const badgeTxt = document.getElementById('f-badge-text').value.trim();
+    const badgeTyp = document.getElementById('f-badge-type').value;
+    const orderVal = document.getElementById('f-order').value;
+    const enabled  = document.getElementById('f-enabled').value === 'true';
+
+    if (!name) { Toast.error('กรุณากรอกชื่อ'); return; }
+    if (linkType === 'internal' && !path) { Toast.error('กรุณากรอก Path'); return; }
+    if (linkType === 'external' && !url)  { Toast.error('กรุณากรอก URL'); return; }
+    if (linkType === 'embedded' && !url)  { Toast.error('กรุณากรอก URL สำหรับ Embed'); return; }
+
+    const payload = { link_type: linkType, name, icon, description: desc,
+                      path, page_id: pageId, url,
+                      badge_text: badgeTxt, badge_type: badgeTyp, enabled };
+    if (orderVal !== '') payload.order = parseInt(orderVal);
+
+    const btn = document.getElementById('modal-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
+    const res = editingId
+      ? await API.sidebarTools.update(editingId, payload)
+      : await API.sidebarTools.create(payload);
+
+    btn.disabled = false;
+    btn.textContent = editingId ? 'Save Changes' : 'Save Tool';
+
+    if (!res?.ok) { Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด'); return; }
+
+    Toast.success(editingId ? 'แก้ไขเรียบร้อย' : 'เพิ่ม Tool เรียบร้อย');
+    Layout.bustCache();
+    closeModal('modal-tool');
+    loadTools();
+  }
+
+  // ─── Delete ─────────────────────────────────────────────
+  function openDeleteModal(id, name) {
+    deletingId = id;
+    document.getElementById('delete-tool-name').textContent = name;
+    openModal('modal-delete');
+  }
+
+  async function confirmDelete() {
+    if (!deletingId) return;
+    const res = await API.sidebarTools.delete(deletingId);
+    if (!res?.ok) { Toast.error(res?.data?.message || 'ลบไม่สำเร็จ'); return; }
+    Toast.success('ลบ Tool เรียบร้อย');
+    Layout.bustCache();
+    closeModal('modal-delete');
+    deletingId = null;
+    loadTools();
+  }
+
+  // ─── Keyboard & overlay ─────────────────────────────────
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('modal-tool').classList.contains('open')) saveTool();
+    if (e.key === 'Escape') ['modal-tool','modal-delete'].forEach(id => closeModal(id));
+  });
+
+  loadTools();
+</script>
+</body>
+</html>

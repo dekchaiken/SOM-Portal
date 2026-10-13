@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Service — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <style>
+    /* ── Full-height layout ─────────────────────── */
+    .main-content { overflow: hidden !important; }
+
+    /* ── Tab bar ────────────────────────────────── */
+    .ts-tabbar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 0 24px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .ts-tab {
+      padding: 11px 18px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all .15s;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ts-tab:hover { color: var(--text); }
+    .ts-tab.active {
+      color: var(--orange);
+      border-bottom-color: var(--orange);
+      font-weight: 600;
+    }
+    .ts-tab .tab-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: .4;
+    }
+    .ts-tab.active .tab-dot { opacity: 1; }
+    .ts-tabbar-spacer { flex: 1; }
+    .ts-tabbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── Iframe area ────────────────────────────── */
+    .ts-frame-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #fff;
+      min-height: 0;
+    }
+    .ts-frame {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .ts-frame.loaded { opacity: 1; }
+
+    /* ── Loading overlay ────────────────────────── */
+    .ts-loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: var(--bg);
+      z-index: 2;
+      transition: opacity .3s;
+    }
+    .ts-loading.hidden { opacity: 0; pointer-events: none; }
+    .ts-loading-text { font-size: 12px; color: var(--text-muted); }
+
+    /* ── Reconcile panel ────────────────────────── */
+    .recon-panel {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 32px 24px;
+      background: var(--bg);
+      overflow-y: auto;
+      gap: 20px;
+    }
+    .recon-panel.show { display: flex; }
+
+    .recon-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 32px;
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .recon-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .recon-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .recon-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .recon-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 99px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .recon-badge.green  { background: #0d2318; border-color: #14532d; color: #86efac; }
+    .recon-badge.blue   { background: #0c1e3d; border-color: #1e3a5f; color: #93c5fd; }
+    .recon-badge.orange { background: #2d1500; border-color: #7c2d12; color: #fed7aa; }
+
+    .recon-time-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+    }
+    .recon-time-label { font-weight: 600; white-space: nowrap; }
+    .recon-time-val   { font-family: monospace; font-size: 11px; color: var(--text); }
+    .recon-arrow      { color: var(--border); font-size: 14px; }
+
+    .recon-btn-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn-recon-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--orange, #F26419);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 11px 24px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s, transform .15s;
+    }
+    .btn-recon-check:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); }
+    .btn-recon-check:active:not(:disabled) { transform: none; }
+    .btn-recon-check:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    .recon-status {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .recon-status .spinner {
+      width: 13px; height: 13px;
+      border-width: 2px;
+      border-color: var(--border);
+      border-top-color: var(--orange);
+    }
+
+    /* Result section */
+    .recon-result {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .recon-result.show { display: flex; }
+
+    .recon-result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .recon-count-badge {
+      background: #7f1d1d;
+      color: #fca5a5;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 99px;
+    }
+    .recon-count-badge.zero {
+      background: #14532d;
+      color: #86efac;
+    }
+    .recon-last-check { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+
+    .recon-empty {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: #0d2318;
+      border: 1px solid #14532d;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 13px;
+      color: #86efac;
+      font-weight: 600;
+    }
+    .recon-empty.show { display: flex; }
+
+    .recon-error {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: #1e1015;
+      border: 1px solid #7f1d1d;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 12px;
+      color: #fca5a5;
+    }
+    .recon-error.show { display: flex; }
+
+    .recon-table-wrap {
+      display: none;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: auto;
+      max-height: 340px;
+    }
+    .recon-table-wrap.show { display: block; }
+
+    .recon-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .recon-table thead th {
+      background: var(--bg);
+      color: var(--text-muted);
+      padding: 8px 12px;
+      text-align: left;
+      position: sticky;
+      top: 0;
+      font-weight: 600;
+      letter-spacing: .03em;
+      border-bottom: 1px solid var(--border);
+    }
+    .recon-table tbody tr:hover { background: var(--bg); }
+    .recon-table tbody td {
+      padding: 7px 12px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+    }
+    .recon-table tbody tr:last-child td { border-bottom: none; }
+
+    /* ── Blocked overlay ────────────────────────── */
+    .ts-blocked {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      background: var(--bg);
+      z-index: 3;
+      text-align: center;
+      padding: 24px;
+    }
+    .ts-blocked.show { display: flex; }
+
+    /* Card wrapper */
+    .ts-blocked-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px 48px;
+      max-width: 480px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.06);
+    }
+
+    /* Animated icon ring */
+    .ts-blocked-ring {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: var(--orange-dim, #FDE8D8);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+      position: relative;
+      margin-bottom: 4px;
+    }
+    .ts-blocked-ring::after {
+      content: '';
+      position: absolute; inset: -6px;
+      border-radius: 50%;
+      border: 2px dashed var(--orange, #F26419);
+      opacity: .3;
+      animation: spin-slow 12s linear infinite;
+    }
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+
+    .ts-blocked-title {
+      font-size: 16px; font-weight: 700; color: var(--text);
+      margin: 0;
+    }
+    .ts-blocked-sub {
+      font-size: 13px; color: var(--text-muted);
+      line-height: 1.7; max-width: 340px;
+    }
+
+    /* Info row */
+    .ts-blocked-info {
+      display: flex; gap: 8px; align-items: flex-start;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      width: 100%;
+    }
+    .ts-blocked-info-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+    /* CTA button */
+    .ts-blocked-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--orange, #F26419);
+      color: #fff;
+      border: none; border-radius: 8px;
+      padding: 10px 22px;
+      font-size: 13px; font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity .15s, transform .15s;
+      margin-top: 4px;
+    }
+    .ts-blocked-cta:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
+    .ts-blocked-cta:active { transform: translateY(0); }
+
+    /* ════════════════════════════════════════════════
+       PORTAL + RECORDS PANELS  — light theme minimal
+       ════════════════════════════════════════════════ */
+    .portal-panel, .records-panel {
+      position: absolute; inset: 0;
+      display: none; flex-direction: column;
+      background: var(--bg); overflow: hidden;
+    }
+    .portal-panel.show, .records-panel.show { display: flex; }
+
+    /* ── Shared panel header ─────────────────────── */
+    .panel-hd {
+      flex-shrink: 0; background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+    }
+    .panel-hd-left { display: flex; flex-direction: column; gap: 2px; }
+    .panel-hd-title { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -.01em; }
+    .panel-hd-sub   { font-size: 11px; color: var(--text-muted); }
+    .panel-reporter {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--orange-dim); border: 1px solid rgba(242,100,25,.2);
+      border-radius: var(--radius); padding: 5px 12px;
+      font-size: 11px; font-weight: 600; color: var(--orange);
+    }
+
+    /* ── Portal scroll body ──────────────────────── */
+    .portal-scroll {
+      flex: 1; overflow-y: auto;
+      padding: 20px 28px 96px;
+    }
+
+    /* ── Service table ───────────────────────────── */
+    .svc-table {
+      width: 100%; border-collapse: collapse;
+      border: 1px solid var(--border); border-radius: var(--radius-lg);
+      overflow: hidden; table-layout: fixed;
+    }
+    /* group header row */
+    .svc-table tr.svc-group-hd td {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 9px 14px;
+      vertical-align: middle;
+    }
+    .svc-table tr.svc-group-hd:first-child td:first-child { border-radius: var(--radius-lg) 0 0 0; }
+    .svc-table tr.svc-group-hd:first-child td:last-child  { border-radius: 0 var(--radius-lg) 0 0; }
+    .svc-table tr.svc-group-hd + tr.svc-group-hd td { border-top: 6px solid var(--bg); }
+
+    /* child row */
+    .svc-table tr.svc-child-row td {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 14px 7px 28px;
+      vertical-align: middle;
+    }
+    .svc-table tr.svc-child-row:last-child td { border-bottom: none; }
+
+    /* col widths */
+    .col-name   { width: 200px; }
+    .col-toggle { width: 230px; }
+    .col-child-pill { width: 120px; }
+    .col-remark { /* auto */ }
+
+    .svc-group-name {
+      font-size: 12px; font-weight: 700; color: var(--text);
+      letter-spacing: .01em; white-space: nowrap;
+    }
+    .svc-child-name {
+      font-size: 11px; color: var(--text-muted); white-space: nowrap;
+    }
+
+    /* Toggle button group (parent status) */
+    .svc-toggle {
+      display: inline-flex; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); overflow: hidden;
+    }
+    .svc-toggle-btn {
+      padding: 5px 11px; font-size: 11px; font-weight: 600;
+      font-family: var(--font); cursor: pointer; border: none;
+      background: transparent; color: var(--text-muted);
+      border-right: 1px solid var(--border);
+      transition: background .12s, color .12s;
+      line-height: 1.5; white-space: nowrap;
+    }
+    .svc-toggle-btn:last-child { border-right: none; }
+    .svc-toggle-btn:hover:not(.active) { background: var(--bg); }
+    .svc-toggle-btn.active[data-v="Success"] { background: var(--success); color: #fff; }
+    .svc-toggle-btn.active[data-v="Fail"]    { background: var(--danger);  color: #fff; }
+    .svc-toggle-btn.active[data-v="NA"]      { background: #9ca3af;        color: #fff; }
+
+    .svc-remark {
+      width: 100%; padding: 5px 10px; box-sizing: border-box;
+      border-radius: var(--radius-sm); border: 1px solid var(--border);
+      background: var(--bg-input); color: var(--text);
+      font-size: 11px; font-family: var(--font); outline: none;
+      transition: border-color var(--transition);
+    }
+    .svc-remark:focus { border-color: var(--border-focus); }
+    .svc-remark::placeholder { color: var(--text-muted); }
+
+    /* Child pill select */
+    .svc-sel {
+      -webkit-appearance: none; appearance: none;
+      padding: 4px 20px 4px 9px; border-radius: 99px;
+      font-size: 11px; font-weight: 600; font-family: var(--font);
+      cursor: pointer; border: 1px solid transparent;
+      background-repeat: no-repeat; background-position: right 6px center;
+      background-size: 8px; transition: opacity .12s;
+    }
+    .svc-sel:focus { outline: none; }
+    .svc-sel:hover { opacity: .85; }
+    .svc-sel[data-v="OK"] {
+      background-color: #dcfce7; color: #15803d; border-color: #bbf7d0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%2315803d' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+    }
+    .svc-sel[data-v="Fail"] {
+      background-color: #fee2e2; color: #dc2626; border-color: #fecaca;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%23dc2626' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+    }
+    .svc-sel[data-v="NA"] {
+      background-color: var(--bg); color: var(--text-muted); border-color: var(--border);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%23767676' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+    }
+
+    /* ── Submit bar ──────────────────────────────── */
+    .portal-foot {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: var(--bg-card); border-top: 1px solid var(--border);
+      padding: 12px 28px; display: flex; align-items: center;
+      justify-content: space-between; gap: 14px;
+      box-shadow: 0 -2px 12px rgba(0,0,0,.06);
+    }
+    .portal-foot-meta { font-size: 11px; color: var(--text-muted); }
+    .btn-portal-submit {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--orange); color: #fff; border: none;
+      border-radius: var(--radius); padding: 9px 24px;
+      font-size: 13px; font-weight: 700; font-family: var(--font);
+      cursor: pointer; box-shadow: var(--shadow-orange);
+      transition: opacity .15s, transform .15s;
+    }
+    .btn-portal-submit:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
+    .btn-portal-submit:active:not(:disabled) { transform: none; }
+    .btn-portal-submit:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+    .portal-submit-status { font-size: 11px; }
+
+    /* ── Success Modal ───────────────────────────── */
+    .submit-modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,.35); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .submit-modal-overlay.show { opacity: 1; pointer-events: all; }
+    .submit-modal {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-xl); padding: 40px 44px;
+      max-width: 360px; width: 90%; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(12px) scale(.97); transition: transform .22s;
+    }
+    .submit-modal-overlay.show .submit-modal { transform: translateY(0) scale(1); }
+    .submit-modal-ring {
+      width: 68px; height: 68px; border-radius: 50%;
+      background: #dcfce7; display: flex; align-items: center;
+      justify-content: center; font-size: 30px; margin-bottom: 4px;
+    }
+    .submit-modal-title { font-size: 17px; font-weight: 700; color: var(--text); }
+    .submit-modal-sub   { font-size: 12px; color: var(--text-muted); line-height: 1.8; white-space: pre-line; }
+    .submit-modal-actions { display: flex; gap: 8px; margin-top: 8px; width: 100%; }
+    .submit-modal-actions .btn-cancel {
+      flex: 1; padding: 9px; border-radius: var(--radius); border: 1px solid var(--border);
+      background: transparent; color: var(--text-muted); font-size: 13px; font-weight: 600;
+      font-family: var(--font); cursor: pointer; transition: background .15s;
+    }
+    .submit-modal-actions .btn-cancel:hover { background: var(--bg); }
+    .submit-modal-actions .btn-records {
+      flex: 1.4; padding: 9px; border-radius: var(--radius); border: none;
+      background: var(--orange); color: #fff; font-size: 13px; font-weight: 700;
+      font-family: var(--font); cursor: pointer; transition: opacity .15s;
+    }
+    .submit-modal-actions .btn-records:hover { opacity: .88; }
+
+    /* ── Records Panel ───────────────────────────── */
+    /* ── Records panel — inline-edit table ── */
+    .records-body { flex: 1; overflow: auto; }
+    .records-hint {
+      font-size: 10px; color: var(--text-muted); padding: 7px 20px;
+      border-bottom: 1px solid var(--border); background: var(--bg);
+    }
+    .rec-wrap { overflow: auto; width: 100%; }
+    .rec-tbl { border-collapse: collapse; font-size: 11px; width: 100%; }
+    .rec-tbl thead th {
+      background: var(--bg); color: var(--text-muted); padding: 8px 10px;
+      text-align: left; position: sticky; top: 0; font-weight: 600;
+      border-bottom: 1px solid var(--border); font-size: 10px;
+      white-space: nowrap; z-index: 1; letter-spacing: .02em;
+    }
+    .rec-tbl tbody td { padding: 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .rec-tbl tbody tr:last-child td { border-bottom: none; }
+    .rec-tbl tbody tr.sub-row td { background: var(--bg); }
+    .td-ci { padding: 7px 10px; display: flex; align-items: center; min-height: 34px; gap: 4px; }
+    .td-exp { width: 28px; }
+    .btn-exp {
+      width: 20px; height: 20px; border-radius: 4px; border: none;
+      background: transparent; cursor: pointer; font-size: 10px;
+      color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center;
+      transition: color .1s, background .1s;
+    }
+    .btn-exp:hover { background: var(--border); color: var(--text); }
+    .btn-exp.open { color: var(--orange); transform: rotate(180deg); }
+    /* editable cells */
+    .td-ed { cursor: pointer; }
+    .td-ed:hover .td-ci { background: rgba(242,100,25,.06); border-radius: 5px; }
+    .td-ed:hover .ed-hint { opacity: 1; }
+    .ed-hint { font-size: 9px; color: var(--orange); opacity: 0; transition: opacity .1s; }
+    /* inline input */
+    .ci-input {
+      font-size: 11px; font-family: var(--font); color: var(--text);
+      background: var(--bg-card); border: 1.5px solid var(--orange);
+      border-radius: 6px; padding: 3px 7px; outline: none; width: 100%;
+    }
+    /* status pill */
+    .sp { display: inline-flex; align-items: center; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 99px; cursor: pointer; white-space: nowrap; }
+    .sp:hover { opacity: .8; }
+    .sp-s { background: rgba(34,197,94,.1); color: #22c55e; }
+    .sp-f { background: rgba(239,68,68,.1); color: #ef4444; }
+    .sp-n { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+    /* inline selector */
+    .isel { display: inline-flex; border-radius: 5px; border: 1.5px solid var(--orange); overflow: hidden; }
+    .isel-btn {
+      padding: 2px 8px; font-size: 10px; font-weight: 600; font-family: var(--font);
+      cursor: pointer; border: none; background: transparent;
+      border-right: 1px solid var(--border); transition: background .1s;
+    }
+    .isel-btn:last-child { border-right: none; }
+    .isel-btn:hover { background: var(--bg); }
+    .isel-btn[data-v="Success"],.isel-btn[data-v="OK"] { color: #22c55e; }
+    .isel-btn[data-v="Fail"]   { color: #ef4444; }
+    .isel-btn[data-v="NA"]     { color: var(--text-muted); }
+    /* saving */
+    .saving-dot { display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--orange);animation:sdot .8s ease infinite;margin-left:4px; }
+    @keyframes sdot { 0%,100%{opacity:1}50%{opacity:.2} }
+    /* edited badge */
+    .ed-badge { font-size: 9px; color: var(--text-muted); white-space: nowrap; }
+    /* empty */
+    .rec-empty-box {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; padding: 64px 24px; color: var(--text-muted); font-size: 13px; text-align: center;
+    }
+    .rec-empty-icon { font-size: 40px; margin-bottom: 4px; }
+
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content" style="display:flex;flex-direction:column">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">⊡ Test Service</div>
+        <div class="page-sub">Test tools &amp; reconcile status</div>
+      </div>
+    </header>
+
+    <!-- Tab Bar -->
+    <div class="ts-tabbar" id="ts-tabbar">
+      <!-- Tabs injected by JS -->
+      <div class="ts-tabbar-spacer"></div>
+      <div class="ts-tabbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="reloadCurrent()" title="Reload">↺</button>
+        <a id="tab-newtab" href="#" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">↗ Open in New Tab</a>
+      </div>
+    </div>
+
+    <!-- Iframe area (one frame, src swaps on tab switch) -->
+    <div class="ts-frame-area" id="frame-area">
+
+      <!-- Loading spinner -->
+      <div class="ts-loading" id="ts-loading">
+        <div class="spinner"></div>
+        <div class="ts-loading-text" id="loading-text">Loading…</div>
+      </div>
+
+      <!-- Blocked overlay -->
+      <div class="ts-blocked" id="ts-blocked">
+        <div class="ts-blocked-card">
+          <div class="ts-blocked-ring" id="blocked-icon">🔗</div>
+          <div class="ts-blocked-title" id="blocked-title">ไม่สามารถแสดงในหน้านี้ได้</div>
+          <div class="ts-blocked-sub" id="blocked-sub">
+            หน้าเว็บนี้ตั้งค่าป้องกันการแสดงผลใน iframe<br>กรุณาเปิดในแท็บใหม่แทน
+          </div>
+          <div class="ts-blocked-info">
+            <span class="ts-blocked-info-icon">💡</span>
+            <span id="blocked-hint">หากใช้ VPN อยู่ สามารถเปิดลิงก์ด้านล่างได้ทันที</span>
+          </div>
+          <a id="blocked-newtab" href="#" target="_blank" rel="noopener" class="ts-blocked-cta">
+            ↗ &nbsp;เปิดในแท็บใหม่
+          </a>
+        </div>
+      </div>
+
+      <!-- The iframe -->
+      <iframe id="main-frame" src="about:blank" allowfullscreen
+              style="position:absolute;inset:0;width:100%;height:100%;border:none;display:block">
+      </iframe>
+
+      <!-- ── Reconcile / Fund-Out Check Panel ─────────────────── -->
+      <div class="recon-panel" id="recon-panel">
+
+        <div class="recon-card">
+          <div class="recon-header">
+            <div class="recon-title">🔁 Reconcile Status — Cash-out</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <div class="recon-badges">
+                <span class="recon-badge green">Reconcile: New</span>
+                <span class="recon-badge blue">Transfer: Success</span>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="reconToggleSettings()" title="ตั้งค่า Credentials" style="padding:4px 10px;font-size:13px;">⚙️ ตั้งค่า</button>
+            </div>
+          </div>
+
+          <!-- Settings panel -->
+          <div id="recon-settings" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;flex-direction:column;gap:12px;">
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;">⚙️ ตั้งค่า Credentials</div>
+            <div style="font-size:11px;color:var(--text-muted);line-height:1.6;">
+              ใช้ account ที่มีสิทธิ์เข้า ACM Financial Portal<br>
+              ระบบจะ login ให้อัตโนมัติทุกครั้งที่กด Check Now
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div>
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Username (Email)</label>
+                <input id="recon-cfg-user" type="text" placeholder="email@ascendcorp.com"
+                  style="width:100%;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;outline:none;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Password</label>
+                <input id="recon-cfg-pass" type="password" placeholder="••••••••"
+                  style="width:100%;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;outline:none;">
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button onclick="reconSaveConfig()" class="btn-recon-check" style="padding:8px 20px;font-size:13px;">💾 บันทึก</button>
+              <button onclick="reconToggleSettings()" class="btn btn-ghost btn-sm">ยกเลิก</button>
+              <span id="recon-cfg-status" style="font-size:12px;color:var(--text-muted);"></span>
+            </div>
+          </div>
+
+          <div class="recon-time-row">
+            <span class="recon-time-label">ช่วงเวลา</span>
+            <span class="recon-time-val" id="recon-from">—</span>
+            <span class="recon-arrow">→</span>
+            <span class="recon-time-val" id="recon-to">—</span>
+            <span style="flex:1"></span>
+            <span class="recon-badge orange">ปัจจุบัน − 2 ชั่วโมง</span>
+          </div>
+
+          <div class="recon-btn-row">
+            <button class="btn-recon-check" id="recon-btn" onclick="reconCheck()">
+              <span id="recon-btn-icon">🔍</span>
+              <span id="recon-btn-text">Check Now</span>
+            </button>
+            <div class="recon-status" id="recon-status"></div>
+          </div>
+
+          <!-- Error -->
+          <div class="recon-error" id="recon-error">
+            <span>⚠️</span>
+            <span id="recon-error-msg">เกิดข้อผิดพลาด</span>
+          </div>
+
+          <!-- Empty result -->
+          <div class="recon-empty" id="recon-empty">
+            ✅ ไม่มีรายการที่ต้องตรวจสอบในช่วงเวลานี้
+          </div>
+
+          <!-- Result table -->
+          <div class="recon-result" id="recon-result">
+            <div class="recon-result-header">
+              <div>
+                พบรายการ
+                <span class="recon-count-badge" id="recon-count">0</span>
+              </div>
+              <div class="recon-last-check" id="recon-last-check"></div>
+            </div>
+            <div class="recon-table-wrap show">
+              <table class="recon-table">
+                <thead id="recon-thead"></thead>
+                <tbody id="recon-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- ──────────────────────────────────────────────────────── -->
+
+      <!-- ── Test Service Portal Panel ────────────────────── -->
+      <div class="portal-panel" id="portal-panel">
+        <div class="panel-hd">
+          <div class="panel-hd-left">
+            <div class="panel-hd-title">🧪 Test Service Report</div>
+            <div class="panel-hd-sub" id="portal-datetime">—</div>
+          </div>
+          <div class="panel-reporter">
+            <span>👤</span>
+            <span id="portal-reporter-name">—</span>
+          </div>
+        </div>
+        <div class="portal-scroll" id="portal-form-body">
+          <!-- rendered by JS -->
+        </div>
+        <div class="portal-foot">
+          <div class="portal-foot-meta" id="portal-submit-status"></div>
+          <button class="btn-portal-submit" id="portal-submit-btn" onclick="portalSubmit()">
+            <span id="portal-submit-icon">✅</span>
+            <span id="portal-submit-text">Submit Test Result</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Submit Success Modal -->
+      <div class="submit-modal-overlay" id="submit-modal-overlay">
+        <div class="submit-modal">
+          <div class="submit-modal-ring">✅</div>
+          <div class="submit-modal-title">บันทึกเรียบร้อยแล้ว</div>
+          <div class="submit-modal-sub" id="submit-modal-sub">—</div>
+          <div class="submit-modal-actions">
+            <button class="btn-cancel" onclick="submitModalClose()">ตกลง</button>
+            <button class="btn-records" onclick="submitModalViewRecords()">📋 ดูผล</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Daily Test Records Panel ──────────────────────── -->
+      <div class="records-panel" id="records-panel">
+        <div class="panel-hd">
+          <div class="panel-hd-left">
+            <div class="panel-hd-title">📋 Daily Test Records</div>
+            <div class="panel-hd-sub" id="records-sub">กำลังโหลด…</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="recordsLoad()">↺ Refresh</button>
+            <button class="btn btn-ghost btn-sm" onclick="recordsExportCSV()">📥 Export CSV</button>
+          </div>
+        </div>
+        <div class="records-hint">✏️ คลิกที่เวลา / ชื่อ / สถานะ แก้ไขได้เลย — บันทึกอัตโนมัติ &nbsp;|&nbsp; ⌄ ขยายแถวเพื่อดู/แก้ sub-services</div>
+        <div class="records-body">
+          <div class="rec-wrap" id="rec-wrap">
+            <div class="rec-empty-box" id="records-empty">
+              <div class="rec-empty-icon">📭</div>
+              <div>กำลังโหลด…</div>
+            </div>
+            <table class="rec-tbl" id="records-table" style="display:none">
+              <thead id="records-thead"></thead>
+              <tbody id="records-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script>
+  if (!Auth.requireAuth()) {}
+  Layout.render('test-service');
+
+  /* ── Tab definitions ─────────────────────────── */
+  const TABS = [
+    {
+      id: 'portal',
+      label: 'Test Service Portal',
+      icon: '🧪',
+      type: 'panel',
+      url: 'https://script.google.com/a/macros/ascendcorp.com/s/AKfycbwZ18qUWuUvzeOC5p_NRJ0EapFt3D7Mh0loFajku27oSay5a7qaNPxbDnTlVX16i4lIKw/exec',
+    },
+    {
+      id: 'reconcile',
+      label: 'Reconcile Status',
+      icon: '🔁',
+      type: 'panel',  // custom panel — no iframe
+      url: 'https://acm-financial-portal.backoffice-a-cloud1p.ascendmoney.io/acm-financial-portal/#/app.reconciliation-cashout',
+    },
+    {
+      id: 'records',
+      label: 'Daily Test Records',
+      icon: '📋',
+      type: 'records',
+      url: 'https://docs.google.com/spreadsheets/d/1Iqj36FpwqhykoPTZhe1uOEo9qFmHwQakBGxuep0_GDA/edit?gid=0#gid=0',
+    },
+  ];
+
+  let activeTabId   = null;
+  let frameLoaded   = {};   // track per-tab if already loaded
+  let blockTimeout  = null;
+
+  /* ── Render tabs ─────────────────────────────── */
+  function renderTabs() {
+    const bar = document.getElementById('ts-tabbar');
+    const spacer   = bar.querySelector('.ts-tabbar-spacer');
+    const actionsEl = bar.querySelector('.ts-tabbar-actions');
+
+    TABS.forEach(t => {
+      const el = document.createElement('div');
+      el.className = 'ts-tab';
+      el.id = 'tab-' + t.id;
+      el.innerHTML = `<span>${t.icon}</span> ${escHtml(t.label)} <span class="tab-dot"></span>`;
+      el.onclick = () => switchTab(t.id);
+      bar.insertBefore(el, spacer);
+    });
+  }
+
+  /* ── Switch tab ──────────────────────────────── */
+  function switchTab(id) {
+    if (activeTabId === id) return;
+    activeTabId = id;
+
+    const tab = TABS.find(t => t.id === id);
+    if (!tab) return;
+
+    // Update tab UI
+    document.querySelectorAll('.ts-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + id)?.classList.add('active');
+
+    // Update "Open in New Tab" links
+    ['tab-newtab', 'blocked-newtab'].forEach(elId => {
+      const a = document.getElementById(elId);
+      if (a) { a.href = tab.url; a.title = 'เปิด ' + tab.label + ' ในแท็บใหม่'; }
+    });
+
+    // Load frame
+    loadFrame(tab);
+  }
+
+  /* ── Load iframe or custom panel ─────────────── */
+  function loadFrame(tab) {
+    ['recon-panel','portal-panel','records-panel'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('show');
+    });
+    if (tab.type === 'panel' || tab.type === 'records') {
+      document.getElementById('main-frame').src = 'about:blank';
+      document.getElementById('ts-loading').classList.add('hidden');
+      document.getElementById('ts-blocked').classList.remove('show');
+      const panelMap = { reconcile:'recon-panel', portal:'portal-panel', records:'records-panel' };
+      const el = document.getElementById(panelMap[tab.id]);
+      if (el) el.classList.add('show');
+      if (tab.id === 'reconcile') reconUpdateTimeDisplay();
+      if (tab.id === 'records') recordsLoad();
+      if (tab.id === 'portal') portalInit();
+      return;
+    }
+    loadFrameIframe(tab);
+  }
+
+  function loadFrameIframe(tab) {
+    const frame    = document.getElementById('main-frame');
+    const loading  = document.getElementById('ts-loading');
+    const blocked  = document.getElementById('ts-blocked');
+    const loadText = document.getElementById('loading-text');
+
+    blocked.classList.remove('show');
+    frame.classList.remove('loaded');
+    loading.classList.remove('hidden');
+    loadText.textContent = 'กำลังโหลด ' + tab.label + '…';
+
+    if (blockTimeout) { clearTimeout(blockTimeout); blockTimeout = null; }
+
+    frame.src = tab.url;
+
+    const onLoad = () => {
+      frame.removeEventListener('load', onLoad);
+      clearTimeout(blockTimeout);
+
+      let isBlocked = false;
+      try {
+        const doc = frame.contentDocument;
+        // ถ้า body ว่าง หรือ src กลายเป็น chrome-error → blocked
+        if (!doc || !doc.body || doc.body.innerHTML.trim() === '') {
+          isBlocked = true;
+        }
+      } catch (e) {
+        // SecurityError = X-Frame-Options block หรือ chrome-error:// page
+        // ทั้งสองกรณีถือว่า blocked
+        isBlocked = true;
+      }
+
+      loading.classList.add('hidden');
+      if (isBlocked) {
+        showBlocked(tab);
+      } else {
+        frame.classList.add('loaded');
+        blocked.classList.remove('show');
+      }
+    };
+
+    frame.addEventListener('load', onLoad);
+
+    // Fallback: 4 วินาที — ถ้า load event ไม่ยิงเลย (บาง browser)
+    blockTimeout = setTimeout(() => {
+      frame.removeEventListener('load', onLoad);
+      loading.classList.add('hidden');
+      showBlocked(tab);
+    }, 4000);
+  }
+
+  const TAB_META = {
+    portal: {
+      icon: '🧪',
+      title: 'Test Service Portal ไม่สามารถแสดงในหน้านี้ได้',
+      sub: 'Google Apps Script ตั้งค่าป้องกันการแสดงผลใน iframe (X-Frame-Options)\nกรุณาเปิดในแท็บใหม่เพื่อใช้งานฟอร์ม',
+      hint: 'ถ้าเชื่อมต่อ VPN ของบริษัทอยู่ สามารถเปิดลิงก์ด้านล่างได้ทันที',
+    },
+    reconcile: {
+      icon: '🔁',
+      title: 'Reconcile Status ไม่สามารถแสดงในหน้านี้ได้',
+      sub: 'Financial Portal ตั้งค่าป้องกันการแสดงผลใน iframe (X-Frame-Options)\nกรุณาเปิดในแท็บใหม่เพื่อดูสถานะ',
+      hint: 'ถ้าเชื่อมต่อ VPN ของบริษัทอยู่ สามารถเปิดลิงก์ด้านล่างได้ทันที',
+    },
+    records: {
+      icon: '📋',
+      title: 'Daily Test Records ไม่สามารถแสดงในหน้านี้ได้',
+      sub: 'Google Sheets ตั้งค่าป้องกันการแสดงผลใน iframe\nกรุณาเปิดในแท็บใหม่',
+      hint: 'Sheet จะเปิดได้ทันทีถ้า login ด้วย Google Account ขององค์กรอยู่',
+    },
+  };
+
+  function showBlocked(tab) {
+    const meta = TAB_META[tab.id] || {};
+    document.getElementById('blocked-icon').textContent  = meta.icon || '🔗';
+    document.getElementById('blocked-title').textContent = meta.title || tab.label + ' ไม่สามารถแสดงในหน้านี้ได้';
+    document.getElementById('blocked-sub').innerHTML     = (meta.sub || '').replace(/\n/g, '<br>');
+    document.getElementById('blocked-hint').textContent  = meta.hint || 'กรุณาเปิดในแท็บใหม่';
+    document.getElementById('blocked-newtab').href       = tab.url;
+    document.getElementById('ts-blocked').classList.add('show');
+  }
+
+  /* ── Reload current ──────────────────────────── */
+  function reloadCurrent() {
+    const tab = TABS.find(t => t.id === activeTabId);
+    if (tab) {
+      document.getElementById('main-frame').src = 'about:blank';
+      setTimeout(() => loadFrame(tab), 80);
+    }
+  }
+
+  /* ── Init ────────────────────────────────────── */
+  renderTabs();
+  // setTimeout เพื่อให้ const ทั้งหมดด้านล่าง initialize ก่อน
+  setTimeout(() => switchTab(TABS[0].id), 0);
+
+  /* ════════════════════════════════════════════════
+     RECONCILE / FUND-OUT CHECK  (ROPC — server-side auth)
+     ════════════════════════════════════════════════ */
+  const PROXY_BASE = './api/fundout-proxy.php';
+  const MONTHS_TH  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const pad2       = n => String(n).padStart(2, '0');
+
+  // ── Date range ─────────────────────────────────────────────────
+  function reconGetRange() {
+    const now    = new Date();
+    const ICT    = 7 * 60 * 60 * 1000;
+    const ictNow = new Date(now.getTime() + ICT);
+
+    const toICT = new Date(ictNow.getTime() - 2 * 60 * 60 * 1000);
+    toICT.setUTCMinutes(59); toICT.setUTCSeconds(59); toICT.setUTCMilliseconds(999);
+
+    const fromICT = new Date(toICT);
+    fromICT.setUTCHours(0, 0, 0, 0);
+
+    const fmt = d =>
+      `${pad2(d.getUTCDate())}-${MONTHS_TH[d.getUTCMonth()]}-${d.getUTCFullYear()} ` +
+      `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())}`;
+
+    return {
+      from:        fromICT.getTime() - ICT,
+      to:          toICT.getTime()   - ICT,
+      fromDisplay: fmt(fromICT),
+      toDisplay:   fmt(toICT),
+    };
+  }
+
+  function reconUpdateTimeDisplay() {
+    const { fromDisplay, toDisplay } = reconGetRange();
+    document.getElementById('recon-from').textContent = fromDisplay;
+    document.getElementById('recon-to').textContent   = toDisplay;
+  }
+
+  // ── UI helpers ─────────────────────────────────────────────────
+  function reconSetLoading(on) {
+    const btn  = document.getElementById('recon-btn');
+    const icon = document.getElementById('recon-btn-icon');
+    const text = document.getElementById('recon-btn-text');
+    btn.disabled = on;
+    if (on) {
+      icon.outerHTML = '<span class="spinner" id="recon-btn-icon" style="width:14px;height:14px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:#fff;flex-shrink:0"></span>';
+      text.textContent = 'กำลังตรวจสอบ…';
+    } else {
+      document.getElementById('recon-btn-icon').outerHTML = '<span id="recon-btn-icon">🔍</span>';
+      text.textContent = 'Check Now';
+    }
+  }
+
+  function reconSetStatus(msg) {
+    document.getElementById('recon-status').innerHTML = msg ? `<span>${msg}</span>` : '';
+  }
+
+  function reconShowError(msg) {
+    document.getElementById('recon-error-msg').textContent = msg;
+    document.getElementById('recon-error').classList.add('show');
+  }
+
+  function reconHideAll() {
+    ['recon-error', 'recon-empty', 'recon-result'].forEach(id =>
+      document.getElementById(id).classList.remove('show')
+    );
+  }
+
+  // ── Settings panel ─────────────────────────────────────────────
+  function reconToggleSettings() {
+    const el = document.getElementById('recon-settings');
+    const open = el.style.display === 'none' || el.style.display === '';
+    el.style.display = open ? 'flex' : 'none';
+  }
+
+  async function reconSaveConfig() {
+    const username = document.getElementById('recon-cfg-user').value.trim();
+    const password = document.getElementById('recon-cfg-pass').value;
+    const statusEl = document.getElementById('recon-cfg-status');
+
+    if (!username || !password) {
+      statusEl.textContent = '⚠️ กรุณากรอกข้อมูลให้ครบ';
+      statusEl.style.color = '#fca5a5';
+      return;
+    }
+
+    statusEl.textContent = 'กำลังบันทึก…';
+    statusEl.style.color = 'var(--text-muted)';
+
+    try {
+      const resp = await fetch(PROXY_BASE + '?action=save-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const json = await resp.json();
+      if (json.ok) {
+        statusEl.textContent = '✅ บันทึกแล้ว';
+        statusEl.style.color = '#86efac';
+        document.getElementById('recon-cfg-pass').value = '';
+        setTimeout(() => reconToggleSettings(), 1200);
+      } else {
+        throw new Error(json.error || 'Save failed');
+      }
+    } catch (err) {
+      statusEl.textContent = '❌ ' + err.message;
+      statusEl.style.color = '#fca5a5';
+    }
+  }
+
+  // ── Main check ─────────────────────────────────────────────────
+  async function reconCheck() {
+    reconHideAll();
+    reconSetLoading(true);
+    reconSetStatus('🔐 กำลัง Login…');
+
+    const { from, to, toDisplay } = reconGetRange();
+
+    try {
+      const resp = await fetch(`${PROXY_BASE}?action=check&from=${from}&to=${to}`);
+      const json = await resp.json();
+
+      if (!resp.ok) {
+        // 401 = no config or login failed
+        const msg = json.error || `Error ${resp.status}`;
+        reconShowError(msg);
+        // If not configured → open settings
+        if (resp.status === 401 && msg.includes('ตั้งค่า')) {
+          document.getElementById('recon-settings').style.display = 'flex';
+        }
+        return;
+      }
+
+      const data = json.data || [];
+
+      if (data.length === 0) {
+        document.getElementById('recon-empty').classList.add('show');
+      } else {
+        document.getElementById('recon-count').textContent = data.length;
+
+        const cols = Object.keys(data[0]);
+        document.getElementById('recon-thead').innerHTML =
+          '<tr>' + cols.map(c => `<th>${escHtml(c)}</th>`).join('') + '</tr>';
+        document.getElementById('recon-tbody').innerHTML =
+          data.map(row =>
+            '<tr>' + cols.map(c => `<td>${escHtml(String(row[c] ?? '—'))}</td>`).join('') + '</tr>'
+          ).join('');
+
+        document.getElementById('recon-last-check').textContent =
+          'ตรวจสอบล่าสุด ' + new Date().toLocaleTimeString('th-TH') + ' · ถึง ' + toDisplay;
+
+        document.getElementById('recon-result').classList.add('show');
+      }
+    } catch (err) {
+      reconShowError('เชื่อมต่อ server ไม่ได้: ' + err.message);
+    } finally {
+      reconSetLoading(false);
+      reconSetStatus('');
+    }
+  }
+
+  /* ════════════════════════════════════════════════
+     TEST SERVICE PORTAL — Form
+     ════════════════════════════════════════════════ */
+  let SERVICE_GROUPS = [];  // loaded from API
+
+  async function loadServiceGroups() {
+    try {
+      const token = Auth.getToken ? Auth.getToken()
+        : (localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || '');
+      const resp = await fetch('./api/test-service-config.php?action=get-groups', {
+        headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+      });
+      const json = await resp.json();
+      if (json.success && Array.isArray(json.data) && json.data.length) {
+        SERVICE_GROUPS = json.data;
+      }
+    } catch (_) { /* fallback: SERVICE_GROUPS stays [] — form will show empty */ }
+  }
+
+  // Parent status: toggle button group
+  function mkToggle(gId, defaultVal = 'Success') {
+    const opts = [['Success','✅ Success'],['Fail','❌ Fail'],['NA','— N/A']];
+    return `<div class="svc-toggle" data-name="${escHtml(gId)}__status">` +
+      opts.map(([v,l]) =>
+        `<button type="button" class="svc-toggle-btn${v===defaultVal?' active':''}" data-v="${v}" onclick="statusToggle(this)">${escHtml(l)}</button>`
+      ).join('') + '</div>';
+  }
+
+  // Child status: pill select
+  function mkChildSel(name, defaultVal = 'OK') {
+    const opts = [['OK','✅ OK'],['Fail','❌ Fail'],['NA','— N/A']];
+    const options = opts.map(([v,l]) =>
+      `<option value="${v}"${v===defaultVal?' selected':''}>${escHtml(l)}</option>`
+    ).join('');
+    return `<select class="svc-sel" data-v="${defaultVal}" data-name="${escHtml(name)}"
+      onchange="this.dataset.v=this.value">${options}</select>`;
+  }
+
+  function statusToggle(btn) {
+    const group = btn.closest('.svc-toggle');
+    group.querySelectorAll('.svc-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  async function portalInit() {
+    // Set datetime
+    const now = new Date();
+    document.getElementById('portal-datetime').textContent =
+      now.toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) +
+      '  ' + now.toLocaleTimeString('th-TH');
+
+    // Set reporter from Auth
+    try {
+      const user = Auth.getUser ? Auth.getUser() : JSON.parse(localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user') || '{}');
+      document.getElementById('portal-reporter-name').textContent = user?.email || user?.username || 'Unknown';
+    } catch { document.getElementById('portal-reporter-name').textContent = 'Unknown'; }
+
+    // Render form only once
+    const body = document.getElementById('portal-form-body');
+    if (body.children.length > 0) return;
+
+    // Load groups from config (or use cached)
+    if (!SERVICE_GROUPS.length) await loadServiceGroups();
+
+    const rows = SERVICE_GROUPS.flatMap(g => {
+      const parentRow = `
+        <tr class="svc-group-hd">
+          <td class="col-name"><span class="svc-group-name">${escHtml(g.name)}</span></td>
+          <td class="col-toggle">${mkToggle(g.id)}</td>
+          <td class="col-remark"><input class="svc-remark" type="text" placeholder="Remark…" data-name="${escHtml(g.id)}__remark"></td>
+        </tr>`;
+      const childRows = g.children.map(c => `
+        <tr class="svc-child-row">
+          <td class="col-name"><span class="svc-child-name">${escHtml(c)}</span></td>
+          <td class="col-child-pill">${mkChildSel(g.id + '__' + c)}</td>
+          <td></td>
+        </tr>`).join('');
+      return [parentRow, childRows];
+    }).join('');
+    body.innerHTML = `<table class="svc-table"><tbody>${rows}</tbody></table>`;
+  }
+
+  async function portalSubmit() {
+    const btn    = document.getElementById('portal-submit-btn');
+    const icon   = document.getElementById('portal-submit-icon');
+    const text   = document.getElementById('portal-submit-text');
+    const status = document.getElementById('portal-submit-status');
+
+    btn.disabled = true;
+    icon.textContent = '⏳';
+    text.textContent = 'กำลังส่ง…';
+    status.textContent = '';
+
+    // Collect data
+    const reporter = document.getElementById('portal-reporter-name').textContent;
+    const services = {};
+
+    SERVICE_GROUPS.forEach(g => {
+      const activeBtn = document.querySelector(`.svc-toggle[data-name="${g.id}__status"] .svc-toggle-btn.active`);
+      const remarkEl  = document.querySelector(`input[data-name="${g.id}__remark"]`);
+      const children  = {};
+      g.children.forEach(c => {
+        const sel = document.querySelector(`select[data-name="${g.id}__${c}"]`);
+        if (sel) children[c] = sel.value;
+      });
+      services[g.id] = {
+        name:    g.name,
+        status:  activeBtn?.dataset.v || 'NA',
+        remark:  remarkEl?.value  || '',
+        children,
+      };
+    });
+
+    const payload = {
+      timestamp: new Date().toISOString(),
+      reporter,
+      services,
+    };
+
+    try {
+      const submitToken = Auth.getToken ? Auth.getToken()
+        : (localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || '');
+      const resp = await fetch('./api/test-records.php?action=submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(submitToken ? { 'Authorization': 'Bearer ' + submitToken } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+      const json = await resp.json();
+      if (!resp.ok || json.error) throw new Error(json.error || json.message || 'Submit failed');
+
+      icon.textContent = '✅';
+      text.textContent = 'Submit Test Result';
+      btn.disabled = false;
+      // แสดง success modal
+      document.getElementById('submit-modal-sub').textContent =
+        'บันทึกเมื่อ ' + new Date().toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit', second:'2-digit' }) +
+        '\nโดย ' + document.getElementById('portal-reporter-name').textContent;
+      document.getElementById('submit-modal-overlay').classList.add('show');
+    } catch(err) {
+      icon.textContent = '✅';
+      text.textContent = 'Submit Test Result';
+      status.textContent = '❌ ' + err.message;
+      status.style.color = '#fca5a5';
+      btn.disabled = false;
+    }
+  }
+
+  function submitModalClose() {
+    document.getElementById('submit-modal-overlay').classList.remove('show');
+  }
+
+  function submitModalViewRecords() {
+    submitModalClose();
+    switchTab('records');
+  }
+
+  /* ════════════════════════════════════════════════
+     DAILY TEST RECORDS — Inline Edit
+     ════════════════════════════════════════════════ */
+  let recRows         = [];      // records (newest first)
+  let recExpanded     = new Set();
+  let recCancelClick  = null;    // global cancel listener ref
+
+  function recClearCancel() {
+    if (recCancelClick) { document.removeEventListener('click', recCancelClick); recCancelClick = null; }
+  }
+
+  function recAuthHdr() {
+    const t = Auth.getToken ? Auth.getToken()
+      : (localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || '');
+    return t ? { 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' }
+             : { 'Content-Type': 'application/json' };
+  }
+  async function recFetch(url, opts = {}) {
+    opts.headers = { ...recAuthHdr(), ...(opts.headers || {}) };
+    const r = await fetch(url, opts);
+    return r.json();
+  }
+
+  // ── pill ──────────────────────────────────────────────────────
+  function recPill(val) {
+    const m = { Success:['sp-s','✅ Success'], Fail:['sp-f','❌ Fail'], NA:['sp-n','— N/A'], OK:['sp-s','✅ OK'] };
+    const [cls, lbl] = m[val] || ['sp-n', escHtml(val||'—')];
+    return `<span class="sp ${cls}">${lbl}</span>`;
+  }
+
+  // ── render table ──────────────────────────────────────────────
+  function recRender() {
+    recClearCancel();
+    const empty = document.getElementById('records-empty');
+    const table = document.getElementById('records-table');
+    if (!recRows.length) {
+      table.style.display = 'none';
+      empty.innerHTML = '<div class="rec-empty-icon">📭</div><div>ยังไม่มีข้อมูล</div>';
+      empty.style.display = '';
+      return;
+    }
+    empty.style.display = 'none';
+    table.style.display = '';
+
+    const grpCols = SERVICE_GROUPS.map(g =>
+      `<th title="${escHtml(g.name)}">${escHtml(g.name.split('(')[0].split('|')[0].trim())}</th>`
+    ).join('');
+    document.getElementById('records-thead').innerHTML = `<tr>
+      <th class="td-exp"></th>
+      <th>Date / Time</th>
+      <th>Reporter</th>
+      ${grpCols}
+      <th>Edited</th>
+    </tr>`;
+
+    document.getElementById('records-tbody').innerHTML = recRows.map(rec => {
+      const dt = new Date(rec.timestamp).toLocaleString('th-TH',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      const isOpen = recExpanded.has(rec.id);
+
+      const grpCells = SERVICE_GROUPS.map(g => {
+        const status = rec.services?.[g.id]?.status || 'NA';
+        return `<td class="td-ed" onclick="recStatusClick(this,'${escHtml(rec.id)}','${escHtml(g.id)}','parent')">
+          <div class="td-ci">${recPill(status)}<span class="ed-hint">✏</span></div>
+        </td>`;
+      }).join('');
+
+      const editedBadge = rec.edited_at
+        ? `<span class="ed-badge">✏️ ${escHtml(rec.edited_by||'')} ${new Date(rec.edited_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}</span>`
+        : '';
+
+      const mainRow = `<tr data-rid="${escHtml(rec.id)}">
+        <td class="td-exp">
+          <div class="td-ci" style="justify-content:center;padding:4px 0">
+            <button class="btn-exp ${isOpen?'open':''}" onclick="recToggleExpand('${escHtml(rec.id)}')" title="ดู children">⌄</button>
+          </div>
+        </td>
+        <td class="td-ed" onclick="recTextClick(this,'${escHtml(rec.id)}','timestamp')">
+          <div class="td-ci"><span class="cv">${escHtml(dt)}</span><span class="ed-hint">✏</span></div>
+        </td>
+        <td class="td-ed" onclick="recTextClick(this,'${escHtml(rec.id)}','reporter')">
+          <div class="td-ci"><span class="cv">${escHtml(rec.reporter)}</span><span class="ed-hint">✏</span></div>
+        </td>
+        ${grpCells}
+        <td><div class="td-ci">${editedBadge}</div></td>
+      </tr>`;
+
+      const subRow = isOpen ? recBuildSub(rec) : '';
+      return mainRow + subRow;
+    }).join('');
+  }
+
+  function recBuildSub(rec) {
+    const cells = SERVICE_GROUPS.map(g => {
+      const svc = rec.services?.[g.id] || {};
+      if (!g.children?.length) return '<td></td>';
+      const items = g.children.map(c => {
+        const cv = svc.children?.[c] || 'NA';
+        return `<span style="display:inline-flex;align-items:center;gap:3px;margin:2px 6px 2px 0">
+          <span style="font-size:9px;color:var(--text-muted)">${escHtml(c)}:</span>
+          <span onclick="recStatusClick(this,'${escHtml(rec.id)}','${escHtml(g.id)}','child','${escHtml(c)}')">${recPill(cv)}</span>
+        </span>`;
+      }).join('');
+      return `<td><div class="td-ci" style="flex-wrap:wrap;gap:2px;padding:5px 8px;">${items}</div></td>`;
+    }).join('');
+    return `<tr class="sub-row" data-sub="${escHtml(rec.id)}">
+      <td colspan="3"><div class="td-ci" style="padding:5px 8px;font-size:9px;color:var(--text-muted);font-weight:700;letter-spacing:.05em">CHILDREN</div></td>
+      ${cells}
+      <td></td>
+    </tr>`;
+  }
+
+  function recToggleExpand(id) {
+    if (recExpanded.has(id)) recExpanded.delete(id); else recExpanded.add(id);
+    recRender();
+  }
+
+  // ── text cell (timestamp / reporter) ─────────────────────────
+  function recTextClick(td, recId, field) {
+    if (td.querySelector('input')) return;
+    recClearCancel();
+    const inner = td.querySelector('.td-ci');
+    const rec   = recRows.find(r => r.id === recId);
+
+    const inp = document.createElement('input');
+    inp.className = 'ci-input';
+    if (field === 'timestamp') {
+      inp.type  = 'datetime-local';
+      inp.value = new Date(rec.timestamp).toISOString().slice(0,16);
+    } else {
+      inp.type  = 'text';
+      inp.value = rec.reporter;
+    }
+    inner.innerHTML = '';
+    inner.appendChild(inp);
+    inp.focus();
+
+    let committed = false;
+    const commit = async () => {
+      if (committed) return;
+      committed = true;
+      const v = inp.value.trim();
+      if (!v) { recRender(); return; }
+      const payload = { id: recId };
+      if (field === 'timestamp') payload.timestamp = new Date(v).toISOString();
+      else payload.reporter = v;
+      inner.innerHTML = '<span class="saving-dot"></span>';
+      const res = await recFetch('./api/test-records-admin.php?action=edit', { method:'POST', body: JSON.stringify(payload) });
+      if (res.success) { Object.assign(rec, res.data); recRender(); }
+      else { inner.innerHTML = `<span style="color:#ef4444;font-size:10px">❌</span>`; setTimeout(recRender, 1200); }
+    };
+    inp.addEventListener('blur', commit);
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter')  { e.preventDefault(); commit(); }
+      if (e.key === 'Escape') { committed = true; recRender(); }
+    });
+  }
+
+  // ── status cell ───────────────────────────────────────────────
+  function recStatusClick(el, recId, gId, type, childName) {
+    const container = type === 'parent' ? el.querySelector('.td-ci') : el.parentElement;
+    if (container?.querySelector('.isel')) return;
+    recClearCancel();
+
+    const rec  = recRows.find(r => r.id === recId);
+    const svc  = rec?.services?.[gId] || {};
+    const opts = type === 'parent' ? ['Success','Fail','NA'] : ['OK','Fail','NA'];
+    const lbls = { Success:'✅ Success', Fail:'❌ Fail', NA:'— N/A', OK:'✅ OK' };
+
+    const sel = document.createElement('span');
+    sel.className = 'isel';
+    sel.innerHTML = opts.map(v => `<button type="button" class="isel-btn" data-v="${v}">${lbls[v]}</button>`).join('');
+
+    const pill = type === 'parent' ? el.querySelector('.sp') : el;
+    pill.replaceWith(sel);
+
+    sel.querySelectorAll('.isel-btn').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        e.stopPropagation();
+        recClearCancel();
+        const newVal = btn.dataset.v;
+        const newSvc = JSON.parse(JSON.stringify(svc));
+        if (type === 'parent') newSvc.status = newVal;
+        else newSvc.children = { ...(newSvc.children||{}), [childName]: newVal };
+        const services = { ...rec.services, [gId]: newSvc };
+        sel.replaceWith(document.createTextNode('…'));
+        const res = await recFetch('./api/test-records-admin.php?action=edit', {
+          method:'POST', body: JSON.stringify({ id: recId, services }),
+        });
+        if (res.success) Object.assign(rec, res.data);
+        recRender();
+      });
+    });
+
+    setTimeout(() => {
+      recCancelClick = function(e) {
+        if (!sel.contains(e.target)) { recClearCancel(); recRender(); }
+      };
+      document.addEventListener('click', recCancelClick);
+    }, 0);
+  }
+
+  // ── load ──────────────────────────────────────────────────────
+  async function recordsLoad() {
+    if (!SERVICE_GROUPS.length) await loadServiceGroups();
+    document.getElementById('records-sub').textContent = 'กำลังโหลด…';
+    document.getElementById('records-empty').innerHTML = '<div class="rec-empty-icon">⏳</div><div>กำลังโหลด…</div>';
+    document.getElementById('records-table').style.display = 'none';
+    try {
+      const res = await recFetch('./api/test-records-admin.php?action=list');
+      recRows = (res.success ? (res.data || []) : (res.records || [])).slice().reverse();
+      document.getElementById('records-sub').textContent = `${recRows.length} รายการ`;
+      recRender();
+    } catch(err) {
+      document.getElementById('records-sub').textContent = '❌ โหลดไม่ได้: ' + err.message;
+    }
+  }
+
+  function recordsExportCSV() {
+    const records = recRows.slice().reverse();
+    if (!records.length) { alert('ไม่มีข้อมูล'); return; }
+    const headers = ['DateTime','Reporter'];
+    SERVICE_GROUPS.forEach(g => {
+      headers.push(g.name + ' Status', g.name + ' Remark');
+      g.children.forEach(c => headers.push(c));
+    });
+    const rows = [headers];
+    records.forEach(rec => {
+      const row = [new Date(rec.timestamp).toLocaleString('th-TH'), rec.reporter];
+      SERVICE_GROUPS.forEach(g => {
+        const grp = rec.services?.[g.id] || {};
+        row.push(grp.status||'', grp.remark||'');
+        g.children.forEach(c => row.push(grp.children?.[c]||''));
+      });
+      rows.push(row);
+    });
+    const csv  = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = 'test-records-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+  }
+</script>
+</body>
+</html>

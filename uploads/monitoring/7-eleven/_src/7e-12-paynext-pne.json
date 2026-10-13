@@ -1,0 +1,701 @@
+{
+  "n": 12,
+  "title": "7-Eleven · PayNext / PNE",
+  "refresh": "1m",
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 289
+      },
+      "id": 2061,
+      "options": {
+        "composites": [],
+        "content": "%%{init: {\"flowchart\": {\"useMaxWidth\": true, \"htmlLabels\": true}, \"theme\": \"dark\"}}%%\ngraph TD\n  ACQ[\"Acquiring Service\"] --> NG[\"Nano Gateway\"]\n\n  subgraph PN_G[\"PayNext\"]\n    pn_ok([\"OK\"])\n    pn_fail([\"Fail\"])\n  end\n\n  subgraph PNE_G[\"PayNext Extra\"]\n    pne_ok([\"OK\"])\n    pne_fail([\"Fail\"])\n  end\n\n  NG --> PN_G\n  NG --> PNE_G\n  classDef svc    fill:#242930,stroke:#5794c7,stroke-width:2px,color:#fff\n  classDef ok     fill:#1c2c22,stroke:#47a468,stroke-width:2px,color:#fff\n  classDef fail   fill:#2c1e1e,stroke:#cc3333,stroke-width:2px,color:#fff\n  classDef client fill:#2c2020,stroke:#e05252,stroke-width:3px,color:#e05252,font-weight:bold\n  classDef net    fill:#2c251e,stroke:#ff8c42,stroke-width:2px,color:#fff",
+        "links": [],
+        "style": "width:100%;",
+        "useBackground": false,
+        "valueName": "current"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"200\",sof_code=\"PAY_NEXT\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "pn_ok",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status!=\"200\",sof_code=\"PAY_NEXT\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "pn_fail",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"200\",sof_code=\"PAY_NEXT_EXTRA\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "pne_ok",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status!=\"200\",sof_code=\"PAY_NEXT_EXTRA\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "pne_fail",
+          "refId": "D"
+        }
+      ],
+      "title": "PayNext - Charge via Nano Gateway (5m window)",
+      "type": "jdbranham-diagram-panel"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 301
+      },
+      "hiddenSeries": false,
+      "id": 2062,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"200\",sof_code=\"PAY_NEXT\"}[1m])) by (sof_code)",
+          "interval": "",
+          "legendFormat": "PayNext Success",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "7-Eleven SOF PayNext  Charge Success",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1236",
+          "format": "short",
+          "label": "count",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1237",
+          "format": "short",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน PayNext charge fail แยกตาม error code\n\nดูยังไง: status_code=-1 = timeout, -1016/-1017 = MAMBU error ให้ escalate ไปที่ MAMBU team",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 301
+      },
+      "hiddenSeries": false,
+      "id": 2063,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status_code=\"0\", sof_code=\"PAY_NEXT\"}[1m])) by (sof_type, sof_code, status)",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{sof_type}} - {{sof_code}} - {{status}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"500\",uri=\"/retail-seven-composite/par/v1/charges/{charge-id}\"}[2m])) by (sof_code, status)",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{sof_type}} - {{sof_code}} - {{status}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status_code=~\"-1|-1016|-1017|-1018|-1315|-1316|-1320|-1310\", sof_code=\"PAY_NEXT\"}[1m])) by (sof_type, sof_code, status_code)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{sof_code}} - {{status_code}}",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 10,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "7-Eleven SOF PayNext Charge Fail",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:71",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:72",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 309
+      },
+      "hiddenSeries": false,
+      "id": 2064,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"200\",sof_code=\"PAY_NEXT_EXTRA\"}[1m])) by (sof_code)",
+          "interval": "",
+          "legendFormat": "PayNext Extra Success",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "7-Eleven SOF PayNext Extra  Charge Success",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1318",
+          "format": "short",
+          "label": "count",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1319",
+          "format": "short",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน PayNext Extra charge fail แยกตาม error code\n\nดูยังไง: error code เดียวกับ PayNext ให้ดูประกอบกันเพื่อดูว่าเป็นปัญหา Nano GW ทั้งหมดหรือเฉพาะ Extra",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 309
+      },
+      "hiddenSeries": false,
+      "id": 2065,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"200\", sof_code=\"PAY_NEXT_EXTRA\"}[1m])) by (sof_type, sof_code, status)",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{sof_type}} - {{sof_code}} - {{status}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"500\",uri=\"/retail-seven-composite/par/v1/charges/{charge-id}\"}[2m])) by (sof_code, status)",
+          "hide": true,
+          "interval": "",
+          "legendFormat": " {{sof_code}} - {{status}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status_code=~\"-1|-1016|-1017|-1018|-1315|-1316|-1320|-1310\", sof_code=\"PAY_NEXT_EXTRA\"}[2m])) by (sof_type, sof_code, status_code)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{sof_code}} - {{status_code}}",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 10,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "7-Eleven SOF PayNext Extra Charge Fail",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:71",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:72",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 317
+      },
+      "hiddenSeries": false,
+      "id": 2066,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(rate(retail_seven_composite_requests_seconds_sum{status=\"200\",sof_code=\"PAY_NEXT\"}[1m])) / sum(rate(retail_seven_composite_requests_seconds_count{status=\"200\",sof_code=\"PAY_NEXT\"}[1m]))",
+          "interval": "",
+          "legendFormat": "PayNext avg (s)",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(rate(retail_seven_composite_requests_seconds_sum{status=\"200\",sof_code=\"PAY_NEXT_EXTRA\"}[1m])) / sum(rate(retail_seven_composite_requests_seconds_count{status=\"200\",sof_code=\"PAY_NEXT_EXTRA\"}[1m]))",
+          "interval": "",
+          "legendFormat": "PayNext Extra avg (s)",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "7-Eleven SOF PayNext / PayNext Extra  Processing Time",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1412",
+          "format": "short",
+          "label": "seconds",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1413",
+          "format": "short",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน charge fail รวมทุก SoF แสดงเป็น breakdown ตาม error code\n\nดูยังไง: ใช้เป็นภาพรวมก่อน แล้ว drill down ไปที่ SoF ที่มี error สูงที่สุด",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 325
+      },
+      "hiddenSeries": false,
+      "id": 2067,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "total",
+        "sortDesc": true,
+        "total": true,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status_code=~\"-1|-1015|-1016|-1017|-1018|-1315|-1316|-1320|-1310\"}[1m])) by (sof_code, status_code)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{sof_code}} - {{status_code}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status_code=\"0\"}[1m])) by (sof_code, status_code)",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{sof_code}} - {{status_code}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "7-Eleven SOF All Charge Fail",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:71",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:72",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch Metadata — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .cfg-card { background:var(--bg-card); border:1.5px solid var(--border); border-radius:12px; margin-bottom:12px; overflow:hidden; }
+    .cfg-header { display:flex; align-items:center; gap:10px; padding:13px 16px; cursor:pointer; user-select:none; }
+    .cfg-header:hover { background:var(--bg); }
+    .cfg-name   { font-size:13px; font-weight:700; flex:1; }
+    .cfg-meta   { font-size:11px; color:var(--text-muted); }
+    .cfg-chevron { font-size:11px; color:var(--text-muted); transition:transform .15s; }
+    .cfg-card.open .cfg-chevron { transform:rotate(90deg); }
+    .cfg-body { display:none; border-top:1px solid var(--border); padding:18px 16px; }
+    .cfg-card.open .cfg-body { display:block; }
+
+    .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+    .form-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px; }
+    .form-row    { margin-bottom:12px; }
+    .form-label  { display:block; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px; }
+    .form-input, .form-select { width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:7px; font-size:12px; font-family:var(--font); background:var(--bg); color:var(--text); box-sizing:border-box; }
+    .form-input:focus, .form-select:focus { outline:none; border-color:var(--orange); }
+    .hint { font-size:10px; color:var(--text-muted); margin-top:3px; line-height:1.5; }
+
+    .col-map-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; margin-bottom:12px; }
+    .col-map-item label { display:block; font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+    .col-map-item select { width:100%; padding:6px 8px; border:1px solid var(--border); border-radius:6px; font-size:11px; background:var(--bg); color:var(--text); }
+    .col-map-item select:focus { outline:none; border-color:var(--orange); }
+
+    .badge-synced { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; background:rgba(22,163,74,.1); color:#16a34a; border:1px solid rgba(22,163,74,.2); }
+    .badge-never  { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; background:rgba(107,114,128,.1); color:var(--text-muted); border:1px solid var(--border); }
+    .badge-count  { display:inline-flex; align-items:center; padding:1px 7px; border-radius:20px; font-size:10px; font-weight:700; background:rgba(37,99,235,.1); color:#2563eb; border:1px solid rgba(37,99,235,.18); }
+
+    .preview-wrap { background:var(--bg); border:1px solid var(--border); border-radius:8px; overflow:auto; margin-bottom:12px; max-height:160px; }
+    .preview-tbl  { border-collapse:collapse; font-size:10px; width:100%; }
+    .preview-tbl th { background:var(--sidebar-bg); color:var(--text-muted); padding:5px 10px; text-align:left; white-space:nowrap; border-bottom:1px solid var(--border); font-weight:700; font-size:9px; text-transform:uppercase; letter-spacing:.04em; position:sticky; top:0; }
+    .preview-tbl td { padding:5px 10px; border-bottom:1px solid var(--border); white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis; }
+    .preview-tbl tr:last-child td { border-bottom:none; }
+
+    .info-bar { display:flex; align-items:flex-start; gap:8px; padding:9px 14px; background:rgba(37,99,235,.05); border:1px solid rgba(37,99,235,.2); border-radius:9px; margin-bottom:20px; font-size:11px; color:#1e40af; line-height:1.65; }
+    .entry-sample { font-size:10px; color:var(--text-muted); margin-top:10px; padding:8px 12px; background:var(--bg); border-radius:7px; border:1px solid var(--border); line-height:1.8; }
+    .cfg-actions { display:flex; gap:8px; align-items:center; margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
+    .sync-status { font-size:11px; color:var(--text-muted); margin-left:auto; }
+    .empty-state { text-align:center; padding:50px 20px; color:var(--text-muted); font-size:12px; }
+    .empty-state .icon { font-size:32px; margin-bottom:10px; }
+
+    /* modal */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1100; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex !important; opacity:1 !important; visibility:visible !important; }
+    .modal-box { background:#fff; border-radius:var(--radius-lg); width:680px; max-width:96vw; max-height:92vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.18); }
+    .modal-header { padding:18px 20px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .modal-title  { font-size:14px; font-weight:700; }
+    .modal-close  { background:none; border:none; font-size:18px; cursor:pointer; color:var(--text-muted); }
+    .modal-body   { padding:20px; overflow-y:auto; flex:1; }
+    .modal-footer { padding:14px 20px; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
+    .divider { border:none; border-top:1px solid var(--border); margin:16px 0; }
+    .step-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin-bottom:10px; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="folder-open"></i> Batch Metadata</div>
+        <div class="page-sub">DEV-OWNER · Manual URL · SM Rerun — ดึงจาก Google Sheets</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openAddModal()">+ Add Sheet Config</button>
+      </div>
+    </header>
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="folder-open"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Batch Metadata</h1>
+          <p>DEV-OWNER · Manual URL · SM Rerun config — ดึงจาก Google Sheets · sync มาแสดงบน Batch Monitor</p>
+        </div>
+      </section>
+
+      <div class="info-bar">
+        <span style="font-size:15px"><i data-icon="info"></i></span>
+        <span>
+          แต่ละ Config ดึงข้อมูลจาก Google Sheet 1 tab — Sheet ต้อง Share เป็น <strong>"Anyone with the link can view"</strong><br>
+          กด <strong><i data-icon="refresh-cw"></i> Sync Now</strong> เพื่อดึงข้อมูลใหม่ · ข้อมูลจะแสดงบนการ์ดใน Batch Monitor อัตโนมัติ
+        </span>
+      </div>
+
+      <div id="configs-wrap">
+        <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12px">กำลังโหลด…</div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══ Add / Edit Modal ═══ -->
+<div class="modal-overlay" id="modal-cfg">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Add Sheet Config</span>
+      <button class="modal-close" onclick="closeModal('modal-cfg')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+
+      <div class="step-label">1 — ข้อมูล Sheet</div>
+      <div class="form-row">
+        <label class="form-label">Config Name *</label>
+        <input class="form-input" id="f-name" type="text" placeholder="เช่น TMN EKS Batch">
+      </div>
+      <div class="form-grid-2">
+        <div>
+          <label class="form-label">Google Sheet ID *</label>
+          <input class="form-input" id="f-sheet-id" type="text" placeholder="จาก URL: .../d/SHEET_ID/...">
+          <div class="hint">copy ส่วน ID จาก URL ของ Sheet</div>
+        </div>
+        <div>
+          <label class="form-label">GID (tab id)</label>
+          <input class="form-input" id="f-gid" type="text" placeholder="จาก URL หลัง #gid=">
+          <div class="hint">เว้นว่างถ้าใช้ tab แรก</div>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div>
+          <label class="form-label">Tab Name (อ้างอิง)</label>
+          <input class="form-input" id="f-tab-name" type="text" placeholder="เช่น AWS_EKS_jenkins-batch-eks-cicd">
+        </div>
+        <div>
+          <label class="form-label">Header Row (index 0-based)</label>
+          <input class="form-input" id="f-header-row" type="number" min="0" value="0">
+          <div class="hint">row ที่เป็น header — ปกติ 0 (row แรก)</div>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-ghost" style="font-size:11px" id="btn-load-headers" onclick="loadHeaders()"><i data-icon="search"></i> Load Headers (Auto)</button>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="togglePasteArea()"><i data-icon="clipboard"></i> Paste CSV</button>
+        <span id="header-status" style="font-size:11px;color:var(--text-muted)"></span>
+      </div>
+      <!-- Paste CSV fallback -->
+      <div id="paste-area" style="display:none;margin-bottom:14px">
+        <div class="hint" style="margin-bottom:6px">
+          <i data-icon="map-pin"></i> ใน Google Sheet → <strong>File → Download → CSV</strong> แล้ว paste ทั้งหมดด้านล่าง
+        </div>
+        <textarea id="csv-paste" style="width:100%;height:140px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:10px;font-family:monospace;background:var(--bg);color:var(--text);resize:vertical;box-sizing:border-box" placeholder="วาง CSV content ที่นี่…"></textarea>
+        <button class="btn btn-primary" style="font-size:11px;margin-top:6px" onclick="loadFromPaste()"><i data-icon="arrow-down"></i> Parse CSV</button>
+      </div>
+      <div id="preview-area" style="display:none;margin-bottom:14px">
+        <div class="hint" style="margin-bottom:6px"><i data-icon="map-pin"></i> ตัวเลขในวงเล็บ = column index (0-based) สำหรับ mapping</div>
+        <div class="preview-wrap" id="preview-tbl-wrap"></div>
+      </div>
+
+      <hr class="divider">
+      <div class="step-label">2 — Column Mapping</div>
+      <div id="col-map-dropdowns" style="display:none">
+        <div class="col-map-grid" id="col-map-grid"></div>
+      </div>
+      <div id="col-map-manual">
+        <div class="hint" style="margin-bottom:8px">กด "Load Headers" เพื่อเลือก column จาก dropdown — หรือกรอก index ด้านล่าง</div>
+        <div class="form-grid-3">
+          <div><label class="form-label">Batch Name col *</label><input class="form-input" id="f-col-batch" type="number" min="0" placeholder="0, 1, 2…"></div>
+          <div><label class="form-label">Batch URL col</label><input class="form-input" id="f-col-batchurl" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้ (ใช้ URL แทนชื่อ)"></div>
+          <div><label class="form-label">DEV-OWNER col</label><input class="form-input" id="f-col-owner" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้"></div>
+          <div><label class="form-label">Manual URL col</label><input class="form-input" id="f-col-manual" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้"></div>
+          <div><label class="form-label">SM Rerun col</label><input class="form-input" id="f-col-smrerun" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้"></div>
+          <div><label class="form-label">Etc/Comment col</label><input class="form-input" id="f-col-etc" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้"></div>
+          <div><label class="form-label">Category col</label><input class="form-input" id="f-col-category" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้"></div>
+          <div><label class="form-label">Parameter col</label><input class="form-input" id="f-col-parameter" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้"></div>
+          <div><label class="form-label">Note col</label><input class="form-input" id="f-col-note" type="number" min="-1" value="-1" placeholder="-1 = ไม่ใช้"></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cfg')">Cancel</button>
+      <button class="btn btn-primary" id="modal-save-btn" onclick="saveConfig()">Save Config</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Sync (Paste CSV) Modal ═══ -->
+<div class="modal-overlay" id="modal-sync">
+  <div class="modal-box" style="width:600px">
+    <div class="modal-header">
+      <span class="modal-title"><i data-icon="refresh-cw"></i> Sync Entries</span>
+      <button class="modal-close" onclick="closeModal('modal-sync')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="info-bar" style="margin-bottom:14px">
+        <span style="font-size:15px"><i data-icon="map-pin"></i></span>
+        <span id="sync-modal-hint" style="font-size:11px"></span>
+      </div>
+      <div class="step-label">วิธี Export CSV จาก Google Sheets</div>
+      <div class="hint" style="margin-bottom:10px;line-height:1.8">
+        1. เปิด Google Sheet → เลือก Tab ที่ต้องการ<br>
+        2. <strong>File → Download → Comma Separated Values (.csv)</strong><br>
+        3. เปิดไฟล์ .csv ด้วย Text Editor / VS Code แล้ว Select All → Copy<br>
+        4. วาง (Paste) ด้านล่าง แล้วกด <strong>Sync</strong>
+      </div>
+      <label class="form-label">Paste CSV / TSV ที่นี่</label>
+      <textarea id="sync-csv-paste" style="width:100%;height:180px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:10px;font-family:monospace;background:var(--bg);color:var(--text);resize:vertical;box-sizing:border-box" placeholder="วาง CSV content ที่นี่…"></textarea>
+      <div id="sync-status" style="font-size:11px;margin-top:8px;min-height:18px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-sync')">Cancel</button>
+      <button class="btn btn-primary" onclick="doSync()"><i data-icon="refresh-cw"></i> Sync</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Delete Confirm ═══ -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-header">
+      <span class="modal-title" style="color:#dc2626">Delete Config</span>
+      <button class="modal-close" onclick="closeModal('modal-delete')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px">ต้องการลบ <strong id="del-name"></strong> ใช่ไหม?</p>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:6px">Entries ทั้งหมดของ config นี้จะถูกลบออกด้วย</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-delete')">Cancel</button>
+      <button class="btn" style="background:#dc2626;color:#fff;border:none" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('admin-batch-meta');
+
+let allConfigs = [], allEntries = [], editingId = null, deletingId = null;
+let previewHeaders = [];
+
+// ── Load ───────────────────────────────────────────────────────────
+async function loadAll() {
+  const res = await API.batchMeta.get();
+  if (!res?.ok) {
+    document.getElementById('configs-wrap').innerHTML = '<div class="empty-state"><div class="icon"><i data-icon="alert-triangle"></i></div>โหลดข้อมูลไม่สำเร็จ</div>';
+    return;
+  }
+  allConfigs = res.data.data?.configs || [];
+  allEntries = res.data.data?.entries || [];
+  renderConfigs();
+}
+
+function renderConfigs() {
+  const wrap = document.getElementById('configs-wrap');
+  if (!allConfigs.length) {
+    wrap.innerHTML = `<div class="empty-state"><div class="icon"><i data-icon="folder-open"></i></div><div style="font-weight:700;margin-bottom:6px">ยังไม่มี Sheet Config</div><div>กด "+ Add Sheet Config" เพื่อเริ่มต้น</div></div>`;
+    return;
+  }
+  wrap.innerHTML = allConfigs.map(c => renderCfgCard(c)).join('');
+}
+
+function renderCfgCard(c) {
+  const cnt     = allEntries.filter(e => e.config_id === c.id).length;
+  const synced  = c.last_synced
+    ? `<span class="badge-synced"><i data-icon="check"></i> ${new Date(c.last_synced).toLocaleDateString('th-TH')}</span>`
+    : `<span class="badge-never">ยังไม่ได้ sync</span>`;
+  const countBadge = cnt ? `<span class="badge-count">${cnt} entries</span>` : '';
+  const mapping = [
+    c.col_batch_name >= 0 ? `Batch[${c.col_batch_name}]` : null,
+    c.col_batch_url  >= 0 ? `URL[${c.col_batch_url}]`    : null,
+    c.col_dev_owner  >= 0 ? `Owner[${c.col_dev_owner}]`  : null,
+    c.col_manual_url >= 0 ? `Manual[${c.col_manual_url}]`: null,
+    c.col_sm_rerun   >= 0 ? `SM[${c.col_sm_rerun}]`      : null,
+    c.col_etc        >= 0 ? `Etc[${c.col_etc}]`          : null,
+    c.col_category   >= 0 ? `Cat[${c.col_category}]`     : null,
+    c.col_parameter  >= 0 ? `Param[${c.col_parameter}]`  : null,
+    c.col_note       >= 0 ? `Note[${c.col_note}]`        : null,
+  ].filter(Boolean).join(' · ');
+
+  const samples = allEntries.filter(e => e.config_id === c.id).slice(0, 3);
+  const sampleHtml = samples.length ? `<div class="entry-sample">
+    <strong style="color:var(--text)">ตัวอย่าง:</strong><br>
+    ${samples.map(e => `${escHtml(e.pattern)}${e.dev_owner ? ` <span style="color:var(--orange)">👤${escHtml(e.dev_owner)}</span>` : ''}${e.sm_rerun ? ` ${e.sm_rerun.toLowerCase().includes('sm rerun') ? '🟢' : '🔴'} ${escHtml(e.sm_rerun)}` : ''}`).join('<br>')}
+  </div>` : '';
+
+  return `<div class="cfg-card" id="cfg-${escHtml(c.id)}">
+    <div class="cfg-header" onclick="toggleCard('${escHtml(c.id)}')">
+      <span class="cfg-chevron"><i data-icon="play"></i></span>
+      <span class="cfg-name">${escHtml(c.name)}</span>
+      <span class="cfg-meta">${escHtml(c.tab_name || c.sheet_id.substring(0, 20) + '…')}</span>
+      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">${countBadge} ${synced}</div>
+    </div>
+    <div class="cfg-body">
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.8;margin-bottom:8px">
+        <strong>Sheet ID:</strong> <code style="font-size:10px">${escHtml(c.sheet_id)}</code>
+        ${c.gid ? ` · <strong>GID:</strong> ${escHtml(c.gid)}` : ''}
+        ${c.tab_name ? ` · <strong>Tab:</strong> ${escHtml(c.tab_name)}` : ''}<br>
+        <strong>Columns:</strong> ${mapping || '—'} &nbsp;·&nbsp; <strong>Header row:</strong> ${c.header_row ?? 0}
+      </div>
+      ${sampleHtml}
+      <div class="cfg-actions">
+        <button class="btn btn-ghost" style="font-size:11px" onclick="syncConfig('${escHtml(c.id)}', this)"><i data-icon="refresh-cw"></i> Sync Now</button>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="openEditModal('${escHtml(c.id)}')">Edit</button>
+        <button class="btn" style="font-size:11px;background:#fee2e2;color:#dc2626;border:none" onclick="openDeleteModal('${escHtml(c.id)}','${escHtml(c.name)}')">Del</button>
+        <span class="sync-status" id="ss-${escHtml(c.id)}"></span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleCard(id) { document.getElementById(`cfg-${id}`)?.classList.toggle('open'); }
+
+// ── Toggle paste area ──────────────────────────────────────────────
+function togglePasteArea() {
+  const el = document.getElementById('paste-area');
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+// ── Batch pattern extractor — prefer URL last segment, else strip "Pipeline " ──
+function extractBatchPattern(rawName, rawUrl) {
+  const url = (rawUrl || '').trim();
+  if (url) {
+    try {
+      const path = url.includes('://') ? new URL(url).pathname : url;
+      const parts = path.split('/').filter(Boolean);
+      if (parts.length) {
+        const seg = decodeURIComponent(parts[parts.length - 1]);
+        if (seg) return seg;
+      }
+    } catch { /* fall through */ }
+  }
+  return (rawName || '').trim().replace(/^pipeline\s+/i, '').trim();
+}
+
+// ── Smart TSV/CSV parser (handles multi-line quoted cells) ─────────
+function parseDelimited(text) {
+  // Auto-detect delimiter from first 500 chars
+  const sample     = text.substring(0, 500);
+  const tabCount   = (sample.match(/\t/g)  || []).length;
+  const commaCount = (sample.match(/,/g)   || []).length;
+  const delim      = tabCount >= commaCount ? '\t' : ',';
+
+  const rows = [];
+  let cur = [], cell = '', inQ = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i], nx = text[i + 1];
+    if (inQ) {
+      if (ch === '"' && nx === '"') { cell += '"'; i++; }        // escaped quote
+      else if (ch === '"')          { inQ = false; }             // end quote
+      else                          { cell += ch; }              // content (incl. \n)
+    } else {
+      if (ch === '"')               { inQ = true; }              // start quote
+      else if (ch === delim)        { cur.push(cell.trim()); cell = ''; }  // column sep
+      else if (ch === '\n') {
+        cur.push(cell.trim()); cell = '';
+        if (cur.some(c => c !== '')) rows.push(cur);             // skip empty rows
+        cur = [];
+      } else if (ch !== '\r')       { cell += ch; }
+    }
+  }
+  if (cell || cur.length) { cur.push(cell.trim()); if (cur.some(c => c !== '')) rows.push(cur); }
+
+  return { rows, delim };
+}
+
+// ── Parse pasted CSV/TSV ───────────────────────────────────────────
+function loadFromPaste() {
+  const text = document.getElementById('csv-paste').value.trim();
+  if (!text) { Toast.error('กรุณา paste CSV/TSV ก่อน'); return; }
+  const hRow   = parseInt(document.getElementById('f-header-row').value) || 0;
+  const status = document.getElementById('header-status');
+
+  const { rows, delim } = parseDelimited(text);
+  buildPreview(rows, hRow, status);
+  document.getElementById('paste-area').style.display = 'none';
+  Toast.success(`Parsed ${rows.length} rows · delimiter: ${delim === '\t' ? 'TAB' : 'COMMA'}`);
+}
+
+// ── Browser-side Google Sheets CSV fetch (no credentials — public sheets only) ─
+async function fetchSheetCSV(sheetId, gid, maxRows = 0) {
+  const url = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheetId)}/gviz/tq?tqx=out:csv&headers=0`
+            + (gid ? `&gid=${encodeURIComponent(gid)}` : '');
+  try {
+    const resp = await fetch(url);   // no credentials — works for public sheets
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const text = await resp.text();
+    if (text.trim().startsWith('<') || text.includes('google.visualization.Query.setResponse'))
+      throw new Error('Sheet ต้อง Share เป็น "Anyone with the link" หรือใช้ <i data-icon="clipboard"></i> Paste CSV แทน');
+    const lines = text.split('\n').filter(l => l.trim());
+    const rows  = lines.map(l => parseCSVLine(l));
+    return { ok: true, rows: maxRows ? rows.slice(0, maxRows + 2) : rows };
+  } catch (e) {
+    return { ok: false, msg: e.message };
+  }
+}
+
+// ── Shared: build preview + dropdowns ─────────────────────────────
+function buildPreview(rows, hRow, statusEl) {
+  const headerRowData = rows[hRow] || rows[0] || [];
+  // Find first data row (skip empty rows after header)
+  const firstDataRow = rows.slice(hRow + 1).find(r => r.some(c => c.trim())) || [];
+  previewHeaders = headerRowData.map((h, i) => ({
+    idx:    i,
+    label:  h.trim() || `col ${i}`,
+    sample: (firstDataRow[i] || '').trim(),
+  }));
+  if (statusEl) { statusEl.innerHTML = `<i data-icon="check"></i> พบ ${previewHeaders.length} columns`; statusEl.style.color = '#16a34a'; }
+  const tblWrap = document.getElementById('preview-tbl-wrap');
+  const thead   = '<tr>' + previewHeaders.map(h => `<th>(${h.idx}) ${escHtml(h.label)}</th>`).join('') + '</tr>';
+  const tbody   = rows.slice(hRow + 1, hRow + 4).map(r =>
+    '<tr>' + previewHeaders.map((_, i) => `<td title="${escHtml(r[i]||'')}">${escHtml((r[i]||'').substring(0,30))}</td>`).join('') + '</tr>'
+  ).join('');
+  tblWrap.innerHTML = `<table class="preview-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+  document.getElementById('preview-area').style.display = '';
+  renderColDropdowns();
+}
+
+function parseCSVLine(line) {
+  const result = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+    else if (ch === ',' && !inQ) { result.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  result.push(cur);
+  return result;
+}
+
+// ── Sync — open paste modal then parse+save ────────────────────────
+let _syncTargetId = null;
+
+function syncConfig(id) {
+  _syncTargetId = id;
+  const cfg = allConfigs.find(c => c.id === id);
+  // Pre-fill sheet info hints
+  document.getElementById('sync-modal-hint').textContent =
+    `Config: ${cfg?.name || id} · Batch col: ${cfg?.col_batch_name ?? '?'} · Owner col: ${cfg?.col_dev_owner ?? '—'}`;
+  document.getElementById('sync-csv-paste').value = '';
+  document.getElementById('sync-status').textContent = '';
+  openModal('modal-sync');
+  setTimeout(() => document.getElementById('sync-csv-paste').focus(), 80);
+}
+
+async function doSync() {
+  const id   = _syncTargetId;
+  const text = document.getElementById('sync-csv-paste').value.trim();
+  const st   = document.getElementById('sync-status');
+  if (!id)   { Toast.error('ไม่พบ Config'); return; }
+  if (!text) { Toast.error('กรุณา paste CSV/TSV ก่อน'); return; }
+
+  const cfg = allConfigs.find(c => c.id === id);
+  if (!cfg)  { Toast.error('Config not found'); return; }
+
+  const { rows } = parseDelimited(text);
+  const hRow       = cfg.header_row     ?? 0;
+  const colBatch   = cfg.col_batch_name  ?? -1;
+  const colBatchUrl= cfg.col_batch_url   ?? -1;
+  const colOwner   = cfg.col_dev_owner   ?? -1;
+  const colManual  = cfg.col_manual_url  ?? -1;
+  const colSM      = cfg.col_sm_rerun    ?? -1;
+  const colEtc     = cfg.col_etc         ?? -1;
+  const colCat     = cfg.col_category    ?? -1;
+  const colParam   = cfg.col_parameter   ?? -1;
+  const colNote    = cfg.col_note        ?? -1;
+
+  const entries = [];
+  rows.slice(hRow + 1).forEach(row => {
+    const rawName = colBatch    >= 0 ? (row[colBatch]    || '').trim() : '';
+    const rawUrl  = colBatchUrl >= 0 ? (row[colBatchUrl] || '').trim() : '';
+    const batchName = extractBatchPattern(rawName, rawUrl);
+    if (!batchName || batchName === '-') return;
+    entries.push({
+      pattern:    batchName,
+      dev_owner:  colOwner  >= 0 ? (row[colOwner]  || '').trim() : '',
+      manual_url: colManual >= 0 ? (row[colManual] || '').trim() : '',
+      sm_rerun:   colSM     >= 0 ? (row[colSM]     || '').trim() : '',
+      etc:        colEtc    >= 0 ? (row[colEtc]    || '').trim() : '',
+      category:   colCat    >= 0 ? (row[colCat]    || '').trim() : '',
+      parameter:  colParam  >= 0 ? (row[colParam]  || '').trim() : '',
+      note:       colNote   >= 0 ? (row[colNote]   || '').trim() : '',
+    });
+  });
+
+  if (!entries.length) { st.innerHTML = '<i data-icon="alert-triangle"></i> ไม่พบ entries — ตรวจสอบ column mapping'; st.style.color = '#d97706'; return; }
+
+  st.textContent = `⏳ Saving ${entries.length} entries…`; st.style.color = 'var(--text-muted)';
+  const res = await API.batchMeta.syncEntries(id, entries);
+
+  if (!res?.ok) {
+    st.innerHTML = '<i data-icon="x"></i> บันทึกไม่สำเร็จ'; st.style.color = '#dc2626';
+    Toast.error(res?.data?.message || 'บันทึกไม่สำเร็จ'); return;
+  }
+  const synced = res.data.data?.synced ?? 0;
+  Toast.success(`Sync เรียบร้อย — ${synced} entries`);
+  closeModal('modal-sync');
+  _syncTargetId = null;
+  await loadAll();
+}
+
+// ── Load Headers — browser fetches CSV directly ────────────────────
+async function loadHeaders() {
+  const sheetId = document.getElementById('f-sheet-id').value.trim();
+  const gid     = document.getElementById('f-gid').value.trim();
+  const hRow    = parseInt(document.getElementById('f-header-row').value) || 0;
+  const status  = document.getElementById('header-status');
+  const btn     = document.getElementById('btn-load-headers');
+  if (!sheetId) { Toast.error('กรุณากรอก Sheet ID ก่อน'); return; }
+
+  btn.disabled = true; status.textContent = '⏳ กำลังโหลด…'; status.style.color = 'var(--text-muted)';
+  const result = await fetchSheetCSV(sheetId, gid, 4);
+  btn.disabled = false;
+
+  if (!result.ok) {
+    status.innerHTML = '<i data-icon="x"></i> ' + result.msg;
+    status.style.color = '#dc2626'; return;
+  }
+
+  buildPreview(result.rows, hRow, status);
+}
+
+function renderColDropdowns() {
+  if (!previewHeaders.length) return;
+  document.getElementById('col-map-manual').style.display = 'none';
+  document.getElementById('col-map-dropdowns').style.display = '';
+
+  const none = '<option value="-1">— ไม่ใช้ —</option>';
+  const opts = previewHeaders.map(h => {
+    const sample = h.sample ? ` — ตย: ${h.sample.substring(0, 28)}` : '';
+    return `<option value="${h.idx}">(${h.idx}) ${escHtml(h.label)}${escHtml(sample)}</option>`;
+  }).join('');
+  const fields = [
+    { key:'batch',    id:'f-col-batch',     label:'Batch Name *', required:true },
+    { key:'batchurl', id:'f-col-batchurl',  label:'Batch URL (job link)' },
+    { key:'owner',    id:'f-col-owner',     label:'DEV-OWNER' },
+    { key:'manual',   id:'f-col-manual',    label:'Manual URL' },
+    { key:'smrerun',  id:'f-col-smrerun',   label:'SM Rerun' },
+    { key:'etc',      id:'f-col-etc',       label:'Etc/Comment' },
+    { key:'category', id:'f-col-category',  label:'Category' },
+    { key:'param',    id:'f-col-parameter', label:'Parameter' },
+    { key:'note',     id:'f-col-note',      label:'Note' },
+  ];
+  document.getElementById('col-map-grid').innerHTML = fields.map(f => {
+    const cur = parseInt(document.getElementById(f.id)?.value) ?? -1;
+    const sel = `<select id="dd-${f.key}" onchange="syncToInput('${f.key}','${f.id}')">${f.required ? '' : none}${opts}</select>`;
+    return `<div class="col-map-item"><label>${f.label}</label>${sel}</div>`;
+  }).join('');
+
+  // Set current values
+  fields.forEach(f => {
+    const cur = parseInt(document.getElementById(f.id)?.value) ?? -1;
+    const dd  = document.getElementById(`dd-${f.key}`);
+    if (dd && cur >= 0) dd.value = cur;
+  });
+}
+
+function syncToInput(key, inputId) {
+  const dd  = document.getElementById(`dd-${key}`);
+  const inp = document.getElementById(inputId);
+  if (dd && inp) inp.value = dd.value;
+}
+
+// ── Sync all dropdowns → inputs before save ────────────────────────
+function syncAllInputs() {
+  [['batch','f-col-batch'],['batchurl','f-col-batchurl'],['owner','f-col-owner'],['manual','f-col-manual'],
+   ['smrerun','f-col-smrerun'],['etc','f-col-etc'],['category','f-col-category'],
+   ['param','f-col-parameter'],['note','f-col-note']]
+    .forEach(([key, id]) => syncToInput(key, id));
+}
+
+// ── Modal ──────────────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+
+function resetForm() {
+  ['f-name','f-sheet-id','f-gid','f-tab-name'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('f-header-row').value  = '0';
+  document.getElementById('f-col-batch').value     = '1';
+  document.getElementById('f-col-batchurl').value  = '-1';
+  document.getElementById('f-col-owner').value     = '-1';
+  document.getElementById('f-col-manual').value    = '-1';
+  document.getElementById('f-col-smrerun').value   = '-1';
+  document.getElementById('f-col-etc').value       = '-1';
+  document.getElementById('f-col-category').value  = '-1';
+  document.getElementById('f-col-parameter').value = '-1';
+  document.getElementById('f-col-note').value      = '-1';
+  document.getElementById('preview-area').style.display     = 'none';
+  document.getElementById('header-status').textContent      = '';
+  document.getElementById('col-map-grid').innerHTML         = '';
+  document.getElementById('col-map-manual').style.display   = '';
+  document.getElementById('col-map-dropdowns').style.display= 'none';
+  previewHeaders = [];
+}
+
+function openAddModal() {
+  editingId = null; resetForm();
+  document.getElementById('modal-title').textContent     = 'Add Sheet Config';
+  document.getElementById('modal-save-btn').textContent  = 'Save Config';
+  openModal('modal-cfg');
+  setTimeout(() => document.getElementById('f-name').focus(), 80);
+}
+
+function openEditModal(id) {
+  const c = allConfigs.find(x => x.id === id); if (!c) return;
+  editingId = id; resetForm();
+  document.getElementById('f-name').value       = c.name       || '';
+  document.getElementById('f-sheet-id').value   = c.sheet_id   || '';
+  document.getElementById('f-gid').value         = c.gid        || '';
+  document.getElementById('f-tab-name').value    = c.tab_name   || '';
+  document.getElementById('f-header-row').value  = c.header_row ?? 1;
+  document.getElementById('f-col-batch').value     = c.col_batch_name ?? 1;
+  document.getElementById('f-col-batchurl').value  = c.col_batch_url  ?? -1;
+  document.getElementById('f-col-owner').value     = c.col_dev_owner  ?? -1;
+  document.getElementById('f-col-manual').value    = c.col_manual_url ?? -1;
+  document.getElementById('f-col-smrerun').value   = c.col_sm_rerun   ?? -1;
+  document.getElementById('f-col-etc').value       = c.col_etc        ?? -1;
+  document.getElementById('f-col-category').value  = c.col_category   ?? -1;
+  document.getElementById('f-col-parameter').value = c.col_parameter  ?? -1;
+  document.getElementById('f-col-note').value      = c.col_note       ?? -1;
+  document.getElementById('modal-title').textContent    = `Edit — ${escHtml(c.name)}`;
+  document.getElementById('modal-save-btn').textContent = 'Save Changes';
+  openModal('modal-cfg');
+}
+
+async function saveConfig() {
+  syncAllInputs();
+  const name    = document.getElementById('f-name').value.trim();
+  const sheetId = document.getElementById('f-sheet-id').value.trim();
+  if (!name)    { Toast.error('กรุณากรอกชื่อ Config'); return; }
+  if (!sheetId) { Toast.error('กรุณากรอก Sheet ID');   return; }
+
+  const payload = {
+    name, sheet_id: sheetId,
+    gid:            document.getElementById('f-gid').value.trim(),
+    tab_name:       document.getElementById('f-tab-name').value.trim(),
+    header_row:     parseInt(document.getElementById('f-header-row').value)  || 0,
+    col_batch_name: parseInt(document.getElementById('f-col-batch').value)     ?? 1,
+    col_batch_url:  parseInt(document.getElementById('f-col-batchurl').value)  ?? -1,
+    col_dev_owner:  parseInt(document.getElementById('f-col-owner').value)     ?? -1,
+    col_manual_url: parseInt(document.getElementById('f-col-manual').value)    ?? -1,
+    col_sm_rerun:   parseInt(document.getElementById('f-col-smrerun').value)   ?? -1,
+    col_etc:        parseInt(document.getElementById('f-col-etc').value)       ?? -1,
+    col_category:   parseInt(document.getElementById('f-col-category').value)  ?? -1,
+    col_parameter:  parseInt(document.getElementById('f-col-parameter').value) ?? -1,
+    col_note:       parseInt(document.getElementById('f-col-note').value)      ?? -1,
+  };
+
+  const btn = document.getElementById('modal-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const res = editingId
+    ? await API.batchMeta.update(editingId, payload)
+    : await API.batchMeta.create(payload);
+  btn.disabled = false;
+  btn.textContent = editingId ? 'Save Changes' : 'Save Config';
+
+  if (!res?.ok) { Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด'); return; }
+  Toast.success(editingId ? 'แก้ไขเรียบร้อย' : 'เพิ่ม Config เรียบร้อย');
+  closeModal('modal-cfg');
+  await loadAll();
+}
+
+function openDeleteModal(id, name) {
+  deletingId = id;
+  document.getElementById('del-name').textContent = name;
+  openModal('modal-delete');
+}
+async function confirmDelete() {
+  if (!deletingId) return;
+  const res = await API.batchMeta.delete(deletingId);
+  if (!res?.ok) { Toast.error('ลบไม่สำเร็จ'); return; }
+  Toast.success('ลบเรียบร้อย');
+  closeModal('modal-delete');
+  deletingId = null;
+  await loadAll();
+}
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') ['modal-cfg','modal-delete'].forEach(closeModal);
+});
+
+loadAll();
+</script>
+</body>
+</html>

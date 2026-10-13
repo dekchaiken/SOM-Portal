@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Board Management — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .chip-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .chip {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:4px 10px; border-radius:20px;
+      background:var(--bg-hover); border:1px solid var(--border);
+      font-size:12px; font-weight:500; color:var(--text);
+    }
+    .chip-del { cursor:pointer; color:var(--text-muted); line-height:1; padding:0 2px; }
+    .chip-del:hover { color:var(--danger); }
+    .chip-edit { cursor:pointer; color:var(--text-muted); font-size:11px; }
+    .chip-edit:hover { color:var(--orange); }
+
+    .st-card {
+      border:1px solid var(--border); border-radius:var(--radius-lg);
+      padding:14px 16px; background:var(--bg-card);
+      margin-bottom:10px;
+    }
+    .st-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .st-card-name { font-weight:600; font-size:13px; }
+    .st-subchips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .add-inline {
+      display:flex; gap:8px; align-items:center;
+      padding:10px 0 0 0;
+    }
+    .add-inline input { flex:1; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">◫ Board Management</div>
+        <div class="page-sub">Manage posts, board categories &amp; service types</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="../board.html" class="btn btn-ghost btn-sm">Go to Board →</a>
+      </div>
+    </header>
+
+    <main class="page-content" style="display:flex;flex-direction:column;gap:20px">
+
+      <section class="page-hero">
+        <div class="page-hero-mark">◫</div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Board Management</h1>
+          <p>จัดการ Posts · Board Categories (tabs ใน Web Board) · Service Types</p>
+        </div>
+      </section>
+
+      <!-- ── Section 1: Board Categories (Tabs) ──────────────── -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Board Categories</span>
+          <span style="font-size:11px;color:var(--text-muted)">Tabs shown on the Web Board (e.g. Monitoring, Batch File)</span>
+        </div>
+        <div class="card-body">
+          <div class="chip-row" id="cat-chips">
+            <div data-skel="chips" data-rows="5"></div>
+          </div>
+          <div class="add-inline" style="margin-top:14px">
+            <input type="text" id="cat-new-name" class="form-control" placeholder="New board category name..." maxlength="60" style="max-width:260px">
+            <button class="btn btn-primary btn-sm" onclick="addCategory()">+ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Section 2: Board Service Types ──────────────────── -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Service Types &amp; Sub Types</span>
+          <span style="font-size:11px;color:var(--text-muted)">Shown in New Post dropdowns (separate from Jira Templates)</span>
+        </div>
+        <div class="card-body">
+          <div id="bst-list">
+            <div data-skel="list" data-rows="4"></div>
+          </div>
+          <div class="add-inline" style="margin-top:8px;padding-top:14px;border-top:1px solid var(--border)">
+            <input type="text" id="bst-new-name" class="form-control" placeholder="New service type name..." maxlength="60" style="max-width:260px">
+            <button class="btn btn-primary btn-sm" onclick="addServiceType()">+ Add Service Type</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Section 3: All Posts ─────────────────────────────── -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">All Posts</span>
+          <div class="search-wrap">
+            <span class="search-icon">⌕</span>
+            <input type="text" id="board-search" class="form-control" placeholder="Search posts..." style="width:220px">
+          </div>
+        </div>
+        <div id="board-table" class="card-body" style="padding:0">
+          <div data-skel="table" data-rows="6"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Edit Modal ─────────────────────────────────────────── -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title" id="edit-modal-title">Rename</span>
+      <button class="btn-close" onclick="Modal.close('edit-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-item-id">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Name</label>
+        <input type="text" id="edit-item-name" class="form-control" placeholder="Name..." maxlength="80"
+               onkeydown="if(event.key==='Enter') saveEdit()">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('edit-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+  if (!Auth.requireAdmin()) {}
+  Layout.render('admin');
+
+  let boardCfg = { categories: [], service_types: [] };
+  let allPosts  = [];
+
+  // ── Load all data ─────────────────────────────────────────
+  async function loadAll() {
+    const [cfgRes, postsRes] = await Promise.all([
+      API.boardConfig.get(),
+      API.board.list()
+    ]);
+    if (cfgRes?.ok)   { boardCfg = cfgRes.data.data || { categories: [], service_types: [] }; }
+    if (postsRes?.ok) { allPosts = postsRes.data.data || []; }
+    renderCategories();
+    renderServiceTypes();
+    renderTable(allPosts);
+  }
+
+  // ── Board Categories ──────────────────────────────────────
+  function renderCategories() {
+    const el = document.getElementById('cat-chips');
+    if (!boardCfg.categories.length) {
+      el.innerHTML = '<span style="color:var(--text-muted);font-size:12px">No categories yet.</span>';
+      return;
+    }
+    el.innerHTML = boardCfg.categories
+      .sort((a,b) => (a.order||0)-(b.order||0))
+      .map(c => `
+        <span class="chip">
+          ${escHtml(c.name)}
+          <span class="chip-edit" onclick="openEdit('${c.id}','${escHtml(c.name).replace(/'/g,"\\'")}')">✎</span>
+          <span class="chip-del" onclick="deleteItem('${c.id}','${escHtml(c.name).replace(/'/g,"\\'")}','category')">✕</span>
+        </span>`).join('');
+  }
+
+  async function addCategory() {
+    const inp  = document.getElementById('cat-new-name');
+    const name = inp.value.trim();
+    if (!name) { Toast.warning('Enter a name'); return; }
+    const res = await API.boardConfig.addCategory({ name });
+    if (res?.ok) {
+      Toast.success('Category added');
+      inp.value = '';
+      await loadAll();
+    } else {
+      Toast.error(res?.data?.message || 'Failed');
+    }
+  }
+
+  // ── Board Service Types ───────────────────────────────────
+  function renderServiceTypes() {
+    const el = document.getElementById('bst-list');
+    if (!boardCfg.service_types.length) {
+      el.innerHTML = '<p style="color:var(--text-muted);font-size:12px;margin:0">No service types yet.</p>';
+      return;
+    }
+
+    el.innerHTML = boardCfg.service_types
+      .sort((a,b) => (a.order||0)-(b.order||0))
+      .map(st => {
+        const subchips = (st.subtypes || [])
+          .sort((a,b) => (a.order||0)-(b.order||0))
+          .map(s => `
+            <span class="chip" style="background:var(--bg);font-size:11px">
+              ${escHtml(s.name)}
+              <span class="chip-edit" onclick="openEdit('${s.id}','${escHtml(s.name).replace(/'/g,"\\'")}')"><i data-icon="pencil"></i></span>
+              <span class="chip-del" onclick="deleteItem('${s.id}','${escHtml(s.name).replace(/'/g,"\\'")}','subtype')">✕</span>
+            </span>`).join('');
+
+        return `
+          <div class="st-card">
+            <div class="st-card-header">
+              <span class="st-card-name">${escHtml(st.name)}</span>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-ghost btn-sm" onclick="openEdit('${st.id}','${escHtml(st.name).replace(/'/g,"\\'")}')">✎ Rename</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteItem('${st.id}','${escHtml(st.name).replace(/'/g,"\\'")}','service type')">Delete</button>
+              </div>
+            </div>
+            <div class="st-subchips">
+              ${subchips || '<span style="color:var(--text-muted);font-size:11px">No subtypes</span>'}
+            </div>
+            <div class="add-inline">
+              <input type="text" class="form-control" id="sub-inp-${st.id}" placeholder="Add subtype..." maxlength="60"
+                     onkeydown="if(event.key==='Enter') addSubtype('${st.id}')">
+              <button class="btn btn-outline btn-sm" onclick="addSubtype('${st.id}')">+ Add</button>
+            </div>
+          </div>`;
+      }).join('');
+  }
+
+  async function addServiceType() {
+    const inp  = document.getElementById('bst-new-name');
+    const name = inp.value.trim();
+    if (!name) { Toast.warning('Enter a name'); return; }
+    const res = await API.boardConfig.addServiceType({ name });
+    if (res?.ok) {
+      Toast.success('Service type added');
+      inp.value = '';
+      await loadAll();
+    } else {
+      Toast.error(res?.data?.message || 'Failed');
+    }
+  }
+
+  async function addSubtype(parentId) {
+    const inp  = document.getElementById(`sub-inp-${parentId}`);
+    const name = inp?.value?.trim();
+    if (!name) { Toast.warning('Enter a name'); return; }
+    const res = await API.boardConfig.addSubtype(parentId, { name });
+    if (res?.ok) {
+      Toast.success('Subtype added');
+      if (inp) inp.value = '';
+      await loadAll();
+    } else {
+      Toast.error(res?.data?.message || 'Failed');
+    }
+  }
+
+  // ── Edit / Rename ─────────────────────────────────────────
+  function openEdit(id, currentName) {
+    document.getElementById('edit-item-id').value   = id;
+    document.getElementById('edit-item-name').value = currentName;
+    Modal.open('edit-modal');
+    setTimeout(() => document.getElementById('edit-item-name').select(), 100);
+  }
+
+  async function saveEdit() {
+    const id   = document.getElementById('edit-item-id').value;
+    const name = document.getElementById('edit-item-name').value.trim();
+    if (!name) { Toast.warning('Name cannot be empty'); return; }
+    const res = await API.boardConfig.rename(id, { name });
+    if (res?.ok) {
+      Toast.success('Renamed');
+      Modal.close('edit-modal');
+      await loadAll();
+    } else {
+      Toast.error(res?.data?.message || 'Failed');
+    }
+  }
+
+  // ── Delete ────────────────────────────────────────────────
+  async function deleteItem(id, name, kind) {
+    const ok = await confirmDialog(`Delete ${kind} "${name}"?`, 'Confirm Delete');
+    if (!ok) return;
+    const res = await API.boardConfig.delete(id);
+    if (res?.ok) {
+      Toast.success('Deleted');
+      await loadAll();
+    } else {
+      Toast.error(res?.data?.message || 'Failed');
+    }
+  }
+
+  // ── Posts Table ───────────────────────────────────────────
+  function renderTable(posts) {
+    const container = document.getElementById('board-table');
+    if (!posts.length) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">◫</div><p>No posts</p></div>';
+      return;
+    }
+
+    container.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr>
+        <th>Title</th>
+        <th>Board</th>
+        <th>Service Type</th>
+        <th>Author</th>
+        <th>Pin</th>
+        <th style="white-space:nowrap">Date</th>
+        <th style="text-align:right">Actions</th>
+      </tr></thead>
+      <tbody>
+        ${posts.map(p => `<tr>
+          <td style="font-weight:600;max-width:260px">
+            ${p.pinned ? '📌 ' : ''}${escHtml(p.title)}
+            ${p.image_url ? '<span class="badge badge-gray" style="margin-left:6px">IMG</span>' : ''}
+          </td>
+          <td>
+            ${p.board_type_name
+              ? `<span class="badge badge-blue" style="font-size:10px">${escHtml(p.board_type_name)}</span>`
+              : '<span style="color:var(--text-muted);font-size:11px">—</span>'}
+          </td>
+          <td style="font-size:11px;color:var(--text-muted)">
+            ${p.service_type_name
+              ? escHtml(p.service_type_name) + (p.service_subtype_name ? ` · ${escHtml(p.service_subtype_name)}` : '')
+              : '—'}
+          </td>
+          <td style="color:var(--text-muted)">${escHtml(p.author_name)}</td>
+          <td>
+            ${p.pinned
+              ? '<span class="badge badge-orange">Pinned</span>'
+              : '<span style="color:var(--text-muted);font-size:11px">—</span>'}
+          </td>
+          <td style="color:var(--text-muted);font-size:11px;white-space:nowrap">${DateTime.format(p.created_at)}</td>
+          <td style="text-align:right">
+            <div class="flex gap-2" style="justify-content:flex-end">
+              <button class="btn btn-ghost btn-sm" onclick="togglePin('${p.id}')">${p.pinned ? 'Unpin' : '📌 Pin'}</button>
+              <button class="btn btn-danger btn-sm" onclick="deletePost('${p.id}','${escHtml(p.title).replace(/'/g,"\\'") }')">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+  }
+
+  async function togglePin(id) {
+    const res = await API.board.pin(id);
+    if (res?.ok) { Toast.success('Updated'); loadAll(); }
+    else Toast.error(res?.data?.message || 'Failed');
+  }
+
+  async function deletePost(id, title) {
+    const ok = await confirmDialog(`Delete "${title}"?`, 'Delete Post');
+    if (!ok) return;
+    const res = await API.board.delete(id);
+    if (res?.ok) { Toast.success('Deleted'); loadAll(); }
+    else Toast.error(res?.data?.message || 'Failed');
+  }
+
+  // ── Search ────────────────────────────────────────────────
+  const doSearch = debounce(async (v) => {
+    const res = await API.board.list(v);
+    if (res?.ok) renderTable(res.data.data || []);
+  }, 300);
+  document.getElementById('board-search').addEventListener('input', e => doSearch(e.target.value));
+
+  // ── Init ──────────────────────────────────────────────────
+  loadAll();
+</script>
+
+</body>
+</html>

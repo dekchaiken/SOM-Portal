@@ -1,0 +1,137 @@
+/* som-portal-v2/app/globals.css */
+
+@import "tailwindcss";
+
+/* Tailwind v4 reads sources from CSS, not from tailwind.config.ts `content`.
+ * Paths are relative to this file. */
+@source "../app/**/*.{ts,tsx,mdx}";
+@source "../src/**/*.{ts,tsx,mdx}";
+@source "../config/**/*.{ts,tsx}";
+
+/* Dark-mode variant: ThemeProvider sets `data-mode="dark"` on <html>. */
+@custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
+
+/* Theme token layers (loaded in cascade order: primitive → theme → component). */
+@import "../src/theme/tokens.css";
+@import "../src/theme/themes/enterprise.css";
+@import "../src/theme/themes/glass.css";
+@import "../src/theme/themes/console.css";
+@import "../src/theme/themes/warm.css";
+@import "../src/theme/components.css";
+
+/*
+ * Tailwind v4 @theme — binds the utility layer to our semantic tokens so
+ * `bg-card`, `text-muted`, `border` resolve to the active theme.
+ */
+@theme {
+  --color-bg: var(--bg-page);
+  --color-bg-card: var(--bg-card);
+  --color-bg-raised: var(--bg-raised);
+  --color-bg-input: var(--bg-input);
+  --color-fg: var(--text);
+  --color-fg-strong: var(--text-strong);
+  --color-fg-muted: var(--text-muted);
+  --color-fg-subtle: var(--text-subtle);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-success: var(--state-success);
+  --color-warning: var(--state-warning);
+  --color-danger: var(--state-danger);
+  --color-info: var(--state-info);
+
+  --radius-sm: var(--radius-sm, 4px);
+  --radius-md: var(--radius-md, 6px);
+  --radius-lg: var(--radius-lg, 10px);
+  --radius-xl: var(--radius-xl, 14px);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/*
+ * Base reset.
+ *
+ * v1 had a font-family inheritance bug on <button> (see
+ * feedback_frontend_dos_donts: "button needs font-family reset"). Fixed here
+ * at the root so every nested shadcn primitive inherits correctly.
+ */
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  :root[data-mode="dark"] {
+    color-scheme: dark;
+  }
+
+  html, body {
+    min-height: 100dvh;
+    background: var(--bg-page);
+    color: var(--text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  h1, h2, h3, h4 {
+    color: var(--text-strong);
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  p { text-wrap: pretty; }
+
+  /* Tabular numerals on anything data-flagged (KPI deltas, timers). */
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Hover styles only on hover-capable pointers (per emilkowalski/mobile-native). */
+  @media (hover: none) {
+    .hover-only { pointer-events: none; }
+  }
+
+  /* Honor reduced-motion for every transition we author. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Glass surface helper — gated by prefers-reduced-transparency inside tokens. */
+@layer utilities {
+  .surface-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--card-radius, var(--radius-lg));
+    box-shadow: var(--surface-elev, var(--elev-1));
+  }
+
+  [data-theme="glass"] .surface-card {
+    backdrop-filter: blur(var(--glass-blur, 14px)) saturate(var(--glass-saturate, 1.4));
+    -webkit-backdrop-filter: blur(var(--glass-blur, 14px)) saturate(var(--glass-saturate, 1.4));
+  }
+}

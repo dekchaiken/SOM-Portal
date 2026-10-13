@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/dev-badge.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/users/users.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="tb-prompt">
+        <span class="tb-path">~/sm/admin</span>
+        <span class="tb-arrow"><i data-icon="play"></i></span>
+      </div>
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="users"></i> User Management</div>
+        <div class="page-sub">จัดการผู้ใช้งานระบบ</div>
+      </div>
+      <div class="topbar-actions" style="gap:8px">
+        <a id="dev-team-btn" href="users.html?team=dev" class="btn btn-outline btn-sm" style="display:none" title="Manage Dev Team users">
+          <i data-icon="code"></i> Dev Team
+        </a>
+        <a id="my-team-btn" href="users.html" class="btn btn-outline btn-sm" style="display:none" title="Back to my team">
+          <i data-icon="users"></i> My Team
+        </a>
+        <button class="btn btn-primary" onclick="openCreateUser()">+ Create User</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="users"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>User Management</h1>
+          <p>จัดการผู้ใช้งานระบบ — role, permission, password, status และ external user permissions</p>
+        </div>
+      </section>
+
+      <!-- ── Stats Cards ──────────────────────────────── -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#dbeafe;color:#1e40af"><i data-icon="users"></i></div>
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#dcfce7;color:#166534"><i data-icon="check"></i></div>
+          <div class="stat-value" id="stat-active">0</div>
+          <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fee2e2;color:#991b1b"><i data-icon="alert-triangle"></i></div>
+          <div class="stat-value" id="stat-expired">0</div>
+          <div class="stat-label">PW Expired</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fef3c7;color:#92400e"><i data-icon="key"></i></div>
+          <div class="stat-value" id="stat-reset">0</div>
+          <div class="stat-label">Reset Required</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#F5F3FF;color:#6D28D9"><i data-icon="globe"></i></div>
+          <div class="stat-value" id="stat-external">0</div>
+          <div class="stat-label">External</div>
+        </div>
+      </div>
+
+      <!-- ── Team Breakdown (super_admin all-teams view only) ─── -->
+      <div id="team-breakdown" style="display:none;background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:24px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">
+          <i data-icon="layers"></i> Team Breakdown
+        </div>
+        <div id="team-breakdown-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+      </div>
+
+      <!-- ── Bulk Action Bar ──────────────────────────────── -->
+      <div id="bulk-bar" style="
+        display:none;position:sticky;top:0;z-index:100;
+        background:#fff;border:1.5px solid var(--orange);border-radius:10px;
+        padding:9px 16px;margin-bottom:10px;
+        display:none;align-items:center;gap:10px;
+        animation:bulkIn .18s ease both;
+        box-shadow:0 4px 16px rgba(242,100,25,.15);
+      ">
+        
+        <span class="bulk-count" id="bulk-count-label">0 selected</span>
+        <span class="bulk-sep"></span>
+        <button class="btn btn-ghost btn-sm" onclick="bulkResetPw()" style="gap:5px">↺ Reset PW</button>
+        <button class="btn btn-danger btn-sm" onclick="bulkDelete()" style="gap:5px"><i data-icon="x"></i> Delete Selected</button>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="clearSelection()"><i data-icon="x"></i> Clear</button>
+      </div>
+
+      <!-- ── Toolbar ──────────────────────────────────────── -->
+      <div class="users-toolbar">
+        <div class="search-wrap" style="flex:1;max-width:300px">
+          <span class="search-icon">⌕</span>
+          <input type="text" id="user-search" class="form-control">
+        </div>
+
+        <!-- Team selector: super_admin only -->
+        <select id="team-filter" class="sort-select" onchange="onTeamFilterChange()" style="display:none;">
+          <option value="">All Teams</option>
+        </select>
+
+        <select id="role-filter" class="sort-select" onchange="applyFilters()">
+          <option value="">All Roles</option>
+          <option value="super_viewer">Super Viewer</option>
+          <option value="sm_admin">SM Admin</option>
+          <option value="dev_sm">Dev SM</option>
+          <option value="sm_lead">SM Lead</option>
+          <option value="sm_user">SM User</option>
+          <option value="dev_user">Dev User</option>
+          <option value="external">External</option>
+        </select>
+
+        <select id="status-filter" class="sort-select" onchange="applyFilters()">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="expired">PW Expired</option>
+          <option value="reset">Reset Required</option>
+          <option value="first">First Login</option>
+        </select>
+
+        <select id="sort-by" class="sort-select" onchange="applyFilters()">
+          <option value="name-asc">Name (A-Z)</option>
+          <option value="name-desc">Name (Z-A)</option>
+          <option value="created-desc">Newest First</option>
+          <option value="created-asc">Oldest First</option>
+          <option value="role-asc">Role (A-Z)</option>
+        </select>
+
+        <div class="view-toggle" style="margin-left:auto">
+          <button class="view-btn active" id="view-table-btn" onclick="switchView('table')"><i data-icon="clipboard"></i> Table</button>
+          <button class="view-btn" id="view-card-btn" onclick="switchView('card')">🎴 Cards</button>
+        </div>
+      </div>
+
+      <!-- ── Table View ───────────────────────────────────── -->
+      <div id="table-view" class="users-table-enhanced">
+        <div id="users-table">
+          <div data-skel="table" data-rows="8"></div>
+        </div>
+      </div>
+
+      <!-- ── Card View ────────────────────────────────────── -->
+      <div id="card-view" style="display:none">
+        <div id="users-cards" class="users-grid">
+          <div data-skel="card" data-count="8"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Create/Edit User Modal ─────────────────────────────── -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <span class="modal-title" id="user-modal-title">Create User</span>
+      <button class="btn-close" onclick="Modal.close('user-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-user-id">
+
+      <!-- Dev-mode lock bar (shown only when role=dev_user) -->
+      <div id="dev-lock-bar">
+        <span class="dev-lock-role"><i data-icon="code"></i> Dev User</span>
+        <span class="dev-lock-sep">·</span>
+        <span style="font-size:11px;color:var(--text-muted)">Dev Team — view-only access</span>
+        <button class="dev-lock-change" onclick="exitDevMode()"><i data-icon="x"></i> Change role</button>
+      </div>
+
+      <!-- Tabs strip -->
+      <div class="um-tabs" role="tablist">
+        <button type="button" class="um-tab active" data-tab="identity" onclick="umSwitchTab('identity')">
+          <i data-icon="id-card"></i> Identity <span class="um-tab-dot" title="required fields missing"></span>
+        </button>
+        <button type="button" class="um-tab" data-tab="account" onclick="umSwitchTab('account')">
+          <i data-icon="lock"></i> Account <span class="um-tab-dot" title="required fields missing"></span>
+        </button>
+        <button type="button" class="um-tab" data-tab="schedule" onclick="umSwitchTab('schedule')" id="um-tab-schedule">
+          <i data-icon="calendar"></i> Include
+        </button>
+        <button type="button" class="um-tab" data-tab="contact" onclick="umSwitchTab('contact')" id="um-tab-contact">
+          <i data-icon="phone"></i> Contact
+        </button>
+        <button type="button" class="um-tab" data-tab="perms" onclick="umSwitchTab('perms')" id="um-tab-perms" style="display:none">
+          <i data-icon="unlock"></i> Permissions
+        </button>
+        <button type="button" class="um-tab" data-tab="extra-pages" onclick="umSwitchTab('extra-pages')" id="um-tab-extra-pages" style="display:none">
+          <i data-icon="layers"></i> Extra Pages
+        </button>
+      </div>
+
+      <!-- ── Identity panel ────────────────────────── -->
+      <div class="um-panel active" data-panel="identity">
+        <div class="um-row-2">
+          <div class="form-group">
+            <label class="form-label">Full Name <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="u-name" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">ชื่อ-นามสกุลภาษาไทย</label>
+            <input type="text" id="u-name-th" class="form-control" maxlength="80">
+          </div>
+        </div>
+        <div class="um-row-2">
+          <div class="form-group">
+            <label class="form-label">Nickname <span style="color:var(--text-muted);font-weight:400;font-size:10px">(แสดงในตารางเวร)</span></label>
+            <input type="text" id="u-nickname" class="form-control" maxlength="30">
+            <div class="form-hint">ชื่อสั้นหรือชื่อเล่น แสดงใน chip แทนชื่อเต็ม</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">รหัสพนักงาน <span style="color:var(--text-muted);font-weight:400;font-size:10px">(Employee ID)</span></label>
+            <input type="text" id="u-emp-id" class="form-control" maxlength="20">
+          </div>
+        </div>
+        <!-- Dev subteam — visible only when role = dev_user (shown in Identity tab for immediate visibility) -->
+        <div class="form-group" id="dev-subteam-row" style="display:none">
+          <label class="form-label"><i data-icon="code"></i> Dev Sub-team <span style="color:var(--danger)">*</span></label>
+          <select id="u-dev-subteam" class="form-control">
+            <option value="">— Select Sub-team —</option>
+          </select>
+          <div class="form-hint">ทีม Dev ย่อยที่ user นี้สังกัด</div>
+        </div>
+      </div>
+
+      <!-- ── Account panel ─────────────────────────── -->
+      <div class="um-panel" data-panel="account">
+        <div class="um-row-2">
+          <div class="form-group" id="username-row">
+            <label class="form-label">Username <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="u-username" class="form-control" autocomplete="off">
+            <div class="form-hint">Cannot be changed after creation</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email <span id="u-email-req" style="color:var(--danger)">*</span></label>
+            <input type="email" id="u-email" class="form-control">
+            <div id="u-email-hint" class="form-hint">Temp password / reset link จะส่งไปอีเมลนี้</div>
+          </div>
+        </div>
+        <div class="um-row-2" id="dev-role-row">
+          <div class="form-group">
+            <label class="form-label">Role <span style="color:var(--danger)">*</span></label>
+            <select id="u-role" class="form-control" onchange="onRoleChange()">
+              <!-- Populated by populateRoleOptions() — super_admin sees all 5, team admins see only User/Admin -->
+            </select>
+          </div>
+          <div class="form-group" id="team-field-row" style="display:none">
+            <label class="form-label">Team <span style="color:var(--danger)">*</span></label>
+            <select id="u-team" class="form-control">
+              <option value="">— Select Team —</option>
+            </select>
+            <div class="form-hint">User จะเห็นข้อมูลของทีมนี้เท่านั้น</div>
+          </div>
+        </div>
+        <div id="create-note" class="alert alert-info" style="margin-top:4px">
+          A temporary password will be generated. The user must change it on first login.
+        </div>
+      </div>
+
+      <!-- ── Include in System panel (SM roles only) ─ -->
+      <div class="um-panel" data-panel="schedule" id="schedule-section">
+        <div class="section-label" style="margin-bottom:4px">รวมในระบบ</div>
+        <div class="schedule-toggle-row">
+          <label style="font-size:13px;font-weight:500;cursor:pointer" for="u-schedule-include">
+            <i data-icon="circle"></i> รวมในตารางเวร
+          </label>
+          <input type="checkbox" id="u-schedule-include" style="accent-color:var(--orange);width:16px;height:16px;cursor:pointer" checked>
+        </div>
+        <div class="schedule-toggle-row">
+          <label style="font-size:13px;font-weight:500;cursor:pointer" for="u-course-include">
+            <i data-icon="book-open"></i> รวมในคอร์สเรียน
+          </label>
+          <input type="checkbox" id="u-course-include" style="accent-color:var(--orange);width:16px;height:16px;cursor:pointer" checked>
+        </div>
+        <div class="schedule-toggle-row">
+          <label style="font-size:13px;font-weight:500;cursor:pointer" for="u-exam-include">
+            <i data-icon="edit"></i> รวมในข้อสอบ
+          </label>
+          <input type="checkbox" id="u-exam-include" style="accent-color:var(--orange);width:16px;height:16px;cursor:pointer" checked>
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:8px;line-height:1.5">
+          "รวมในคอร์สเรียน / ข้อสอบ" ใช้กรอง user เวลาสรุปว่าใครยังไม่ทำ + ส่ง reminder ผ่าน Google Chat
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0 0;margin-top:8px;border-top:1px solid var(--border)">
+          <label style="font-size:13px;font-weight:500">สีพื้นหลังในตาราง</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="color-swatch" id="color-swatch-preview" style="background:#f26419">
+              <input type="color" id="u-schedule-color" value="#f26419" oninput="document.getElementById('color-swatch-preview').style.background=this.value">
+            </div>
+            <span id="color-hex-label" style="font-size:11px;font-family:monospace;color:var(--text-muted)">#f26419</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Contact panel ─────────────────────────── -->
+      <div class="um-panel" data-panel="contact" id="contact-section">
+        <div class="section-label" style="margin-bottom:10px">ข้อมูลติดต่อ &amp; เครือข่าย <span style="color:var(--text-muted);font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">(user แก้เองได้ผ่าน My Team)</span></div>
+        <div class="um-row-2">
+          <div class="form-group">
+            <label class="form-label"><i data-icon="smartphone"></i> เบอร์มือถือ</label>
+            <input type="text" id="u-phone" class="form-control" maxlength="20">
+          </div>
+          <div class="form-group">
+            <label class="form-label"><img src="../uploads/tmn.png" alt="TMN" style="width:14px;height:14px;object-fit:contain;vertical-align:middle"> TMN.ID / TrueMoney Wallet</label>
+            <input type="text" id="u-tmn-id" class="form-control" maxlength="20">
+          </div>
+        </div>
+        <div class="um-row-2">
+          <div class="form-group">
+            <label class="form-label"><i data-icon="home"></i> เน็ตบ้าน (ISP + speed)</label>
+            <input type="text" id="u-net-home" class="form-control" maxlength="100">
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i data-icon="wifi"></i> เครือข่ายมือถือ</label>
+            <input type="text" id="u-net-mobile" class="form-control" maxlength="50">
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Extra Pages panel (super_admin + edit mode only) ─ -->
+      <div class="um-panel" data-panel="extra-pages" id="extra-pages-section">
+        <div class="section-label" style="margin-bottom:6px">Cross-team Page Access</div>
+        <div class="form-hint" style="margin-bottom:14px">
+          อนุญาตให้ user คนนี้เข้าถึงหน้าของทีมอื่น โดยอ่านข้อมูลจาก source team ที่เลือก — user ยังใช้ account เดิม ไม่ต้องย้ายทีม
+        </div>
+        <div id="extra-pages-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"></div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="addExtraPageRow()" style="gap:5px">
+          <i data-icon="plus"></i> เพิ่มหน้า
+        </button>
+      </div>
+
+      <!-- ── Permissions panel (external role only) ─ -->
+      <div class="um-panel" data-panel="perms" id="ext-permissions-section">
+        <div class="section-label" style="margin-bottom:10px">หน้าที่เข้าถึงได้</div>
+        <div class="perm-grid" id="perm-grid"></div>
+        <div class="section-label" style="margin:16px 0 8px">บทบาทในระบบ Jenkins Build</div>
+        <select id="u-jb-role" class="form-control" style="max-width:260px">
+          <option value="maker">Maker — สร้างรายการ Build ได้</option>
+          <option value="checker">Checker — อนุมัติได้อย่างเดียว (สร้างไม่ได้)</option>
+          <option value="admin">Admin — สร้าง + อนุมัติได้</option>
+        </select>
+        <div class="form-hint">ใช้กับหน้า Jenkins Build: Maker ส่งรายการ แล้ว Checker อนุมัติ/ปฏิเสธ</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('user-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUser()">
+        <span id="user-save-text">Create User</span>
+        <span id="user-save-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/users/users.js"></script>

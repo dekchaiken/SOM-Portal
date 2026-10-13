@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Report Form — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/weekly-report-form/weekly-report-form.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="edit"></i> Weekly Report Form</div>
+        <div class="page-sub">Add & Edit Data</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="week-switcher" data-core="1">
+          <button class="week-arrow" id="prevWeekForm"><i data-icon="chevron-left"></i></button>
+          <select class="week-select" id="weekSelectForm">
+            <option value="">Loading weeks...</option>
+          </select>
+          <button class="week-arrow" id="nextWeekForm"><i data-icon="play"></i></button>
+        </div>
+        <a href="./weekly-report.html" class="btn btn-ghost btn-sm">
+          <span><i data-icon="bar-chart"></i></span>
+          <span>View Dashboard</span>
+        </a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="form-wrapper">
+        <!-- Side Navigation -->
+        <aside class="side-nav">
+          <ul>
+            <li><button data-section="announcement" class="active"><i data-icon="megaphone"></i> Announcement</button></li>
+            <li><button data-section="incidents"><i data-icon="alert-triangle"></i> Incidents</button></li>
+            <li><button data-section="batch"><i data-icon="package"></i> Batch</button></li>
+            <li><button data-section="support"><i data-icon="users"></i> Support</button></li>
+            <li><button data-section="updates"><i data-icon="bell"></i> Updates</button></li>
+            <li><button data-section="improvements"><i data-icon="rocket"></i> Improvements</button></li>
+          </ul>
+          <div class="week-info" id="currentWeekLabel"></div>
+          <div class="week-status">
+            <span class="status-indicator current" id="weekStatus"><i data-icon="edit"></i> Current Week</span>
+          </div>
+        </aside>
+
+        <!-- Forms Container -->
+        <section class="forms" id="formsContainer">
+          
+          <!-- Announcement Panel -->
+          <div class="panel active" data-panel="announcement">
+            <div class="panel-head">
+              <h2><i data-icon="megaphone"></i> Weekly Announcement</h2>
+              <div class="panel-tools">
+                <span class="badge info">Available for All Weeks</span>
+              </div>
+            </div>
+            <div class="announcement-editor">
+              <p class="help-text">
+                ประกาศเหล่านี้จะแสดงบน Dashboard โดยจะกรองเอาเฉพาะประกาศที่ยังไม่หมดอายุมาแสดง
+              </p>
+
+              <div class="field-grid">
+                <div style="grid-column: 1 / -1;">
+                  <label>
+                    ข้อความประกาศ
+                    <textarea id="announcementText" rows="2" maxlength="500" placeholder="กรอกข้อความประกาศที่นี่..."></textarea>
+                  </label>
+                </div>
+                <label>
+                  วันหมดอายุ (Optional)
+                  <input type="date" id="announcementExpiry">
+                </label>
+              </div>
+
+              <div class="form-actions">
+                <button class="btn btn-primary btn-sm" type="button" id="addAnnouncement"><i data-icon="plus"></i> เพิ่มประกาศ</button>
+                <button class="btn btn-ghost btn-sm" type="button" id="clearAnnouncementForm"><i data-icon="trash"></i> ล้างฟอร์ม</button>
+              </div>
+
+              <div class="announcement-list-container">
+                <h3 class="section-header">รายการประกาศสำหรับสัปดาห์นี้</h3>
+                <ul class="list editable" id="announcementList">
+                  <li class="empty-state">ไม่มีประกาศในสัปดาห์นี้</li>
+                </ul>
+              </div>
+
+              <div class="form-actions" style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 16px;">
+                <button class="btn btn-primary" type="button" id="saveAllAnnouncements"><i data-icon="save"></i> บันทึกประกาศทั้งหมด</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Incident Form -->
+          <form class="panel" data-panel="incidents">
+            <div class="panel-head">
+              <h2><i data-icon="alert-triangle"></i> Number of Incident Detected by SM</h2>
+              <div class="panel-tools">
+                <button type="button" class="btn btn-ghost btn-sm" id="testJiraConnection" title="Test Jira Connection">
+                  <span><i data-icon="search"></i></span>
+                  <span>Test Connection</span>
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm" id="syncJiraIncidents" title="Sync from Jira">
+                  <span><i data-icon="refresh-cw"></i></span>
+                  <span>Sync from Jira</span>
+                </button>
+                <span class="badge" id="countIncidents">0</span>
+              </div>
+            </div>
+            <div class="field-grid">
+              <label>Ticket ID <input name="ticketId" required placeholder="INC-123" /></label>
+              <label>Ticket URL <input name="ticketUrl" type="url" required placeholder="https://" /></label>
+              <label style="grid-column: 1 / -1;">Title <input name="title" required placeholder="Incident title" /></label>
+              <label>
+                Severity
+                <select name="severity" required>
+                  <option value="1">1 - Critical</option>
+                  <option value="2">2 - High</option>
+                  <option value="3">3 - Medium</option>
+                </select>
+              </label>
+              <label>
+                Detected by SM?
+                <select name="detected">
+                  <option value="Y">Yes</option>
+                  <option value="N">No</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Add Incident</button>
+              <button class="btn btn-ghost cancel-edit" type="button" style="display:none;">Cancel</button>
+            </div>
+            <div style="margin-top: 20px;">
+              <h3 class="section-header">Incidents List</h3>
+              <ul class="list editable" id="incidentItems">
+                <li class="empty-state">No incidents yet</li>
+              </ul>
+            </div>
+          </form>
+
+          <!-- Batch Form -->
+          <form class="panel" data-panel="batch">
+            <div class="panel-head">
+              <h2><i data-icon="package"></i> Batch - Issue</h2>
+              <div class="panel-tools">
+                <span class="badge" id="countBatchEvent">0</span>
+                <span class="badge" id="countBatchPending">0</span>
+              </div>
+            </div>
+            <div class="tabs-mini">
+              <button type="button" data-sub="event" class="active">Batch & Event</button>
+              <button type="button" data-sub="pending">Pending Issue</button>
+            </div>
+            <div class="field-grid">
+              <label>Name <input name="name" required /></label>
+              <label>Date <input name="date" type="date" required /></label>
+              <label style="grid-column: 1 / -1;">Description <input name="desc" required /></label>
+              <label>URL (Optional) <input name="url" type="url" placeholder="https://" /></label>
+              <label>
+                Status
+                <select name="status">
+                  <option>Inprogress</option>
+                  <option>Done</option>
+                </select>
+              </label>
+            </div>
+            <input type="hidden" name="subType" value="event" />
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Add Batch Item</button>
+              <button class="btn btn-ghost cancel-edit" type="button" style="display:none;">Cancel</button>
+            </div>
+            <div class="split">
+              <div>
+                <h3 class="section-header">Batch & Event</h3>
+                <ul class="list editable" id="batchEventItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+              <div>
+                <h3 class="section-header">Pending Issue</h3>
+                <ul class="list editable" id="batchPendingItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+            </div>
+          </form>
+
+          <!-- Support Form -->
+          <form class="panel" data-panel="support">
+            <div class="panel-head">
+              <h2><i data-icon="users"></i> Part SM Support</h2>
+              <div class="panel-tools">
+                <button type="button" class="btn btn-ghost btn-sm" id="syncJiraMA" title="Sync closed MA tickets from Jira">
+                  <span><i data-icon="refresh-cw"></i></span>
+                  <span>Sync MA from Jira</span>
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm" id="syncJiraDev" title="Sync closed Support Dev tickets from Jira">
+                  <span><i data-icon="refresh-cw"></i></span>
+                  <span>Sync Dev from Jira</span>
+                </button>
+                <span class="badge" id="countSupportMA">0</span>
+                <span class="badge" id="countSupportDev">0</span>
+              </div>
+            </div>
+            <div class="tabs-mini">
+              <button type="button" data-sub="ma" class="active">MA</button>
+              <button type="button" data-sub="dev">Support Dev</button>
+            </div>
+            <div class="field-grid">
+              <label style="grid-column: 1 / -1;">Summary <input name="summary" required /></label>
+              <label>Ticket ID <input name="ticketId" required placeholder="SMC-1234" /></label>
+              <label>Ticket URL <input name="ticketUrl" type="url" required placeholder="https://" /></label>
+              <label>Owner/Name <input name="owner" required placeholder="Name" /></label>
+              <label>
+                Status
+                <select name="status">
+                  <option>Inprogress</option>
+                  <option>Done</option>
+                </select>
+              </label>
+            </div>
+            <input type="hidden" name="subType" value="ma" />
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Add Support Item</button>
+              <button class="btn btn-ghost cancel-edit" type="button" style="display:none;">Cancel</button>
+            </div>
+            <div class="split">
+              <div>
+                <h3 class="section-header">MA Support</h3>
+                <ul class="list editable" id="supportMAItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+              <div>
+                <h3 class="section-header">Support Dev</h3>
+                <ul class="list editable" id="supportDevItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+            </div>
+          </form>
+
+          <!-- Updates Form -->
+          <form class="panel" data-panel="updates">
+            <div class="panel-head">
+              <h2><i data-icon="bell"></i> Update Alert Grafana / Handover / Others</h2>
+              <div class="panel-tools">
+                <span class="badge" id="countUpdateAlert">0</span>
+                <span class="badge" id="countUpdateHandover">0</span>
+                <span class="badge" id="countUpdateOther">0</span>
+              </div>
+            </div>
+            <div class="tabs-mini">
+              <button type="button" data-sub="alert" class="active">Update Alert & Grafana</button>
+              <button type="button" data-sub="handover">Handover</button>
+              <button type="button" data-sub="other">Other</button>
+            </div>
+            <div class="field-grid">
+              <label>Name <input name="name" required /></label>
+              <label>Date <input name="date" type="date" required /></label>
+              <label style="grid-column: 1 / -1;">Description <input name="desc" required /></label>
+              <label>Ticket (Optional) <input name="ticketId" placeholder="OPTIONAL" /></label>
+              <label>URL (Optional) <input name="url" type="url" placeholder="https://" /></label>
+              <label>
+                Status
+                <select name="status">
+                  <option>Inprogress</option>
+                  <option>Done</option>
+                </select>
+              </label>
+            </div>
+            <input type="hidden" name="subType" value="alert" />
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Add Update Item</button>
+              <button class="btn btn-ghost cancel-edit" type="button" style="display:none;">Cancel</button>
+            </div>
+            <div class="split tri">
+              <div>
+                <h3 class="section-header">Update Alert & Grafana</h3>
+                <ul class="list editable" id="updateAlertItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+              <div>
+                <h3 class="section-header">Handover</h3>
+                <ul class="list editable" id="handoverItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+              <div>
+                <h3 class="section-header">Others</h3>
+                <ul class="list editable" id="otherItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+            </div>
+          </form>
+
+          <!-- Improvements Form -->
+          <form class="panel" data-panel="improvements">
+            <div class="panel-head">
+              <h2><i data-icon="rocket"></i> Improvement / Project update</h2>
+              <div class="panel-tools">
+                <span class="badge" id="countImprove">0</span>
+                <span class="badge" id="countProject">0</span>
+              </div>
+            </div>
+            <div class="tabs-mini">
+              <button type="button" data-sub="improve" class="active">Improvement</button>
+              <button type="button" data-sub="project">Project update</button>
+            </div>
+            <div class="field-grid">
+              <label>Name <input name="name" required /></label>
+              <label style="grid-column: 1 / -1;">Description <input name="desc" required /></label>
+              <label>Ticket (Optional) <input name="ticketId" /></label>
+              <label>URL (Optional) <input name="url" type="url" placeholder="https://" /></label>
+              <label>
+                Status
+                <select name="status">
+                  <option>Inprogress</option>
+                  <option>Done</option>
+                </select>
+              </label>
+            </div>
+            <input type="hidden" name="subType" value="improve" />
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Add Item</button>
+              <button class="btn btn-ghost cancel-edit" type="button" style="display:none;">Cancel</button>
+            </div>
+            <div class="split">
+              <div>
+                <h3 class="section-header">Improvement</h3>
+                <ul class="list editable" id="improvementItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+              <div>
+                <h3 class="section-header">Project Update</h3>
+                <ul class="list editable" id="projectUpdateItems">
+                  <li class="empty-state">No items yet</li>
+                </ul>
+              </div>
+            </div>
+          </form>
+
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script src="./assets/js/weekly-report/date-utils.js"></script>
+<script src="./assets/js/weekly-report/api.js"></script>
+<script src="./assets/js/weekly-report/form.js"></script>
+<script src="./assets/pages/weekly-report-form/weekly-report-form.js"></script>
+
+</body>
+</html>

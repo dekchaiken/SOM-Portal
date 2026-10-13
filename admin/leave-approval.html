@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leave Approval — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/leave-approval/leave-approval.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="clipboard"></i> Leave Approval</div>
+        <div class="page-sub">จัดการและอนุมัติคำขอลา</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary btn-sm" onclick="openForceLeave()" style="font-size:11px;gap:6px">+ สร้างการลา</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadAll()" style="font-size:11px">↺</button>
+      </div>
+    </header>
+    <nav id="admin-nav-mount"></nav>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="clipboard"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Leave Approval</h1>
+          <p>จัดการและอนุมัติคำขอลา · ดูปฏิทินทีม · sync กับ holiday plans และ schedule</p>
+        </div>
+      </section>
+
+      <div class="leave-page">
+
+        <!-- Tab and filters -->
+        <div class="la-header">
+          <div class="la-header-left">
+            <div class="la-title"><i data-icon="clipboard"></i> Leave Requests</div>
+            <div class="la-sub">รอการอนุมัติและการจัดการ</div>
+          </div>
+          <div class="la-header-right">
+            <div class="la-stat">
+              <span class="badge" id="pending-count">0</span>
+              <span>รอพิจารณา</span>
+            </div>
+            <button class="la-filter active" onclick="filterLeaves('pending')">รอพิจารณา</button>
+            <button class="la-filter" onclick="filterLeaves('approved')">อนุมัติแล้ว</button>
+            <button class="la-filter" onclick="filterLeaves('rejected')">ปฏิเสธ</button>
+            <button class="la-filter" onclick="filterLeaves('all')">ทั้งหมด</button>
+          </div>
+        </div>
+
+        <!-- Leave list -->
+        <div id="leave-list"></div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ── Force Leave Modal ─────────────────────────────────────────────────── -->
+<div class="fl-modal-bg" id="fl-modal">
+  <div class="fl-modal">
+    <div class="fl-hd">
+      <div>
+        <div class="fl-hd-title">+ สร้างการลา (Admin)</div>
+        <div class="fl-hd-sub">บังคับใช้วันลาให้สมาชิก — อนุมัติทันที</div>
+      </div>
+      <button class="fl-close" onclick="closeForceLeave()"><i data-icon="x"></i></button>
+    </div>
+    <div class="fl-body">
+
+      <!-- User -->
+      <div>
+        <label class="fl-label">สมาชิก <span style="color:#ef4444">*</span></label>
+        <select class="fl-select" id="fl-user">
+          <option value="">— เลือกสมาชิก —</option>
+        </select>
+      </div>
+
+      <!-- Leave type -->
+      <div>
+        <label class="fl-label">ประเภทการลา</label>
+        <div class="fl-type-row">
+          <button class="fl-type-btn active" id="fl-t-vacation" onclick="setFlType('vacation')">
+            <span class="fl-icon"><i data-icon="umbrella-beach"></i></span>Vacation / พักร้อน
+          </button>
+          <button class="fl-type-btn" id="fl-t-sick" onclick="setFlType('sick')">
+            <span class="fl-icon"><i data-icon="thermometer"></i></span>Sick Leave / ลาป่วย
+          </button>
+        </div>
+      </div>
+
+      <!-- Dates -->
+      <div class="fl-grid2">
+        <div>
+          <label class="fl-label">วันที่เริ่ม <span style="color:#ef4444">*</span></label>
+          <input class="fl-input" type="date" id="fl-start">
+        </div>
+        <div>
+          <label class="fl-label">วันที่สิ้นสุด <span style="color:#ef4444">*</span></label>
+          <input class="fl-input" type="date" id="fl-end">
+        </div>
+      </div>
+
+      <!-- Duration -->
+      <div>
+        <label class="fl-label">จำนวนวัน</label>
+        <div class="fl-dur-row">
+          <button class="fl-dur-btn active" id="fl-d-full" onclick="setFlDur('full')">เต็มวัน</button>
+          <button class="fl-dur-btn" id="fl-d-half" onclick="setFlDur('half')">ครึ่งวัน</button>
+        </div>
+      </div>
+
+      <!-- Period (half-day only) -->
+      <div id="fl-period-wrap" style="display:none">
+        <label class="fl-label">ช่วงเวลา</label>
+        <div class="fl-period-row">
+          <button class="fl-period-btn active" id="fl-p-morning" onclick="setFlPeriod('morning')"><i data-icon="sunrise"></i> เช้า (08:00–12:00)</button>
+          <button class="fl-period-btn" id="fl-p-afternoon" onclick="setFlPeriod('afternoon')"><i data-icon="sunrise"></i> บ่าย (13:00–17:00)</button>
+        </div>
+      </div>
+
+      <!-- Reason -->
+      <div>
+        <label class="fl-label">เหตุผล</label>
+        <textarea class="fl-ta" id="fl-reason" placeholder="เหตุผลประกอบ (optional)..."></textarea>
+      </div>
+
+    </div>
+    <div class="fl-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeForceLeave()" style="font-size:11px">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" onclick="submitForceLeave()" id="fl-submit" style="font-size:11px;font-weight:700"><i data-icon="check"></i> อนุมัติและสร้าง</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Leave Modal ──────────────────────────────────────────────────── -->
+<div class="fl-modal-bg" id="edit-modal">
+  <div class="fl-modal">
+    <div class="fl-hd">
+      <div>
+        <div class="fl-hd-title"><i data-icon="pencil"></i> แก้ไขการลา</div>
+        <div class="fl-hd-sub" id="edit-modal-sub">แก้ไขข้อมูลการลาที่อนุมัติแล้ว</div>
+      </div>
+      <button class="fl-close" onclick="closeEditModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="fl-body">
+
+      <!-- Quota impact (shown for vacation type) -->
+      <div id="edit-quota-impact" style="display:none" class="quota-impact">
+        <div class="quota-impact-label">ผลกระทบต่อวันลาพักร้อน</div>
+        <div class="quota-impact-row">
+          <span>วันลาเดิม:</span>
+          <span id="edit-old-days" class="quota-impact-val">—</span>
+        </div>
+        <div class="quota-impact-row">
+          <span>วันลาใหม่:</span>
+          <span id="edit-new-days" class="quota-impact-val">—</span>
+        </div>
+        <div class="quota-impact-row" style="border-top:1px solid rgba(242,100,25,.2);margin-top:8px;padding-top:8px">
+          <span style="font-weight:800">การเปลี่ยนแปลง:</span>
+          <span id="edit-quota-change" class="quota-impact-val">—</span>
+        </div>
+      </div>
+
+      <!-- Leave type -->
+      <div>
+        <label class="fl-label">ประเภทการลา</label>
+        <div class="fl-type-row">
+          <button class="fl-type-btn" id="edit-t-vacation" onclick="setEditType('vacation')">
+            <span class="fl-icon"><i data-icon="umbrella-beach"></i></span>Vacation / พักร้อน
+          </button>
+          <button class="fl-type-btn" id="edit-t-sick" onclick="setEditType('sick')">
+            <span class="fl-icon"><i data-icon="thermometer"></i></span>Sick Leave / ลาป่วย
+          </button>
+        </div>
+      </div>
+
+      <!-- Dates -->
+      <div class="fl-grid2">
+        <div>
+          <label class="fl-label">วันที่เริ่ม <span style="color:#ef4444">*</span></label>
+          <input class="fl-input" type="date" id="edit-start" onchange="updateEditQuotaImpact()">
+        </div>
+        <div>
+          <label class="fl-label">วันที่สิ้นสุด <span style="color:#ef4444">*</span></label>
+          <input class="fl-input" type="date" id="edit-end" onchange="updateEditQuotaImpact()">
+        </div>
+      </div>
+
+      <!-- Duration -->
+      <div>
+        <label class="fl-label">จำนวนวัน</label>
+        <div class="fl-dur-row">
+          <button class="fl-dur-btn" id="edit-d-full" onclick="setEditDur('full')">เต็มวัน</button>
+          <button class="fl-dur-btn" id="edit-d-half" onclick="setEditDur('half')">ครึ่งวัน</button>
+        </div>
+      </div>
+
+      <!-- Period (half-day only) -->
+      <div id="edit-period-wrap" style="display:none">
+        <label class="fl-label">ช่วงเวลา</label>
+        <div class="fl-period-row">
+          <button class="fl-period-btn" id="edit-p-morning" onclick="setEditPeriod('morning')"><i data-icon="sunrise"></i> เช้า (08:00–12:00)</button>
+          <button class="fl-period-btn" id="edit-p-afternoon" onclick="setEditPeriod('afternoon')"><i data-icon="sunrise"></i> บ่าย (13:00–17:00)</button>
+        </div>
+      </div>
+
+      <!-- Reason -->
+      <div>
+        <label class="fl-label">เหตุผล</label>
+        <textarea class="fl-ta" id="edit-reason" placeholder="เหตุผลการลา..."></textarea>
+      </div>
+
+      <!-- Edit reason -->
+      <div>
+        <label class="fl-label">เหตุผลในการแก้ไข <span style="color:#ef4444">*</span></label>
+        <textarea class="fl-ta" id="edit-edit-reason" placeholder="ระบุเหตุผลที่ต้องแก้ไขการลา..."></textarea>
+      </div>
+
+    </div>
+    <div class="fl-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeEditModal()" style="font-size:11px">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" onclick="submitEditLeave()" id="edit-submit" style="font-size:11px;font-weight:700"><i data-icon="save"></i> บันทึกการแก้ไข</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Cancel Leave Modal ────────────────────────────────────────────────── -->
+<div class="fl-modal-bg" id="cancel-modal">
+  <div class="fl-modal" style="width:480px">
+    <div class="fl-hd">
+      <div>
+        <div class="fl-hd-title"><i data-icon="alert-triangle"></i> ยกเลิกการลา</div>
+        <div class="fl-hd-sub">การดำเนินการนี้ไม่สามารถย้อนกลับได้</div>
+      </div>
+      <button class="fl-close" onclick="closeCancelModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="fl-body">
+
+      <!-- Leave summary -->
+      <div class="lr-details">
+        <div class="lr-detail-row">
+          <span class="lr-detail-label">พนักงาน:</span>
+          <span class="lr-detail-val" id="cancel-user-name">—</span>
+        </div>
+        <div class="lr-detail-row">
+          <span class="lr-detail-label">ประเภท:</span>
+          <span class="lr-detail-val" id="cancel-type">—</span>
+        </div>
+        <div class="lr-detail-row">
+          <span class="lr-detail-label">วันที่:</span>
+          <span class="lr-detail-val" id="cancel-dates">—</span>
+        </div>
+        <div class="lr-detail-row">
+          <span class="lr-detail-label">จำนวน:</span>
+          <span class="lr-detail-val" id="cancel-days">—</span>
+        </div>
+      </div>
+
+      <!-- Quota restoration info -->
+      <div id="cancel-quota-info" style="display:none" class="quota-impact">
+        <div class="quota-impact-label"><i data-icon="wallet"></i> การคืนวันลาพักร้อน</div>
+        <div class="quota-impact-row">
+          <span>จะคืนให้พนักงาน:</span>
+          <span id="cancel-quota-restore" class="quota-impact-val">—</span>
+        </div>
+      </div>
+
+      <!-- Cancel reason -->
+      <div>
+        <label class="fl-label">เหตุผลในการยกเลิก <span style="color:#ef4444">*</span></label>
+        <textarea class="fl-ta" id="cancel-reason" placeholder="ระบุเหตุผลที่ต้องยกเลิกการลา..."></textarea>
+      </div>
+
+      <!-- Warning -->
+      <div style="background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.15);border-radius:10px;padding:12px 14px;font-size:11px;color:#f87171;display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px"><i data-icon="alert-triangle"></i></span>
+        <span>การยกเลิกจะลบข้อมูลออกจากตารางเวรและไม่สามารถกู้คืนได้</span>
+      </div>
+
+    </div>
+    <div class="fl-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeCancelModal()" style="font-size:11px">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" onclick="submitCancelLeave()" id="cancel-submit" style="font-size:11px;font-weight:700;background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.35);color:#f87171"><i data-icon="trash"></i> ยืนยันการยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/leave-approval/leave-approval.js"></script>
+</body>
+</html>

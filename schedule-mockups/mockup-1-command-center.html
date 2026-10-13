@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup 1 — Command Center (Schedule)</title>
+<link rel="stylesheet" href="../assets/css/dark.css">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/ui-themes.css">
+<script src="../assets/js/theme.js"></script>
+<style>
+  :root {
+    --sc-hot:    #ef4444;
+    --sc-warn:   #f59e0b;
+    --sc-ok:     #22c55e;
+    --sc-cool:   #3b82f6;
+    --sc-violet: #8b5cf6;
+    --sc-emerald:#10b981;
+    --sc-orange: #f26419;
+    --sc-text-soft: color-mix(in srgb, var(--text-muted) 70%, transparent);
+    --sc-bg-subtle: color-mix(in srgb, var(--border) 40%, transparent);
+  }
+
+  .page-wrap { padding:20px 24px; max-width:1600px; margin:0 auto; }
+  .mockup-banner {
+    background:linear-gradient(90deg, color-mix(in srgb, var(--sc-orange) 12%, var(--bg-card)), var(--bg-card));
+    border:1px solid var(--border); border-radius:12px; padding:10px 16px; font-size:12px;
+    color:var(--text-muted); margin-bottom:14px; display:flex; align-items:center; gap:10px;
+  }
+  .mockup-banner strong { color:var(--text); }
+
+  /* ── Hero header (like SP2 sp2-svc-head) ─────────────────── */
+  .sc-head {
+    position:relative;
+    background:linear-gradient(90deg,
+      color-mix(in srgb, var(--sc-orange) 5%, var(--bg-card)) 0%, var(--bg-card) 45%);
+    border:1px solid var(--border); border-radius:14px;
+    padding:16px 22px;
+    display:grid; grid-template-columns:auto 1fr auto; gap:16px; align-items:center;
+    margin-bottom:14px;
+  }
+  .sc-head::before {
+    content:''; position:absolute; left:0; top:14px; bottom:14px; width:3px;
+    background:var(--sc-orange); border-radius:0 2px 2px 0;
+  }
+  .sc-pulse {
+    width:44px; height:44px; border-radius:12px;
+    display:grid; place-items:center; position:relative;
+    background:color-mix(in srgb, var(--sc-ok) 14%, transparent); color:var(--sc-ok);
+  }
+  .sc-pulse::after {
+    content:''; position:absolute; inset:0; border-radius:12px;
+    border:2px solid currentColor; opacity:0;
+    animation:scPulse 2.4s ease-out infinite;
+  }
+  @keyframes scPulse { 0%{transform:scale(.95);opacity:.5} 70%{transform:scale(1.25);opacity:0} 100%{transform:scale(1.25);opacity:0} }
+  .sc-pulse svg { width:22px; height:22px; }
+
+  .sc-title { font-size:22px; font-weight:700; letter-spacing:-.02em; line-height:1.1; }
+  .sc-sub   { font-size:12.5px; color:var(--text-muted); margin-top:3px; }
+
+  .sc-navbar { display:flex; gap:6px; align-items:center; }
+  .sc-nav-btn {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:8px;
+    width:32px; height:32px; display:grid; place-items:center; cursor:pointer;
+    color:var(--text); font-weight:700; transition:all .15s;
+  }
+  .sc-nav-btn:hover { background:var(--sc-orange); color:#fff; border-color:var(--sc-orange); }
+  .sc-month-title {
+    font-size:14px; font-weight:700; padding:0 12px; min-width:160px; text-align:center;
+    color:var(--text);
+  }
+  .sc-btn {
+    background:var(--bg-card); border:1px solid var(--border);
+    padding:7px 12px; border-radius:8px; font-size:12px; font-weight:600;
+    color:var(--text); cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    transition:all .15s;
+  }
+  .sc-btn:hover { border-color:var(--sc-orange); color:var(--sc-orange); }
+  .sc-btn.primary { background:var(--sc-orange); color:#fff; border-color:var(--sc-orange); }
+
+  /* ── Command Center 3-col grid (like sp2-cc-grid) ────────── */
+  .sc-cc-grid {
+    display:grid; grid-template-columns:270px 1fr 240px; gap:14px;
+    margin-bottom:14px;
+  }
+  @media (max-width:1200px) { .sc-cc-grid { grid-template-columns:1fr 1fr; } .sc-cc-grid > .sc-cc-right { grid-column:1/-1; } }
+  @media (max-width:720px)  { .sc-cc-grid { grid-template-columns:1fr; } }
+
+  .sc-card {
+    background:var(--bg-card); border:1px solid var(--border);
+    border-radius:12px; overflow:hidden;
+  }
+  .sc-section-title {
+    padding:10px 16px; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
+    font-weight:600; color:var(--sc-text-soft); background:var(--sc-bg-subtle);
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:6px;
+  }
+  .sc-divider { height:1px; background:var(--border); margin:6px 16px; }
+
+  /* Left column — Now list + Summary */
+  .sc-now-list { padding:8px 16px 14px; display:flex; flex-direction:column; gap:11px; }
+  .sc-now-row {
+    display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:center;
+  }
+  .sc-avatar {
+    width:34px; height:34px; border-radius:10px; display:grid; place-items:center;
+    font-size:11px; font-weight:800; color:#fff; letter-spacing:-.02em;
+    box-shadow:inset 0 -3px 6px rgba(0,0,0,.15);
+  }
+  .sc-now-body { min-width:0; }
+  .sc-now-lbl { font-size:10.5px; color:var(--sc-text-soft); text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+  .sc-now-name { font-size:13.5px; font-weight:700; color:var(--text); margin-top:1px; }
+  .sc-now-time { font-size:10.5px; color:var(--sc-text-soft); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+
+  .sc-my-summary { padding:8px 16px 14px; display:flex; flex-direction:column; gap:9px; }
+  .sc-my-row { display:flex; align-items:center; justify-content:space-between; font-size:11.5px; }
+  .sc-my-lbl { color:var(--text-muted); }
+  .sc-my-val { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:700; color:var(--text); }
+  .sc-my-val .frac { color:var(--sc-text-soft); font-weight:500; }
+  .sc-bar {
+    height:5px; border-radius:3px; background:var(--sc-bg-subtle);
+    overflow:hidden; margin-top:3px;
+  }
+  .sc-bar > i { display:block; height:100%; background:var(--sc-ok); border-radius:3px; }
+
+  /* Center column — Calendar */
+  .sc-cal-card { padding:0; overflow:hidden; }
+  .sc-cal-scroll { overflow-x:auto; }
+  .sc-cal {
+    width:100%; border-collapse:separate; border-spacing:0;
+    font-size:11px; min-width:900px;
+  }
+  .sc-cal th, .sc-cal td { border-right:1px solid var(--border); border-bottom:1px solid var(--border); }
+  .sc-cal th:last-child, .sc-cal td:last-child { border-right:none; }
+  .sc-cal thead th {
+    background:var(--sc-bg-subtle); color:var(--sc-text-soft);
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600;
+    padding:8px 4px; text-align:center; min-width:32px;
+    position:sticky; top:0; z-index:1;
+  }
+  .sc-cal thead th.day-num {
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px; padding-top:3px;
+  }
+  .sc-cal thead th.day-num .dow { font-size:9px; opacity:.65; display:block; margin-top:1px; }
+  .sc-cal thead th.today { background:color-mix(in srgb, var(--sc-orange) 12%, transparent); color:var(--sc-orange); }
+  .sc-cal thead th.weekend { color:var(--sc-cool); }
+  .sc-cal thead th.holiday { color:var(--sc-hot); }
+  .sc-cal th.col-label {
+    text-align:left; padding-left:12px; min-width:140px;
+    background:var(--sc-bg-subtle);
+  }
+  .sc-cal .sec-row td {
+    background:color-mix(in srgb, var(--sc-orange) 5%, transparent);
+    border-top:2px solid var(--sc-orange); font-weight:700;
+    padding:5px 12px; font-size:11px;
+  }
+  .sc-cal .sec-row.s2 td { background:color-mix(in srgb, var(--sc-violet) 5%, transparent); border-top-color:var(--sc-violet); }
+  .sc-cal .sec-row .sec-lbl { display:flex; align-items:center; gap:6px; }
+  .sc-cal .sec-row .sec-time { color:var(--sc-text-soft); font-weight:500; font-size:10.5px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .sc-cal td { padding:2px 2px; text-align:center; vertical-align:middle; min-height:36px; }
+  .sc-cal td.col-label {
+    text-align:left; padding:0 12px; font-weight:600; font-size:11px; color:var(--text);
+    background:var(--bg-card); vertical-align:middle;
+  }
+  .sc-cal td.col-label .lbl-sub { font-size:9.5px; color:var(--sc-text-soft); font-weight:500; margin-top:1px; }
+  .sc-cal td.col-label.oc { color:var(--sc-warn); }
+  .sc-cal td.day.today { background:color-mix(in srgb, var(--sc-orange) 8%, transparent); }
+  .sc-cal td.day.weekend { background:color-mix(in srgb, var(--sc-cool) 3%, transparent); }
+  .sc-cal td.day.holiday { background:color-mix(in srgb, var(--sc-hot) 5%, transparent); }
+  .sc-cal td.day.leaved { position:relative; }
+  .sc-cal td.day.gap    { background:color-mix(in srgb, var(--sc-hot) 15%, transparent); }
+
+  /* Multi-person cell — stack small dots */
+  .sc-dot-stack {
+    display:flex; flex-wrap:wrap; gap:2px; justify-content:center; align-items:center;
+    padding:3px 2px;
+  }
+  .sc-dot {
+    width:18px; height:18px; border-radius:5px;
+    display:grid; place-items:center;
+    font-size:8.5px; font-weight:800; color:#fff; letter-spacing:-.02em;
+    box-shadow:inset 0 -2px 3px rgba(0,0,0,.2);
+    position:relative;
+  }
+  .sc-dot.me { box-shadow:inset 0 -2px 3px rgba(0,0,0,.2), 0 0 0 1.5px var(--text); }
+  .sc-dot.on-leave { opacity:.35; text-decoration:line-through; }
+  .sc-dot.empty {
+    background:transparent; color:var(--sc-text-soft);
+    border:1px dashed color-mix(in srgb, var(--sc-text-soft) 60%, transparent); font-size:10px;
+  }
+  .sc-cal .oc-chip {
+    display:inline-block; padding:2px 7px; border-radius:5px;
+    font-size:10px; font-weight:800; color:#fff; letter-spacing:.01em;
+    background:var(--sc-warn);
+  }
+  .sc-cal .oc-chip.me { box-shadow:0 0 0 1.5px var(--text); }
+  .sc-cal .oc-chip.s2 { background:var(--sc-violet); }
+
+  /* Event indicator on day header */
+  .sc-cal thead th .ev-dot {
+    display:inline-block; width:5px; height:5px; border-radius:50%;
+    background:var(--sc-cool); margin-left:2px; vertical-align:top; margin-top:1px;
+  }
+
+  /* Right column — Legend + Team totals + Coverage */
+  .sc-right { display:flex; flex-direction:column; gap:14px; }
+  .sc-legend-list { padding:10px 14px 14px; display:flex; flex-direction:column; gap:7px; font-size:11.5px; }
+  .sc-legend-row { display:flex; align-items:center; gap:8px; }
+  .sc-legend-dot { width:14px; height:14px; border-radius:4px; }
+  .sc-legend-name { color:var(--text); font-weight:600; }
+  .sc-legend-sub  { color:var(--sc-text-soft); margin-left:auto; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px; }
+
+  .sc-coverage { padding:10px 14px 14px; display:flex; flex-direction:column; gap:8px; }
+  .sc-cov-row { display:flex; align-items:center; gap:8px; font-size:11.5px; }
+  .sc-cov-ico {
+    width:20px; height:20px; border-radius:6px; display:grid; place-items:center;
+    font-size:11px; font-weight:800;
+  }
+  .sc-cov-ico.warn { background:color-mix(in srgb, var(--sc-warn) 15%, transparent); color:var(--sc-warn); }
+  .sc-cov-ico.hot  { background:color-mix(in srgb, var(--sc-hot) 15%, transparent); color:var(--sc-hot); }
+  .sc-cov-ico.ok   { background:color-mix(in srgb, var(--sc-ok) 15%, transparent); color:var(--sc-ok); }
+  .sc-cov-txt { flex:1; color:var(--text); }
+  .sc-cov-txt small { color:var(--sc-text-soft); font-size:10.5px; }
+
+  /* Stats table (SP2 pod-detail style) */
+  .sc-stats-card { overflow-x:auto; }
+  .sc-tbl { width:100%; border-collapse:collapse; font-size:12px; }
+  .sc-tbl th, .sc-tbl td { padding:9px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  .sc-tbl th {
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600;
+    color:var(--sc-text-soft); background:var(--sc-bg-subtle);
+  }
+  .sc-tbl td.right, .sc-tbl th.right { text-align:right; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .sc-tbl tbody tr:hover td { background:color-mix(in srgb, var(--sc-orange) 4%, transparent); }
+  .sc-tbl .name-cell { display:flex; align-items:center; gap:9px; font-weight:600; }
+  .sc-tbl .name-cell .sc-avatar { width:26px; height:26px; border-radius:8px; font-size:10px; }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="mockup-banner">
+    <strong>Mockup 1 · Command Center</strong> — เอาสไตล์ SP2 (service-performance) มาปรับให้เป็นตารางเวร. 3-column dense grid + placeholder scaffold + pulse header. ธีมที่ตั้งไว้ (light/dark/Glass/Enterprise/Console/Warm) ทำงานได้ทุกอย่างเลย ลองสลับได้จากหน้า settings หลัก.
+  </div>
+
+  <!-- Header hero -->
+  <div class="sc-head">
+    <div class="sc-pulse">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+    </div>
+    <div>
+      <div class="sc-title">📅 Team Schedule</div>
+      <div class="sc-sub"><span id="sc-now-badge">● Live · Fri 15 Aug 2026 · Shift#1 active until 21:00</span></div>
+    </div>
+    <div class="sc-navbar">
+      <button class="sc-nav-btn" title="Previous month">‹</button>
+      <div class="sc-month-title">August 2026</div>
+      <button class="sc-nav-btn" title="Next month">›</button>
+      <button class="sc-btn" style="margin-left:8px">Today</button>
+      <button class="sc-btn">👤 My days</button>
+      <button class="sc-btn primary">📋 Leave</button>
+    </div>
+  </div>
+
+  <!-- Command Center grid -->
+  <div class="sc-cc-grid">
+
+    <!-- LEFT: Now + My month summary -->
+    <div>
+      <div class="sc-card" style="margin-bottom:14px">
+        <div class="sc-section-title"><span>●</span> ON DUTY NOW</div>
+        <div class="sc-now-list" id="cc-now-list"></div>
+      </div>
+      <div class="sc-card">
+        <div class="sc-section-title">MY MONTH · WARAPON</div>
+        <div class="sc-my-summary" id="cc-my-summary"></div>
+      </div>
+    </div>
+
+    <!-- CENTER: Calendar -->
+    <div class="sc-card sc-cal-card">
+      <div class="sc-section-title">
+        <span>CALENDAR</span>
+        <span style="margin-left:auto;font-size:10px;color:var(--sc-text-soft);text-transform:none;letter-spacing:0;font-weight:500">
+          <span style="display:inline-block;width:10px;height:10px;background:color-mix(in srgb, var(--sc-hot) 15%, transparent);border:1px solid var(--sc-hot);border-radius:2px;vertical-align:middle;margin-right:3px"></span> coverage gap
+          &nbsp;·&nbsp;
+          <span style="display:inline-block;width:10px;height:10px;background:color-mix(in srgb, var(--sc-orange) 8%, transparent);border:1px solid var(--sc-orange);border-radius:2px;vertical-align:middle;margin-right:3px"></span> today
+        </span>
+      </div>
+      <div class="sc-cal-scroll">
+        <table class="sc-cal" id="cc-cal"></table>
+      </div>
+    </div>
+
+    <!-- RIGHT: Legend + Coverage -->
+    <div class="sc-right">
+      <div class="sc-card">
+        <div class="sc-section-title">TEAM</div>
+        <div class="sc-legend-list" id="cc-legend"></div>
+      </div>
+      <div class="sc-card">
+        <div class="sc-section-title">COVERAGE</div>
+        <div class="sc-coverage" id="cc-coverage"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Stats table -->
+  <div class="sc-card sc-stats-card">
+    <div class="sc-section-title">
+      <span>MONTHLY STATS</span>
+      <span style="margin-left:auto;font-size:10px;color:var(--sc-text-soft);text-transform:none;letter-spacing:0;font-weight:500">August 2026 · 5 people · 31 days</span>
+    </div>
+    <table class="sc-tbl" id="cc-stats"></table>
+  </div>
+
+</div>
+
+<script src="sample-data.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const D = window.SCHED_SAMPLE;
+const DOW = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+
+function avatar(p, cls = '') {
+  return `<span class="sc-avatar ${cls}" style="background:${p.color}">${p.short}</span>`;
+}
+
+// ── Now list ─────────────────────────────────────────────
+(function renderNow() {
+  const today = D.TODAY.day;
+  const rows = ['s1_tdpk', 's1_wah', 's1_oc'].map(slot => {
+    const people = D.slotPeople(today, slot).map(D.person);
+    const meta = D.SLOT_META[slot];
+    // OC = single person shown big; team slots = multiple avatars
+    if (slot === 's1_oc') {
+      const p = people[0] || { name:'—', short:'?', color:'#999' };
+      return `<div class="sc-now-row">
+        ${avatar(p, p.me ? 'me' : '')}
+        <div class="sc-now-body">
+          <div class="sc-now-lbl">${meta.label}</div>
+          <div class="sc-now-name">${p.name}</div>
+          <div class="sc-now-time">${meta.time}</div>
+        </div>
+      </div>`;
+    }
+    const avStack = people.length
+      ? `<div style="display:flex;gap:-4px;flex:none">
+          ${people.map((p, i) => `<span style="margin-left:${i ? -8 : 0}px;border:2px solid var(--bg-card);border-radius:10px;display:inline-flex">${avatar(p, p.me ? 'me' : '').replace('sc-avatar', 'sc-avatar').replace('34px','28px').replace('34px','28px')}</span>`).join('')}
+        </div>`
+      : `<div class="sc-avatar" style="background:var(--sc-bg-subtle);color:var(--sc-text-soft);border:1px dashed var(--sc-text-soft);box-shadow:none">—</div>`;
+    return `<div class="sc-now-row" style="grid-template-columns:auto 1fr">
+      <div style="display:flex;flex:none">${people.map((p, i) => `<span class="sc-avatar ${p.me ? 'me' : ''}" style="background:${p.color};margin-left:${i ? -10 : 0}px;border:2px solid var(--bg-card);width:30px;height:30px;font-size:10px">${p.short}</span>`).join('') || '<span class="sc-avatar" style="background:var(--sc-bg-subtle);color:var(--sc-text-soft);border:1px dashed var(--sc-text-soft);box-shadow:none;width:30px;height:30px">—</span>'}</div>
+      <div class="sc-now-body">
+        <div class="sc-now-lbl">${meta.label} · <span style="color:var(--text)">${people.length} คน</span></div>
+        <div class="sc-now-name" style="font-size:12.5px">${people.map(p => p.name.replace(' (you)','')).join(', ') || 'ยังไม่มี'}</div>
+        <div class="sc-now-time">${meta.time}</div>
+      </div>
+    </div>`;
+  }).join('');
+  $('cc-now-list').innerHTML = rows;
+})();
+
+// ── My month summary ─────────────────────────────────────
+(function renderMy() {
+  const me = D.stats().find(r => r.me);
+  const quotaMax = 12, quotaUsed = 3;
+  const wrap = $('cc-my-summary');
+  const row = (lbl, val, sub = '') => `
+    <div class="sc-my-row">
+      <span class="sc-my-lbl">${lbl}</span>
+      <span class="sc-my-val">${val}${sub ? `<span class="frac"> ${sub}</span>` : ''}</span>
+    </div>`;
+  wrap.innerHTML = row('Total shifts', me.total) +
+                   row('Shift#1 TDPK', me.s1_tdpk) +
+                   row('Shift#1 W@H',  me.s1_wah) +
+                   row('Shift#2 W@H',  me.s2_wah) +
+                   row('On call',      me.s1_oc + me.s2_oc) +
+                   row('Leave (this month)', me.leave) +
+                   `<div style="margin-top:4px">
+                     <div class="sc-my-row"><span class="sc-my-lbl">Vacation quota</span><span class="sc-my-val">${quotaMax - quotaUsed}<span class="frac"> / ${quotaMax} left</span></span></div>
+                     <div class="sc-bar"><i style="width:${(1 - quotaUsed / quotaMax) * 100}%"></i></div>
+                   </div>`;
+})();
+
+// ── Calendar ─────────────────────────────────────────────
+(function renderCal() {
+  const days = D.daysInMonth;
+  let head = '<thead><tr><th class="col-label">Slot / Day</th>';
+  for (let d = 1; d <= days; d++) {
+    const dow = new Date(D.YEAR, D.MONTH - 1, d).getDay();
+    const isToday   = d === D.TODAY.day;
+    const isHoliday = D.holidays[d];
+    const isWeekend = dow === 0 || dow === 6;
+    const hasEvent  = (D.shifts[d].events || []).length > 0;
+    const cls = [
+      'day-num',
+      isToday ? 'today' : '',
+      isHoliday ? 'holiday' : (isWeekend ? 'weekend' : ''),
+    ].filter(Boolean).join(' ');
+    const title = [D.holidays[d], ...(D.shifts[d].events || [])].filter(Boolean).join(' · ');
+    head += `<th class="${cls}" title="${title}">${d}${hasEvent ? '<span class="ev-dot"></span>' : ''}<span class="dow">${DOW[dow]}</span></th>`;
+  }
+  head += '</tr></thead>';
+
+  const rows = [
+    { kind:'sec', lbl:'Shift#1 · 09:00–21:00', accent:'s1' },
+    { kind:'row', slot:'s1_tdpk', lbl:'TDPK', sub:'on-site' },
+    { kind:'row', slot:'s1_wah',  lbl:'W@H',  sub:'remote' },
+    { kind:'row', slot:'s1_oc',   lbl:'On Call', oc:true, s2:false },
+    { kind:'sec', lbl:'Shift#2 · 21:00–09:00 (+1)', accent:'s2' },
+    { kind:'row', slot:'s2_wah',  lbl:'W@H',    sub:'night · remote' },
+    { kind:'row', slot:'s2_oc',   lbl:'On Call', oc:true, s2:true },
+    { kind:'sec', lbl:'Events', accent:'ev' },
+    { kind:'evrow' },
+  ];
+
+  let body = '<tbody>';
+  for (const r of rows) {
+    if (r.kind === 'sec') {
+      body += `<tr class="sec-row ${r.accent === 's2' ? 's2' : ''}"${r.accent === 'ev' ? ' style="background:color-mix(in srgb,var(--sc-cool) 5%,transparent);border-top:2px solid var(--sc-cool)"' : ''}><td colspan="${days + 1}"><span class="sec-lbl">${r.lbl}</span></td></tr>`;
+      continue;
+    }
+    if (r.kind === 'evrow') {
+      body += `<tr><td class="col-label" style="color:var(--sc-cool)">Notes</td>`;
+      for (let d = 1; d <= days; d++) {
+        const ev = D.shifts[d].events || [];
+        const short = ev.length ? (ev.length === 1 ? ev[0].slice(0, 3).toUpperCase() : `${ev.length}✎`) : '';
+        const title = ev.join(' · ');
+        body += `<td class="day" style="font-size:9px;color:var(--sc-cool);font-weight:800" title="${title}">${short}</td>`;
+      }
+      body += '</tr>';
+      continue;
+    }
+    body += `<tr><td class="col-label ${r.oc ? 'oc' : ''}">${r.lbl}${r.sub ? `<div class="lbl-sub">${r.sub}</div>` : ''}</td>`;
+    for (let d = 1; d <= days; d++) {
+      const dow = new Date(D.YEAR, D.MONTH - 1, d).getDay();
+      const people = D.slotPeople(d, r.slot);
+      const isGap = (D.gaps[d] || []).includes(r.slot);
+      const cls = [
+        'day',
+        d === D.TODAY.day ? 'today' : '',
+        D.holidays[d] ? 'holiday' : (dow === 0 || dow === 6 ? 'weekend' : ''),
+        isGap ? 'gap' : '',
+      ].filter(Boolean).join(' ');
+
+      let content;
+      if (r.oc) {
+        // On-call = single person
+        if (isGap || !people.length) {
+          content = `<span style="color:var(--sc-hot);font-size:10px;font-weight:700">gap</span>`;
+        } else {
+          const p = D.person(people[0]);
+          const onLeave = (D.leaves[d] || []).includes(p.id);
+          content = onLeave
+            ? `<span class="oc-chip ${r.s2 ? 's2' : ''} ${p.me ? 'me' : ''}" style="opacity:.5;text-decoration:line-through" title="on leave">${p.short}</span>`
+            : `<span class="oc-chip ${r.s2 ? 's2' : ''} ${p.me ? 'me' : ''}" title="${p.name}">${p.short}</span>`;
+        }
+      } else {
+        // Team slots = multiple avatar dots
+        if (isGap && !people.length) {
+          content = `<span style="color:var(--sc-hot);font-size:10px;font-weight:700">gap</span>`;
+        } else if (!people.length) {
+          content = `<span class="sc-dot empty" title="ไม่มีคนเวร">—</span>`;
+        } else {
+          const dots = people.map(pid => {
+            const p = D.person(pid);
+            const onLeave = (D.leaves[d] || []).includes(pid);
+            return `<span class="sc-dot ${p.me ? 'me' : ''} ${onLeave ? 'on-leave' : ''}" style="background:${p.color}" title="${p.name}${onLeave ? ' (ลา)' : ''}">${p.short}</span>`;
+          }).join('');
+          content = `<div class="sc-dot-stack">${dots}</div>`;
+        }
+      }
+      body += `<td class="${cls}">${content}</td>`;
+    }
+    body += '</tr>';
+  }
+  body += '</tbody>';
+
+  $('cc-cal').innerHTML = head + body;
+})();
+
+// ── Team legend ──────────────────────────────────────────
+(function renderLegend() {
+  const stats = D.stats();
+  $('cc-legend').innerHTML = D.TEAM.map(t => {
+    const s = stats.find(r => r.id === t.id);
+    return `<div class="sc-legend-row">
+      <span class="sc-legend-dot" style="background:${t.color}"></span>
+      <span class="sc-legend-name">${t.name}</span>
+      <span class="sc-legend-sub">${s.total} shifts</span>
+    </div>`;
+  }).join('');
+})();
+
+// ── Coverage warnings ────────────────────────────────────
+(function renderCoverage() {
+  const list = [];
+  Object.entries(D.gaps).forEach(([d, slots]) => {
+    slots.forEach(slot => {
+      list.push(`<div class="sc-cov-row">
+        <span class="sc-cov-ico hot">!</span>
+        <div class="sc-cov-txt"><b>Aug ${d}</b> · ${D.SLOT_META[slot].label} unfilled<br><small>${D.holidays[d] ? 'holiday coverage gap' : 'needs assignment'}</small></div>
+      </div>`);
+    });
+  });
+  const filled = 31 * 5 - Object.values(D.gaps).flat().length;
+  list.push(`<div class="sc-cov-row">
+    <span class="sc-cov-ico ok">✓</span>
+    <div class="sc-cov-txt"><b>${filled}/${31 * 5}</b> slots filled<br><small>${((filled / (31 * 5)) * 100).toFixed(1)}% coverage</small></div>
+  </div>`);
+  $('cc-coverage').innerHTML = list.join('');
+})();
+
+// ── Monthly stats table ──────────────────────────────────
+(function renderStats() {
+  const stats = D.stats();
+  let html = `<thead><tr>
+    <th>Person</th>
+    <th class="right">S1·TDPK</th>
+    <th class="right">S1·W@H</th>
+    <th class="right">S1·OC</th>
+    <th class="right">S2·W@H</th>
+    <th class="right">S2·OC</th>
+    <th class="right">Total</th>
+    <th class="right">Leave</th>
+    <th class="right">Quota left</th>
+  </tr></thead><tbody>`;
+  stats.forEach((r, i) => {
+    const quotaLeft = [9, 9, 11, 8, 10][i];
+    html += `<tr>
+      <td><div class="name-cell">${avatar(r)}<span>${r.name}</span></div></td>
+      <td class="right">${r.s1_tdpk}</td>
+      <td class="right">${r.s1_wah}</td>
+      <td class="right" style="color:var(--sc-warn);font-weight:700">${r.s1_oc}</td>
+      <td class="right">${r.s2_wah}</td>
+      <td class="right" style="color:var(--sc-violet);font-weight:700">${r.s2_oc}</td>
+      <td class="right" style="font-weight:800">${r.total}</td>
+      <td class="right">${r.leave}</td>
+      <td class="right">${quotaLeft} <span style="color:var(--sc-text-soft);font-size:11px">/12</span></td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  $('cc-stats').innerHTML = html;
+})();
+</script>
+</body>
+</html>

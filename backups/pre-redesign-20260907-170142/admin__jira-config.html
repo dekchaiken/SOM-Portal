@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jira Config — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ── Config chips (Category / Issue Type) ─────────── */
+    .config-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 36px;
+    }
+    .config-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 8px 5px 12px;
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .chip-btn {
+      width: 20px; height: 20px;
+      border: none; background: none;
+      border-radius: 4px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: var(--text-muted); padding: 0;
+      transition: background 0.12s, color 0.12s;
+    }
+    .chip-btn.edit:hover { background: #EFF6FF; color: var(--info); }
+    .chip-btn.del:hover  { background: #FEE2E2; color: var(--danger); }
+
+    .add-item-row {
+      display: flex; gap: 8px; margin-top: 12px;
+    }
+    .add-item-row input { max-width: 240px; }
+    .section-desc {
+      font-size: 12px; color: var(--text-muted);
+      margin-bottom: 14px; line-height: 1.6;
+    }
+
+    /* ── Service Type cards ──────────────────────────── */
+    .st-card {
+      border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden; margin-bottom: 10px;
+    }
+    .st-card-header {
+      display: flex; align-items: center;
+      padding: 10px 14px; gap: 10px;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+    }
+    .st-name { flex: 1; font-size: 13px; font-weight: 700; color: var(--text); }
+    .st-card-body { padding: 10px 14px 12px; }
+    .st-subtype-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+    .st-sub-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 6px; padding: 3px 6px 3px 10px; font-size: 12px; color: var(--text);
+    }
+    .sub-btn {
+      width: 16px; height: 16px; border: none; background: none;
+      border-radius: 3px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: var(--text-muted); padding: 0;
+      transition: background 0.12s, color 0.12s;
+    }
+    .sub-btn.edit:hover { background: #EFF6FF; color: var(--info); }
+    .sub-btn.del:hover  { background: #FEE2E2; color: var(--danger); }
+    .st-add-sub { display: flex; gap: 6px; margin-top: 10px; }
+    .st-add-sub input { max-width: 200px; font-size: 12px; padding: 5px 10px; }
+    .email-badge {
+      font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;
+      background:rgba(59,130,246,.1);color:#3b82f6;
+    }
+    .svc-badge {
+      font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;
+      background:rgba(16,185,129,.1);color:#10b981;cursor:pointer;
+    }
+    .svc-badge:hover { background:rgba(16,185,129,.2); }
+
+    /* Services list inside modal */
+    .svc-row {
+      display:flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:7px;
+      border:1px solid var(--border); margin-bottom:6px;
+      background:var(--bg);
+    }
+    .svc-row-name { flex:1; font-size:13px; font-weight:600; color:var(--text); }
+    .svc-row-meta { font-size:11px; color:var(--text-muted); }
+    .svc-row-meta span { margin-right:8px; }
+    .svc-inline-form {
+      border:2px dashed var(--border); border-radius:8px;
+      padding:14px; margin-top:10px; background:var(--surface);
+    }
+    /* Chip field inside subtype modal */
+    .sub-chip-field {
+      display:flex;flex-wrap:wrap;gap:5px;align-items:center;
+      min-height:40px;padding:6px 10px;border-radius:7px;
+      border:1.5px solid var(--border);background:var(--bg);
+      cursor:text;
+    }
+    .sub-chip-field:focus-within { border-color:var(--orange); }
+    .sub-chip-field input {
+      border:none;background:transparent;outline:none;
+      font-size:12px;font-family:inherit;color:var(--text);
+      flex:1;min-width:180px;padding:2px 0;
+    }
+    .em-chip {
+      display:inline-flex;align-items:center;gap:3px;
+      background:rgba(59,130,246,.1);color:#3b82f6;
+      border-radius:4px;padding:2px 5px 2px 8px;font-size:10px;font-weight:600;
+    }
+    .em-chip-x { border:none;background:none;cursor:pointer;color:#3b82f6;font-size:12px;line-height:1;padding:0 1px;opacity:.7; }
+    .em-chip-x:hover { opacity:1; }
+    .st-empty { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 4px 0; }
+    .add-type-row {
+      border: 2px dashed var(--border); border-radius: 10px;
+      padding: 14px; display: flex; gap: 8px; align-items: center; margin-top: 14px;
+    }
+    .add-type-row input { max-width: 240px; }
+
+    /* ── Custom Fields table ─────────────────────────── */
+    .cf-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .cf-table th {
+      padding: 8px 10px; text-align: left;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--text-muted);
+      border-bottom: 2px solid var(--border);
+    }
+    .cf-table td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .cf-table tr:last-child td { border-bottom: none; }
+    .cf-table tr.disabled-row td { opacity: 0.45; }
+
+    .field-id-code {
+      font-family: monospace; font-size: 11px;
+      color: var(--orange); background: var(--orange-bg);
+      border-radius: 4px; padding: 2px 6px;
+    }
+    .cf-type-badge {
+      display: inline-block; font-size: 10px; padding: 2px 7px;
+      border-radius: 4px; font-weight: 600;
+    }
+    .cf-type-text       { background: #EFF6FF; color: #2563EB; }
+    .cf-type-fault_start{ background: #F0FDF4; color: #16A34A; }
+
+    /* Toggle switch */
+    .toggle-wrap { display: flex; align-items: center; gap: 6px; }
+    .toggle {
+      position: relative; display: inline-block;
+      width: 36px; height: 20px; cursor: pointer;
+    }
+    .toggle input { display: none; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: #D1D5DB; border-radius: 10px;
+      transition: background 0.2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute; left: 3px; top: 3px;
+      width: 14px; height: 14px;
+      background: #fff; border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle input:checked + .toggle-slider { background: var(--orange); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+    /* Add field form */
+    .add-cf-form {
+      border: 2px dashed var(--border); border-radius: 10px; padding: 16px; margin-top: 14px;
+    }
+    .add-cf-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;
+    }
+    @media (max-width: 900px) {
+      .add-cf-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* Modal fix */
+    .modal-overlay.open {
+      display: flex !important; opacity: 1 !important; visibility: visible !important;
+    }
+
+    /* Drag handle */
+    .drag-handle {
+      cursor: grab; color: var(--text-muted); font-size: 14px;
+      padding: 4px 6px 4px 2px; user-select: none;
+    }
+    .drag-handle:active { cursor: grabbing; }
+    .cf-table tr.drag-over td { background: var(--orange-bg); }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="settings"></i> Jira Config</div>
+        <div class="page-sub">จัดการ Service Types, Categories, Issue Types, Custom Fields</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="../jira-templates.html" class="btn btn-ghost btn-sm">ไปที่ Jira Templates →</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="settings"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Jira Config</h1>
+          <p>จัดการ Service Types · Categories · Issue Types · Custom Fields ที่ใช้ใน Jira Templates</p>
+        </div>
+      </section>
+
+      <!-- ─── Section 1: Service Types ───────────────── -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <span class="card-title"><i data-icon="folder-open"></i> Service Types &amp; Sub Types</span>
+          <span class="badge badge-gray" style="font-size:10px">ต้นไม้ซ้ายมือใน Jira Templates</span>
+        </div>
+        <div class="card-body">
+          <p class="section-desc">
+            จัดหมวดหมู่ template เช่น <strong>Service Bank</strong> มีลูก GSB / KBANK / KTB<br>
+            SM Lead และ Admin เพิ่ม แก้ชื่อ ลบได้
+          </p>
+          <div id="st-list">
+            <div data-skel="list" data-rows="4"></div>
+          </div>
+          <div class="add-type-row">
+            <input type="text" class="form-control" id="new-type-name" placeholder="ชื่อ Service Type ใหม่ เช่น Service Payment">
+            <button class="btn btn-primary btn-sm" id="btn-add-type">＋ Add Service Type</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Section 2: Template Categories ─────────── -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <span class="card-title"><i data-icon="tag"></i> Template Categories</span>
+          <span class="badge badge-orange" style="font-size:10px">ไม่ส่งไป Jira — ใช้จัดหมวดใน app</span>
+        </div>
+        <div class="card-body">
+          <p class="section-desc">
+            ตัวเลือก dropdown <strong>Category</strong> ตอนสร้าง template เช่น Incident, Change, Problem, Request<br>
+            ใช้จัดกลุ่มภายใน — ไม่ถูกส่งไป Jira โดยตรง
+          </p>
+          <div class="config-items" id="cat-list"></div>
+          <div class="add-item-row">
+            <input type="text" class="form-control" id="new-cat-name" placeholder="เช่น Maintenance">
+            <button class="btn btn-primary btn-sm" data-add-kind="category">＋ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Section 3: Issue Types ──────────────────── -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <span class="card-title"><i data-icon="ticket"></i> Issue Types</span>
+          <span class="badge badge-blue" style="font-size:10px">ส่งไป Jira จริง — issuetype field</span>
+        </div>
+        <div class="card-body">
+          <p class="section-desc">
+            ตัวเลือก <strong>Issue Type</strong> ตอนสร้าง template ค่านี้จะถูกส่งไป Jira API ตรงๆ<br>
+            ต้องตรงกับ issue type จริงๆ ใน Jira project SMC เช่น Task, Bug, Story, Epic
+          </p>
+          <div class="config-items" id="it-list"></div>
+          <div class="add-item-row">
+            <input type="text" class="form-control" id="new-it-name" placeholder="เช่น Sub-task">
+            <button class="btn btn-primary btn-sm" data-add-kind="issue_type">＋ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Section 4: Custom Fields ───────────────── -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i data-icon="wrench"></i> Custom Fields</span>
+          <span class="badge badge-blue" style="font-size:10px">fields ที่แสดงใน form New Template</span>
+        </div>
+        <div class="card-body">
+          <p class="section-desc">
+            กำหนดได้ว่า form <strong>New Template</strong> จะมี field อะไรบ้าง เปิด/ปิด หรือเพิ่ม field ใหม่จาก Jira<br>
+            หา field ID ได้จาก Jira Console: เปิด Jira → F12 → Console → รัน:
+            <code style="display:block;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-top:8px;font-size:11px;color:var(--text);line-height:1.6;word-break:break-all">fetch('/rest/api/3/field').then(r=>r.json()).then(fields=>{const c=fields.filter(f=>f.custom);console.log(JSON.stringify(c.map(f=>({id:f.id,name:f.name})),null,2))})</code>
+          </p>
+
+          <div style="overflow-x:auto">
+            <table class="cf-table" id="cf-table">
+              <thead>
+                <tr>
+                  <th style="width:28px"></th>
+                  <th>Field ID (Jira)</th>
+                  <th>Label ใน Form</th>
+                  <th>Placeholder</th>
+                  <th>Type</th>
+                  <th style="width:80px">เปิด/ปิด</th>
+                  <th style="width:80px">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="cf-tbody">
+                <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted)">
+                  <div class="spinner" style="margin:0 auto 8px"></div> Loading...
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Add new custom field form -->
+          <div class="add-cf-form">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px">
+              ＋ Add Custom Field
+            </div>
+            <div class="add-cf-grid">
+              <div class="form-group" style="margin:0">
+                <label class="form-label" style="font-size:11px">Field ID <span style="color:var(--danger)">*</span></label>
+                <input type="text" class="form-control" id="cf-new-fieldid" placeholder="customfield_12345">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label" style="font-size:11px">Label ใน Form <span style="color:var(--danger)">*</span></label>
+                <input type="text" class="form-control" id="cf-new-label" placeholder="e.g. Priority Level">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label" style="font-size:11px">Placeholder</label>
+                <input type="text" class="form-control" id="cf-new-placeholder" placeholder="e.g. High">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label" style="font-size:11px">Type</label>
+                <select class="form-control" id="cf-new-type">
+                  <option value="text">Text</option>
+                  <option value="fault_start">Fault Start (datetime)</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <button class="btn btn-primary btn-sm" id="btn-add-cf">＋ Add Field</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Subtype modal (Add / Edit sub type) ── -->
+<div class="modal-overlay" id="subtype-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <span class="modal-title" id="sub-modal-title">เพิ่ม Sub Type</span>
+      <button class="btn-close" id="btn-close-subtype"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="sub-edit-id">
+      <input type="hidden" id="sub-edit-parent">
+      <div class="form-group">
+        <label class="form-label">ชื่อ Sub Type <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="sub-name" class="form-control" placeholder="เช่น GSB, KBANK, OTP">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-subtype">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-subtype">
+        <span id="sub-save-text">Save</span>
+        <span id="sub-save-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Service modal (Manage services inside a subtype) ── -->
+<div class="modal-overlay" id="service-modal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <div>
+        <span class="modal-title"><i data-icon="mail"></i> Services — </span><span id="svc-modal-subtype-name" style="color:var(--orange)"></span>
+      </div>
+      <button class="btn-close" id="btn-close-service"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" style="max-height:65vh;overflow-y:auto">
+      <input type="hidden" id="svc-parent-id">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
+        แต่ละ Service เก็บ <strong>Email To</strong> (ส่งถึงคู่ค้า) และ <strong>Email CC</strong> (ทีมภายใน) — ดึงไปใช้ใน Send Email อัตโนมัติ
+      </p>
+
+      <!-- Services list -->
+      <div id="svc-list"></div>
+
+      <!-- Inline add/edit form -->
+      <div id="svc-form" class="svc-inline-form" style="display:none">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px" id="svc-form-title">เพิ่ม Service</div>
+        <input type="hidden" id="svc-edit-id">
+        <div class="form-group">
+          <label class="form-label">ชื่อ Service <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="svc-name" class="form-control" placeholder="เช่น TopupMobile, TopupEwallet">
+        </div>
+        <div class="form-group">
+          <label class="form-label">
+            Email To <span style="color:var(--danger)">*</span>
+            <span style="font-weight:400;color:var(--text-muted)"> — Enter หรือ , เพื่อเพิ่ม</span>
+          </label>
+          <div class="sub-chip-field" id="svc-to-field" onclick="document.getElementById('svc-to-input').focus()">
+            <input type="text" id="svc-to-input" placeholder="to@partner.com" autocomplete="off">
+          </div>
+          <div class="form-hint">Email ที่จะถูกใส่ใน "ถึง" เมื่อส่งเมลจาก Send Email</div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">
+            Email CC
+            <span style="font-weight:400;color:var(--text-muted)"> — Enter หรือ , เพื่อเพิ่ม</span>
+          </label>
+          <div class="sub-chip-field" id="svc-cc-field" onclick="document.getElementById('svc-cc-input').focus()">
+            <input type="text" id="svc-cc-input" placeholder="cc@company.com" autocomplete="off">
+          </div>
+          <div class="form-hint">Email ที่จะถูกใส่ใน "CC" เมื่อส่งเมลจาก Send Email</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn btn-ghost btn-sm" id="btn-cancel-svc-form">Cancel</button>
+          <button class="btn btn-primary btn-sm" id="btn-save-svc">
+            <span id="svc-save-text">Save</span>
+            <span id="svc-save-spin" class="spinner hidden" style="width:11px;height:11px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-primary btn-sm" id="btn-add-service">＋ เพิ่ม Service</button>
+      <button class="btn btn-ghost" id="btn-close-service-footer">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit modal (category / issue_type / custom_field) ── -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <span class="modal-title" id="edit-modal-title">Edit</span>
+      <button class="btn-close" id="btn-close-edit"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id">
+      <input type="hidden" id="edit-kind">
+
+      <!-- Simple name field (category / issue_type / service type/subtype) -->
+      <div id="edit-simple-group" class="form-group">
+        <label class="form-label">Name <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="edit-name" class="form-control">
+      </div>
+
+      <!-- Custom field fields -->
+      <div id="edit-cf-group" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Field ID (Jira) <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="edit-cf-fieldid" class="form-control" readonly
+                 style="background:var(--bg);color:var(--text-muted)"
+                 title="Field ID ไม่สามารถเปลี่ยนได้ ต้องลบแล้วสร้างใหม่">
+          <div class="form-hint">Field ID ไม่สามารถแก้ไขได้ (ต้องลบแล้วเพิ่มใหม่)</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Label ใน Form <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="edit-cf-label" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Placeholder</label>
+          <input type="text" id="edit-cf-placeholder" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Field Type</label>
+          <select id="edit-cf-type" class="form-control">
+            <option value="text">Text input</option>
+            <option value="fault_start">Fault Start (auto/manual datetime)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-edit">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-edit">
+        <span id="edit-save-text">Save</span>
+        <span id="edit-save-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('admin');
+
+let serviceTypes = [];
+let jiraConfig   = { categories: [], issue_types: [], custom_fields: [] };
+
+// ── Modal ────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+['btn-close-edit','btn-cancel-edit'].forEach(id => {
+  document.getElementById(id).onclick = () => closeModal('edit-modal');
+});
+document.getElementById('edit-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal('edit-modal');
+});
+
+// ── Load all ─────────────────────────────────────────────
+async function loadAll() {
+  const [typesRes, cfgRes] = await Promise.all([
+    API.serviceTypes.list(),
+    API.jiraConfig.get()
+  ]);
+  if (typesRes?.ok) serviceTypes = typesRes.data.data || [];
+  if (cfgRes?.ok)   jiraConfig   = cfgRes.data.data   || { categories: [], issue_types: [], custom_fields: [] };
+  if (!jiraConfig.custom_fields) jiraConfig.custom_fields = [];
+
+  renderServiceTypes();
+  renderChips('categories', 'cat-list');
+  renderChips('issue_types', 'it-list');
+  renderCustomFields();
+}
+
+// ══ Section 1: Service Types ══════════════════════════════
+function renderServiceTypes() {
+  const container = document.getElementById('st-list');
+  if (!serviceTypes.length) {
+    container.innerHTML = `<div class="st-empty">ยังไม่มี Service Type</div>`;
+    return;
+  }
+  container.innerHTML = serviceTypes.map(type => {
+    const subChips = (type.subtypes || []).map(s => {
+      const svcCount = (s.services || []).length;
+      const svcBadge = svcCount
+        ? `<span class="svc-badge" data-action="manage-services" data-id="${s.id}" data-name="${escHtml(s.name)}" title="จัดการ Services"><i data-icon="clipboard"></i> ${svcCount}</span>`
+        : `<span class="svc-badge" data-action="manage-services" data-id="${s.id}" data-name="${escHtml(s.name)}" style="background:rgba(239,68,68,.1);color:#ef4444" title="ยังไม่มี service"><i data-icon="clipboard"></i> 0</span>`;
+      return `
+      <div class="st-sub-chip">
+        <span>${escHtml(s.name)}</span>
+        ${svcBadge}
+        <button class="sub-btn edit" data-action="rename-sub" data-id="${s.id}" data-name="${escHtml(s.name)}" title="Rename"><i data-icon="pencil"></i></button>
+        <button class="sub-btn del"  data-action="del-sub"    data-id="${s.id}" data-name="${escHtml(s.name)}" title="Delete"><i data-icon="x"></i></button>
+      </div>`;
+    }).join('');
+    return `
+      <div class="st-card">
+        <div class="st-card-header">
+          <span class="st-name">${escHtml(type.name)}</span>
+          <button class="btn btn-ghost btn-sm btn-icon" data-action="rename-type" data-id="${type.id}" data-name="${escHtml(type.name)}" title="Rename" style="font-size:13px"><i data-icon="pencil"></i></button>
+          <button class="btn btn-ghost btn-sm btn-icon" data-action="del-type"    data-id="${type.id}" data-name="${escHtml(type.name)}" title="Delete" style="color:var(--danger);font-size:13px"><i data-icon="x"></i></button>
+        </div>
+        <div class="st-card-body">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:8px">
+            Sub Types <span style="font-weight:400;font-style:italic">(คลิก <i data-icon="clipboard"></i> เพื่อจัดการ Email Services)</span>
+          </div>
+          <div class="st-subtype-list">
+            ${subChips || '<span class="st-empty">ยังไม่มี subtype</span>'}
+          </div>
+          <div class="st-add-sub">
+            <button class="btn btn-ghost btn-sm" data-action="add-sub" data-parent="${type.id}">＋ Add Sub Type</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  container.onclick = null;
+  container.addEventListener('click', handleStClick);
+}
+
+function handleStClick(e) {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return; e.stopPropagation();
+  const { action, id, name } = btn.dataset;
+  if (action === 'rename-type')     openEditSimple(id, name, 'service_type', 'แก้ชื่อ Service Type');
+  if (action === 'del-type')        deleteServiceType(id, name);
+  if (action === 'rename-sub')      openSubtypeModal({ mode: 'edit', id, name });
+  if (action === 'del-sub')         deleteSubtype(id, name);
+  if (action === 'add-sub')         openSubtypeModal({ mode: 'add', parentId: btn.dataset.parent });
+  if (action === 'manage-services') openServiceModal(id, name);
+}
+
+document.getElementById('btn-add-type').onclick = async () => {
+  const input = document.getElementById('new-type-name');
+  const name = input.value.trim();
+  if (!name) { Toast.warning('กรอกชื่อก่อน'); return; }
+  const res = await API.serviceTypes.createType({ name });
+  if (res?.ok) { Toast.success('เพิ่มแล้ว'); input.value = ''; await reloadST(); }
+  else Toast.error(res?.data?.message || 'Failed');
+};
+document.getElementById('new-type-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-add-type').click();
+});
+
+// ── Subtype Modal ─────────────────────────────────────────
+function openSubtypeModal({ mode, id = '', parentId = '', name = '' }) {
+  document.getElementById('sub-edit-id').value    = id;
+  document.getElementById('sub-edit-parent').value = parentId;
+  document.getElementById('sub-name').value        = name;
+  document.getElementById('sub-modal-title').textContent = mode === 'edit' ? 'แก้ไข Sub Type' : 'เพิ่ม Sub Type';
+  openModal('subtype-modal');
+  setTimeout(() => document.getElementById('sub-name').focus(), 50);
+}
+
+['btn-close-subtype','btn-cancel-subtype'].forEach(id => {
+  document.getElementById(id).onclick = () => closeModal('subtype-modal');
+});
+document.getElementById('subtype-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal('subtype-modal');
+});
+
+document.getElementById('btn-save-subtype').addEventListener('click', async () => {
+  const id       = document.getElementById('sub-edit-id').value;
+  const parentId = document.getElementById('sub-edit-parent').value;
+  const name     = document.getElementById('sub-name').value.trim();
+  const text     = document.getElementById('sub-save-text');
+  const spin     = document.getElementById('sub-save-spin');
+
+  if (!name) { Toast.warning('กรอกชื่อก่อน'); return; }
+  text.textContent = 'Saving...'; spin.classList.remove('hidden');
+
+  const res = id
+    ? await API.serviceTypes.rename(id, { name })
+    : await API.serviceTypes.createSubtype(parentId, { name });
+
+  text.textContent = 'Save'; spin.classList.add('hidden');
+
+  if (res?.ok) {
+    Toast.success(id ? 'แก้ไขแล้ว' : 'เพิ่มแล้ว');
+    closeModal('subtype-modal');
+    await reloadST();
+  } else {
+    Toast.error(res?.data?.message || 'Failed');
+  }
+});
+
+// ── Service Modal ─────────────────────────────────────────
+let _svcToEmails = [];
+let _svcCcEmails = [];
+let _currentSubtypeId = '';
+
+function makeChipField(fieldId, inputId, list) {
+  const field = document.getElementById(fieldId);
+  const input = document.getElementById(inputId);
+  field.querySelectorAll('.em-chip').forEach(c => c.remove());
+  list.forEach(email => {
+    const chip = document.createElement('span');
+    chip.className = 'em-chip';
+    chip.innerHTML = `${escHtml(email)}<button class="em-chip-x" data-email="${escHtml(email)}" title="ลบ">×</button>`;
+    field.insertBefore(chip, input);
+  });
+}
+
+function addEmailToList(inputId, list, fieldId) {
+  const input  = document.getElementById(inputId);
+  const raw    = input.value.trim().replace(/,\s*$/, '');
+  if (!raw) return;
+  const emails = parseEmailList(raw);
+  if (!emails.length && raw.includes('@')) emails.push(raw);
+  if (!emails.length) { Toast.warning('รูปแบบ email ไม่ถูกต้อง'); return; }
+  emails.forEach(em => { if (!list.includes(em)) list.push(em); });
+  makeChipField(fieldId, inputId, list);
+  input.value = '';
+}
+
+function setupChipInput(fieldId, inputId, listRef) {
+  document.getElementById(fieldId).addEventListener('click', e => {
+    const btn = e.target.closest('.em-chip-x');
+    if (!btn) return;
+    const i = listRef().indexOf(btn.dataset.email);
+    if (i > -1) { listRef().splice(i, 1); makeChipField(fieldId, inputId, listRef()); }
+  });
+  document.getElementById(inputId).addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addEmailToList(inputId, listRef(), fieldId); }
+    if (e.key === 'Backspace' && !e.target.value && listRef().length) {
+      listRef().pop(); makeChipField(fieldId, inputId, listRef());
+    }
+  });
+  document.getElementById(inputId).addEventListener('blur', () => addEmailToList(inputId, listRef(), fieldId));
+  document.getElementById(inputId).addEventListener('paste', e => {
+    e.preventDefault();
+    const pasted = (e.clipboardData || window.clipboardData).getData('text');
+    if (!pasted) return;
+    const emails = parseEmailList(pasted);
+    if (!emails.length) { document.getElementById(inputId).value = pasted; return; }
+    let added = 0;
+    emails.forEach(em => { if (!listRef().includes(em)) { listRef().push(em); added++; } });
+    if (added) { makeChipField(fieldId, inputId, listRef()); Toast.success(`เพิ่ม ${added} email แล้ว`); }
+  });
+}
+
+setupChipInput('svc-to-field', 'svc-to-input', () => _svcToEmails);
+setupChipInput('svc-cc-field', 'svc-cc-input', () => _svcCcEmails);
+
+function openServiceModal(subtypeId, subtypeName) {
+  _currentSubtypeId = subtypeId;
+  document.getElementById('svc-parent-id').value = subtypeId;
+  document.getElementById('svc-modal-subtype-name').textContent = subtypeName;
+  hideSvcForm();
+  renderServiceList(subtypeId);
+  openModal('service-modal');
+}
+
+function findSubtype(subtypeId) {
+  for (const t of serviceTypes) {
+    const s = (t.subtypes || []).find(s => s.id === subtypeId);
+    if (s) return s;
+  }
+  return null;
+}
+
+function renderServiceList(subtypeId) {
+  const sub  = findSubtype(subtypeId);
+  const list = document.getElementById('svc-list');
+  if (!sub) { list.innerHTML = ''; return; }
+  const svcs = sub.services || [];
+  if (!svcs.length) {
+    list.innerHTML = `<div class="st-empty" style="margin-bottom:8px">ยังไม่มี Service — กด "＋ เพิ่ม Service" ด้านล่าง</div>`;
+    return;
+  }
+  list.innerHTML = svcs.map(svc => `
+    <div class="svc-row">
+      <div class="svc-row-name">${escHtml(svc.name)}</div>
+      <div class="svc-row-meta">
+        <span title="${escHtml((svc.email_to||[]).join(', '))}"><i data-icon="upload"></i> To: ${(svc.email_to||[]).length}</span>
+        <span title="${escHtml((svc.email_cc||[]).join(', '))}"><i data-icon="clipboard"></i> CC: ${(svc.email_cc||[]).length}</span>
+      </div>
+      <button class="btn btn-ghost btn-sm btn-icon" data-svc-action="edit-svc" data-svc-id="${svc.id}"
+              data-svc-name="${escHtml(svc.name)}"
+              data-svc-to="${escHtml(JSON.stringify(svc.email_to||[]))}"
+              data-svc-cc="${escHtml(JSON.stringify(svc.email_cc||[]))}"
+              title="แก้ไข" style="font-size:12px"><i data-icon="pencil"></i></button>
+      <button class="btn btn-ghost btn-sm btn-icon" data-svc-action="del-svc" data-svc-id="${svc.id}"
+              data-svc-name="${escHtml(svc.name)}"
+              title="ลบ" style="color:var(--danger);font-size:12px"><i data-icon="x"></i></button>
+    </div>`).join('');
+
+  list.onclick = null;
+  list.addEventListener('click', handleSvcListClick);
+}
+
+function handleSvcListClick(e) {
+  const btn = e.target.closest('[data-svc-action]');
+  if (!btn) return;
+  const { svcAction, svcId, svcName } = btn.dataset;
+  if (svcAction === 'edit-svc') {
+    let to = [], cc = [];
+    try { to = JSON.parse(btn.dataset.svcTo || '[]'); } catch {}
+    try { cc = JSON.parse(btn.dataset.svcCc || '[]'); } catch {}
+    showSvcForm({ mode: 'edit', id: svcId, name: svcName, emailTo: to, emailCc: cc });
+  }
+  if (svcAction === 'del-svc') deleteSvc(svcId, svcName);
+}
+
+function showSvcForm({ mode = 'add', id = '', name = '', emailTo = [], emailCc = [] } = {}) {
+  _svcToEmails = [...emailTo];
+  _svcCcEmails = [...emailCc];
+  document.getElementById('svc-edit-id').value = id;
+  document.getElementById('svc-name').value    = name;
+  document.getElementById('svc-form-title').textContent = mode === 'edit' ? 'แก้ไข Service' : 'เพิ่ม Service';
+  makeChipField('svc-to-field', 'svc-to-input', _svcToEmails);
+  makeChipField('svc-cc-field', 'svc-cc-input', _svcCcEmails);
+  document.getElementById('svc-form').style.display = '';
+  setTimeout(() => document.getElementById('svc-name').focus(), 50);
+}
+
+function hideSvcForm() {
+  document.getElementById('svc-form').style.display = 'none';
+  document.getElementById('svc-edit-id').value = '';
+  document.getElementById('svc-name').value    = '';
+  _svcToEmails = []; _svcCcEmails = [];
+}
+
+document.getElementById('btn-add-service').onclick = () => showSvcForm({ mode: 'add' });
+document.getElementById('btn-cancel-svc-form').onclick = hideSvcForm;
+
+document.getElementById('btn-save-svc').addEventListener('click', async () => {
+  addEmailToList('svc-to-input', _svcToEmails, 'svc-to-field');
+  addEmailToList('svc-cc-input', _svcCcEmails, 'svc-cc-field');
+
+  const id       = document.getElementById('svc-edit-id').value;
+  const name     = document.getElementById('svc-name').value.trim();
+  const parentId = document.getElementById('svc-parent-id').value;
+  const text     = document.getElementById('svc-save-text');
+  const spin     = document.getElementById('svc-save-spin');
+
+  if (!name) { Toast.warning('กรอกชื่อ Service ก่อน'); return; }
+  if (!_svcToEmails.length) { Toast.warning('ต้องมี Email To อย่างน้อย 1 ที่อยู่'); return; }
+
+  text.textContent = 'Saving...'; spin.classList.remove('hidden');
+
+  const payload = { name, email_to: _svcToEmails, email_cc: _svcCcEmails };
+  const res = id
+    ? await API.serviceTypes.updateService(id, payload)
+    : await API.serviceTypes.createService(parentId, payload);
+
+  text.textContent = 'Save'; spin.classList.add('hidden');
+
+  if (res?.ok) {
+    Toast.success(id ? 'แก้ไขแล้ว' : 'เพิ่ม Service แล้ว');
+    hideSvcForm();
+    await reloadST();
+    renderServiceList(_currentSubtypeId);
+  } else {
+    Toast.error(res?.data?.message || 'Failed');
+  }
+});
+
+async function deleteSvc(id, name) {
+  if (!await confirmDialog(`ลบ Service "${name}"?`, 'ลบ Service')) return;
+  const res = await API.serviceTypes.delete(id);
+  if (res?.ok) {
+    Toast.success('ลบแล้ว');
+    await reloadST();
+    renderServiceList(_currentSubtypeId);
+  } else {
+    Toast.error(res?.data?.message || 'Failed');
+  }
+}
+
+['btn-close-service','btn-close-service-footer'].forEach(btnId => {
+  document.getElementById(btnId).onclick = () => closeModal('service-modal');
+});
+document.getElementById('service-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal('service-modal');
+});
+
+async function deleteServiceType(id, name) {
+  if (!await confirmDialog(`ลบ Service Type "${name}"?\nTemplate ที่อยู่ใน category นี้จะยังอยู่ แต่ไม่แสดงในต้นไม้`, 'ลบ Service Type')) return;
+  const res = await API.serviceTypes.delete(id);
+  if (res?.ok) { Toast.success('ลบแล้ว'); await reloadST(); }
+  else Toast.error(res?.data?.message || 'Failed');
+}
+async function deleteSubtype(id, name) {
+  if (!await confirmDialog(`ลบ Sub Type "${name}"?`, 'ลบ Sub Type')) return;
+  const res = await API.serviceTypes.delete(id);
+  if (res?.ok) { Toast.success('ลบแล้ว'); await reloadST(); }
+  else Toast.error(res?.data?.message || 'Failed');
+}
+async function reloadST() {
+  const res = await API.serviceTypes.list();
+  if (res?.ok) serviceTypes = res.data.data || [];
+  renderServiceTypes();
+}
+
+// ══ Section 2+3: Config chips ════════════════════════════
+function renderChips(key, containerId) {
+  const container = document.getElementById(containerId);
+  const items = jiraConfig[key] || [];
+  if (!items.length) {
+    container.innerHTML = `<span style="font-size:12px;color:var(--text-muted);font-style:italic">ยังไม่มี</span>`;
+    return;
+  }
+  container.innerHTML = items.map(item => `
+    <div class="config-chip">
+      <span>${escHtml(item.name)}</span>
+      <button class="chip-btn edit" data-action="edit-chip" data-id="${item.id}" data-name="${escHtml(item.name)}" data-kind="config" title="Rename"><i data-icon="pencil"></i></button>
+      <button class="chip-btn del"  data-action="del-chip"  data-id="${item.id}" data-name="${escHtml(item.name)}" data-key="${key}" title="Delete"><i data-icon="x"></i></button>
+    </div>`).join('');
+  container.onclick = null;
+  container.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    if (btn.dataset.action === 'edit-chip') {
+      const label = key === 'categories' ? 'แก้ชื่อ Category' : 'แก้ชื่อ Issue Type';
+      openEditSimple(btn.dataset.id, btn.dataset.name, 'config', label);
+    }
+    if (btn.dataset.action === 'del-chip') deleteChip(btn.dataset.id, btn.dataset.name, btn.dataset.key);
+  });
+}
+
+document.querySelectorAll('[data-add-kind]').forEach(btn => {
+  btn.addEventListener('click', () => addChip(btn.dataset.addKind));
+});
+['new-cat-name','new-it-name'].forEach((id, i) => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') addChip(i === 0 ? 'category' : 'issue_type');
+  });
+});
+
+async function addChip(kind) {
+  const inputId = kind === 'category' ? 'new-cat-name' : 'new-it-name';
+  const input = document.getElementById(inputId);
+  const name  = input.value.trim();
+  if (!name) { Toast.warning('กรอกชื่อก่อน'); return; }
+  const res = await API.jiraConfig.add({ kind, name });
+  if (res?.ok) { Toast.success('เพิ่มแล้ว'); input.value = ''; await reloadConfig(); }
+  else Toast.error(res?.data?.message || 'Failed');
+}
+
+async function deleteChip(id, name, key) {
+  const label = key === 'categories' ? 'Category' : 'Issue Type';
+  if (!await confirmDialog(`ลบ ${label} "${name}"?`, `ลบ ${label}`)) return;
+  const res = await API.jiraConfig.delete(id);
+  if (res?.ok) { Toast.success('ลบแล้ว'); await reloadConfig(); }
+  else Toast.error(res?.data?.message || 'Failed');
+}
+
+// ══ Section 4: Custom Fields ══════════════════════════════
+function renderCustomFields() {
+  const tbody = document.getElementById('cf-tbody');
+  const fields = [...(jiraConfig.custom_fields || [])].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+
+  if (!fields.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);font-style:italic">ยังไม่มี custom field</td></tr>`;
+    return;
+  }
+
+  const typeLabel = { text: 'Text', fault_start: 'Fault Start' };
+  const typeCls   = { text: 'cf-type-text', fault_start: 'cf-type-fault_start' };
+
+  tbody.innerHTML = fields.map(cf => `
+    <tr class="${cf.enabled ? '' : 'disabled-row'}" data-cf-id="${cf.id}">
+      <td class="drag-handle" title="ลากเพื่อเรียงลำดับ">⠿</td>
+      <td><code class="field-id-code">${escHtml(cf.field_id)}</code></td>
+      <td style="font-weight:600">${escHtml(cf.label)}</td>
+      <td style="color:var(--text-muted)">${escHtml(cf.placeholder || '—')}</td>
+      <td><span class="cf-type-badge ${typeCls[cf.field_type] || 'cf-type-text'}">${typeLabel[cf.field_type] || cf.field_type}</span></td>
+      <td>
+        <label class="toggle">
+          <input type="checkbox" ${cf.enabled ? 'checked' : ''}
+                 data-action="toggle-cf" data-id="${cf.id}">
+          <span class="toggle-slider"></span>
+        </label>
+      </td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-sm btn-icon" data-action="edit-cf" data-id="${cf.id}" title="Edit" style="font-size:12px"><i data-icon="pencil"></i></button>
+          <button class="btn btn-ghost btn-sm btn-icon" data-action="del-cf"  data-id="${cf.id}" data-name="${escHtml(cf.label)}" title="Delete" style="color:var(--danger);font-size:12px"><i data-icon="x"></i></button>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  tbody.onclick = null;
+  tbody.onchange = null;
+
+  tbody.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    if (btn.dataset.action === 'edit-cf') openEditCf(btn.dataset.id);
+    if (btn.dataset.action === 'del-cf')  deleteCf(btn.dataset.id, btn.dataset.name);
+  });
+
+  tbody.addEventListener('change', async e => {
+    const chk = e.target.closest('[data-action="toggle-cf"]');
+    if (!chk) return;
+    const id  = chk.dataset.id;
+    const res = await API.jiraConfig.update(id, { enabled: chk.checked });
+    if (res?.ok) {
+      Toast.success(chk.checked ? 'เปิดแล้ว' : 'ปิดแล้ว');
+      await reloadConfig();
+    } else {
+      Toast.error(res?.data?.message || 'Failed');
+      chk.checked = !chk.checked; // revert
+    }
+  });
+}
+
+// Add custom field
+document.getElementById('btn-add-cf').onclick = async () => {
+  const fieldId     = document.getElementById('cf-new-fieldid').value.trim();
+  const label       = document.getElementById('cf-new-label').value.trim();
+  const placeholder = document.getElementById('cf-new-placeholder').value.trim();
+  const fieldType   = document.getElementById('cf-new-type').value;
+
+  if (!fieldId) { Toast.warning('กรอก Field ID ก่อน เช่น customfield_12345'); return; }
+  if (!label)   { Toast.warning('กรอก Label ก่อน'); return; }
+
+  const res = await API.jiraConfig.add({ kind: 'custom_field', field_id: fieldId, label, placeholder, field_type: fieldType });
+  if (res?.ok) {
+    Toast.success('เพิ่ม Custom Field แล้ว');
+    document.getElementById('cf-new-fieldid').value = '';
+    document.getElementById('cf-new-label').value   = '';
+    document.getElementById('cf-new-placeholder').value = '';
+    await reloadConfig();
+  } else {
+    Toast.error(res?.data?.message || 'Failed');
+  }
+};
+
+async function deleteCf(id, name) {
+  if (!await confirmDialog(`ลบ Custom Field "${name}"?\nTemplate ที่มีค่า field นี้จะยังเก็บข้อมูลไว้ แต่ไม่แสดงใน form อีกต่อไป`, 'ลบ Custom Field')) return;
+  const res = await API.jiraConfig.delete(id);
+  if (res?.ok) { Toast.success('ลบแล้ว'); await reloadConfig(); }
+  else Toast.error(res?.data?.message || 'Failed');
+}
+
+// ══ Edit modal ════════════════════════════════════════════
+function openEditSimple(id, currentName, kind, title) {
+  document.getElementById('edit-modal-title').textContent = title || 'Edit';
+  document.getElementById('edit-id').value    = id;
+  document.getElementById('edit-kind').value  = kind;
+  document.getElementById('edit-name').value  = currentName;
+  document.getElementById('edit-simple-group').style.display = '';
+  document.getElementById('edit-cf-group').style.display = 'none';
+  openModal('edit-modal');
+  setTimeout(() => document.getElementById('edit-name').focus(), 50);
+}
+
+function openEditCf(id) {
+  const cf = (jiraConfig.custom_fields || []).find(f => f.id === id);
+  if (!cf) return;
+  document.getElementById('edit-modal-title').textContent = 'Edit Custom Field';
+  document.getElementById('edit-id').value    = id;
+  document.getElementById('edit-kind').value  = 'custom_field';
+  document.getElementById('edit-simple-group').style.display = 'none';
+  document.getElementById('edit-cf-group').style.display = '';
+  document.getElementById('edit-cf-fieldid').value     = cf.field_id;
+  document.getElementById('edit-cf-label').value       = cf.label;
+  document.getElementById('edit-cf-placeholder').value = cf.placeholder || '';
+  document.getElementById('edit-cf-type').value        = cf.field_type || 'text';
+  openModal('edit-modal');
+  setTimeout(() => document.getElementById('edit-cf-label').focus(), 50);
+}
+
+document.getElementById('btn-save-edit').onclick = async () => {
+  const id   = document.getElementById('edit-id').value;
+  const kind = document.getElementById('edit-kind').value;
+  const text = document.getElementById('edit-save-text');
+  const spin = document.getElementById('edit-save-spin');
+  text.textContent = 'Saving...';
+  spin.classList.remove('hidden');
+
+  let res, payload;
+
+  if (kind === 'custom_field') {
+    const label = document.getElementById('edit-cf-label').value.trim();
+    if (!label) { Toast.warning('กรอก Label ก่อน'); text.textContent = 'Save'; spin.classList.add('hidden'); return; }
+    payload = {
+      label,
+      placeholder: document.getElementById('edit-cf-placeholder').value.trim(),
+      field_type:  document.getElementById('edit-cf-type').value
+    };
+    res = await API.jiraConfig.update(id, payload);
+  } else if (kind === 'config') {
+    const name = document.getElementById('edit-name').value.trim();
+    if (!name) { Toast.warning('กรอกชื่อก่อน'); text.textContent = 'Save'; spin.classList.add('hidden'); return; }
+    res = await API.jiraConfig.update(id, { name });
+  } else {
+    const name = document.getElementById('edit-name').value.trim();
+    if (!name) { Toast.warning('กรอกชื่อก่อน'); text.textContent = 'Save'; spin.classList.add('hidden'); return; }
+    res = await API.serviceTypes.rename(id, { name });
+  }
+
+  text.textContent = 'Save';
+  spin.classList.add('hidden');
+
+  if (res?.ok) {
+    Toast.success('แก้ไขแล้ว');
+    closeModal('edit-modal');
+    if (kind === 'config' || kind === 'custom_field') await reloadConfig();
+    else await reloadST();
+  } else {
+    Toast.error(res?.data?.message || 'Failed');
+  }
+};
+document.getElementById('edit-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-save-edit').click();
+});
+
+// ══ Reload helpers ════════════════════════════════════════
+async function reloadConfig() {
+  const res = await API.jiraConfig.get();
+  if (res?.ok) {
+    jiraConfig = res.data.data || { categories: [], issue_types: [], custom_fields: [] };
+    if (!jiraConfig.custom_fields) jiraConfig.custom_fields = [];
+  }
+  renderChips('categories', 'cat-list');
+  renderChips('issue_types', 'it-list');
+  renderCustomFields();
+}
+
+// ── Boot ──────────────────────────────────────────────────
+loadAll();
+</script>
+
+</body>
+</html>

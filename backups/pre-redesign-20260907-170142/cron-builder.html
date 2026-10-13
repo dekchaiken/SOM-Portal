@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cron Builder — SOM-Portal</title>
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<!-- Embed mode: must run before CSS loads to prevent sidebar flash -->
+<script>if(location.search.includes('embed'))document.documentElement.classList.add('cb-embed');</script>
+<script src="assets/js/theme.js"></script>
+<link rel="stylesheet" href="assets/css/dark.css">
+<link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+<style>
+  /* ── Embed mode: hide sidebar + topbar ── */
+  html.cb-embed .sidebar      { display: none !important; }
+  html.cb-embed .main-content { margin-left: 0 !important; }
+  html.cb-embed .topbar       { display: none !important; }
+  html.cb-embed .page-content { padding: 16px 20px !important; }
+
+  /* ── Builder layout ── */
+  .cb-wrap { display: flex; flex-direction: column; gap: 18px; }
+
+  /* ── Builder card ── */
+  .cb-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+  }
+
+  /* ── Tabs ── */
+  .cb-tabs {
+    display: flex; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none;
+  }
+  .cb-tabs::-webkit-scrollbar { display: none; }
+  .cb-tab {
+    padding: 13px 20px; font-size: 12px; font-weight: 700; cursor: pointer;
+    color: var(--text-muted); border-bottom: 2px solid transparent;
+    white-space: nowrap; transition: color .15s; user-select: none;
+    margin-bottom: -1px; flex-shrink: 0;
+  }
+  .cb-tab:hover { color: var(--text); }
+  .cb-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+  /* ── Panel ── */
+  .cb-panel { padding: 16px 20px; }
+
+  /* ── Option rows ── */
+  .cb-option {
+    display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+    border-radius: 10px; cursor: pointer; margin-bottom: 2px; transition: background .12s;
+  }
+  .cb-option:hover { background: var(--bg); }
+  .cb-option.sel { background: var(--orange-dim); }
+  .cb-radio {
+    margin-top: 3px; accent-color: var(--orange); flex-shrink: 0;
+    width: 15px; height: 15px; pointer-events: none;
+  }
+  .cb-opt-body { flex: 1; min-width: 0; }
+  .cb-opt-text { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.5; }
+  .cb-ctrls {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-top: 8px; font-size: 12px; color: var(--text-muted);
+  }
+  .cb-sel {
+    padding: 5px 9px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text); font-size: 12px;
+    font-family: var(--font); cursor: pointer;
+  }
+  .cb-sel:focus { outline: none; border-color: var(--orange); }
+
+  /* ── Checkbox grid ── */
+  .cb-chk-grid { display: grid; gap: 4px; margin-top: 8px; }
+  .cb-chk-grid.g10 { grid-template-columns: repeat(10, 1fr); }
+  .cb-chk-grid.g8  { grid-template-columns: repeat(8,  1fr); }
+  .cb-chk-grid.g6  { grid-template-columns: repeat(6,  1fr); }
+  .cb-chk {
+    display: flex; align-items: center; justify-content: center; padding: 7px 3px;
+    border-radius: 7px; cursor: pointer; border: 1px solid transparent;
+    transition: all .1s; user-select: none;
+    font-size: 11px; font-weight: 700; color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .cb-chk:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-bg); }
+  .cb-chk.on    { border-color: var(--orange); color: var(--orange); background: var(--orange-bg); }
+  body.dark .cb-chk:hover,
+  body.dark .cb-chk.on { background: var(--orange-dim); }
+
+  .cb-chk-bar { display: flex; gap: 6px; margin-top: 8px; }
+  .cb-mini-btn {
+    padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;
+    cursor: pointer; border: 1px solid var(--border); background: transparent;
+    color: var(--text-muted); font-family: var(--font); transition: all .1s;
+  }
+  .cb-mini-btn:hover { background: var(--bg); color: var(--text); }
+  .cb-grid-wrap { margin-top: 4px; }
+
+  /* ── Output card ── */
+  .cb-output-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 24px; text-align: center;
+  }
+  .cb-output-title {
+    font-size: 10px; font-weight: 700; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: .1em; margin-bottom: 14px;
+  }
+  .cb-expr-row { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+  .cb-expr {
+    font-size: 28px; font-weight: 800; letter-spacing: .06em;
+    font-variant-numeric: tabular-nums; color: var(--text); font-family: var(--font);
+    word-break: break-all;
+  }
+  .cb-copy-btn {
+    padding: 9px 20px; border-radius: 9px; border: 1.5px solid var(--border);
+    background: transparent; color: var(--text-muted); font-size: 12px; font-weight: 700;
+    cursor: pointer; font-family: var(--font); transition: all .12s; flex-shrink: 0;
+  }
+  .cb-copy-btn:hover { border-color: var(--orange); color: var(--orange); }
+  .cb-copy-btn.ok { border-color: #16a34a; color: #16a34a; }
+  .cb-desc { margin-top: 10px; font-size: 11.5px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ── Breakdown table ── */
+  .cb-breakdown {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+  }
+  .cb-bk-tbl { width: 100%; border-collapse: collapse; }
+  .cb-bk-tbl th {
+    background: var(--bg); font-size: 10px; font-weight: 700; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: .05em; padding: 10px 8px; text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .cb-bk-tbl td {
+    padding: 16px 8px; text-align: center;
+    font-size: 17px; font-weight: 700; color: var(--text);
+    font-variant-numeric: tabular-nums; font-family: var(--font);
+  }
+  .cb-bk-tbl td.hi    { color: var(--orange); }
+  .cb-bk-tbl td.muted { color: var(--text-muted); font-size: 14px; }
+
+  @media (max-width: 640px) {
+    .cb-chk-grid.g10 { grid-template-columns: repeat(6, 1fr); }
+    .cb-chk-grid.g8  { grid-template-columns: repeat(4, 1fr); }
+    .cb-expr { font-size: 18px; }
+    .cb-bk-tbl td { font-size: 13px; padding: 12px 4px; }
+    .cb-bk-tbl th { padding: 8px 4px; font-size: 9px; }
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="topbar-title-left">
+          <div class="page-title">⧗ Cron Builder</div>
+          <div class="page-sub">Quartz Cron Expression Generator · 7 fields</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" id="cb-reset-btn" style="font-size:11px">↺ Reset</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="cb-wrap">
+
+        <!-- Builder -->
+        <div class="cb-card">
+          <div class="cb-tabs" id="cb-tabs">
+            <div class="cb-tab active" data-tab="seconds">Seconds</div>
+            <div class="cb-tab" data-tab="minutes">Minutes</div>
+            <div class="cb-tab" data-tab="hours">Hours</div>
+            <div class="cb-tab" data-tab="dom">Day</div>
+            <div class="cb-tab" data-tab="month">Month</div>
+            <div class="cb-tab" data-tab="year">Year</div>
+          </div>
+          <div id="panel-seconds" class="cb-panel"></div>
+          <div id="panel-minutes" class="cb-panel" style="display:none"></div>
+          <div id="panel-hours"   class="cb-panel" style="display:none"></div>
+          <div id="panel-dom"     class="cb-panel" style="display:none"></div>
+          <div id="panel-month"   class="cb-panel" style="display:none"></div>
+          <div id="panel-year"    class="cb-panel" style="display:none"></div>
+        </div>
+
+        <!-- Output -->
+        <div class="cb-output-card">
+          <div class="cb-output-title">— Cron Expression —</div>
+          <div class="cb-expr-row">
+            <div class="cb-expr" id="cb-expr"></div>
+            <button class="cb-copy-btn" id="cb-copy-btn">Copy</button>
+          </div>
+          <div class="cb-desc" id="cb-desc"></div>
+        </div>
+
+        <!-- Breakdown -->
+        <div class="cb-breakdown">
+          <table class="cb-bk-tbl">
+            <thead>
+              <tr>
+                <th>Seconds</th>
+                <th>Minutes</th>
+                <th>Hours</th>
+                <th>Day Of Month</th>
+                <th>Month</th>
+                <th>Day Of Week</th>
+                <th>Year</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td id="bk-seconds"></td>
+                <td id="bk-minutes"></td>
+                <td id="bk-hours"></td>
+                <td id="bk-dom"></td>
+                <td id="bk-month"></td>
+                <td id="bk-dow" class="muted">?</td>
+                <td id="bk-year"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/skeletons.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/csrf.js"></script>
+<script src="assets/js/analytics.js"></script>
+<script src="assets/js/analytics-features.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════
+   Cron Builder  |  Quartz 7-field
+   Seconds  Minutes  Hours  Day-of-Month  Month  [DOW=?]  Year
+   ══════════════════════════════════════════════════════════ */
+const CronBuilder = (() => {
+  const TABS = ['seconds','minutes','hours','dom','month','year'];
+  const CY   = new Date().getFullYear();
+
+  const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+  /* ── State ─────────────────────────────────────── */
+  const defaultState = () => ({
+    tab: 'seconds',
+    seconds: { mode:'specific', specific:new Set([0]),   everyN:5,  everyStart:0,  rangeFrom:0,  rangeTo:59 },
+    minutes: { mode:'specific', specific:new Set([0]),   everyN:5,  everyStart:0,  rangeFrom:0,  rangeTo:59 },
+    hours:   { mode:'specific', specific:new Set([0]),   everyN:2,  everyStart:0,  rangeFrom:0,  rangeTo:23 },
+    dom:     { mode:'specific', specific:new Set([1]),   everyN:2,  everyStart:1,  rangeFrom:1,  rangeTo:31, nearestWeekday:1 },
+    month:   { mode:'specific', specific:new Set([1]),   everyN:2,  everyStart:1,  rangeFrom:1,  rangeTo:12 },
+    year:    { mode:'specific', specific:new Set([CY]),  everyN:2,  everyStart:CY, rangeFrom:CY, rangeTo:CY+1 },
+  });
+
+  let state = defaultState();
+
+  /* ── Expression generation ──────────────────────── */
+  const fieldExpr = (key) => {
+    const s = state[key];
+    switch (s.mode) {
+      case 'every':          return '*';
+      case 'everyN':         return `${s.everyStart}/${s.everyN}`;
+      case 'last':           return 'L';
+      case 'nearestWeekday': return `${s.nearestWeekday}W`;
+      case 'specific': {
+        if (!s.specific.size) return '*';
+        const sorted = [...s.specific].sort((a,b) => a - b);
+        if (key === 'month') return sorted.map(v => MONTH_NAMES[v-1]).join(',');
+        return sorted.join(',');
+      }
+      case 'range': {
+        if (key === 'month') return `${MONTH_NAMES[s.rangeFrom-1]}-${MONTH_NAMES[s.rangeTo-1]}`;
+        return `${s.rangeFrom}-${s.rangeTo}`;
+      }
+      default: return '*';
+    }
+  };
+
+  const generate = () => [
+    fieldExpr('seconds'), fieldExpr('minutes'), fieldExpr('hours'),
+    fieldExpr('dom'), fieldExpr('month'), '?', fieldExpr('year'),
+  ].join(' ');
+
+  const humanReadable = () => {
+    const [sec, min, hr, dom, mon, , yr] = generate().split(' ');
+    let desc = '';
+    if (sec === '*' && min === '*' && hr === '*') desc = 'Every second';
+    else if (sec === '0' && min === '*' && hr === '*') desc = 'Every minute at second 0';
+    else if (sec === '0' && min === '0' && hr === '*') desc = 'Every hour at :00:00';
+    else desc = `At second ${sec}, minute ${min}, hour ${hr}`;
+    if (dom !== '*') desc += `, day ${dom} of month`;
+    if (mon !== '*') desc += `, in ${mon}`;
+    if (yr  !== '*') desc += `, year ${yr}`;
+    return desc;
+  };
+
+  /* ── DOM helpers ────────────────────────────────── */
+  const $   = id => document.getElementById(id);
+  const rng = (a, b) => { const r = []; for (let i = a; i <= b; i++) r.push(i); return r; };
+  const pad = v => String(v).padStart(2, '0');
+  const opts = (vals, lFn, cur) =>
+    vals.map(v => `<option value="${v}"${cur === v ? ' selected' : ''}>${lFn(v)}</option>`).join('');
+
+  /* ── Checkbox grid ──────────────────────────────── */
+  const chkGrid = (key, vals, lFn, gCls) => {
+    const s = state[key];
+    const items = vals.map(v =>
+      `<div class="cb-chk${s.specific.has(v) ? ' on' : ''}" data-field="${key}" data-v="${v}">${lFn(v)}</div>`
+    ).join('');
+    return `
+      <div class="cb-chk-bar">
+        <button class="cb-mini-btn" data-action="all"  data-field="${key}">Select All</button>
+        <button class="cb-mini-btn" data-action="none" data-field="${key}">Clear</button>
+      </div>
+      <div class="cb-chk-grid ${gCls}">${items}</div>`;
+  };
+
+  /* ── Option row ─────────────────────────────────── */
+  const row = (key, mode, label, ctrls = '', extra = '') => {
+    const active = state[key].mode === mode;
+    return `
+      <div class="cb-option${active ? ' sel' : ''}" data-mode="${mode}" data-field="${key}">
+        <input type="radio" class="cb-radio" name="r-${key}"${active ? ' checked' : ''}>
+        <div class="cb-opt-body">
+          <div class="cb-opt-text">${label}</div>
+          ${active && ctrls ? `<div class="cb-ctrls">${ctrls}</div>` : ''}
+          ${active && extra ? `<div class="cb-grid-wrap">${extra}</div>` : ''}
+        </div>
+      </div>`;
+  };
+
+  /* ── Panel renderers ────────────────────────────── */
+  const renderSimple = (key) => {
+    const s      = state[key];
+    const maxVal = key === 'hours' ? 23 : 59;
+    const vals   = rng(0, maxVal);
+    const cols   = key === 'hours' ? 'g8' : 'g10';
+    const unit   = { seconds:'second', minutes:'minute', hours:'hour' }[key];
+    const evNO   = opts(rng(2, Math.min(30, maxVal)), v => v, s.everyN);
+    const stO    = opts(vals, pad, s.everyStart);
+    const rfO    = opts(vals, pad, s.rangeFrom);
+    const rtO    = opts(vals, pad, s.rangeTo);
+    const evNC   = `Every <select class="cb-sel" data-attr="everyN" data-field="${key}">${evNO}</select>
+                    ${unit}(s) starting at ${unit}
+                    <select class="cb-sel" data-attr="everyStart" data-field="${key}">${stO}</select>`;
+    const rngC   = `Every ${unit} between ${unit}
+                    <select class="cb-sel" data-attr="rangeFrom" data-field="${key}">${rfO}</select>
+                    and ${unit}
+                    <select class="cb-sel" data-attr="rangeTo" data-field="${key}">${rtO}</select>`;
+    return [
+      row(key, 'every',    `Every ${unit}`),
+      row(key, 'everyN',   `Every N ${unit}(s) starting at…`, evNC),
+      row(key, 'specific', `Specific ${unit} (choose one or many)`, '',
+          s.mode === 'specific' ? chkGrid(key, vals, pad, cols) : ''),
+      row(key, 'range',    `Every ${unit} between…`, rngC),
+    ].join('');
+  };
+
+  const renderDom = () => {
+    const s  = state.dom;
+    const v  = rng(1, 31);
+    const eN = opts(rng(2, 15), x => x, s.everyN);
+    const st = opts(v, x => x, s.everyStart);
+    const rf = opts(v, x => x, s.rangeFrom);
+    const rt = opts(v, x => x, s.rangeTo);
+    const nw = opts(v, x => x, s.nearestWeekday);
+    return [
+      row('dom','every',         'Every day'),
+      row('dom','everyN',        'Every N day(s) starting at…',
+          `Every <select class="cb-sel" data-attr="everyN" data-field="dom">${eN}</select> day(s) starting at day <select class="cb-sel" data-attr="everyStart" data-field="dom">${st}</select>`),
+      row('dom','specific',      'Specific day of month (choose one or many)', '',
+          s.mode === 'specific' ? chkGrid('dom', v, x => x, 'g10') : ''),
+      row('dom','range',         'Every day between…',
+          `Every day between day <select class="cb-sel" data-attr="rangeFrom" data-field="dom">${rf}</select> and day <select class="cb-sel" data-attr="rangeTo" data-field="dom">${rt}</select>`),
+      row('dom','last',          'Last day of the month'),
+      row('dom','nearestWeekday','Nearest weekday (Mon–Fri) to the…',
+          `Nearest weekday to the <select class="cb-sel" data-attr="nearestWeekday" data-field="dom">${nw}</select> of the month`),
+    ].join('');
+  };
+
+  const renderMonth = () => {
+    const s  = state.month;
+    const v  = rng(1, 12);
+    const mL = x => MONTH_NAMES[x-1];
+    const eN = opts(rng(2, 6), x => x, s.everyN);
+    const st = opts(v, mL, s.everyStart);
+    const rf = opts(v, mL, s.rangeFrom);
+    const rt = opts(v, mL, s.rangeTo);
+    return [
+      row('month','every',    'Every month'),
+      row('month','everyN',   'Every N month(s) starting in…',
+          `Every <select class="cb-sel" data-attr="everyN" data-field="month">${eN}</select> month(s) starting in <select class="cb-sel" data-attr="everyStart" data-field="month">${st}</select>`),
+      row('month','specific', 'Specific month (choose one or many)', '',
+          s.mode === 'specific' ? chkGrid('month', v, mL, 'g6') : ''),
+      row('month','range',    'Every month between…',
+          `Every month between <select class="cb-sel" data-attr="rangeFrom" data-field="month">${rf}</select> and <select class="cb-sel" data-attr="rangeTo" data-field="month">${rt}</select>`),
+    ].join('');
+  };
+
+  const renderYear = () => {
+    const s  = state.year;
+    const v  = rng(CY, CY + 20);
+    const eN = opts(rng(2, 5), x => x, s.everyN);
+    const st = opts(v, x => x, s.everyStart);
+    const rf = opts(v, x => x, s.rangeFrom);
+    const rt = opts(v, x => x, s.rangeTo);
+    return [
+      row('year','every',    'Every year'),
+      row('year','everyN',   'Every N year(s) starting in…',
+          `Every <select class="cb-sel" data-attr="everyN" data-field="year">${eN}</select> year(s) starting in <select class="cb-sel" data-attr="everyStart" data-field="year">${st}</select>`),
+      row('year','specific', 'Specific year (choose one or many)', '',
+          s.mode === 'specific' ? chkGrid('year', v, x => x, 'g6') : ''),
+      row('year','range',    'Every year between…',
+          `Every year between <select class="cb-sel" data-attr="rangeFrom" data-field="year">${rf}</select> and <select class="cb-sel" data-attr="rangeTo" data-field="year">${rt}</select>`),
+    ].join('');
+  };
+
+  const renderPanel = (tab) => {
+    const el = $(`panel-${tab}`);
+    if (!el) return;
+    const fn = {
+      seconds: () => renderSimple('seconds'),
+      minutes: () => renderSimple('minutes'),
+      hours:   () => renderSimple('hours'),
+      dom:  renderDom, month: renderMonth, year: renderYear,
+    }[tab];
+    if (fn) el.innerHTML = fn();
+  };
+
+  /* ── Output ─────────────────────────────────────── */
+  const renderOutput = () => {
+    const expr  = generate();
+    const parts = expr.split(' ');
+    $('cb-expr').textContent = expr;
+    $('cb-desc').textContent = humanReadable();
+    ['seconds','minutes','hours','dom','month','year'].forEach((k, i) => {
+      const td = $(`bk-${k}`);
+      if (td) { td.textContent = parts[i] || ''; td.className = k === state.tab ? 'hi' : ''; }
+    });
+  };
+
+  /* ── Switch tab ─────────────────────────────────── */
+  const switchTab = (tab) => {
+    state.tab = tab;
+    TABS.forEach(t => {
+      const p  = $(`panel-${t}`);
+      const tb = document.querySelector(`.cb-tab[data-tab="${t}"]`);
+      if (p)  p.style.display = t === tab ? '' : 'none';
+      if (tb) tb.classList.toggle('active', t === tab);
+    });
+    renderPanel(tab);
+    renderOutput();
+  };
+
+  /* ── Clipboard ──────────────────────────────────── */
+  const copyText = (text, cb) => {
+    const done = () => { if (cb) cb(); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(() => { fb(text); done(); });
+    else { fb(text); done(); }
+  };
+  const fb = t => {
+    const ta = Object.assign(document.createElement('textarea'), { value: t });
+    ta.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch {}
+    document.body.removeChild(ta);
+  };
+
+  /* ── Event handling ─────────────────────────────── */
+  const handleClick = (e) => {
+    const tabEl = e.target.closest('.cb-tab[data-tab]');
+    if (tabEl) { switchTab(tabEl.dataset.tab); return; }
+
+    if (e.target.closest('#cb-copy-btn')) {
+      const btn = $('cb-copy-btn');
+      copyText(generate(), () => {
+        btn.innerHTML = '<i data-icon="check"></i> Copied!'; btn.classList.add('ok');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+      });
+      return;
+    }
+
+    if (e.target.closest('#cb-reset-btn')) { state = defaultState(); switchTab('seconds'); return; }
+
+    const mini = e.target.closest('.cb-mini-btn[data-action][data-field]');
+    if (mini) {
+      const { action, field } = mini.dataset;
+      const lim = { seconds:{a:0,z:59}, minutes:{a:0,z:59}, hours:{a:0,z:23},
+                    dom:{a:1,z:31}, month:{a:1,z:12}, year:{a:CY,z:CY+20} }[field];
+      if (!lim) return;
+      if (action === 'all') for (let i = lim.a; i <= lim.z; i++) state[field].specific.add(i);
+      else state[field].specific.clear();
+      renderPanel(state.tab); renderOutput(); return;
+    }
+
+    const chk = e.target.closest('.cb-chk[data-field][data-v]');
+    if (chk) {
+      const { field, v } = chk.dataset; const val = Number(v);
+      if (state[field].mode !== 'specific') state[field].mode = 'specific';
+      if (state[field].specific.has(val)) state[field].specific.delete(val);
+      else state[field].specific.add(val);
+      renderPanel(state.tab); renderOutput(); return;
+    }
+
+    if (!e.target.closest('.cb-sel') && !e.target.closest('.cb-mini-btn')) {
+      const opt = e.target.closest('.cb-option[data-mode][data-field]');
+      if (opt && state[opt.dataset.field].mode !== opt.dataset.mode) {
+        state[opt.dataset.field].mode = opt.dataset.mode;
+        renderPanel(state.tab); renderOutput();
+      }
+    }
+  };
+
+  const handleChange = (e) => {
+    const sel = e.target.closest('.cb-sel[data-attr][data-field]');
+    if (!sel) return;
+    state[sel.dataset.field][sel.dataset.attr] = Number(sel.value);
+    renderOutput();
+  };
+
+  /* ── Init ───────────────────────────────────────── */
+  const init = () => {
+    TABS.forEach(t => renderPanel(t));
+    switchTab('seconds');
+    document.addEventListener('click',  handleClick);
+    document.addEventListener('change', handleChange);
+  };
+
+  return { init };
+})();
+
+if (!Auth.requireAuth()) {}
+Layout.render('cron-builder');
+CronBuilder.init();
+</script>
+</body>
+</html>

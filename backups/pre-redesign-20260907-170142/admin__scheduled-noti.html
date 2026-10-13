@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scheduled Notifications — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ── Card shell ── */
+    .cfg-card {
+      background:var(--bg-card);border:1px solid var(--border);
+      border-radius:14px;overflow:hidden;margin-bottom:16px;
+    }
+    .cfg-card-hd {
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 20px;border-bottom:1px solid var(--border);gap:10px;
+      flex-wrap:wrap;
+    }
+    .cfg-card-hd-left { display:flex;align-items:center;gap:10px; }
+    .cfg-card-icon {
+      width:34px;height:34px;border-radius:9px;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;font-size:16px;
+      background:rgba(242,100,25,.1);color:var(--orange);
+    }
+    .cfg-card-title { font-size:13px;font-weight:700;color:var(--text); }
+    .cfg-card-sub   { font-size:10px;color:var(--text-muted);margin-top:1px; }
+
+    /* ── Table ── */
+    .sch-tbl { border-collapse:collapse;font-size:11px;width:100%;table-layout:fixed; }
+    .sch-tbl thead th {
+      background:var(--bg);color:var(--text-muted);padding:9px 14px;
+      text-align:left;font-weight:600;border-bottom:1px solid var(--border);
+      font-size:10px;white-space:nowrap;letter-spacing:.02em;overflow:hidden;
+    }
+    .sch-tbl tbody td {
+      padding:0;border-bottom:1px solid var(--border);vertical-align:middle;overflow:hidden;
+    }
+    .sch-tbl tbody tr:last-child td { border-bottom:none; }
+    .td-c { padding:8px 14px;display:flex;align-items:center;gap:6px;min-height:40px; }
+
+    .col-time   { width:100px; }
+    .col-days   { width:170px; }
+    .col-msg    { width:auto; }
+    .col-action { width:140px; }
+    .col-status { width:70px; }
+    .col-btns   { width:130px; }
+
+    .time-badge { font-size:13px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums; }
+
+    .day-chips { display:flex;gap:3px;flex-wrap:wrap; }
+    .day-chip  { padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;background:rgba(242,100,25,.12);color:var(--orange); }
+    .day-chip.all { background:rgba(99,102,241,.12);color:#6366f1; }
+
+    .msg-preview { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted); }
+
+    /* ── Empty state (outside table) ── */
+    .sch-empty {
+      padding:48px 20px;text-align:center;color:var(--text-muted);font-size:13px;
+      border-top:1px solid var(--border);
+    }
+    .sch-empty-icon { font-size:32px;margin-bottom:10px; }
+    .sch-empty-desc { font-size:11px;margin-top:4px; }
+
+    /* ── Toggle switch ── */
+    .tog { position:relative;width:34px;height:19px;flex-shrink:0;display:inline-block; }
+    .tog input { opacity:0;width:0;height:0;position:absolute; }
+    .tog-slider {
+      position:absolute;inset:0;border-radius:19px;cursor:pointer;
+      background:var(--border);transition:background .2s;
+    }
+    .tog-slider:before {
+      content:'';position:absolute;left:3px;top:3px;
+      width:13px;height:13px;border-radius:50%;background:#fff;
+      transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);
+    }
+    .tog input:checked + .tog-slider { background:var(--orange); }
+    .tog input:checked + .tog-slider:before { transform:translateX(15px); }
+
+    /* ── Row action buttons ── */
+    .row-actions { display:flex;gap:5px; }
+    .btn-edit    { padding:3px 9px;border-radius:6px;font-size:10px;font-weight:700;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:background .12s; }
+    .btn-edit:hover { background:var(--border);color:var(--text); }
+    .btn-preview { padding:3px 9px;border-radius:6px;font-size:10px;font-weight:700;border:1px solid rgba(99,102,241,.3);background:transparent;color:#6366f1;cursor:pointer;transition:background .12s; }
+    .btn-preview:hover { background:rgba(99,102,241,.08); }
+    .btn-del     { padding:3px 9px;border-radius:6px;font-size:10px;font-weight:700;border:1px solid rgba(220,38,38,.3);background:transparent;color:#dc2626;cursor:pointer;transition:background .12s; }
+    .btn-del:hover { background:rgba(220,38,38,.08); }
+
+    /* ── Custom confirm dialog ── */
+    .confirm-wrap {
+      display:none;position:fixed;inset:0;z-index:900;
+      background:rgba(0,0,0,.4);backdrop-filter:blur(3px);
+      align-items:center;justify-content:center;padding:16px;
+    }
+    .confirm-wrap.open { display:flex; }
+    .confirm-box {
+      background:var(--bg-card);border-radius:16px;border:1px solid var(--border);
+      box-shadow:0 20px 50px rgba(0,0,0,.18);
+      padding:28px 26px 22px;width:100%;max-width:360px;text-align:center;
+      animation:mdIn .2s cubic-bezier(.22,1,.36,1);
+    }
+    .confirm-icon { font-size:32px;margin-bottom:10px; }
+    .confirm-title { font-size:14px;font-weight:800;color:var(--text);margin-bottom:6px; }
+    .confirm-desc  { font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:20px; }
+    .confirm-btns  { display:flex;gap:8px;justify-content:center; }
+    .confirm-cancel { padding:8px 20px;border-radius:9px;font-size:12px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer; }
+    .confirm-cancel:hover { background:var(--bg); }
+    .confirm-ok     { padding:8px 20px;border-radius:9px;font-size:12px;font-weight:700;border:none;background:#ef4444;color:#fff;cursor:pointer; }
+    .confirm-ok:hover { filter:brightness(1.08); }
+
+    /* ── Modal overlay ── */
+    .snoti-modal-wrap {
+      display:none;position:fixed;inset:0;z-index:800;
+      background:rgba(0,0,0,.45);backdrop-filter:blur(4px);
+      align-items:center;justify-content:center;padding:16px;
+    }
+    .snoti-modal-wrap.open { display:flex; }
+    .snoti-modal-box {
+      background:var(--bg-card);border-radius:18px;border:1px solid var(--border);
+      box-shadow:0 24px 60px rgba(0,0,0,.2);
+      padding:28px 28px 24px;width:100%;max-width:540px;
+      max-height:90vh;overflow-y:auto;
+      animation:mdIn .22s cubic-bezier(.22,1,.36,1);
+    }
+    @keyframes mdIn {
+      from { opacity:0;transform:scale(.93) translateY(14px); }
+      to   { opacity:1;transform:scale(1) translateY(0); }
+    }
+
+    /* ── Form inside modal ── */
+    .md-title { font-size:14px;font-weight:800;color:var(--text);margin-bottom:20px;display:flex;align-items:center;gap:8px; }
+    .f-row    { margin-bottom:16px; }
+    .f-label  { font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px; }
+    .f-input  {
+      width:100%;padding:8px 11px;border-radius:9px;
+      border:1px solid var(--border);background:var(--bg);
+      color:var(--text);font-size:13px;font-family:inherit;box-sizing:border-box;
+    }
+    .f-input:focus { outline:none;border-color:var(--orange); }
+    textarea.f-input { resize:vertical;min-height:84px; }
+
+    /* Day checkboxes */
+    .day-sel  { display:flex;gap:6px;flex-wrap:wrap; }
+    .day-pill {
+      padding:5px 11px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;
+      border:1px solid var(--border);color:var(--text-muted);
+      transition:background .12s,color .12s,border-color .12s;user-select:none;
+      display:inline-flex;align-items:center;
+    }
+    .day-pill.sel-all { border-color:#6366f1; }
+    .day-pill.sel-all.active { background:#6366f1;color:#fff;border-color:#6366f1; }
+    .day-pill.active          { background:var(--orange);color:#fff;border-color:var(--orange); }
+
+    /* Day-mode tabs (weekly / monthly) */
+    .daymode-tabs { display:flex;gap:6px;margin-bottom:10px; }
+    .daymode-tab {
+      flex:1;padding:7px 10px;border-radius:8px;font-size:11px;font-weight:700;
+      border:1.5px solid var(--border);background:transparent;color:var(--text-muted);
+      cursor:pointer;text-align:center;transition:all .15s;
+    }
+    .daymode-tab.active {
+      border-color:var(--orange);background:rgba(242,100,25,.07);color:var(--orange);
+    }
+
+    /* Month-day grid (1-31) */
+    .date-grid {
+      display:grid;grid-template-columns:repeat(7, 1fr);gap:5px;
+    }
+    .date-cell {
+      padding:7px 0;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;
+      border:1px solid var(--border);color:var(--text-muted);background:transparent;
+      transition:background .12s,color .12s,border-color .12s;user-select:none;
+      text-align:center;font-variant-numeric:tabular-nums;
+    }
+    .date-cell.active { background:var(--orange);color:#fff;border-color:var(--orange); }
+    .date-cell:hover  { border-color:var(--orange); }
+    .date-cell.exclude.active { background:#ef4444;border-color:#ef4444; }
+    .date-cell.exclude:hover  { border-color:#ef4444; }
+    .date-hint { font-size:10px;color:var(--text-muted);margin-top:6px; }
+    .day-chip.exclude { background:rgba(239,68,68,.12);color:#ef4444; }
+
+    /* Preview box */
+    .preview-box {
+      background:var(--bg);border-radius:10px;border:1px solid var(--border);
+      padding:14px;display:none;margin-top:8px;
+    }
+    .preview-box.visible { display:block; }
+    .preview-hint { font-size:10px;color:var(--text-muted);margin-bottom:6px; }
+    .preview-msg  { font-size:12px;color:var(--text);white-space:pre-wrap;line-height:1.65; }
+
+    /* Enabled row */
+    .enabled-row { display:flex;align-items:center;gap:10px; }
+    .enabled-label { font-size:12px;color:var(--text-muted); }
+
+    /* Modal footer */
+    .md-footer { display:flex;justify-content:flex-end;gap:8px;margin-top:22px;padding-top:16px;border-top:1px solid var(--border); }
+    .btn-md-cancel { padding:8px 18px;border-radius:9px;font-size:12px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer; }
+    .btn-md-cancel:hover { background:var(--bg); }
+    .btn-md-save   { padding:8px 22px;border-radius:9px;font-size:12px;font-weight:700;border:none;background:var(--orange);color:#fff;cursor:pointer; }
+    .btn-md-save:hover { filter:brightness(1.08); }
+    .btn-md-save:disabled { opacity:.5;cursor:not-allowed; }
+
+    /* Google Chat webhook test button */
+    .btn-chat-test {
+      padding:6px 12px;border-radius:7px;font-size:10px;font-weight:700;
+      border:1px solid rgba(66,133,244,.35);background:transparent;
+      color:#4285f4;cursor:pointer;transition:background .12s;white-space:nowrap;
+    }
+    .btn-chat-test:hover { background:rgba(66,133,244,.08); }
+    .btn-chat-test:disabled { opacity:.5;cursor:not-allowed; }
+
+    /* Multi-webhook UI */
+    .webhook-row { display:flex;gap:8px;align-items:center;margin-bottom:6px; }
+    .btn-webhook-remove {
+      padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;
+      border:1px solid rgba(220,38,38,.3);background:transparent;
+      color:#dc2626;cursor:pointer;flex-shrink:0;
+    }
+    .btn-webhook-remove:hover { background:rgba(220,38,38,.08); }
+    .btn-add-webhook {
+      display:inline-block;margin-top:6px;padding:5px 12px;border-radius:7px;
+      font-size:10px;font-weight:700;border:1px dashed var(--border);
+      background:transparent;color:var(--text-muted);cursor:pointer;
+    }
+    .btn-add-webhook:hover { border-color:var(--orange);color:var(--orange); }
+
+    /* Google Chat badge in table */
+    .chat-badge {
+      display:inline-flex;align-items:center;gap:3px;
+      background:rgba(66,133,244,.1);color:#4285f4;
+      border-radius:5px;padding:1px 6px;font-size:9px;font-weight:700;
+    }
+
+    /* Type selector tabs */
+    .type-tabs { display:flex;gap:6px;margin-bottom:20px; }
+    .type-tab {
+      flex:1;padding:9px 10px;border-radius:10px;font-size:11px;font-weight:700;
+      border:1.5px solid var(--border);background:transparent;color:var(--text-muted);
+      cursor:pointer;text-align:center;transition:all .15s;
+    }
+    .type-tab.active {
+      border-color:var(--orange);background:rgba(242,100,25,.07);color:var(--orange);
+    }
+    .type-tab-icon { display:block;font-size:18px;margin-bottom:3px; }
+
+    /* Shift slot checkboxes */
+    .shift-grid { display:flex;flex-direction:column;gap:6px; }
+    .shift-check-row {
+      display:flex;align-items:center;gap:8px;
+      padding:7px 10px;border-radius:8px;border:1px solid var(--border);
+      cursor:pointer;transition:background .12s;user-select:none;
+    }
+    .shift-check-row:hover { background:var(--bg); }
+    .shift-check-row input[type=checkbox] { width:14px;height:14px;accent-color:var(--orange);cursor:pointer; }
+    .shift-check-label { font-size:12px;color:var(--text);flex:1; }
+    .shift-check-badge {
+      font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;
+      background:rgba(242,100,25,.1);color:var(--orange);
+    }
+
+    /* Shift summary badge in table */
+    .shift-badge {
+      display:inline-flex;align-items:center;gap:3px;
+      background:rgba(16,185,129,.1);color:#10b981;
+      border-radius:5px;padding:1px 6px;font-size:9px;font-weight:700;
+    }
+
+    /* Info banner */
+    .info-box {
+      background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.2);
+      border-radius:10px;padding:12px 16px;font-size:11px;
+      color:var(--text-muted);line-height:1.65;margin-bottom:16px;
+    }
+    .info-box strong { color:var(--text); }
+
+    /* ── Auto-noti panel (Pod Restart · Batch Monitor) ── */
+    .auto-sec { border-top:1px solid var(--border); }
+    .auto-sec:first-child { border-top:0; }
+    .auto-sec-hd {
+      padding:14px 20px 8px;
+      display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+    }
+    .auto-sec-title { font-size:12px;font-weight:700;color:var(--text); }
+    .auto-sec-sub   { font-size:10.5px;color:var(--text-muted); }
+    .auto-sec-link  {
+      margin-left:auto;font-size:10.5px;color:#3b82f6;
+      text-decoration:none;display:inline-flex;align-items:center;gap:2px;
+    }
+    .auto-sec-link:hover { text-decoration:underline; }
+    .auto-list { padding:4px 12px 12px; }
+    .auto-item {
+      display:flex;align-items:center;gap:10px;
+      padding:9px 10px;border-radius:8px;
+      transition:background .12s;
+    }
+    .auto-item:hover { background:rgba(127,127,127,.05); }
+    .auto-item + .auto-item { margin-top:2px; }
+    .auto-item-main { flex:1;min-width:0; }
+    .auto-item-name { font-size:12px;font-weight:700;color:var(--text); }
+    .auto-item-name small { font-weight:500;color:var(--text-muted);margin-left:5px; }
+    .auto-item-sub  {
+      font-size:10.5px;color:var(--text-muted);margin-top:2px;
+      font-family:ui-monospace,Menlo,monospace;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+      max-width:100%;
+    }
+    .auto-item-badge {
+      font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:4px;
+      background:rgba(34,197,94,.12);color:#16a34a;flex-shrink:0;
+      letter-spacing:.02em;
+    }
+    .auto-item-badge.warn { background:rgba(220,38,38,.12);color:#dc2626; }
+    .auto-item-badge.muted { background:rgba(127,127,127,.12);color:var(--text-muted); }
+    .auto-empty {
+      padding:24px 16px;text-align:center;color:var(--text-muted);font-size:11px;
+    }
+    .auto-loading {
+      padding:14px 16px;color:var(--text-muted);font-size:11px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="bell"></i> Scheduled Notifications</div>
+        <div class="page-sub">ตั้งเวลา popup แจ้งเตือนอัตโนมัติแก่ทุก user ที่ใช้เว็บอยู่</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="./index.html" class="btn btn-ghost" style="font-size:11px">← Admin Panel</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="bell"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Scheduled Notifications</h1>
+          <p>ตั้งเวลา popup แจ้งเตือนอัตโนมัติแก่ทุก user ที่ใช้เว็บอยู่ — ตรวจทุก 30 วิ ไม่ซ้ำในวันเดียวกัน</p>
+        </div>
+      </section>
+
+      <div class="info-box">
+        <i data-icon="lightbulb"></i> <strong>วิธีทำงาน:</strong> ทุก user ที่เปิดหน้าเว็บ Centralize อยู่จะเห็น popup ขึ้นกลางจออัตโนมัติเมื่อถึงเวลาที่กำหนด
+        ระบบตรวจสอบทุก 30 วินาที · ไม่แสดงซ้ำในวันเดียวกัน · config อัปเดตถึง user ภายใน ~5 นาทีหลังบันทึก
+      </div>
+
+      <div class="cfg-card">
+        <div class="cfg-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon"><i data-icon="bell"></i></div>
+            <div>
+              <div class="cfg-card-title">Schedule ทั้งหมด</div>
+              <div class="cfg-card-sub" id="sch-count">กำลังโหลด…</div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btn-add" style="font-size:11px">+ เพิ่ม Schedule</button>
+        </div>
+
+        <!-- table -->
+        <div style="overflow-x:auto" id="sch-table-wrap">
+          <table class="sch-tbl">
+            <thead>
+              <tr>
+                <th class="col-time">เวลา</th>
+                <th class="col-days">วัน</th>
+                <th class="col-msg">ข้อความ</th>
+                <th class="col-action">Action</th>
+                <th class="col-status">สถานะ</th>
+                <th class="col-btns"></th>
+              </tr>
+            </thead>
+            <tbody id="sch-tbody">
+              <tr><td colspan="6" style="padding:32px;text-align:center;color:var(--text-muted)">
+                <div class="spinner" style="display:inline-block;margin-right:8px"></div>กำลังโหลด…
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- empty state (shown outside table) -->
+        <div class="sch-empty" id="sch-empty" style="display:none">
+          <div class="sch-empty-icon"><i data-icon="bell"></i></div>
+          <div>ยังไม่มี Schedule</div>
+          <div class="sch-empty-desc">กดปุ่ม "+ เพิ่ม Schedule" เพื่อเริ่มต้นตั้งเวลาแจ้งเตือน</div>
+        </div>
+      </div>
+
+      <!-- ── ระบบแจ้งเตือนอัตโนมัติจาก cron (Pod Restart · Batch Monitor) ── -->
+      <div class="cfg-card" id="auto-noti-card">
+        <div class="cfg-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon" style="background:rgba(99,102,241,.12);color:#6366f1"><i data-icon="settings"></i></div>
+            <div>
+              <div class="cfg-card-title">ระบบแจ้งเตือนอัตโนมัติ (จาก cron)</div>
+              <div class="cfg-card-sub">เปิด/ปิด noti จากระบบภายในที่รันเอง</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pod Restart Monitor -->
+        <div class="auto-sec">
+          <div class="auto-sec-hd">
+            <div>
+              <div class="auto-sec-title"><i data-icon="siren"></i> Pod Restart Monitor</div>
+              <div class="auto-sec-sub">รายวัน 09:00 ICT · Google Chat · cron/restart-monitor-run-all.php</div>
+            </div>
+            <a href="./service-severity.html" class="auto-sec-link" title="แก้ webhook URL ต่อ runway">แก้ webhook URL ↗</a>
+          </div>
+          <div class="auto-list" id="auto-restart-list">
+            <div class="auto-loading">กำลังโหลด…</div>
+          </div>
+        </div>
+
+        <!-- Batch Monitor Noti -->
+        <div class="auto-sec">
+          <div class="auto-sec-hd">
+            <div>
+              <div class="auto-sec-title"><i data-icon="bar-chart"></i> Batch Monitor Noti</div>
+              <div class="auto-sec-sub">Realtime · Google Chat · ต่อ Jenkins server</div>
+            </div>
+            <a href="./batch-monitor-noti.html" class="auto-sec-link" title="แก้ config เต็ม">แก้ config เต็ม ↗</a>
+          </div>
+          <div class="auto-list" id="auto-batch-list">
+            <div class="auto-loading">กำลังโหลด…</div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ══ Add / Edit Modal ══ -->
+<div class="snoti-modal-wrap" id="modal-wrap">
+  <div class="snoti-modal-box" id="modal-box">
+
+    <div class="md-title">
+      <span id="md-icon"><i data-icon="bell"></i></span>
+      <span id="md-title">เพิ่ม Schedule ใหม่</span>
+    </div>
+
+    <input type="hidden" id="edit-id">
+
+    <!-- Type tabs -->
+    <div class="type-tabs" id="type-tabs">
+      <button class="type-tab active" data-type="general" type="button">
+        <span class="type-tab-icon"><i data-icon="bell"></i></span>แจ้งเตือนทั่วไป
+      </button>
+      <button class="type-tab" data-type="shift_summary" type="button">
+        <span class="type-tab-icon"><i data-icon="calendar"></i></span>Shift Summary
+      </button>
+      <button class="type-tab" data-type="grafana_paused" type="button">
+        <span class="type-tab-icon"><i data-icon="pause"></i></span>Paused Alerts
+      </button>
+    </div>
+    <input type="hidden" id="f-type" value="general">
+
+    <!-- Time -->
+    <div class="f-row">
+      <div class="f-label">เวลาแจ้งเตือน (HH:MM) <span style="color:#ef4444">*</span></div>
+      <input type="time" id="f-time" class="f-input" style="width:150px">
+    </div>
+
+    <!-- Days -->
+    <div class="f-row">
+      <div class="f-label">วันที่แจ้งเตือน <span style="color:#ef4444">*</span></div>
+      <div class="daymode-tabs" id="daymode-tabs">
+        <button class="daymode-tab active" data-mode="weekly"  type="button"><i data-icon="calendar"></i> รายสัปดาห์</button>
+        <button class="daymode-tab"        data-mode="monthly" type="button"><i data-icon="calendar"></i> รายเดือน</button>
+      </div>
+      <input type="hidden" id="f-day-mode" value="weekly">
+
+      <div class="day-sel" id="day-sel">
+        <span class="day-pill sel-all" data-v="all">ทุกวัน</span>
+        <span class="day-pill" data-v="mon">จ</span>
+        <span class="day-pill" data-v="tue">อ</span>
+        <span class="day-pill" data-v="wed">พ</span>
+        <span class="day-pill" data-v="thu">พฤ</span>
+        <span class="day-pill" data-v="fri">ศ</span>
+        <span class="day-pill" data-v="sat">ส</span>
+        <span class="day-pill" data-v="sun">อา</span>
+      </div>
+
+      <div id="date-sel" style="display:none">
+        <div class="date-grid" id="date-grid"></div>
+        <div class="date-hint">เลือกวันที่ต้องการในเดือนได้หลายวัน · วันที่ 29-31 จะข้ามไปในเดือนที่ไม่มีวันนั้น</div>
+      </div>
+
+      <div id="exclude-sel" style="display:none;margin-top:14px">
+        <div class="f-label" style="margin-bottom:6px;color:#ef4444"><i data-icon="calendar-x"></i> ยกเว้นวันที่ (ไม่บังคับ)</div>
+        <div class="date-grid" id="exclude-grid"></div>
+        <div class="date-hint">เลือกวันที่ที่ <b>ไม่ต้องการ</b> ให้แจ้งเตือน · ใช้ได้เฉพาะโหมด "ทุกวัน" ของสัปดาห์</div>
+      </div>
+    </div>
+
+    <!-- ── GENERAL fields ── -->
+    <div id="section-general">
+      <!-- Message -->
+      <div class="f-row">
+        <div class="f-label">ข้อความแจ้งเตือน <span style="color:#ef4444">*</span></div>
+        <textarea id="f-message" class="f-input"
+          placeholder="เช่น รบกวนทีมงาน ใส่ข้อมูล Batch File ที่ Fail ด้วยครับ&#10;TMN · NANO · WEALTH"></textarea>
+        <div class="preview-box" id="preview-box">
+          <div class="preview-hint"><i data-icon="bell"></i> ตัวอย่าง popup ที่ user จะเห็น:</div>
+          <div class="preview-msg" id="preview-msg"></div>
+        </div>
+      </div>
+
+      <!-- Action button (optional) -->
+      <div class="f-row">
+        <div class="f-label">ปุ่ม Action (ไม่บังคับ)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" id="f-action-label" class="f-input" placeholder="ข้อความบนปุ่ม เช่น ไป Batch Report" style="flex:1;min-width:160px">
+          <input type="text" id="f-action-url"   class="f-input" placeholder="URL เช่น batch-monitor.html" style="flex:1;min-width:160px">
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:5px">
+          URL เป็น path จาก root ของเว็บ เช่น <code>batch-monitor.html</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SHIFT SUMMARY fields ── -->
+    <div id="section-shift" style="display:none">
+      <!-- Shifts today -->
+      <div class="f-row">
+        <div class="f-label"><i data-icon="moon"></i> Shift วันนี้ (กะที่ทำงานอยู่คืนนี้)</div>
+        <div class="shift-grid" id="shifts-today-grid">
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_today" value="shift2_wah">
+            <span class="shift-check-label">SHIFT#2 · W@H Team</span>
+            <span class="shift-check-badge">กะดึก 22:00–07:30</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_today" value="shift2_oncall">
+            <span class="shift-check-label">SHIFT#2 · Oncall Support</span>
+            <span class="shift-check-badge">กะดึก</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_today" value="shift1_tdpk">
+            <span class="shift-check-label">SHIFT#1 · TDPK Team</span>
+            <span class="shift-check-badge">กะเช้า 07:30–17:00</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_today" value="shift1_wah">
+            <span class="shift-check-label">SHIFT#1 · W@H Team</span>
+            <span class="shift-check-badge">กะเช้า 07:30–17:00</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_today" value="shift1_oncall">
+            <span class="shift-check-label">SHIFT#1 · Oncall Support</span>
+            <span class="shift-check-badge">กะเช้า</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_today" value="vacation">
+            <span class="shift-check-label">Vacation</span>
+            <span class="shift-check-badge" style="background:rgba(99,102,241,.1);color:#6366f1">ลาพัก</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_today" value="sick">
+            <span class="shift-check-label">Sick Leave</span>
+            <span class="shift-check-badge" style="background:rgba(239,68,68,.1);color:#ef4444">ลาป่วย</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Shifts tomorrow -->
+      <div class="f-row">
+        <div class="f-label"><i data-icon="sunrise"></i> Shift พรุ่งนี้ (กะที่จะมาทำงาน)</div>
+        <div class="shift-grid" id="shifts-tomorrow-grid">
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_tomorrow" value="shift1_tdpk">
+            <span class="shift-check-label">SHIFT#1 · TDPK Team</span>
+            <span class="shift-check-badge">กะเช้า 07:30–17:00</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_tomorrow" value="shift1_wah">
+            <span class="shift-check-label">SHIFT#1 · W@H Team</span>
+            <span class="shift-check-badge">กะเช้า 07:30–17:00</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_tomorrow" value="shift1_oncall">
+            <span class="shift-check-label">SHIFT#1 · Oncall Support</span>
+            <span class="shift-check-badge">กะเช้า</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_tomorrow" value="shift2_wah">
+            <span class="shift-check-label">SHIFT#2 · W@H Team</span>
+            <span class="shift-check-badge">กะดึก 22:00–07:30</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_tomorrow" value="shift2_oncall">
+            <span class="shift-check-label">SHIFT#2 · Oncall Support</span>
+            <span class="shift-check-badge">กะดึก</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_tomorrow" value="vacation">
+            <span class="shift-check-label">Vacation</span>
+            <span class="shift-check-badge" style="background:rgba(99,102,241,.1);color:#6366f1">ลาพัก</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_tomorrow" value="sick">
+            <span class="shift-check-label">Sick Leave</span>
+            <span class="shift-check-badge" style="background:rgba(239,68,68,.1);color:#ef4444">ลาป่วย</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── GRAFANA PAUSED-ALERTS fields ── -->
+    <div id="section-grafana" style="display:none">
+      <div class="f-row">
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;background:var(--bg);border:1px dashed var(--border);border-radius:8px;padding:12px 14px">
+          <b style="color:var(--text)"><i data-icon="pause"></i> Grafana Paused Alerts digest</b><br>
+          ระบบจะ<b>ดึงสถานะ paused สดจาก Grafana ทุก org</b> ตอนถึงเวลา แล้วสรุปเป็นการ์ดยิงเข้า Google Chat
+          (การ์ดสรุป + thread แตกรายชื่อ alert ต่อ source) — ไม่ต้องกรอกข้อความเอง<br>
+          <span style="opacity:.8">รายการ source แก้ไขได้ที่ <code>data/sm/grafana-alert-sources.json</code> · ดูสดได้ที่หน้า <code>grafana-alerts.html</code></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Google Chat Webhooks (multi) -->
+    <div class="f-row">
+      <div class="f-label" id="webhook-label">Google Chat Webhook URL (ไม่บังคับ)</div>
+      <div id="webhooks-list"></div>
+      <button type="button" class="btn-add-webhook" onclick="addWebhookRow()">+ เพิ่ม Webhook Room</button>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:8px" id="webhook-hint">
+        เพิ่มได้หลาย room — ระบบจะยิงไปทุก webhook พร้อมกัน (dedup: ส่งครั้งเดียวต่อวันต่อ schedule)
+      </div>
+    </div>
+
+    <!-- Enabled -->
+    <div class="f-row">
+      <div class="f-label">สถานะ</div>
+      <div class="enabled-row">
+        <label class="tog">
+          <input type="checkbox" id="f-enabled" checked>
+          <span class="tog-slider"></span>
+        </label>
+        <span class="enabled-label" id="f-enabled-lbl">เปิดใช้งาน</span>
+      </div>
+    </div>
+
+    <div class="md-footer">
+      <button class="btn-md-cancel" id="btn-cancel">ยกเลิก</button>
+      <button class="btn-md-save"   id="btn-save"><i data-icon="save"></i> บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Custom Confirm Dialog ══ -->
+<div class="confirm-wrap" id="confirm-wrap">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon"><i data-icon="trash"></i></div>
+    <div class="confirm-title" id="confirm-title">ยืนยันการลบ</div>
+    <div class="confirm-desc"  id="confirm-desc"></div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" id="confirm-cancel-btn">ยกเลิก</button>
+      <button class="confirm-ok"     id="confirm-ok-btn">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('admin');
+
+// ── State ─────────────────────────────────────────────────────────
+let rows     = [];
+let selDays  = ['mon','tue','wed','thu','fri']; // current selection in modal
+let selDates = [];                              // monthly mode: array of int 1-31
+let selExcludeDates = [];                       // weekly + "all" mode: dates to skip
+let dayMode  = 'weekly';                        // 'weekly' | 'monthly'
+
+// ── Build month-day grid (1-31) ────────────────────────────────────
+(function buildDateGrid() {
+  const grid = document.getElementById('date-grid');
+  if (grid) {
+    grid.innerHTML = Array.from({length: 31}, (_, i) =>
+      `<button type="button" class="date-cell" data-d="${i+1}">${i+1}</button>`
+    ).join('');
+  }
+  const excl = document.getElementById('exclude-grid');
+  if (excl) {
+    excl.innerHTML = Array.from({length: 31}, (_, i) =>
+      `<button type="button" class="date-cell exclude" data-d="${i+1}">${i+1}</button>`
+    ).join('');
+  }
+})();
+
+document.getElementById('exclude-grid').addEventListener('click', function(e) {
+  const cell = e.target.closest('.date-cell');
+  if (!cell) return;
+  cell.classList.toggle('active');
+  selExcludeDates = Array.from(this.querySelectorAll('.date-cell.active'))
+    .map(c => parseInt(c.dataset.d, 10))
+    .sort((a, b) => a - b);
+});
+
+function setExcludeCells(dates) {
+  selExcludeDates = Array.isArray(dates) ? dates.slice().sort((a, b) => a - b) : [];
+  document.querySelectorAll('#exclude-grid .date-cell').forEach(c => {
+    c.classList.toggle('active', selExcludeDates.includes(parseInt(c.dataset.d, 10)));
+  });
+}
+
+function _updateExcludeVisibility() {
+  const showExcl = dayMode === 'weekly' && selDays.includes('all');
+  document.getElementById('exclude-sel').style.display = showExcl ? '' : 'none';
+}
+
+// ── Day-mode tab switching ─────────────────────────────────────────
+document.getElementById('daymode-tabs').addEventListener('click', function(e) {
+  const tab = e.target.closest('.daymode-tab');
+  if (!tab) return;
+  _setDayMode(tab.dataset.mode);
+});
+
+function _setDayMode(mode) {
+  dayMode = mode;
+  document.getElementById('f-day-mode').value = mode;
+  document.querySelectorAll('.daymode-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.mode === mode));
+  document.getElementById('day-sel').style.display  = mode === 'weekly'  ? '' : 'none';
+  document.getElementById('date-sel').style.display = mode === 'monthly' ? '' : 'none';
+  _updateExcludeVisibility();
+}
+
+// ── Month-day grid click ───────────────────────────────────────────
+document.getElementById('date-grid').addEventListener('click', function(e) {
+  const cell = e.target.closest('.date-cell');
+  if (!cell) return;
+  cell.classList.toggle('active');
+  selDates = Array.from(this.querySelectorAll('.date-cell.active'))
+    .map(c => parseInt(c.dataset.d, 10))
+    .sort((a, b) => a - b);
+});
+
+function setDateCells(dates) {
+  selDates = Array.isArray(dates) ? dates.slice().sort((a, b) => a - b) : [];
+  document.querySelectorAll('#date-grid .date-cell').forEach(c => {
+    c.classList.toggle('active', selDates.includes(parseInt(c.dataset.d, 10)));
+  });
+}
+
+// ── Type tab switching ─────────────────────────────────────────────
+document.getElementById('type-tabs').addEventListener('click', function(e) {
+  const tab = e.target.closest('.type-tab');
+  if (!tab) return;
+  const type = tab.dataset.type;
+  document.querySelectorAll('.type-tab').forEach(t => t.classList.toggle('active', t === tab));
+  document.getElementById('f-type').value = type;
+  _applyTypeUI(type);
+});
+
+function _applyTypeUI(type) {
+  const isShift   = type === 'shift_summary';
+  const isGrafana = type === 'grafana_paused';
+  const isGeneral = !isShift && !isGrafana;
+  document.getElementById('section-general').style.display = isGeneral ? '' : 'none';
+  document.getElementById('section-shift').style.display   = isShift   ? '' : 'none';
+  const gSec = document.getElementById('section-grafana');
+  if (gSec) gSec.style.display = isGrafana ? '' : 'none';
+
+  const webhookRequired = isShift || isGrafana;
+  document.getElementById('webhook-label').textContent =
+    webhookRequired ? 'Google Chat Webhook URLs *' : 'Google Chat Webhook URL (ไม่บังคับ)';
+  document.getElementById('webhook-hint').textContent =
+    isGrafana
+      ? 'การ์ดสรุป Grafana paused alerts (ดึงสดตอนยิง) จะถูกส่งไปทุก room ตามเวลาที่กำหนด (dedup: วันละครั้ง)'
+      : isShift
+      ? 'SM Shift Handover card จะถูกส่งไปทุก webhook room ตามเวลาที่กำหนด (dedup: ส่งครั้งเดียวต่อวัน)'
+      : 'เพิ่มได้หลาย room — ระบบจะยิงไปทุก webhook พร้อมกัน (dedup: ส่งครั้งเดียวต่อวันต่อ schedule)';
+  // type tabs locked when editing (can't change type of existing schedule)
+  const editId = document.getElementById('edit-id').value;
+  document.getElementById('type-tabs').style.pointerEvents = editId ? 'none' : '';
+  document.getElementById('type-tabs').style.opacity = editId ? '0.5' : '';
+}
+
+// ── Day pill click handler ─────────────────────────────────────────
+document.getElementById('day-sel').addEventListener('click', function(e) {
+  const pill = e.target.closest('.day-pill');
+  if (!pill) return;
+  const v = pill.dataset.v;
+
+  if (v === 'all') {
+    // Toggle "ทุกวัน"
+    const isNowAll = !pill.classList.contains('active');
+    document.querySelectorAll('#day-sel .day-pill').forEach(p => p.classList.remove('active'));
+    if (isNowAll) {
+      pill.classList.add('active');
+      selDays = ['all'];
+    } else {
+      selDays = [];
+    }
+  } else {
+    // Deselect "ทุกวัน" if individual day picked
+    document.querySelector('#day-sel .day-pill[data-v="all"]').classList.remove('active');
+    pill.classList.toggle('active');
+    selDays = Array.from(document.querySelectorAll('#day-sel .day-pill.active')).map(p => p.dataset.v).filter(x => x !== 'all');
+  }
+  _updateExcludeVisibility();
+});
+
+// ── Enable toggle label ────────────────────────────────────────────
+document.getElementById('f-enabled').addEventListener('change', function() {
+  document.getElementById('f-enabled-lbl').textContent = this.checked ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+});
+
+// ── Multi-webhook helpers ──────────────────────────────────────────
+function renderWebhookRows(urls) {
+  if (!Array.isArray(urls) || !urls.length) urls = [''];
+  const editId = document.getElementById('edit-id').value;
+  document.getElementById('webhooks-list').innerHTML = urls.map((url, i) => `
+    <div class="webhook-row">
+      <input type="url" class="f-input webhook-url-input"
+        placeholder="https://chat.googleapis.com/v1/spaces/…/messages?key=…"
+        value="${escHtml(url)}" style="flex:1">
+      ${editId ? `<button type="button" class="btn-chat-test" onclick="testWebhookRow(this)">💬 ทดสอบ</button>` : ''}
+      ${urls.length > 1 ? `<button type="button" class="btn-webhook-remove" onclick="removeWebhookRow(this)" title="ลบ">✕</button>` : ''}
+    </div>
+  `).join('');
+}
+
+function addWebhookRow() {
+  const current = Array.from(document.querySelectorAll('.webhook-url-input')).map(i => i.value);
+  current.push('');
+  renderWebhookRows(current);
+}
+
+function removeWebhookRow(btn) {
+  btn.closest('.webhook-row').remove();
+  const remaining = document.querySelectorAll('.webhook-url-input');
+  if (remaining.length === 1) {
+    renderWebhookRows([remaining[0].value]);
+  }
+}
+
+async function testWebhookRow(btn) {
+  const url    = btn.closest('.webhook-row').querySelector('.webhook-url-input').value.trim();
+  const editId = document.getElementById('edit-id').value;
+  const type   = document.getElementById('f-type').value;
+  if (!url)    { Toast.warning('กรอก Webhook URL ก่อน'); return; }
+  if (!editId) { Toast.warning('บันทึก schedule ก่อนนะ แล้วค่อยทดสอบ'); return; }
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    const res = type === 'shift_summary'
+      ? await API.scheduledNoti.testShiftSummary(editId, url)
+      : type === 'grafana_paused'
+      ? await API.scheduledNoti.testGrafanaPaused(editId, url)
+      : await API.post('/scheduled-noti/send-chat.php', { id: editId, test: true, webhook_url: url });
+    if (res?.ok) Toast.success('ส่ง Google Chat test สำเร็จ <i data-icon="sparkles"></i>');
+    else Toast.error(res?.data?.message || 'ส่งไม่สำเร็จ');
+  } catch { Toast.error('เกิดข้อผิดพลาด'); }
+  finally { btn.disabled = false; btn.innerHTML = '<i data-icon="message-circle"></i> ทดสอบ'; }
+}
+
+function getWebhookUrls() {
+  return Array.from(document.querySelectorAll('.webhook-url-input'))
+    .map(i => i.value.trim()).filter(Boolean);
+}
+
+// ── Message preview ────────────────────────────────────────────────
+document.getElementById('f-message').addEventListener('input', function() {
+  const box = document.getElementById('preview-box');
+  const msg = this.value.trim();
+  if (msg) {
+    box.classList.add('visible');
+    document.getElementById('preview-msg').textContent = msg;
+  } else {
+    box.classList.remove('visible');
+  }
+});
+
+// ── Load schedules ─────────────────────────────────────────────────
+async function load() {
+  try {
+    const res = await API.scheduledNoti.list(true);
+    rows = (res?.ok && Array.isArray(res.data?.data)) ? res.data.data : [];
+  } catch { rows = []; }
+  render();
+  // Fire the auto-noti panel load in parallel — its errors are independent.
+  loadAutoNoti();
+}
+
+// ── Auto-noti panel (Pod Restart · Batch Monitor) ─────────────────
+function _esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+async function loadAutoNoti() {
+  await Promise.all([loadRestartToggles(), loadBatchToggles()]);
+}
+
+async function loadRestartToggles() {
+  const wrap = document.getElementById('auto-restart-list');
+  if (!wrap) return;
+  try {
+    const res = await API.restartMonitorWebhooks.list();
+    const runways = res?.data?.data?.runways || [];
+    if (!runways.length) {
+      wrap.innerHTML = '<div class="auto-empty">ยังไม่มี runway (data/grafana-runways.json)</div>';
+      return;
+    }
+    wrap.innerHTML = runways.map(renderRestartRow).join('');
+  } catch (err) {
+    wrap.innerHTML = `<div class="auto-loading" style="color:#dc2626">โหลดไม่สำเร็จ: ${_esc(err.message || err)}</div>`;
+  }
+}
+
+function renderRestartRow(r) {
+  const slug   = _esc(r.slug);
+  const name   = _esc(r.name);
+  const clust  = _esc(r.cluster || '');
+  const url    = r.maskedUrl ? _esc(r.maskedUrl) : '<span style="color:#dc2626">(ยังไม่ได้ตั้ง webhook URL)</span>';
+  const hasWh  = r.hasEnv || r.hasOverride;
+  const badge  = !hasWh
+    ? '<span class="auto-item-badge warn">no webhook</span>'
+    : (r.enabled ? '<span class="auto-item-badge">on</span>'
+                 : '<span class="auto-item-badge warn">off</span>');
+  const togAttrs = hasWh
+    ? `${r.enabled ? 'checked' : ''} onchange="toggleRestartRunway('${slug}', this.checked)"`
+    : `disabled title="ตั้ง webhook URL ก่อน"`;
+  const togOpacity = hasWh ? '' : 'style="opacity:.35"';
+  return `<div class="auto-item">
+    <div class="auto-item-main">
+      <div class="auto-item-name">${name} <small>${clust}</small></div>
+      <div class="auto-item-sub">${url}</div>
+    </div>
+    ${badge}
+    <label class="tog" ${togOpacity}>
+      <input type="checkbox" data-action="edit" ${togAttrs}>
+      <span class="tog-slider"></span>
+    </label>
+  </div>`;
+}
+
+async function toggleRestartRunway(slug, enabled) {
+  try {
+    await API.restartMonitorWebhooks.setEnabled(slug, enabled);
+    Toast.success(`${slug} · ${enabled ? 'เปิด noti' : 'ปิด noti'}`);
+  } catch (err) {
+    Toast.error(`อัปเดตไม่สำเร็จ: ${err.message || err}`);
+    loadRestartToggles(); // rollback UI to server state
+  }
+}
+
+async function loadBatchToggles() {
+  const wrap = document.getElementById('auto-batch-list');
+  if (!wrap) return;
+  try {
+    const res = await API.batchMonitorNoti.list();
+    const servers = res?.data?.data?.servers || [];
+    if (!servers.length) {
+      wrap.innerHTML = '<div class="auto-empty">ยังไม่มี Jenkins server</div>';
+      return;
+    }
+    wrap.innerHTML = servers.map(renderBatchRow).join('');
+  } catch (err) {
+    wrap.innerHTML = `<div class="auto-loading" style="color:#dc2626">โหลดไม่สำเร็จ: ${_esc(err.message || err)}</div>`;
+  }
+}
+
+function renderBatchRow(s) {
+  const id      = _esc(s.id);
+  const label   = _esc(s.display || s.id);
+  const url     = s.webhookMasked ? _esc(s.webhookMasked) : '<span style="color:#dc2626">(ยังไม่ได้ตั้ง webhook)</span>';
+  const canTog  = s.srvEnabled && s.hasWebhook;
+  const badge   = !s.srvEnabled ? '<span class="auto-item-badge muted">server ปิด</span>'
+                : !s.hasWebhook ? '<span class="auto-item-badge warn">no webhook</span>'
+                : s.enabled     ? '<span class="auto-item-badge">on</span>'
+                                : '<span class="auto-item-badge warn">off</span>';
+  const togAttrs = canTog
+    ? `${s.enabled ? 'checked' : ''} onchange="toggleBatchServer('${id}', this.checked)"`
+    : `disabled title="ตั้ง webhook URL ก่อน (จากหน้า batch-monitor-noti)"`;
+  const togOpacity = canTog ? '' : 'style="opacity:.35"';
+  return `<div class="auto-item">
+    <div class="auto-item-main">
+      <div class="auto-item-name">${label} <small>${id}</small></div>
+      <div class="auto-item-sub">${url}</div>
+    </div>
+    ${badge}
+    <label class="tog" ${togOpacity}>
+      <input type="checkbox" data-action="edit" ${togAttrs}>
+      <span class="tog-slider"></span>
+    </label>
+  </div>`;
+}
+
+async function toggleBatchServer(serverId, enabled) {
+  try {
+    await API.batchMonitorNoti.save(serverId, { enabled });
+    Toast.success(`${serverId} · ${enabled ? 'เปิด noti' : 'ปิด noti'}`);
+  } catch (err) {
+    Toast.error(`อัปเดตไม่สำเร็จ: ${err.message || err}`);
+    loadBatchToggles();
+  }
+}
+
+// ── Render table ────────────────────────────────────────────────────
+const DAY_TH = { all:'ทุกวัน', mon:'จ', tue:'อ', wed:'พ', thu:'พฤ', fri:'ศ', sat:'ส', sun:'อา' };
+
+function render() {
+  const tbody   = document.getElementById('sch-tbody');
+  const emptyEl = document.getElementById('sch-empty');
+  const tableWrap = document.getElementById('sch-table-wrap');
+  const total   = rows.length;
+  const enabled = rows.filter(r => r.enabled).length;
+
+  document.getElementById('sch-count').textContent =
+    total ? `${total} schedule · ${enabled} เปิดใช้งาน` : '0 schedule';
+
+  if (!total) {
+    tbody.innerHTML = '';
+    tableWrap.style.display = 'none';
+    emptyEl.style.display   = '';
+    return;
+  }
+
+  tableWrap.style.display = '';
+  emptyEl.style.display   = 'none';
+
+  const SLOT_LABEL = {
+    shift1_tdpk:'SHIFT#1 TDPK', shift1_wah:'SHIFT#1 W@H', shift1_oncall:'SHIFT#1 Oncall',
+    shift2_wah:'SHIFT#2 W@H',   shift2_oncall:'SHIFT#2 Oncall',
+    vacation:'Vacation', sick:'Sick Leave',
+  };
+
+  tbody.innerHTML = rows.map(r => {
+    const isMonthly = r.day_mode === 'monthly';
+    let dayHtml;
+    if (isMonthly) {
+      const dates = Array.isArray(r.dates) ? r.dates : [];
+      dayHtml = dates.length
+        ? dates.map(d => `<span class="day-chip" title="วันที่ ${d} ของเดือน">${d}</span>`).join('')
+        : `<span style="font-size:10px;color:var(--text-muted)">—</span>`;
+    } else {
+      const days  = Array.isArray(r.days) ? r.days : [];
+      const isAll = days.includes('all');
+      dayHtml = isAll
+        ? `<span class="day-chip all">ทุกวัน</span>`
+        : days.map(d => `<span class="day-chip">${DAY_TH[d] || d}</span>`).join('');
+      const excl = Array.isArray(r.exclude_dates) ? r.exclude_dates : [];
+      if (isAll && excl.length) {
+        dayHtml += excl.map(d => `<span class="day-chip exclude" title="ยกเว้นวันที่ ${d}">−${d}</span>`).join('');
+      }
+    }
+
+    const isShift   = r.type === 'shift_summary';
+    const isGrafana = r.type === 'grafana_paused';
+
+    let msgHtml, actionHtml;
+    if (isGrafana) {
+      msgHtml    = `<span class="shift-badge"><i data-icon=\"pause\"></i> Paused Alerts</span>
+        <span style="font-size:10px;color:var(--text-muted);margin-left:6px">Grafana paused-alerts digest (ดึงสด)</span>`;
+      actionHtml = `<span class="chat-badge" title="ส่ง Grafana paused-alerts digest"><i data-icon=\"pause\"></i></span>`;
+    } else if (isShift) {
+      const todaySlots    = (r.shifts_today    || []).map(s => SLOT_LABEL[s] || s).join(', ');
+      const tomorrowSlots = (r.shifts_tomorrow || []).map(s => SLOT_LABEL[s] || s).join(', ');
+      msgHtml    = `<span class="shift-badge"><i data-icon=\"calendar\"></i> Shift Summary</span>
+        <span style="font-size:10px;color:var(--text-muted);margin-left:6px">
+          <i data-icon=\"moon\"></i> ${escHtml(todaySlots || '—')} &nbsp;/&nbsp; <i data-icon=\"sunrise\"></i> ${escHtml(tomorrowSlots || '—')}
+        </span>`;
+      actionHtml = `<span class="chat-badge" title="ส่ง Google Chat SM Shift Handover card"><i data-icon=\"calendar\"></i></span>`;
+    } else {
+      msgHtml    = `<span class="msg-preview" title="${escHtml(r.message)}">${escHtml(r.message)}</span>`;
+      actionHtml = r.action_label
+        ? `<span style="font-size:10px;color:var(--orange)"><i data-icon=\"play\"></i> ${escHtml(r.action_label)}</span>`
+        : `<span style="font-size:10px;color:var(--text-muted)">—</span>`;
+    }
+
+    const chatBadge = r.has_chat_webhook
+      ? `<span class="chat-badge" title="มี Google Chat Webhook"><i data-icon=\"message-circle\"></i></span>`
+      : '';
+
+    const previewBtn = (isShift || isGrafana) ? '' : `<button class="btn-preview" onclick="previewNoti('${r.id}')"><i data-icon=\"play\"></i></button>`;
+
+    return `<tr>
+      <td class="col-time"><div class="td-c"><span class="time-badge">⏰ ${escHtml(r.time)}</span></div></td>
+      <td class="col-days"><div class="td-c"><div class="day-chips">${dayHtml}</div></div></td>
+      <td class="col-msg"><div class="td-c" style="gap:4px;flex-wrap:wrap">${msgHtml}</div></td>
+      <td class="col-action"><div class="td-c">${(isShift || isGrafana) ? '' : actionHtml} ${chatBadge}</div></td>
+      <td class="col-status"><div class="td-c">
+        <label class="tog" title="${r.enabled ? 'เปิด' : 'ปิด'}">
+          <input type="checkbox" ${r.enabled ? 'checked' : ''} onchange="toggleEnabled('${r.id}', this.checked)">
+          <span class="tog-slider"></span>
+        </label>
+      </div></td>
+      <td class="col-btns"><div class="td-c">
+        <div class="row-actions">
+          ${previewBtn}
+          <button class="btn-edit" onclick="openModal('${r.id}')">แก้ไข</button>
+          <button class="btn-del"  onclick="del('${r.id}')">ลบ</button>
+        </div>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Toggle enabled ─────────────────────────────────────────────────
+async function toggleEnabled(id, enabled) {
+  const res = await API.scheduledNoti.update(id, { enabled });
+  if (res?.ok) {
+    const r = rows.find(r => r.id === id);
+    if (r) r.enabled = enabled;
+    render();
+    Toast[enabled ? 'success' : 'warning'](enabled ? 'เปิดใช้งานแล้ว' : 'ปิดใช้งานแล้ว');
+  } else {
+    Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด');
+    render();
+  }
+}
+
+// ── Custom confirm dialog ───────────────────────────────────────────
+let _confirmResolve = null;
+
+function showConfirm({ icon = '<i data-icon=\"trash\"></i>', title = 'ยืนยัน', desc = '', okText = 'ยืนยัน', okColor = '#ef4444' } = {}) {
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    document.getElementById('confirm-icon').textContent  = icon;
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-desc').textContent  = desc;
+    const okBtn = document.getElementById('confirm-ok-btn');
+    okBtn.textContent       = okText;
+    okBtn.style.background  = okColor;
+    document.getElementById('confirm-wrap').classList.add('open');
+  });
+}
+
+document.getElementById('confirm-ok-btn').addEventListener('click', () => {
+  document.getElementById('confirm-wrap').classList.remove('open');
+  _confirmResolve?.(true);
+});
+document.getElementById('confirm-cancel-btn').addEventListener('click', () => {
+  document.getElementById('confirm-wrap').classList.remove('open');
+  _confirmResolve?.(false);
+});
+document.getElementById('confirm-wrap').addEventListener('click', function(e) {
+  if (e.target === this) {
+    this.classList.remove('open');
+    _confirmResolve?.(false);
+  }
+});
+
+// ── Delete ─────────────────────────────────────────────────────────
+async function del(id) {
+  const r   = rows.find(r => r.id === id);
+  const ok  = await showConfirm({
+    icon:  '<i data-icon=\"trash\"></i>',
+    title: 'ลบ Schedule นี้?',
+    desc:  `เวลา ${r?.time || id} — ${r?.message?.slice(0, 60) || ''}`,
+    okText: 'ลบ',
+  });
+  if (!ok) return;
+  const res = await API.scheduledNoti.delete(id);
+  if (res?.ok) {
+    rows = rows.filter(r => r.id !== id);
+    render();
+    Toast.success('ลบแล้ว');
+  } else {
+    Toast.error(res?.data?.message || 'ลบไม่ได้');
+  }
+}
+
+// ── Preview popup ───────────────────────────────────────────────────
+function previewNoti(id) {
+  const r = rows.find(r => r.id === id);
+  if (!r) return;
+  if (typeof NotiScheduler === 'undefined') {
+    if (!document.getElementById('snoti-script')) {
+      const s   = document.createElement('script');
+      s.id      = 'snoti-script';
+      s.src     = '../assets/js/noti-scheduler.js?v=20260902';
+      s.onload  = () => _doPreviewDirect(r);
+      document.head.appendChild(s);
+    } else {
+      setTimeout(() => _doPreviewDirect(r), 200);
+    }
+    return;
+  }
+  _doPreviewDirect(r);
+}
+
+function _doPreviewDirect(r) {
+  if (typeof NotiScheduler?.ensureOverlay === 'function') NotiScheduler.ensureOverlay();
+  // Manually populate the snoti overlay (mirrors _showModal logic)
+  const overlay = document.getElementById('snoti-overlay');
+  if (!overlay) { Toast.warning('โหลด preview ไม่สำเร็จ ลองรีเฟรช'); return; }
+
+  document.getElementById('snoti-msg').textContent  = r.message;
+  document.getElementById('snoti-foot').textContent = `⏰ ${r.time} น. (Preview)`;
+
+  const btnGo = document.getElementById('snoti-btn-go');
+  if (r.action_label && r.action_url) {
+    btnGo.textContent   = r.action_label;
+    btnGo.style.display = '';
+    btnGo.onclick       = () => overlay.classList.remove('open');
+  } else {
+    btnGo.style.display = 'none';
+  }
+
+  overlay.classList.add('open');
+  const bell = document.getElementById('snoti-bell');
+  if (bell) { bell.classList.remove('ring'); void bell.offsetWidth; bell.classList.add('ring'); }
+}
+
+// ── Modal helpers ──────────────────────────────────────────────────
+function setDayPills(days) {
+  const isAll = days.includes('all');
+  selDays = days;
+  document.querySelectorAll('#day-sel .day-pill').forEach(p => {
+    const v = p.dataset.v;
+    p.classList.toggle('active',
+      v === 'all' ? isAll : (!isAll && days.includes(v))
+    );
+  });
+}
+
+function _setTypeTabs(type) {
+  document.querySelectorAll('.type-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.type === type)
+  );
+  document.getElementById('f-type').value = type;
+  _applyTypeUI(type);
+}
+
+function _setShiftChecks(name, values) {
+  document.querySelectorAll(`input[name="${name}"]`).forEach(cb => {
+    cb.checked = Array.isArray(values) && values.includes(cb.value);
+  });
+}
+
+function _getShiftChecks(name) {
+  return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
+}
+
+function openModal(id) {
+  document.getElementById('modal-wrap').classList.add('open');
+  document.getElementById('preview-box').classList.remove('visible');
+
+  if (id) {
+    const r = rows.find(r => r.id === id);
+    if (!r) return;
+    const type = r.type || 'general';
+    document.getElementById('md-icon').innerHTML       = type === 'shift_summary' ? '<i data-icon=\"calendar\"></i>' : (type === 'grafana_paused' ? '<i data-icon=\"pause\"></i>' : '<i data-icon=\"pencil\"></i>');
+    document.getElementById('md-title').textContent      = 'แก้ไข Schedule';
+    document.getElementById('edit-id').value             = id;
+    document.getElementById('f-time').value              = r.time;
+    document.getElementById('f-message').value           = r.message || '';
+    document.getElementById('f-action-label').value      = r.action_label || '';
+    document.getElementById('f-action-url').value        = r.action_url   || '';
+    const existingWebhooks = r.google_chat_webhooks || (r.google_chat_webhook ? [r.google_chat_webhook] : ['']);
+    renderWebhookRows(existingWebhooks);
+    document.getElementById('f-enabled').checked         = !!r.enabled;
+    document.getElementById('f-enabled-lbl').textContent = r.enabled ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+    const mode = r.day_mode === 'monthly' ? 'monthly' : 'weekly';
+    _setDayMode(mode);
+    setDayPills(Array.isArray(r.days) ? r.days : ['mon','tue','wed','thu','fri']);
+    setDateCells(Array.isArray(r.dates) ? r.dates : []);
+    setExcludeCells(Array.isArray(r.exclude_dates) ? r.exclude_dates : []);
+    _updateExcludeVisibility();
+    _setTypeTabs(type);
+    if (type === 'shift_summary') {
+      _setShiftChecks('shifts_today',    r.shifts_today    || []);
+      _setShiftChecks('shifts_tomorrow', r.shifts_tomorrow || []);
+    } else if (r.message) {
+      document.getElementById('preview-box').classList.add('visible');
+      document.getElementById('preview-msg').textContent = r.message;
+    }
+  } else {
+    document.getElementById('md-icon').innerHTML       = '<i data-icon=\"bell\"></i>';
+    document.getElementById('md-title').textContent      = 'เพิ่ม Schedule ใหม่';
+    document.getElementById('edit-id').value             = '';
+    document.getElementById('f-time').value              = '';
+    document.getElementById('f-message').value           = '';
+    document.getElementById('f-action-label').value      = '';
+    document.getElementById('f-action-url').value        = '';
+    renderWebhookRows(['']);
+    document.getElementById('f-enabled').checked         = true;
+    document.getElementById('f-enabled-lbl').textContent = 'เปิดใช้งาน';
+    _setDayMode('weekly');
+    setDayPills(['mon','tue','wed','thu','fri']);
+    setDateCells([]);
+    setExcludeCells([]);
+    _updateExcludeVisibility();
+    _setTypeTabs('general');
+    _setShiftChecks('shifts_today',    []);
+    _setShiftChecks('shifts_tomorrow', []);
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal-wrap').classList.remove('open');
+}
+
+// ── Save ───────────────────────────────────────────────────────────
+async function save() {
+  const time   = document.getElementById('f-time').value.trim();
+  const type   = document.getElementById('f-type').value;
+
+  if (!time) { Toast.warning('กรุณาระบุเวลา'); return; }
+  if (dayMode === 'weekly'  && !selDays.length)  { Toast.warning('กรุณาเลือกอย่างน้อย 1 วัน'); return; }
+  if (dayMode === 'monthly' && !selDates.length) { Toast.warning('กรุณาเลือกอย่างน้อย 1 วันที่ของเดือน'); return; }
+
+  if (type === 'general') {
+    const message = document.getElementById('f-message').value.trim();
+    if (!message) { Toast.warning('กรุณาระบุข้อความ'); return; }
+  }
+
+  const savePayload = {
+    type,
+    time,
+    day_mode:            dayMode,
+    days:                dayMode === 'weekly'  ? selDays  : [],
+    dates:               dayMode === 'monthly' ? selDates : [],
+    exclude_dates:       (dayMode === 'weekly' && selDays.includes('all')) ? selExcludeDates : [],
+    message:             type === 'general' ? document.getElementById('f-message').value.trim() : '',
+    action_label:        type === 'general' ? document.getElementById('f-action-label').value.trim() : '',
+    action_url:          type === 'general' ? document.getElementById('f-action-url').value.trim()   : '',
+    google_chat_webhooks: getWebhookUrls(),
+    enabled:             document.getElementById('f-enabled').checked,
+  };
+
+  if (type === 'shift_summary') {
+    savePayload.shifts_today    = _getShiftChecks('shifts_today');
+    savePayload.shifts_tomorrow = _getShiftChecks('shifts_tomorrow');
+  }
+
+  const editId = document.getElementById('edit-id').value;
+  const btn    = document.getElementById('btn-save');
+  btn.disabled    = true;
+  btn.textContent = '⏳ กำลังบันทึก…';
+
+  try {
+    const res = editId
+      ? await API.scheduledNoti.update(editId, savePayload)
+      : await API.scheduledNoti.create(savePayload);
+
+    if (!res?.ok) throw new Error(res?.data?.message || 'เกิดข้อผิดพลาด');
+
+    Toast.success(editId ? 'บันทึกการแก้ไขแล้ว' : 'เพิ่ม Schedule สำเร็จ');
+    closeModal();
+    await load();
+  } catch(err) {
+    Toast.error(err.message);
+  } finally {
+    btn.disabled    = false;
+    btn.innerHTML = '<i data-icon=\"save\"></i> บันทึก';
+  }
+}
+
+
+// ── Event listeners ────────────────────────────────────────────────
+document.getElementById('btn-add').addEventListener('click', () => openModal());
+document.getElementById('btn-save').addEventListener('click', save);
+document.getElementById('btn-cancel').addEventListener('click', closeModal);
+document.getElementById('modal-wrap').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+load();
+</script>
+</body>
+</html>

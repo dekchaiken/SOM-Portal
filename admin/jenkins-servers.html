@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jenkins Servers — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/jenkins-servers/jenkins-servers.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">⊞ Jenkins Servers</div>
+        <div class="page-sub">จัดการ Jenkins credentials — token &amp; session cookie</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" data-action="add" onclick="openCreateModal()">+ Add Server</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark">⊞</div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Jenkins Servers</h1>
+          <p>จัดการ Jenkins credentials — API token &amp; session cookie · เก็บใน <code>data/jenkins_servers.json</code> ไม่ expose</p>
+        </div>
+      </section>
+
+      <div class="info-bar">
+        <span style="font-size:15px"><i data-icon="alert-triangle"></i></span>
+        <span>
+          Credentials เก็บใน <code>data/jenkins_servers.json</code> (ไม่ถูก expose ทาง browser) &nbsp;·&nbsp;
+          สำหรับ <strong>Cookie mode</strong>: อัปเดต <code>JSESSIONID</code> ใหม่จาก DevTools เมื่อ session หมดอายุ
+        </span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">⊞ All Jenkins Servers</span>
+          <span class="badge badge-gray" id="srv-count">—</span>
+        </div>
+        <div class="card-body" style="padding:0" id="table-container">
+          <div data-skel="table" data-rows="5"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══ Create / Edit Modal ═══ -->
+<div class="modal-overlay" id="modal-srv">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Add Jenkins Server</span>
+      <button class="modal-close" onclick="closeModal('modal-srv')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Basic info -->
+      <div class="form-row-2">
+        <div>
+          <label class="form-label">Display Name *</label>
+          <input class="form-input" id="f-display" type="text" placeholder="เช่น TMN-EKS, NANO-EKS">
+        </div>
+        <div>
+          <label class="form-label">Order</label>
+          <input class="form-input" id="f-order" type="number" min="1" placeholder="Auto">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Base URL *</label>
+        <input class="form-input" id="f-base-url" type="url" placeholder="https://jenkins.example.com">
+        <div class="hint">ไม่ต้องมี trailing slash — จะถูก trim อัตโนมัติ</div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Auth mode -->
+      <div class="form-row">
+        <label class="form-label">Auth Mode *</label>
+        <div class="mode-selector">
+          <div class="mode-opt selected" id="mode-opt-token" onclick="setAuthMode('token')">
+            <div class="mode-opt-check"><i data-icon="check"></i></div>
+            <div class="mode-opt-icon"><i data-icon="key"></i></div>
+            <div class="mode-opt-label">Token</div>
+            <div class="mode-opt-desc">API Token — มั่นคง ไม่หมดอายุ</div>
+          </div>
+          <div class="mode-opt" id="mode-opt-cookie" onclick="setAuthMode('cookie')">
+            <div class="mode-opt-check"><i data-icon="check"></i></div>
+            <div class="mode-opt-icon">🍪</div>
+            <div class="mode-opt-label">Cookie</div>
+            <div class="mode-opt-desc">JSESSIONID — SSO/Proxy Jenkins, หมดอายุได้</div>
+          </div>
+        </div>
+        <input type="hidden" id="f-auth-mode" value="token">
+      </div>
+
+      <hr class="divider">
+
+      <!-- Credentials -->
+      <div class="form-row-2">
+        <div>
+          <label class="form-label">Username</label>
+          <input class="form-input" id="f-auth-user" type="text" placeholder="เช่น warapon.lea">
+        </div>
+        <div>
+          <label class="form-label" id="token-label">API Token</label>
+          <input class="form-input" id="f-auth-token" type="text" placeholder="Jenkins API token">
+        </div>
+      </div>
+
+      <!-- Cookie area (visible when cookie mode) -->
+      <div class="form-row" id="cookie-row">
+        <label class="form-label">Cookie String <span style="font-weight:400;color:#d97706">(JSESSIONID อาจหมดอายุ)</span></label>
+        <textarea class="form-textarea" id="f-auth-cookie" placeholder="jenkins-timestamper-offset=-25200000; JSESSIONID.xxxx=nodeXXX; ..."></textarea>
+        <div class="hint">วาง cookie string จาก DevTools → Application → Cookies ทั้งบรรทัด</div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- IP Override (bypass DNS via CURLOPT_RESOLVE) -->
+      <div class="form-row">
+        <label class="form-label">IP Override <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+        <input class="form-input" id="f-ip-override" type="text" placeholder="เช่น 10.164.100.20 — เว้นว่าง = ใช้ DNS ตามปกติ">
+        <div class="hint">
+          ใช้เมื่อ SOM server resolve DNS ของ Jenkins ไม่ได้ (เช่นหลัง DRP). กรอก IP แล้ว cURL จะข้าม DNS ไปหา IP นี้ตรงๆ<br>
+          หา IP ได้จาก terminal บนเครื่องที่เข้า Jenkins ได้: <code>nslookup &lt;hostname จาก Base URL&gt;</code>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Status -->
+      <div class="form-row">
+        <label class="form-label">สถานะ</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+          <div class="toggle on" id="f-enabled-toggle" onclick="toggleEnabled()"></div>
+          <span id="f-enabled-label" style="font-size:12px">เปิดใช้งาน</span>
+        </div>
+        <input type="hidden" id="f-enabled" value="true">
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-srv')">Cancel</button>
+      <button class="btn btn-primary" id="modal-save-btn" data-action="write" onclick="saveServer()">Save Server</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Delete Confirm ═══ -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-header">
+      <span class="modal-title" style="color:#dc2626">Delete Server</span>
+      <button class="modal-close" onclick="closeModal('modal-delete')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text);margin:0">ต้องการลบ <strong id="delete-srv-name"></strong> ใช่ไหม?</p>
+      <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0">Batch Monitor จะไม่แสดง server นี้อีกต่อไป</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-delete')">Cancel</button>
+      <button class="btn" style="background:#dc2626;color:#fff" data-action="delete" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Job Rules Modal ═══ -->
+<div class="modal-overlay" id="modal-rules">
+  <div class="modal-box" style="width:680px">
+    <div class="modal-header">
+      <span class="modal-title" id="rules-modal-title"><i data-icon="clipboard"></i> Job Rules</span>
+      <button class="modal-close" onclick="closeModal('modal-rules')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" style="padding:0;display:flex;flex-direction:column;max-height:calc(90vh - 120px)">
+
+      <!-- Info -->
+      <div style="padding:9px 18px;background:rgba(242,100,25,.04);border-bottom:1px solid var(--border);font-size:11px;color:var(--text-muted);flex-shrink:0">
+        <strong style="color:#dc2626">ignore</strong> = ซ่อน job จาก Batch Monitor + Report &nbsp;·&nbsp;
+        <strong style="color:#2563eb">remark</strong> = แสดงใน Report พร้อม pre-fill remark อัตโนมัติ
+      </div>
+
+      <!-- Rules list (scrollable) -->
+      <div id="rules-list" style="flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:6px;min-height:80px"></div>
+
+      <!-- Add Rule form -->
+      <div style="padding:14px 18px;border-top:1px solid var(--border);background:var(--bg);flex-shrink:0" data-read-hide>
+        <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">+ เพิ่ม Rule</div>
+        <div style="display:grid;grid-template-columns:1fr 90px 90px;gap:8px;margin-bottom:7px">
+          <div class="ac-wrap">
+            <input class="form-input" id="r-pattern" type="text" placeholder="ชื่อ Job — พิมเพื่อค้นหาจาก Jenkins…"
+              autocomplete="off" oninput="onPatternInput()" onkeydown="onPatternKeydown(event)" onfocus="onPatternInput()">
+            <div class="ac-dropdown" id="ac-dropdown"></div>
+          </div>
+          <select class="form-select" id="r-match">
+            <option value="exact">Exact</option>
+            <option value="contains">Contains</option>
+          </select>
+          <select class="form-select" id="r-type" onchange="onRuleTypeChange()">
+            <option value="ignore">ignore</option>
+            <option value="remark">remark</option>
+            <option value="description">description</option>
+          </select>
+        </div>
+        <div id="r-remark-row" style="display:none;margin-bottom:7px">
+          <input class="form-input" id="r-remark" type="text" placeholder="Text">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" style="font-size:11px" onclick="toggleBulkImport()"><i data-icon="clipboard"></i> Bulk Import</button>
+          <button class="btn btn-primary" style="font-size:11px" onclick="rulesAddRule()">+ Add Rule</button>
+        </div>
+      </div>
+
+      <!-- Bulk Import (hidden by default) -->
+      <div id="bulk-area" style="display:none;padding:14px 18px;border-top:1px solid var(--border);background:var(--bg);flex-shrink:0" data-read-hide>
+        <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Bulk Import — วาง Job names (1 บรรทัด / 1 job)</div>
+        <textarea class="form-textarea" id="bulk-patterns" placeholder="job-name-1&#10;job-name-2&#10;job-name-3"></textarea>
+        <div style="display:grid;grid-template-columns:1fr 90px;gap:8px;margin-top:8px">
+          <input class="form-input" id="bulk-remark" type="text" placeholder="Remark text (เว้นว่างถ้า type = ignore)">
+          <select class="form-select" id="bulk-type">
+            <option value="ignore">ignore</option>
+            <option value="remark">remark</option>
+            <option value="description">description</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-ghost" style="font-size:11px" onclick="toggleBulkImport()">ยกเลิก</button>
+          <button class="btn btn-primary" style="font-size:11px" onclick="rulesBulkImport()"><i data-icon="arrow-down"></i> Import All</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span id="rules-count-label" style="font-size:11px;color:var(--text-muted)"></span>
+        <span id="rules-cache-status" style="font-size:10px;color:var(--text-muted)"></span>
+      </div>
+      <button class="btn btn-ghost" onclick="closeModal('modal-rules')">Done</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/jenkins-servers/jenkins-servers.js"></script>
+</body>
+</html>

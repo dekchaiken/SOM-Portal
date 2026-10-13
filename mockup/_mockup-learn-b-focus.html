@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Learn Hero — Design B: Focus Timer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#F26419; --orange-light:#FB923C; --orange-dark:#EA580C;
+  --amber:#FBBF24;
+  --bg:#F5F6F8; --bg-card:#FFFFFF;
+  --text:#1C1C1E; --text-muted:#767676;
+  --border:#E5E5E5;
+  --font:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); font-family:var(--font); color:var(--text); font-size:12px; padding:32px}
+.container{max-width:1180px; margin:0 auto; display:flex; flex-direction:column; gap:22px}
+.hint{color:var(--text-muted); font-size:11px}
+
+/* ═══ FOCUS HERO ═══ */
+.focus-hero{
+  position:relative; display:flex; align-items:center; gap:20px;
+  padding:16px 20px; border-radius:16px; overflow:hidden;
+  background:
+    radial-gradient(120% 200% at 100% 100%, rgba(251,146,60,.16), transparent 55%),
+    linear-gradient(135deg, rgba(242,100,25,.14), rgba(251,191,36,.09) 55%, rgba(242,100,25,.05));
+  border:1.5px solid rgba(242,100,25,.32);
+  box-shadow:0 4px 20px -8px rgba(242,100,25,.40);
+  animation:fhEnter .55s cubic-bezier(.22,.9,.32,1.1) both;
+}
+@keyframes fhEnter{ from{opacity:0; transform:translateY(-8px)} to{opacity:1; transform:none} }
+
+/* Sound-wave background */
+.fh-wave{
+  position:absolute; inset:0; pointer-events:none; opacity:.15;
+  background:repeating-linear-gradient(90deg, transparent 0 20px, rgba(242,100,25,.25) 20px 21px);
+  animation:fhWaveMove 8s linear infinite;
+}
+@keyframes fhWaveMove{ to{background-position-x:80px} }
+
+/* ─── Left: timer with mascot inside ─── */
+.fh-timer-wrap{
+  position:relative; flex-shrink:0; width:92px; height:92px;
+}
+.fh-ring{
+  position:absolute; inset:0;
+  border-radius:50%;
+  background:
+    radial-gradient(circle, var(--bg-card) 58%, transparent 59%),
+    conic-gradient(var(--orange) 0deg 252deg, rgba(0,0,0,.07) 252deg 360deg);
+  animation:fhRingProg 25s linear infinite;
+}
+@keyframes fhRingProg{
+  from{background:radial-gradient(circle,var(--bg-card) 58%,transparent 59%),conic-gradient(var(--orange) 0deg,rgba(0,0,0,.07) 0deg)}
+  to{background:radial-gradient(circle,var(--bg-card) 58%,transparent 59%),conic-gradient(var(--orange) 360deg,rgba(0,0,0,.07) 360deg)}
+}
+.fh-ring::before{
+  content:''; position:absolute; inset:-3px; border-radius:50%;
+  background:radial-gradient(circle, transparent 62%, rgba(242,100,25,.25) 63%, transparent 66%);
+  animation:fhPulseRing 2s ease-out infinite;
+}
+@keyframes fhPulseRing{
+  0%{transform:scale(.95); opacity:.6}
+  100%{transform:scale(1.15); opacity:0}
+}
+.fh-timer-inner{
+  position:absolute; inset:8px; border-radius:50%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:1px;
+}
+.fh-time{
+  font-size:20px; font-weight:800; letter-spacing:-.02em; color:var(--text);
+  font-variant-numeric:tabular-nums; line-height:1;
+}
+.fh-time .mut{color:var(--text-muted); opacity:.5}
+.fh-timer-lbl{
+  font-size:8px; font-weight:800; letter-spacing:.12em; color:var(--orange);
+  text-transform:uppercase; margin-top:2px;
+}
+.fh-mascot-mini{
+  position:absolute; top:-6px; right:-8px; z-index:3;
+  width:30px; height:30px; border-radius:50%;
+  background:linear-gradient(135deg, var(--amber), var(--orange));
+  color:#fff; display:grid; place-items:center;
+  box-shadow:0 3px 8px -2px rgba(242,100,25,.6);
+  animation:fhMiniBounce 1.8s ease-in-out infinite;
+}
+@keyframes fhMiniBounce{
+  0%,100%{transform:translateY(0) rotate(-8deg)}
+  50%{transform:translateY(-4px) rotate(8deg)}
+}
+.fh-mascot-mini svg{width:16px; height:16px; stroke:#fff; fill:none; stroke-width:2.2}
+
+/* ─── Middle: text ─── */
+.fh-body{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px}
+.fh-head{display:flex; align-items:center; gap:8px}
+.fh-tag{
+  font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+  color:#7C2D12; background:rgba(251,191,36,.28); border:1px solid rgba(251,191,36,.55);
+  padding:2px 8px; border-radius:999px;
+}
+.fh-live{
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:9.5px; font-weight:800; color:var(--orange);
+  background:rgba(242,100,25,.10); padding:2px 8px; border-radius:999px;
+  border:1px solid rgba(242,100,25,.28);
+}
+.fh-live .pulse{
+  width:6px; height:6px; border-radius:50%; background:var(--orange);
+  animation:fhPulse 1.2s ease-in-out infinite;
+}
+@keyframes fhPulse{ 0%,100%{opacity:1; box-shadow:0 0 0 0 rgba(242,100,25,.5)} 100%{opacity:.55; box-shadow:0 0 0 6px transparent} }
+.fh-title{font-size:14.5px; font-weight:800; letter-spacing:-.01em; line-height:1.25}
+.fh-title .accent{color:var(--orange)}
+.fh-sub{font-size:11px; color:var(--text-muted); line-height:1.5}
+.fh-sub b{color:var(--text); font-weight:800}
+
+/* Focus stats row */
+.fh-stats{display:flex; gap:8px; margin-top:2px; flex-wrap:wrap}
+.fh-stat{
+  display:flex; align-items:center; gap:6px;
+  padding:5px 10px; border-radius:8px;
+  background:rgba(255,255,255,.65); border:1px solid var(--border);
+  font-size:10.5px; font-weight:700;
+}
+.fh-stat .n{font-size:13px; font-weight:800; color:var(--orange); font-variant-numeric:tabular-nums}
+.fh-stat .k{color:var(--text-muted); font-size:9.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase}
+
+/* Session dots (pomodoros today) */
+.fh-sessions{display:inline-flex; gap:4px; align-items:center; margin-left:4px}
+.fh-sess{width:9px; height:9px; border-radius:50%; background:rgba(0,0,0,.08); border:1.5px solid transparent}
+.fh-sess.done{background:linear-gradient(135deg, var(--orange), var(--orange-dark)); box-shadow:0 1px 3px rgba(242,100,25,.4)}
+.fh-sess.now{background:rgba(251,191,36,.4); border-color:var(--amber); animation:fhSessNow 1.4s ease-in-out infinite}
+@keyframes fhSessNow{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }
+
+/* ─── CTA ─── */
+.fh-cta{
+  flex-shrink:0; position:relative; overflow:hidden;
+  display:inline-flex; align-items:center; gap:8px;
+  padding:13px 20px; border-radius:12px;
+  background:linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color:#fff !important; font-size:12.5px; font-weight:800;
+  text-decoration:none; letter-spacing:.02em;
+  box-shadow:0 6px 16px -6px rgba(242,100,25,.7), inset 0 1px 0 rgba(255,255,255,.25);
+  transition:transform .15s, box-shadow .15s;
+}
+.fh-cta::before{
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+  transform:translateX(-100%); animation:fhCtaShine 3.2s ease-in-out infinite;
+}
+@keyframes fhCtaShine{ 0%,30%{transform:translateX(-100%)} 55%,100%{transform:translateX(110%)} }
+.fh-cta:hover{transform:translateY(-1px); box-shadow:0 10px 22px -6px rgba(242,100,25,.85)}
+.fh-cta .play{
+  width:20px; height:20px; border-radius:50%;
+  background:rgba(255,255,255,.25); display:grid; place-items:center;
+  font-size:9px;
+  animation:fhPlayRotate 2s ease-in-out infinite;
+}
+@keyframes fhPlayRotate{
+  0%,100%{transform:scale(1); background:rgba(255,255,255,.25)}
+  50%{transform:scale(1.15); background:rgba(255,255,255,.45)}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <p class="hint">DESIGN B — <b>Focus Timer</b> — Pomodoro-style timer + session dots + focus stats</p>
+
+  <!-- Card -->
+  <div class="focus-hero">
+    <div class="fh-wave"></div>
+
+    <!-- Timer -->
+    <div class="fh-timer-wrap">
+      <div class="fh-ring"></div>
+      <div class="fh-timer-inner">
+        <div class="fh-time">17<span class="mut">:</span>42</div>
+        <div class="fh-timer-lbl">focus</div>
+      </div>
+      <div class="fh-mascot-mini">
+        <svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="fh-body">
+      <div class="fh-head">
+        <span class="fh-tag">Deep Focus Session</span>
+        <span class="fh-live"><span class="pulse"></span>Session 3 in progress</span>
+      </div>
+      <div class="fh-title">
+        <span class="accent">Grafana 202</span> — Advanced Alerting rules
+      </div>
+      <div class="fh-sub">
+        อีก <b>17:42 นาที</b> จะครบ session · ที่ผ่านมา focus แล้ว <b>1 ชม 12 นาที</b>
+      </div>
+      <div class="fh-stats">
+        <div class="fh-stat"><span class="n">3</span><span class="k">sessions today</span></div>
+        <div class="fh-stat"><span class="n">1:12</span><span class="k">focus time</span></div>
+        <div class="fh-stat">
+          <div class="fh-sessions">
+            <span class="fh-sess done"></span>
+            <span class="fh-sess done"></span>
+            <span class="fh-sess done"></span>
+            <span class="fh-sess now"></span>
+            <span class="fh-sess"></span>
+            <span class="fh-sess"></span>
+            <span class="fh-sess"></span>
+            <span class="fh-sess"></span>
+          </div>
+          <span class="k">3/8 done</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <a class="fh-cta" href="#">
+      <span class="play">▶</span>
+      <span>ทำต่อ</span>
+    </a>
+  </div>
+
+</div>
+</body>
+</html>

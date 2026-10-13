@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MA Test — Monthly Overview — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* Stat tiles row */
+    .ov-stats {
+      display:grid; gap:12px;
+      grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
+      margin-bottom:16px;
+    }
+    .ov-stat {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--radius-lg); padding:14px 18px;
+    }
+    .ov-stat .l {
+      font-size:10.5px; font-weight:600; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.06em;
+    }
+    .ov-stat .n {
+      font-size:26px; font-weight:800; margin-top:6px; line-height:1;
+      color:var(--text); letter-spacing:-.02em;
+    }
+    .ov-stat .p {
+      font-size:11px; color:var(--text-muted); margin-top:4px;
+    }
+    .ov-stat.success .n { color:var(--success); }
+    .ov-stat.danger  .n { color:var(--danger); }
+    .ov-stat.warning .n { color:var(--warning); }
+    .ov-stat.info    .n { color:var(--info); }
+    .ov-stat.muted   .n { color:var(--text-muted); }
+
+    /* Progress bar (per plan-item completion) */
+    .ov-bar {
+      height:6px; border-radius:4px; overflow:hidden;
+      background:var(--bg-input); display:flex; margin-top:6px; min-width:80px;
+    }
+    .ov-bar .s { background:#22c55e; }
+    .ov-bar .f { background:#ef4444; }
+    .ov-bar .p { background:#f59e0b; }
+
+    /* Breakdown grid */
+    .ov-breakdown {
+      display:grid; gap:16px; grid-template-columns:1fr 1fr;
+      margin-bottom:16px;
+    }
+    @media (max-width:900px) { .ov-breakdown { grid-template-columns:1fr; } }
+
+    .ov-brk-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .ov-brk-table th {
+      text-align:left; padding:8px 12px; background:var(--bg);
+      color:var(--text-muted); font-weight:600; font-size:10.5px;
+      text-transform:uppercase; letter-spacing:.04em;
+      border-bottom:1px solid var(--border); white-space:nowrap;
+    }
+    .ov-brk-table td { padding:10px 12px; border-bottom:1px solid var(--border); }
+    .ov-brk-table tr:last-child td { border-bottom:none; }
+    .ov-brk-table td.num { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+    .ov-brk-table td.pct { text-align:right; font-size:11px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+
+    /* Detailed table */
+    .ov-toolbar {
+      display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+      padding:12px 14px; background:var(--bg-card);
+      border:1px solid var(--border); border-radius:var(--radius-lg);
+      margin-bottom:14px;
+    }
+    .ov-toolbar .form-control { width:auto; }
+    .ov-toolbar .ov-search { flex:1; min-width:200px; }
+    .ov-toolbar .spacer    { flex:1; }
+
+    .ov-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .ov-table th {
+      text-align:left; padding:10px 12px; background:var(--bg);
+      color:var(--text-muted); font-weight:600; font-size:10.5px;
+      text-transform:uppercase; letter-spacing:.04em;
+      border-bottom:1px solid var(--border); white-space:nowrap;
+      position:sticky; top:0; z-index:1;
+    }
+    .ov-table td {
+      padding:12px; border-bottom:1px solid var(--border); vertical-align:top;
+    }
+    .ov-table tr:last-child td { border-bottom:none; }
+    .ov-table tr:hover td { background:rgba(0,0,0,.02); }
+    .ov-name { font-weight:700; color:var(--text); font-size:12.5px; }
+    .ov-sub  { font-size:11px; color:var(--text-muted); margin-top:2px; line-height:1.4; }
+    .ov-tester { font-size:11px; color:var(--text); font-weight:600; }
+    .ov-meta   { font-size:10.5px; color:var(--text-muted); margin-top:2px; }
+
+    /* Result-count chips */
+    .ov-rcount {
+      display:inline-flex; align-items:center; gap:4px; padding:2px 8px;
+      border-radius:12px; font-size:10.5px; font-weight:700;
+      background:var(--bg-input); color:var(--text-muted);
+    }
+    .ov-rcount.has { background:var(--orange-bg); color:var(--orange); }
+
+    .ov-empty {
+      text-align:center; padding:52px 24px;
+      background:var(--bg-card); border:1px dashed var(--border);
+      border-radius:var(--radius-lg); color:var(--text-muted); font-size:12px;
+    }
+    .ov-empty h4 { color:var(--text); font-size:14px; font-weight:700; margin:0 0 6px; }
+
+    .month-picker {
+      padding:7px 12px; border:1px solid var(--border);
+      border-radius:var(--radius-sm); font-family:var(--font);
+      font-size:12px; background:var(--bg-input); color:var(--text);
+    }
+    .month-picker:focus { outline:none; border-color:var(--orange); }
+
+    /* Clickable row */
+    .ov-table tr.ov-row-click { cursor:pointer; }
+    .ov-table tr.ov-row-click:hover td { background:rgba(242,100,25,.05); }
+
+    /* Detail modal */
+    .modal.ov-lg { width:880px; max-width:96vw; }
+    .modal.ov-xl { width:1080px; max-width:98vw; }
+
+    .ov-dtl-head {
+      padding:12px 14px; margin-bottom:14px;
+      background:var(--bg); border:1px solid var(--border); border-radius:var(--radius);
+    }
+    .ov-dtl-head .n { font-weight:700; color:var(--text); font-size:14px; }
+    .ov-dtl-head .r { font-size:11.5px; color:var(--text-muted); margin-top:6px; line-height:1.5; }
+    .ov-dtl-head .badges { margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+    .ov-dtl-head .links { margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; }
+    .ov-dtl-head .links a { text-decoration:none; }
+
+    .ov-dtl-mini {
+      display:grid; gap:10px; margin-bottom:14px;
+      grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));
+    }
+    .ov-dtl-mini .m {
+      background:var(--bg); border:1px solid var(--border);
+      border-radius:var(--radius); padding:10px 12px;
+    }
+    .ov-dtl-mini .m .l {
+      font-size:9.5px; font-weight:700; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.05em;
+    }
+    .ov-dtl-mini .m .n {
+      font-size:18px; font-weight:800; margin-top:4px; line-height:1; color:var(--text);
+    }
+    .ov-dtl-mini .m.success .n { color:var(--success); }
+    .ov-dtl-mini .m.danger  .n { color:var(--danger); }
+    .ov-dtl-mini .m.warning .n { color:var(--warning); }
+
+    .ov-dtl-list-title {
+      font-size:11px; font-weight:700; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.05em; margin:0 0 8px;
+    }
+
+    .ov-res {
+      padding:12px 14px; margin-bottom:10px;
+      background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);
+    }
+    .ov-res-head {
+      display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;
+    }
+    .ov-res-head .who { font-size:12.5px; font-weight:700; color:var(--text); }
+    .ov-res-head .meta { font-size:10.5px; color:var(--text-muted); margin-top:2px; }
+    .ov-res-grid {
+      display:grid; gap:8px 14px; margin-top:10px;
+      grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
+      font-size:11.5px;
+    }
+    .ov-res-grid .k {
+      font-size:9.5px; font-weight:700; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px;
+    }
+    .ov-res-grid .v { color:var(--text); word-break:break-word; }
+    .ov-res-grid .v a { color:var(--orange); text-decoration:none; word-break:break-all; }
+
+    .ov-thumbs { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .ov-thumb {
+      width:96px; height:96px; border-radius:6px; overflow:hidden;
+      border:1px solid var(--border); background:var(--bg); cursor:pointer;
+    }
+    .ov-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+
+    .ov-res-empty {
+      padding:24px; text-align:center; color:var(--text-muted); font-size:12px;
+      background:var(--bg); border:1px dashed var(--border); border-radius:var(--radius);
+    }
+
+    .lb-img { max-width:100%; max-height:75vh; border-radius:var(--radius); }
+
+    /* ═════ Monthly Report ═════ */
+    .modal.rp-modal { width:1100px; max-width:98vw; }
+    .rp-toolbar {
+      display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+      padding:10px 14px; background:var(--bg); border:1px solid var(--border);
+      border-radius:var(--radius); margin-bottom:14px; font-size:12px;
+    }
+    .rp-toolbar label { display:inline-flex; align-items:center; gap:6px; color:var(--text); cursor:pointer; }
+    .rp-toolbar .spacer { flex:1; }
+
+    .rp-body { background:var(--bg); border-radius:var(--radius-lg); padding:22px 26px; }
+    .rp-header {
+      display:flex; align-items:center; gap:14px;
+      padding-bottom:16px; margin-bottom:18px;
+      border-bottom:2px solid var(--orange);
+    }
+    .rp-logo {
+      width:48px; height:48px; border-radius:12px;
+      background:var(--orange-bg); color:var(--orange);
+      display:grid; place-items:center; font-size:24px; flex-shrink:0;
+    }
+    .rp-title { font-size:20px; font-weight:800; color:var(--text); letter-spacing:-.02em; }
+    .rp-sub   { font-size:12px; color:var(--text-muted); margin-top:3px; }
+
+    .rp-kpi {
+      display:grid; gap:10px; grid-template-columns:repeat(6, 1fr);
+      margin-bottom:22px;
+    }
+    @media (max-width:900px) { .rp-kpi { grid-template-columns:repeat(3, 1fr); } }
+    .rp-k {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--radius); padding:12px 14px;
+    }
+    .rp-k .l {
+      font-size:10px; font-weight:700; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.06em;
+    }
+    .rp-k .v { font-size:22px; font-weight:800; margin-top:4px; line-height:1; color:var(--text); }
+    .rp-k.success .v { color:var(--success); }
+    .rp-k.danger  .v { color:var(--danger); }
+    .rp-k.warning .v { color:var(--warning); }
+    .rp-k.muted   .v { color:var(--text-muted); }
+
+    .rp-h2 {
+      font-size:13px; font-weight:800; color:var(--text);
+      text-transform:uppercase; letter-spacing:.06em;
+      padding-bottom:6px; margin:22px 0 12px;
+      border-bottom:1px solid var(--border);
+    }
+
+    .rp-section { margin-bottom:22px; }
+    .rp-section-head {
+      display:flex; align-items:center; gap:10px; margin-bottom:10px;
+    }
+    .rp-section-title { font-size:15px; font-weight:800; color:var(--text); }
+    .rp-section-count { font-size:11px; color:var(--text-muted); font-weight:600; }
+
+    .rp-item {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--radius); padding:14px 16px; margin-bottom:10px;
+    }
+    .rp-item-head {
+      display:flex; justify-content:space-between; gap:12px; align-items:flex-start;
+      margin-bottom:6px;
+    }
+    .rp-item-name { font-size:14px; font-weight:700; color:var(--text); }
+    .rp-item-sub  { font-size:11.5px; color:var(--text-muted); margin-top:2px; line-height:1.4; }
+    .rp-item-badges { display:flex; flex-wrap:wrap; gap:4px; flex-shrink:0; }
+    .rp-item-links {
+      font-size:11px; margin-bottom:8px; color:var(--text-muted);
+    }
+    .rp-item-links a { color:var(--orange); text-decoration:none; margin-right:8px; }
+
+    .rp-result {
+      background:var(--bg); border:1px solid var(--border);
+      border-left:3px solid var(--orange);
+      border-radius:var(--radius-sm); padding:10px 12px; margin-top:8px;
+    }
+    .rp-result.ok   { border-left-color:var(--success); }
+    .rp-result.bad  { border-left-color:var(--danger); }
+    .rp-result.pend { border-left-color:var(--warning); }
+    .rp-result-head {
+      display:flex; justify-content:space-between; gap:10px; align-items:center;
+      margin-bottom:6px;
+    }
+    .rp-result-head .who { font-size:12px; font-weight:700; color:var(--text); }
+    .rp-result-head .meta { font-size:10.5px; color:var(--text-muted); margin-top:2px; }
+    .rp-field { font-size:11.5px; color:var(--text); margin-top:4px; line-height:1.5; word-break:break-word; }
+    .rp-field .k { font-weight:700; color:var(--text-muted); margin-right:4px; }
+    .rp-field a { color:var(--orange); text-decoration:none; word-break:break-all; }
+    .rp-shots {
+      display:grid; gap:6px; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+      margin-top:10px;
+    }
+    .rp-shots img {
+      width:100%; height:auto; max-height:280px; object-fit:contain;
+      border:1px solid var(--border); border-radius:6px; background:#fff;
+    }
+    .rp-empty {
+      font-size:11.5px; color:var(--text-muted); font-style:italic;
+      padding:8px 0;
+    }
+
+    .rp-brk-table { width:100%; border-collapse:collapse; font-size:12px;
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--radius); overflow:hidden;
+    }
+    .rp-brk-table th {
+      text-align:left; padding:8px 12px; background:var(--bg);
+      color:var(--text-muted); font-weight:700; font-size:10.5px;
+      text-transform:uppercase; letter-spacing:.04em;
+      border-bottom:1px solid var(--border);
+    }
+    .rp-brk-table td { padding:9px 12px; border-bottom:1px solid var(--border); }
+    .rp-brk-table tr:last-child td { border-bottom:none; }
+    .rp-brk-table td.num { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+
+    /* ── Print ── */
+    @media print {
+      @page { margin:12mm; size:A4; }
+      body { background:#fff !important; }
+      body > *:not(#modal-report) { display:none !important; }
+      #modal-report { position:static !important; display:block !important;
+        background:#fff !important; overflow:visible !important; padding:0 !important; }
+      #modal-report .modal { position:static !important; max-width:none !important;
+        width:100% !important; max-height:none !important; box-shadow:none !important;
+        border:none !important; background:#fff !important; border-radius:0 !important; }
+      #modal-report .modal-header, #modal-report .modal-footer, .no-print {
+        display:none !important;
+      }
+      #modal-report .modal-body { max-height:none !important; overflow:visible !important;
+        padding:0 !important; }
+      .rp-body { padding:0 !important; background:#fff !important; }
+      .rp-item, .rp-result, .rp-section { page-break-inside:avoid; break-inside:avoid; }
+      .rp-shots img { max-height:none; page-break-inside:avoid; }
+      .rp-header { border-bottom-color:#f26419 !important; }
+      a { color:#000 !important; text-decoration:underline !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="bar-chart"></i> MA Test · Monthly Overview</div>
+        <div class="page-sub">รายงานภาพรวมการเทส MA ประจำเดือน — SM only</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="../ma-test.html" class="mas-topnav-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="8" y="2" rx="1"/></svg>
+          <span>Record Results</span>
+        </a>
+        <button type="button" class="mas-topnav-btn" id="btn-report"><span><i data-icon="file"></i></span><span>Monthly Report</span></button>
+        <button type="button" class="mas-topnav-btn" id="btn-export"><span>Export CSV</span></button>
+        <input type="month" id="month" class="month-picker">
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="bar-chart"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>MA Test — Monthly Overview</h1>
+          <p>สรุปสถานะการเทส MA ของเดือน · ดูว่ามี service ไหนบ้างที่ยังไม่ได้เทส/ผ่าน/ไม่ผ่าน · ใครเป็นคนเทส · แจกแจงตาม Service และ Tool</p>
+        </div>
+      </section>
+
+      <div class="ov-stats" id="stats"></div>
+
+      <div class="ov-breakdown">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i data-icon="package"></i> By Service</span>
+            <span class="badge badge-gray" id="brk-svc-count">—</span>
+          </div>
+          <div class="card-body" style="padding:0" id="brk-service"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i data-icon="wrench"></i> By Tool</span>
+            <span class="badge badge-gray" id="brk-tool-count">—</span>
+          </div>
+          <div class="card-body" style="padding:0" id="brk-tool"></div>
+        </div>
+      </div>
+
+      <div class="ov-toolbar">
+        <input type="search" id="q" class="form-control ov-search" placeholder="ค้นหา name / remark / service…">
+        <select id="f-service" class="form-control">
+          <option value="">All Services</option>
+        </select>
+        <select id="f-tool" class="form-control">
+          <option value="">All Tools</option>
+        </select>
+        <select id="f-priority" class="form-control">
+          <option value="">All Priority</option>
+        </select>
+        <select id="f-status" class="form-control">
+          <option value="">All Status</option>
+          <option value="not_tested">Not tested</option>
+          <option value="pending">Pending</option>
+          <option value="successed">Successed (latest)</option>
+          <option value="failed">Failed (latest)</option>
+        </select>
+        <div class="spacer"></div>
+        <span class="badge badge-orange" id="row-count">0 shown</span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i data-icon="calendar"></i> <span id="detail-title">Monthly detail</span></span>
+          <span class="badge badge-orange" id="detail-count">—</span>
+        </div>
+        <div class="card-body" style="padding:0" id="table-wrap">
+          <div class="ov-empty">Loading…</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═════ Detail Modal ═════ -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal ov-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="detail-modal-title">Test detail</div>
+      <button class="btn-close" data-close>×</button>
+    </div>
+    <div class="modal-body" id="detail-modal-body">
+      —
+    </div>
+    <div class="modal-footer">
+      <a id="detail-record-link" href="../ma-test.html" class="btn btn-outline">Open Record page ↗</a>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" data-close>Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════ Monthly Report Modal ═════ -->
+<div class="modal-overlay" id="modal-report">
+  <div class="modal rp-modal">
+    <div class="modal-header">
+      <div class="modal-title"><i data-icon="file"></i> Monthly Report — <span id="rp-month-title">—</span></div>
+      <button class="btn-close" data-close>×</button>
+    </div>
+    <div class="modal-body">
+      <div class="rp-toolbar no-print">
+        <label><input type="checkbox" id="rp-inc-shots" checked> Include screenshots</label>
+        <label><input type="checkbox" id="rp-inc-untested"> Include untested items</label>
+        <label><input type="checkbox" id="rp-inc-breakdown" checked> Include breakdown tables</label>
+        <div class="spacer"></div>
+        <button class="btn btn-sm btn-primary" id="btn-print"><i data-icon="printer"></i> Print / Save as PDF</button>
+      </div>
+      <div class="rp-body" id="rp-body">—</div>
+    </div>
+    <div class="modal-footer no-print">
+      <div style="flex:1;font-size:11px;color:var(--text-muted)">
+        Tip: กด <b>Print</b> แล้วเลือก "Save as PDF" ใน Destination เพื่อบันทึกเป็นไฟล์
+      </div>
+      <button class="btn btn-ghost" data-close>Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════ Lightbox ═════ -->
+<div class="modal-overlay" id="modal-lightbox">
+  <div class="modal ov-xl">
+    <div class="modal-header">
+      <div class="modal-title">Screenshot</div>
+      <button class="btn-close" data-close>×</button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <img id="lb-img" class="lb-img" alt="">
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/js/ma-test.js"></script>
+<script>
+if (!Auth.requireAuth()) {}
+const _u = Auth.getUser();
+if (!_u || !['super_admin','sm_admin','sm_lead','dev_sm'].includes(_u.role)) {
+  Toast?.error?.('Admin/Lead only');
+  setTimeout(() => location.replace('../dashboard.html'), 800);
+}
+if (_u && _u.team && _u.team !== 'sm' && !['super_admin','super_viewer'].includes(_u.role)) {
+  Toast?.error?.('SM team only');
+  setTimeout(() => location.replace('../dashboard.html'), 800);
+}
+Layout.render('admin');
+
+const esc = MaTest.escapeHtml;
+
+// ── Populate filter selects ──────────────────────────────────
+MaTest.SERVICES  .forEach(s => document.getElementById('f-service') .insertAdjacentHTML('beforeend', `<option value="${s}">${s}</option>`));
+MaTest.TOOLS     .forEach(t => document.getElementById('f-tool')    .insertAdjacentHTML('beforeend', `<option value="${t}">${t}</option>`));
+MaTest.PRIORITIES.forEach(p => document.getElementById('f-priority').insertAdjacentHTML('beforeend', `<option value="${p}">${p}</option>`));
+document.getElementById('month').value = MaTest.currentMonth();
+
+// ── State ────────────────────────────────────────────────────
+let plan = [];
+let results = [];
+let rows = []; // enriched per-plan-item rows
+
+async function load() {
+  const month = document.getElementById('month').value;
+  document.getElementById('detail-title').textContent = month;
+  const [planRes, resRes] = await Promise.all([
+    MaTest.api.listPlan(month),
+    MaTest.api.listResults(month),
+  ]);
+  plan    = planRes?.success ? (planRes.data.items || []) : [];
+  results = resRes?.success  ? (resRes.data.items  || []) : [];
+  buildRows();
+  renderStats();
+  renderBreakdown();
+  render();
+}
+
+// ── Enrich each plan item with result summary ────────────────
+function buildRows() {
+  // group results by catalog_id (results reference plan_id + catalog_id)
+  const byCat = {};
+  for (const r of results) {
+    const cid = String(r.catalog_id || '');
+    if (!byCat[cid]) byCat[cid] = [];
+    byCat[cid].push(r);
+  }
+  // sort each bucket by created_at desc so [0] is latest
+  Object.values(byCat).forEach(list =>
+    list.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+  );
+
+  rows = plan.map(p => {
+    const cat = p.catalog || {};
+    const rs = byCat[String(p.catalog_id)] || [];
+    const latest = rs[0] || null;
+
+    const succ = rs.filter(r => r.result === 'Successed').length;
+    const fail = rs.filter(r => r.result === 'Failed').length;
+    const pend = rs.filter(r => r.result === 'Pending').length;
+
+    // Overall status prefers a latest-tested outcome; falls back to Not tested.
+    let status = 'not_tested';
+    if (latest) {
+      if      (latest.result === 'Successed') status = 'successed';
+      else if (latest.result === 'Failed')    status = 'failed';
+      else if (latest.result === 'Pending')   status = 'pending';
+      else                                    status = 'pending';
+    }
+    return {
+      plan_id: p.id, catalog_id: p.catalog_id, cat,
+      count: rs.length, succ, fail, pend, latest, status,
+    };
+  });
+}
+
+// ── Stats ────────────────────────────────────────────────────
+function renderStats() {
+  const total = rows.length;
+  const untested = rows.filter(r => r.count === 0).length;
+  const tested   = total - untested;
+  const succ     = rows.filter(r => r.status === 'successed').length;
+  const fail     = rows.filter(r => r.status === 'failed').length;
+  const pend     = rows.filter(r => r.status === 'pending').length;
+  const recorded = results.length;
+  const cov      = total ? Math.round((tested / total) * 100) : 0;
+
+  document.getElementById('stats').innerHTML = `
+    <div class="ov-stat info">
+      <div class="l">Planned</div>
+      <div class="n">${total}</div>
+      <div class="p">services in plan</div>
+    </div>
+    <div class="ov-stat">
+      <div class="l">Coverage</div>
+      <div class="n">${cov}%</div>
+      <div class="p">${tested} tested · ${untested} untested</div>
+    </div>
+    <div class="ov-stat success">
+      <div class="l">Successed</div>
+      <div class="n">${succ}</div>
+      <div class="p">latest = success</div>
+    </div>
+    <div class="ov-stat danger">
+      <div class="l">Failed</div>
+      <div class="n">${fail}</div>
+      <div class="p">latest = failed</div>
+    </div>
+    <div class="ov-stat warning">
+      <div class="l">Pending</div>
+      <div class="n">${pend}</div>
+      <div class="p">latest = pending</div>
+    </div>
+    <div class="ov-stat muted">
+      <div class="l">Not tested</div>
+      <div class="n">${untested}</div>
+      <div class="p">no record yet</div>
+    </div>
+    <div class="ov-stat">
+      <div class="l">Total records</div>
+      <div class="n">${recorded}</div>
+      <div class="p">across all items</div>
+    </div>`;
+}
+
+// ── By-Service / By-Tool breakdown ───────────────────────────
+function renderBreakdown() {
+  document.getElementById('brk-service').innerHTML = renderGroup(r => r.cat.service || '—');
+  document.getElementById('brk-tool')   .innerHTML = renderGroup(r => r.cat.tool    || '—');
+  const uniqSvc = new Set(rows.map(r => r.cat.service || '—')).size;
+  const uniqTool = new Set(rows.map(r => r.cat.tool || '—')).size;
+  document.getElementById('brk-svc-count').textContent  = uniqSvc + ' service' + (uniqSvc === 1 ? '' : 's');
+  document.getElementById('brk-tool-count').textContent = uniqTool + ' tool'   + (uniqTool === 1 ? '' : 's');
+}
+function renderGroup(keyFn) {
+  const groups = {};
+  for (const r of rows) {
+    const k = keyFn(r);
+    if (!groups[k]) groups[k] = { planned:0, tested:0, succ:0, fail:0, pend:0, untested:0 };
+    const g = groups[k];
+    g.planned++;
+    if (r.count === 0) g.untested++;
+    else g.tested++;
+    if (r.status === 'successed') g.succ++;
+    if (r.status === 'failed')    g.fail++;
+    if (r.status === 'pending')   g.pend++;
+  }
+  const keys = Object.keys(groups).sort();
+  if (!keys.length) return `<div class="ov-empty" style="border:none">No data</div>`;
+  const body = keys.map(k => {
+    const g = groups[k];
+    const pct = g.planned ? Math.round((g.tested / g.planned) * 100) : 0;
+    const bar = g.planned ? `
+      <div class="ov-bar">
+        ${g.succ ? `<div class="s" style="flex:${g.succ}"></div>` : ''}
+        ${g.fail ? `<div class="f" style="flex:${g.fail}"></div>` : ''}
+        ${g.pend ? `<div class="p" style="flex:${g.pend}"></div>` : ''}
+      </div>` : '';
+    return `
+      <tr>
+        <td><b style="color:var(--text)">${esc(k)}</b>${bar}</td>
+        <td class="num">${g.planned}</td>
+        <td class="num" style="color:var(--success)">${g.succ}</td>
+        <td class="num" style="color:var(--danger)">${g.fail}</td>
+        <td class="num" style="color:var(--warning)">${g.pend}</td>
+        <td class="num" style="color:var(--text-muted)">${g.untested}</td>
+        <td class="pct">${pct}%</td>
+      </tr>`;
+  }).join('');
+  return `
+    <div style="overflow-x:auto">
+      <table class="ov-brk-table">
+        <thead>
+          <tr>
+            <th style="min-width:140px">Name</th>
+            <th style="text-align:right">Plan</th>
+            <th style="text-align:right"><i data-icon="check"></i> Succ</th>
+            <th style="text-align:right"><i data-icon="x"></i> Fail</th>
+            <th style="text-align:right">⧗ Pend</th>
+            <th style="text-align:right">— Untested</th>
+            <th style="text-align:right">Coverage</th>
+          </tr>
+        </thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>`;
+}
+
+// ── Detailed table ───────────────────────────────────────────
+function statusBadge(status) {
+  switch (status) {
+    case 'successed': return '<span class="badge badge-green">Successed</span>';
+    case 'failed':    return '<span class="badge badge-red">Failed</span>';
+    case 'pending':   return '<span class="badge badge-yellow">Pending</span>';
+    default:          return '<span class="badge badge-gray">Not tested</span>';
+  }
+}
+function filteredRows() {
+  const q  = document.getElementById('q').value.trim().toLowerCase();
+  const fs = document.getElementById('f-service').value;
+  const ft = document.getElementById('f-tool').value;
+  const fp = document.getElementById('f-priority').value;
+  const fst = document.getElementById('f-status').value;
+  return rows.filter(r => {
+    const c = r.cat || {};
+    if (fs  && c.service  !== fs) return false;
+    if (ft  && c.tool     !== ft) return false;
+    if (fp  && c.priority !== fp) return false;
+    if (fst && r.status   !== fst) return false;
+    if (q) {
+      const hay = ((c.name || '') + ' ' + (c.remark || '') + ' ' + (c.service || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+function render() {
+  const list = filteredRows();
+  document.getElementById('row-count').textContent = list.length + ' shown';
+  document.getElementById('detail-count').textContent = rows.length + ' planned';
+  const wrap = document.getElementById('table-wrap');
+  if (!list.length) {
+    wrap.innerHTML = `
+      <div class="ov-empty">
+        <h4>ไม่มีข้อมูลตรงกับ filter</h4>
+        <p>ลอง clear filter หรือเปลี่ยนเดือน · ยัง add plan ของเดือนนี้หรือยัง?</p>
+      </div>`;
+    return;
+  }
+  const body = list.map(r => {
+    const c = r.cat || {};
+    const l = r.latest;
+    const rc = r.count
+      ? `<span class="ov-rcount has">${r.count}</span>`
+      : `<span class="ov-rcount">0</span>`;
+    const bar = r.count ? `
+      <div class="ov-bar" title="Success ${r.succ} · Fail ${r.fail} · Pending ${r.pend}">
+        ${r.succ ? `<div class="s" style="flex:${r.succ}"></div>` : ''}
+        ${r.fail ? `<div class="f" style="flex:${r.fail}"></div>` : ''}
+        ${r.pend ? `<div class="p" style="flex:${r.pend}"></div>` : ''}
+      </div>` : '';
+    const latestCell = l ? `
+      <div class="ov-tester">${
+        (l.contributors?.length ? l.contributors : [{name: l.tested_by_name || l.tested_by}])
+          .map(c => esc(c.name || c.id || 'unknown')).join(', ')
+      }</div>
+      <div class="ov-meta">
+        ${esc(l.type || '—')}${l.test_date ? ' · ' + esc(l.test_date) : ''}
+        ${l.refer_ticket ? ' · ' + esc(l.refer_ticket) : ''}
+      </div>` : `<div class="ov-meta">—</div>`;
+
+    return `
+      <tr class="ov-row-click" data-cid="${esc(r.catalog_id)}">
+        <td>
+          <div class="ov-name">${esc(c.name || '(missing catalog)')}</div>
+          ${c.remark ? `<div class="ov-sub">${esc(c.remark)}</div>` : ''}
+        </td>
+        <td>${MaTest.serviceBadge(c.service)}</td>
+        <td>${MaTest.priorityBadge(c.priority)}</td>
+        <td>${MaTest.toolBadge(c.tool)}</td>
+        <td>${statusBadge(r.status)}${bar}</td>
+        <td style="text-align:center">${rc}</td>
+        <td>${latestCell}</td>
+      </tr>`;
+  }).join('');
+  wrap.innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="ov-table">
+        <thead>
+          <tr>
+            <th style="min-width:260px">Service (Catalog)</th>
+            <th>Service</th>
+            <th>Priority</th>
+            <th>Tool</th>
+            <th style="min-width:150px">Status</th>
+            <th style="text-align:center"># Records</th>
+            <th style="min-width:200px">Latest test</th>
+          </tr>
+        </thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>`;
+
+  wrap.querySelectorAll('.ov-row-click').forEach(tr => {
+    tr.onclick = () => openDetail(tr.dataset.cid);
+  });
+}
+
+// ── Detail popup ─────────────────────────────────────────────
+function resultsForCatalog(catId) {
+  return results
+    .filter(r => String(r.catalog_id) === String(catId))
+    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+}
+function openDetail(catId) {
+  const row = rows.find(r => String(r.catalog_id) === String(catId));
+  if (!row) return;
+  const c = row.cat || {};
+  const rs = resultsForCatalog(catId);
+  const month = document.getElementById('month').value;
+
+  document.getElementById('detail-modal-title').textContent = c.name || 'Test detail';
+  const link = document.getElementById('detail-record-link');
+  link.href = `../ma-test.html?month=${encodeURIComponent(month)}`;
+
+  const linksHtml = [
+    c.graph_url   ? `<a href="${esc(c.graph_url)}"   target="_blank" rel="noopener" class="badge badge-blue">Graph ↗</a>` : '',
+    c.link_manual ? `<a href="${esc(c.link_manual)}" target="_blank" rel="noopener" class="badge badge-gray">Manual ↗</a>` : '',
+  ].filter(Boolean).join('');
+
+  const header = `
+    <div class="ov-dtl-head">
+      <div class="n">${esc(c.name || '(missing)')}</div>
+      <div class="badges">
+        ${MaTest.serviceBadge(c.service)}
+        ${MaTest.priorityBadge(c.priority)}
+        ${MaTest.toolBadge(c.tool)}
+        ${statusBadge(row.status)}
+      </div>
+      ${c.remark ? `<div class="r">${esc(c.remark)}</div>` : ''}
+      ${linksHtml ? `<div class="links">${linksHtml}</div>` : ''}
+    </div>`;
+
+  const mini = `
+    <div class="ov-dtl-mini">
+      <div class="m"><div class="l">Records</div><div class="n">${row.count}</div></div>
+      <div class="m success"><div class="l"><i data-icon="check"></i> Success</div><div class="n">${row.succ}</div></div>
+      <div class="m danger"><div class="l"><i data-icon="x"></i> Failed</div><div class="n">${row.fail}</div></div>
+      <div class="m warning"><div class="l">⧗ Pending</div><div class="n">${row.pend}</div></div>
+    </div>`;
+
+  const listTitle = `<div class="ov-dtl-list-title">All results (newest first)</div>`;
+
+  const listHtml = rs.length ? rs.map(r => {
+    const shots = (r.screenshots || []).map(url => `
+      <div class="ov-thumb" data-lb="${esc(url)}"><img src="${esc(url)}" alt=""></div>
+    `).join('');
+    const jenkinsRows = ((r.jenkins_build_up_url || r.jenkins_build_down_url) ? `
+      ${r.jenkins_build_up_url ? `
+        <div><div class="k">Jenkins Build — MA Up</div>
+          <div class="v"><a href="${esc(r.jenkins_build_up_url)}" target="_blank" rel="noopener">${esc(r.jenkins_build_up_url)}</a></div></div>` : ''}
+      ${r.jenkins_build_down_url ? `
+        <div><div class="k">Jenkins Build — MA Down</div>
+          <div class="v"><a href="${esc(r.jenkins_build_down_url)}" target="_blank" rel="noopener">${esc(r.jenkins_build_down_url)}</a></div></div>` : ''}
+    ` : '');
+    const timeRange = (r.start_time || r.end_time)
+      ? esc(r.start_time || '') + '–' + esc(r.end_time || '')
+      : '—';
+    return `
+      <div class="ov-res">
+        <div class="ov-res-head">
+          <div>
+            <div class="who">${
+              (r.contributors?.length ? r.contributors : [{name: r.tested_by_name || r.tested_by}])
+                .map(c => esc(c.name || c.id || 'unknown')).join(', ')
+            }</div>
+            <div class="meta">${esc(r.created_at || '')}${r.updated_at && r.updated_at !== r.created_at ? ' · updated ' + esc(r.updated_at) : ''}</div>
+          </div>
+          <div>${MaTest.resultBadge(r.result)}</div>
+        </div>
+        <div class="ov-res-grid">
+          <div><div class="k">Type</div><div class="v">${esc(r.type || '—')}</div></div>
+          <div><div class="k">Test Date</div><div class="v">${esc(r.test_date || '—')}</div></div>
+          <div><div class="k">Time</div><div class="v">${timeRange}</div></div>
+          <div><div class="k">Before Test</div><div class="v">${esc(r.before_test || '—')}</div></div>
+          <div><div class="k">During Test</div><div class="v">${esc(r.during_test || '—')}</div></div>
+          <div><div class="k">Refer Ticket</div><div class="v">${r.refer_ticket ? esc(r.refer_ticket) : '—'}</div></div>
+          ${jenkinsRows}
+        </div>
+        ${shots ? `<div class="ov-thumbs">${shots}</div>` : ''}
+      </div>`;
+  }).join('') : `<div class="ov-res-empty">ยังไม่มีการบันทึกผลเทสสำหรับ service นี้ในเดือน ${esc(month)}</div>`;
+
+  document.getElementById('detail-modal-body').innerHTML = header + mini + listTitle + listHtml;
+
+  // Wire lightbox on thumbnails
+  document.querySelectorAll('#detail-modal-body [data-lb]').forEach(el => {
+    el.onclick = () => openLightbox(el.dataset.lb);
+  });
+
+  document.getElementById('modal-detail').classList.add('active');
+}
+
+function openLightbox(url) {
+  document.getElementById('lb-img').src = url;
+  document.getElementById('modal-lightbox').classList.add('active');
+}
+
+function closeAll() {
+  document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+}
+document.addEventListener('click', e => {
+  if (e.target.matches('[data-close]') || e.target.classList.contains('modal-overlay')) closeAll();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
+
+// ── CSV export ───────────────────────────────────────────────
+function exportCsv() {
+  const list = filteredRows();
+  const month = document.getElementById('month').value;
+  const header = ['Name','Service','Priority','Tool','Status','Records','Success','Failed','Pending','Latest_By','Latest_Date','Latest_Type','Latest_Ticket','Remark'];
+  const q = (v) => {
+    const s = String(v ?? '');
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const rowsCsv = list.map(r => {
+    const c = r.cat || {}; const l = r.latest || {};
+    return [
+      c.name || '', c.service || '', c.priority || '', c.tool || '',
+      r.status, r.count, r.succ, r.fail, r.pend,
+      (l.contributors?.length ? l.contributors : [{name: l.tested_by_name || l.tested_by}]).map(c => c.name || c.id || '').filter(Boolean).join('; '),
+      l.test_date || '', l.type || '', l.refer_ticket || '',
+      c.remark || '',
+    ].map(q).join(',');
+  });
+  const csv = [header.join(','), ...rowsCsv].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `ma-test-overview-${month}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ── Monthly Report ───────────────────────────────────────────
+function renderReportBreakdown(keyFn, label) {
+  const groups = {};
+  for (const r of rows) {
+    const k = keyFn(r) || '—';
+    if (!groups[k]) groups[k] = { planned:0, succ:0, fail:0, pend:0, untested:0 };
+    const g = groups[k];
+    g.planned++;
+    if (r.count === 0)            g.untested++;
+    if (r.status === 'successed') g.succ++;
+    if (r.status === 'failed')    g.fail++;
+    if (r.status === 'pending')   g.pend++;
+  }
+  const keys = Object.keys(groups).sort();
+  if (!keys.length) return '';
+  const body = keys.map(k => {
+    const g = groups[k];
+    const cov = g.planned ? Math.round(((g.planned - g.untested) / g.planned) * 100) : 0;
+    return `
+      <tr>
+        <td><b style="color:var(--text)">${esc(k)}</b></td>
+        <td class="num">${g.planned}</td>
+        <td class="num" style="color:var(--success)">${g.succ}</td>
+        <td class="num" style="color:var(--danger)">${g.fail}</td>
+        <td class="num" style="color:var(--warning)">${g.pend}</td>
+        <td class="num" style="color:var(--text-muted)">${g.untested}</td>
+        <td class="num">${cov}%</td>
+      </tr>`;
+  }).join('');
+  return `
+    <table class="rp-brk-table">
+      <thead>
+        <tr>
+          <th>${esc(label)}</th>
+          <th style="text-align:right">Plan</th>
+          <th style="text-align:right">✓ Succ</th>
+          <th style="text-align:right">✗ Fail</th>
+          <th style="text-align:right">⧗ Pend</th>
+          <th style="text-align:right">Untested</th>
+          <th style="text-align:right">Coverage</th>
+        </tr>
+      </thead>
+      <tbody>${body}</tbody>
+    </table>`;
+}
+
+function renderReportItem(row, includeShots) {
+  const c = row.cat || {};
+  const rs = resultsForCatalog(row.catalog_id);
+
+  const linksHtml = [
+    c.graph_url   ? `<a href="${esc(c.graph_url)}"   target="_blank" rel="noopener">Graph ↗</a>` : '',
+    c.link_manual ? `<a href="${esc(c.link_manual)}" target="_blank" rel="noopener">Manual ↗</a>` : '',
+  ].filter(Boolean).join(' · ');
+
+  const resultsHtml = rs.length ? rs.map(r => {
+    const time = (r.start_time || r.end_time)
+      ? `${esc(r.start_time || '')}–${esc(r.end_time || '')}` : '';
+    const cls = r.result === 'Successed' ? 'ok'
+              : r.result === 'Failed'    ? 'bad'
+              : r.result === 'Pending'   ? 'pend' : '';
+    const shots = includeShots && (r.screenshots || []).length
+      ? `<div class="rp-shots">${r.screenshots.map(u =>
+          `<img src="${esc(u)}" alt="screenshot" loading="lazy">`).join('')}</div>`
+      : '';
+    return `
+      <div class="rp-result ${cls}">
+        <div class="rp-result-head">
+          <div>
+            <div class="who">${
+              (r.contributors?.length ? r.contributors : [{name: r.tested_by_name || r.tested_by}])
+                .map(c => esc(c.name || c.id || 'unknown')).join(', ')
+            }</div>
+            <div class="meta">${esc(r.test_date || (r.created_at || '').slice(0,10) || '—')}${time ? ' · ' + time : ''} · ${esc(r.type || '—')}</div>
+          </div>
+          <div>${MaTest.resultBadge(r.result)}</div>
+        </div>
+        ${r.before_test    ? `<div class="rp-field"><span class="k">Before:</span>${esc(r.before_test)}</div>` : ''}
+        ${r.during_test    ? `<div class="rp-field"><span class="k">During:</span>${esc(r.during_test)}</div>` : ''}
+        ${r.refer_ticket   ? `<div class="rp-field"><span class="k">Ticket:</span>${esc(r.refer_ticket)}</div>` : ''}
+        ${r.jenkins_build_up_url   ? `<div class="rp-field"><span class="k">Jenkins Up:</span><a href="${esc(r.jenkins_build_up_url)}"   target="_blank" rel="noopener">${esc(r.jenkins_build_up_url)}</a></div>` : ''}
+        ${r.jenkins_build_down_url ? `<div class="rp-field"><span class="k">Jenkins Down:</span><a href="${esc(r.jenkins_build_down_url)}" target="_blank" rel="noopener">${esc(r.jenkins_build_down_url)}</a></div>` : ''}
+        ${shots}
+      </div>`;
+  }).join('') : `<div class="rp-empty">ยังไม่มีการบันทึกผลเทสสำหรับ item นี้</div>`;
+
+  return `
+    <div class="rp-item">
+      <div class="rp-item-head">
+        <div>
+          <div class="rp-item-name">${esc(c.name || '(missing)')}</div>
+          ${c.remark ? `<div class="rp-item-sub">${esc(c.remark)}</div>` : ''}
+        </div>
+        <div class="rp-item-badges">
+          ${MaTest.priorityBadge(c.priority)}
+          ${MaTest.toolBadge(c.tool)}
+          ${statusBadge(row.status)}
+        </div>
+      </div>
+      ${linksHtml ? `<div class="rp-item-links">${linksHtml}</div>` : ''}
+      ${resultsHtml}
+    </div>`;
+}
+
+function buildReport() {
+  const month = document.getElementById('month').value;
+  const includeShots     = document.getElementById('rp-inc-shots').checked;
+  const includeUntested  = document.getElementById('rp-inc-untested').checked;
+  const includeBreakdown = document.getElementById('rp-inc-breakdown').checked;
+  const user = Auth.getUser();
+
+  document.getElementById('rp-month-title').textContent = month;
+
+  // KPIs from full plan
+  const total    = rows.length;
+  const untested = rows.filter(r => r.count === 0).length;
+  const succ     = rows.filter(r => r.status === 'successed').length;
+  const fail     = rows.filter(r => r.status === 'failed').length;
+  const pend     = rows.filter(r => r.status === 'pending').length;
+  const cov      = total ? Math.round(((total - untested) / total) * 100) : 0;
+
+  const kpi = `
+    <section class="rp-kpi">
+      <div class="rp-k"><div class="l">Planned</div><div class="v">${total}</div></div>
+      <div class="rp-k"><div class="l">Coverage</div><div class="v">${cov}%</div></div>
+      <div class="rp-k success"><div class="l">Successed</div><div class="v">${succ}</div></div>
+      <div class="rp-k danger"><div class="l">Failed</div><div class="v">${fail}</div></div>
+      <div class="rp-k warning"><div class="l">Pending</div><div class="v">${pend}</div></div>
+      <div class="rp-k muted"><div class="l">Not tested</div><div class="v">${untested}</div></div>
+    </section>`;
+
+  const breakdownHtml = includeBreakdown ? `
+    <div class="rp-h2">📊 Breakdown by Service</div>
+    ${renderReportBreakdown(r => r.cat.service, 'Service')}
+    <div class="rp-h2">🛠 Breakdown by Tool</div>
+    ${renderReportBreakdown(r => r.cat.tool, 'Tool')}
+  ` : '';
+
+  // Group items by service for detail sections
+  const bySvc = {};
+  for (const r of rows) {
+    if (!includeUntested && r.count === 0) continue;
+    const svc = r.cat.service || '—';
+    if (!bySvc[svc]) bySvc[svc] = [];
+    bySvc[svc].push(r);
+  }
+  const services = Object.keys(bySvc).sort();
+
+  const detailHtml = services.length ? services.map(svc => {
+    const items = bySvc[svc].sort((a, b) => (a.cat.name || '').localeCompare(b.cat.name || ''));
+    return `
+      <section class="rp-section">
+        <div class="rp-section-head">
+          <div class="rp-section-title">${MaTest.serviceBadge(svc)}</div>
+          <div class="rp-section-count">${items.length} item${items.length === 1 ? '' : 's'}</div>
+        </div>
+        ${items.map(r => renderReportItem(r, includeShots)).join('')}
+      </section>`;
+  }).join('') : `
+    <div class="rp-empty" style="text-align:center;padding:32px">
+      ไม่มี item ที่มีการเทสในเดือนนี้ · เปิด "Include untested" เพื่อดูรายการทั้งหมด
+    </div>`;
+
+  const now = new Date();
+  const genAt = now.toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+  const teamLabel = (user?.team || '').toUpperCase() || 'SM';
+
+  document.getElementById('rp-body').innerHTML = `
+    <div class="rp-header">
+      <div class="rp-logo">🧪</div>
+      <div style="flex:1">
+        <div class="rp-title">MA Test — Monthly Report</div>
+        <div class="rp-sub">
+          Month <b style="color:var(--text)">${esc(month)}</b>
+          · Team <b style="color:var(--text)">${esc(teamLabel)}</b>
+          · Generated by <b style="color:var(--text)">${esc(user?.name || user?.username || '—')}</b>
+          · ${esc(genAt)}
+        </div>
+      </div>
+    </div>
+    <div class="rp-h2">📈 Summary</div>
+    ${kpi}
+    ${breakdownHtml}
+    <div class="rp-h2">🗂 Test Results Detail</div>
+    ${detailHtml}
+  `;
+}
+
+function openReport() {
+  if (!rows.length) {
+    Toast?.info?.('ยังไม่มีข้อมูลของเดือนนี้ — เพิ่ม plan/บันทึกผลก่อน');
+    return;
+  }
+  buildReport();
+  document.getElementById('modal-report').classList.add('active');
+}
+
+// ── Wire ─────────────────────────────────────────────────────
+document.getElementById('month').onchange  = load;
+document.getElementById('btn-export').onclick = exportCsv;
+document.getElementById('btn-report').onclick = openReport;
+document.getElementById('btn-print').onclick  = () => window.print();
+['rp-inc-shots', 'rp-inc-untested', 'rp-inc-breakdown'].forEach(id =>
+  document.getElementById(id).addEventListener('change', buildReport)
+);
+let _sT;
+document.getElementById('q').addEventListener('input', () => { clearTimeout(_sT); _sT = setTimeout(render, 200); });
+['f-service','f-tool','f-priority','f-status'].forEach(id => document.getElementById(id).onchange = render);
+
+load();
+</script>
+</body>
+</html>

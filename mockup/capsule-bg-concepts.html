@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en" data-ui="glass" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capsule Background Concepts</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --orange: #F26419;
+  --orange-dim: rgba(242,100,25,.12);
+  --orange-glow: rgba(242,100,25,.25);
+}
+
+/* ── Theme tokens ── */
+html[data-ui="glass"]                   { --bg:#fff5ec; --bg-card:rgba(255,253,250,.85); --text:#1a120a; --text-muted:#9a7c5f; --border:rgba(242,100,25,.14); --nav-bg:linear-gradient(90deg,rgba(242,100,25,.08),transparent 40%,rgba(255,160,80,.05)),rgba(255,252,248,.72); --nav-blur:blur(24px) saturate(180%); }
+html[data-ui="glass"][data-theme="dark"] { --bg:#0a0a12; --bg-card:rgba(10,8,22,.85); --text:#f0ece6; --text-muted:rgba(240,230,210,.45); --border:rgba(242,100,25,.22); --nav-bg:linear-gradient(90deg,rgba(242,100,25,.12),transparent 40%,rgba(90,50,210,.08)),rgba(8,10,20,.85); }
+html[data-ui="enterprise"]              { --bg:#fafafa; --bg-card:#fff; --text:#111827; --text-muted:#6b7280; --border:#e5e7eb; --nav-bg:#fff; --nav-blur:none; }
+html[data-ui="enterprise"][data-theme="dark"] { --bg:#0a0c12; --bg-card:#0f1117; --text:#e2e8f0; --text-muted:#94a3b8; --border:#1f2530; --nav-bg:#0f1117; }
+html[data-ui="console"]                 { --bg:#08080a; --bg-card:#0d0d10; --text:#f0f0f0; --text-muted:#6a6a72; --border:#1e1e22; --nav-bg:#0d0d10; }
+html[data-ui="warm"]                    { --bg:#f5efe5; --bg-card:#fff; --text:#2a2119; --text-muted:#a89b86; --border:#ede6d7; --nav-bg:#fff; }
+html[data-ui="warm"][data-theme="dark"] { --bg:#14100d; --bg-card:#2e2620; --text:#fff5e6; --text-muted:rgba(255,235,200,.5); --border:#3d2f24; --nav-bg:#2e2620; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background .2s, color .2s;
+}
+
+/* ══════════════════════════════════════
+   SHARED CAPSULE PILL
+══════════════════════════════════════ */
+.capsule-wrap {
+  display: flex; justify-content: center; align-items: center;
+  position: relative;
+  width: 100%; padding: 14px 20px;
+}
+.capsule {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: var(--nav-bg, var(--bg-card));
+  backdrop-filter: var(--nav-blur, blur(20px) saturate(180%));
+  -webkit-backdrop-filter: var(--nav-blur, blur(20px) saturate(180%));
+  border: 1px solid var(--border);
+  border-radius: 999px; padding: 5px 8px 5px 14px;
+  box-shadow: 0 2px 16px rgba(0,0,0,.08), 0 4px 24px rgba(0,0,0,.05);
+  position: relative; z-index: 2;
+}
+.cap-logo { font-size: 13px; font-weight: 900; color: var(--orange); margin-right: 10px; white-space: nowrap; }
+.cap-link {
+  padding: 5px 11px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 500; color: var(--text-muted);
+  cursor: pointer; transition: all .14s; white-space: nowrap;
+  border: none; background: transparent; font-family: inherit;
+}
+.cap-link:hover, .cap-link.active { background: var(--orange-dim); color: var(--orange); }
+.cap-cta {
+  background: var(--orange); color: #fff;
+  border: none; border-radius: 999px;
+  padding: 6px 14px 6px 10px; font-size: 12px; font-weight: 700;
+  cursor: pointer; margin-left: 6px; display: flex; align-items: center; gap: 6px;
+  font-family: inherit; white-space: nowrap;
+}
+.cap-avatar {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: rgba(255,255,255,.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 800;
+  overflow: hidden;
+}
+.cap-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* fake page content */
+.page-content {
+  padding: 32px 40px 120px;
+  display: flex; flex-direction: column; gap: 14px;
+  max-width: 900px; margin: 0 auto;
+}
+.page-title-row { display: flex; flex-direction: column; gap: 4px; }
+.page-title-row h2 { font-size: 22px; font-weight: 800; color: var(--text); }
+.page-title-row p  { font-size: 12px; color: var(--text-muted); }
+.fake-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.fake-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; height: 80px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+
+/* ══════════════════════════════════════
+   CONCEPT A — Ambient Team Glow
+   Soft radial pulse behind the capsule
+══════════════════════════════════════ */
+.concept-a .capsule-wrap::before {
+  content: '';
+  position: absolute; z-index: 0;
+  width: 480px; height: 80px;
+  left: 50%; top: 50%; transform: translate(-50%,-50%);
+  background: radial-gradient(ellipse 60% 100% at 50% 50%,
+    rgba(242,100,25,.18) 0%,
+    rgba(242,100,25,.06) 50%,
+    transparent 75%
+  );
+  border-radius: 999px;
+  animation: ambientPulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes ambientPulse {
+  0%,100% { opacity: .7; transform: translate(-50%,-50%) scale(1); }
+  50%      { opacity: 1;  transform: translate(-50%,-50%) scale(1.06); }
+}
+
+/* ══════════════════════════════════════
+   CONCEPT B — Aurora Strip
+   Thin animated gradient bar behind pill
+══════════════════════════════════════ */
+.concept-b .capsule-wrap {
+  overflow: hidden;
+}
+.concept-b .capsule-wrap::before {
+  content: '';
+  position: absolute; z-index: 0;
+  left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  height: 48px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(242,100,25,.10) 20%,
+    rgba(255,160,80,.14) 40%,
+    rgba(242,100,25,.08) 55%,
+    rgba(160,100,255,.06) 75%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: auroraSlide 4s linear infinite;
+  pointer-events: none;
+}
+@keyframes auroraSlide {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* ══════════════════════════════════════
+   CONCEPT C — Team Badge
+   Small team identity badge below capsule
+══════════════════════════════════════ */
+.concept-c .capsule-wrap {
+  flex-direction: column; gap: 6px; padding: 12px 20px 10px;
+}
+.team-badge {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--orange-dim);
+  border: 1px solid rgba(242,100,25,.2);
+  border-radius: 999px;
+  padding: 2px 10px 2px 6px;
+  font-size: 10px; font-weight: 700;
+  color: var(--orange); letter-spacing: .04em;
+  animation: badgeFadeIn .4s ease both;
+  z-index: 2;
+}
+.team-badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 5px var(--orange-glow);
+  animation: dotPulse 2s ease-in-out infinite;
+}
+@keyframes dotPulse {
+  0%,100% { box-shadow: 0 0 4px var(--orange-glow); transform: scale(1); }
+  50%      { box-shadow: 0 0 8px rgba(242,100,25,.5); transform: scale(1.2); }
+}
+@keyframes badgeFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════
+   CONCEPT D — Mesh Gradient BG
+   Animated mesh pattern behind wrap area
+══════════════════════════════════════ */
+.concept-d .capsule-wrap {
+  overflow: hidden;
+}
+.concept-d .capsule-wrap::before,
+.concept-d .capsule-wrap::after {
+  content: '';
+  position: absolute; z-index: 0;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.concept-d .capsule-wrap::before {
+  background: radial-gradient(circle, rgba(242,100,25,.15) 0%, transparent 70%);
+  left: calc(50% - 160px); top: 50%; transform: translateY(-50%);
+  animation: meshFloat1 6s ease-in-out infinite;
+}
+.concept-d .capsule-wrap::after {
+  background: radial-gradient(circle, rgba(255,150,80,.12) 0%, transparent 70%);
+  left: calc(50% + 60px); top: 50%; transform: translateY(-50%);
+  animation: meshFloat2 6s ease-in-out infinite reverse;
+}
+@keyframes meshFloat1 {
+  0%,100% { transform: translateY(-50%) translateX(0) scale(1); }
+  50%      { transform: translateY(-50%) translateX(20px) scale(1.1); }
+}
+@keyframes meshFloat2 {
+  0%,100% { transform: translateY(-50%) translateX(0) scale(1); }
+  50%      { transform: translateY(-50%) translateX(-20px) scale(.9); }
+}
+
+/* ══════════════════════════════════════
+   CONCEPT E — Shimmer Line + Badge
+   Thin shimmer line above pill + badge combo
+══════════════════════════════════════ */
+.concept-e .capsule-wrap {
+  flex-direction: column; gap: 0; padding-bottom: 8px;
+}
+.shimmer-line {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 1.5px; z-index: 1;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(242,100,25,.0) 10%,
+    rgba(242,100,25,.6) 30%,
+    rgba(255,180,80,.8) 50%,
+    rgba(242,100,25,.6) 70%,
+    rgba(242,100,25,.0) 90%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerMove 2.5s linear infinite;
+  pointer-events: none;
+}
+@keyframes shimmerMove {
+  0%   { background-position: 200% 0; opacity: .6; }
+  50%  { opacity: 1; }
+  100% { background-position: -200% 0; opacity: .6; }
+}
+.concept-e .capsule { margin-top: 12px; }
+.concept-e .team-badge {
+  margin-top: 6px;
+  background: transparent;
+  border: none;
+  font-size: 9.5px;
+  color: var(--text-muted);
+  letter-spacing: .08em;
+  padding: 0 4px;
+}
+.concept-e .team-badge-dot {
+  width: 5px; height: 5px;
+}
+
+/* ══════════════════════════════════════
+   SELECTOR
+══════════════════════════════════════ */
+.selector-bar {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  z-index: 999; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 10px 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.14);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  max-width: 92vw;
+}
+.sel-group { display: flex; align-items: center; gap: 4px; }
+.sel-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+.sel-sep  { width: 1px; height: 16px; background: var(--border); }
+.sel-btn {
+  border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+  font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 999px;
+  cursor: pointer; transition: all .14s; white-space: nowrap; font-family: inherit;
+}
+.sel-btn:hover  { border-color: var(--orange); color: var(--orange); }
+.sel-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; }
+
+.concept { display: none; }
+.concept.active { display: block; }
+
+@media (max-width: 600px) {
+  .fake-cards { grid-template-columns: 1fr; }
+  .page-content { padding: 24px 16px 140px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ CONCEPT A — Ambient Glow ══ -->
+<div class="concept active" id="cA">
+  <div class="capsule-wrap concept-a">
+    <nav class="capsule">
+      <span class="cap-logo">SM-HUB</span>
+      <button class="cap-link active">Home ▾</button>
+      <button class="cap-link">Monitor ▾</button>
+      <button class="cap-link">MA Tools ▾</button>
+      <button class="cap-link">Operations ▾</button>
+      <button class="cap-link">Learn ▾</button>
+      <button class="cap-cta">
+        <div class="cap-avatar">W</div>Warapon ▾
+      </button>
+    </nav>
+  </div>
+  <div class="page-content">
+    <div class="page-title-row"><h2>Concept A — Ambient Glow</h2><p>Radial glow pulse ด้านหลัง capsule — subtle, breathing, ใช้สีจาก orange accent</p></div>
+    <div class="fake-cards"><div class="fake-card"></div><div class="fake-card"></div><div class="fake-card"></div></div>
+    <div class="fake-cards"><div class="fake-card"></div><div class="fake-card"></div><div class="fake-card"></div></div>
+  </div>
+</div>
+
+<!-- ══ CONCEPT B — Aurora Strip ══ -->
+<div class="concept" id="cB">
+  <div class="capsule-wrap concept-b">
+    <nav class="capsule">
+      <span class="cap-logo">SM-HUB</span>
+      <button class="cap-link active">Home ▾</button>
+      <button class="cap-link">Monitor ▾</button>
+      <button class="cap-link">MA Tools ▾</button>
+      <button class="cap-link">Operations ▾</button>
+      <button class="cap-link">Learn ▾</button>
+      <button class="cap-cta">
+        <div class="cap-avatar">W</div>Warapon ▾
+      </button>
+    </nav>
+  </div>
+  <div class="page-content">
+    <div class="page-title-row"><h2>Concept B — Aurora Strip</h2><p>Gradient ribbon เลื่อนผ่านหลัง capsule ตลอดเวลา — subtle light sweep สีส้ม-ม่วง</p></div>
+    <div class="fake-cards"><div class="fake-card"></div><div class="fake-card"></div><div class="fake-card"></div></div>
+    <div class="fake-cards"><div class="fake-card"></div><div class="fake-card"></div><div class="fake-card"></div></div>
+  </div>
+</div>
+
+<!-- ══ CONCEPT C — Team Badge Below ══ -->
+<div class="concept" id="cC">
+  <div class="capsule-wrap concept-c">
+    <nav class="capsule">
+      <span class="cap-logo">SM-HUB</span>
+      <button class="cap-link active">Home ▾</button>
+      <button class="cap-link">Monitor ▾</button>
+      <button class="cap-link">MA Tools ▾</button>
+      <button class="cap-link">Operations ▾</button>
+      <button class="cap-link">Learn ▾</button>
+      <button class="cap-cta">
+        <div class="cap-avatar">W</div>Warapon ▾
+      </button>
+    </nav>
+    <div class="team-badge">
+      <div class="team-badge-dot"></div>
+      SM TEAM · ONLINE
+    </div>
+  </div>
+  <div class="page-content">
+    <div class="page-title-row"><h2>Concept C — Team Badge</h2><p>Badge เล็กๆ ใต้ capsule แสดง team + live status — pulse dot บอกว่า online</p></div>
+    <div class="fake-cards"><div class="fake-card"></div><div class="fake-card"></div><div class="fake-card"></div></div>
+    <div class="fake-cards"><div class="fake-card"></div><div class="fake-card"></div><div class="fake-card"></div></div>
+  </div>
+</div>
+
+<!-- ══ CONCEPT D — Mesh Gradient ══ -->
+<div class="concept" id="cD">
+  <div class="capsule-wrap concept-d">
+    <nav class="capsule">
+      <span class="cap-logo">SM-HUB</span>
+      <button class="cap-link active">Home ▾</button>
+      <button class="cap-link">Monitor ▾</button>
+      <button class="cap-link">MA Tools ▾</button>
+      <button class="cap-link">Operations ▾</button>
+      <button class="cap-link">Learn ▾</button>
+      <button class="cap-cta">
+        <div class="cap-avatar">W</div>Warapon ▾
+      </button>
+    </nav>
+  </div>
+  <div class="page-content">
+    <div class="page-title-row"><h2>Concept D — Floating Mesh</h2><p>2 radial blobs ลอยสวนกันด้านหลัง capsule — เหมือน Aurora/Vercel background feel</p></div>
+    <div class="fake-cards"><div class="fake-card"></div><div class="fake-card"></div><div class="fake-card"></div></div>
+    <div class="fake-cards"><div class="fake-card"></div><div class="fake-card"></div><div class="fake-card"></div></div>
+  </div>
+</div>
+
+<!-- ══ CONCEPT E — Shimmer Line + Subtle Badge ══ -->
+<div class="concept" id="cE">
+  <div class="capsule-wrap concept-e">
+    <div class="shimmer-line"></div>
+    <nav class="capsule">
+      <span class="cap-logo">SM-HUB</span>
+      <button class="cap-link active">Home ▾</button>
+      <button class="cap-link">Monitor ▾</button>
+      <button class="cap-link">MA Tools ▾</button>
+      <button class="cap-link">Operations ▾</button>
+      <button class="cap-link">Learn ▾</button>
+      <button class="cap-cta">
+        <div class="cap-avatar">W</div>Warapon ▾
+      </button>
+    </nav>
+    <div class="team-badge">
+      <div class="team-badge-dot"></div>
+      SM TEAM
+    </div>
+  </div>
+  <div class="page-content">
+    <div class="page-title-row"><h2>Concept E — Shimmer + Badge</h2><p>Thin shimmer line ที่ขอบบน + tiny team label ใต้ pill — เน้นความ minimal สุดๆ</p></div>
+    <div class="fake-cards"><div class="fake-card"></div><div class="fake-card"></div><div class="fake-card"></div></div>
+    <div class="fake-cards"><div class="fake-card"></div><div class="fake-card"></div><div class="fake-card"></div></div>
+  </div>
+</div>
+
+<!-- ══ SELECTOR ══ -->
+<div class="selector-bar">
+  <span class="sel-lbl">Concept</span>
+  <div class="sel-group">
+    <button class="sel-btn active" onclick="show('A',this)">A · Ambient Glow</button>
+    <button class="sel-btn" onclick="show('B',this)">B · Aurora Strip</button>
+    <button class="sel-btn" onclick="show('C',this)">C · Team Badge</button>
+    <button class="sel-btn" onclick="show('D',this)">D · Floating Mesh</button>
+    <button class="sel-btn" onclick="show('E',this)">E · Shimmer</button>
+  </div>
+  <div class="sel-sep"></div>
+  <span class="sel-lbl">Theme</span>
+  <div class="sel-group">
+    <button class="sel-btn active" onclick="setUI('glass',this)">Glass</button>
+    <button class="sel-btn" onclick="setUI('enterprise',this)">Enterprise</button>
+    <button class="sel-btn" onclick="setUI('console',this)">Console</button>
+    <button class="sel-btn" onclick="setUI('warm',this)">Warm</button>
+  </div>
+  <div class="sel-sep"></div>
+  <button class="sel-btn" id="mode-btn" onclick="toggleMode(this)">Dark</button>
+</div>
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.concept').forEach(el => el.classList.remove('active'));
+  document.getElementById('c' + id).classList.add('active');
+  btn.closest('.sel-group').querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+const uiBtns = () => document.querySelectorAll('.sel-group:nth-child(3) .sel-btn');
+function setUI(ui, btn) {
+  document.documentElement.setAttribute('data-ui', ui);
+  if (ui === 'console') document.documentElement.setAttribute('data-theme', 'dark');
+  btn.closest('.sel-group').querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function toggleMode(btn) {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (!isDark) { document.documentElement.setAttribute('data-theme','dark'); btn.textContent = 'Light'; }
+  else         { document.documentElement.setAttribute('data-theme','light'); btn.textContent = 'Dark'; }
+}
+</script>
+</body>
+</html>

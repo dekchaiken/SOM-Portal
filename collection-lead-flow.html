@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collection Lead Flow — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/collection-lead-flow/collection-lead-flow.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Collection Lead Flow</div>
+        <div class="page-sub">
+          แผนภาพ pipeline ของ Collection Lead — Jobs, Source/Output Files, Databases + Chain Dependencies
+          <a href="batch-monitor-v2.html" class="v2-switch-link" style="margin-left:10px; font-size:10px; color:var(--text-muted); text-decoration:none; border-bottom:1px dashed var(--text-muted); padding-bottom:1px">← กลับไป Batch Monitor</a>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" id="clf-btn-reset" type="button" title="ล้าง selection" style="font-size:11px">↺ Reset</button>
+        <button class="btn btn-primary" id="clf-btn-add-edge" type="button" style="display:none; font-size:11px">+ Add Chain</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="clf">
+
+        <!-- Hero card -->
+        <div class="clf-hero">
+          <div class="clf-hero-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          </div>
+          <div class="clf-hero-body">
+            <div class="clf-hero-title">Pipeline Overview</div>
+            <div class="clf-hero-sub" id="clf-meta">
+              <span><b id="clf-m-jobs">–</b> jobs</span>
+              <span><b id="clf-m-lanes">–</b> categories</span>
+              <span><b id="clf-m-edges">–</b> chain edges</span>
+              <span id="clf-m-src" style="opacity:.75"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category tabs -->
+        <div class="clf-tabs" id="clf-tabs">
+          <div class="clf-skel" style="width:100%; height:34px"></div>
+        </div>
+
+        <!-- Grid -->
+        <div class="clf-grid">
+          <!-- Flow card -->
+          <div class="clf-card">
+            <div class="clf-card-head">
+              <div class="clf-card-title">Pipeline Flow</div>
+              <div class="clf-card-hint">
+                <span class="clf-legend"><span class="swatch auto"></span>auto</span>
+                <span class="clf-legend"><span class="swatch user"></span>declared</span>
+              </div>
+            </div>
+            <div id="clf-flow" class="clf-flow">
+              <div class="clf-skel" style="height:520px"></div>
+            </div>
+          </div>
+
+          <!-- Detail card -->
+          <div class="clf-card clf-detail" id="clf-detail-card">
+            <div class="clf-card-head">
+              <div class="clf-card-title">Job Detail</div>
+            </div>
+            <div id="clf-detail-body" class="clf-detail-empty">
+              คลิก job ในแผนภาพเพื่อดูรายละเอียด<br>
+              <span style="font-size:11px; opacity:.7">Purpose · Schedule · Source/Output files · Databases · Chain</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add-chain modal -->
+      <div class="clf-mo" id="clf-mo-edge">
+        <div class="clf-mo-card">
+          <div class="clf-mo-title">Add Chain Dependency</div>
+          <div class="clf-mo-sub">ประกาศว่า job A ต้องรันเสร็จก่อน job B (นอกจาก schedule order ตามธรรมชาติ)</div>
+          <label for="clf-mo-from">Upstream (from)</label>
+          <select id="clf-mo-from"></select>
+          <label for="clf-mo-to">Downstream (to)</label>
+          <select id="clf-mo-to"></select>
+          <label for="clf-mo-note">Note (optional)</label>
+          <textarea id="clf-mo-note" placeholder="เช่น: rerun A ก่อน B ทุกครั้งถ้าไฟล์ .enc พัง"></textarea>
+          <div class="clf-mo-actions">
+            <button type="button" class="btn btn-ghost" onclick="CL.closeEdge()">ยกเลิก</button>
+            <button type="button" class="btn btn-primary" onclick="CL.saveEdge()">Save</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/pages/collection-lead-flow/collection-lead-flow.js"></script>
+
+</body>
+</html>

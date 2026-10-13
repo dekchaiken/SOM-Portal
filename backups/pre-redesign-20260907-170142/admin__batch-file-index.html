@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch File Index — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ─────────────────────────────────────────────────────────────
+       shadcn-blocks-inspired look — see batch-file-search.html for
+       the shared token vocabulary. This admin control panel uses the
+       same primitives but leans on data-table row density.
+    ───────────────────────────────────────────────────────────── */
+    /* Content spans the full page-content width, matching other admin pages */
+    .sn-container { padding:0 4px 40px; }
+
+    .sn-note { display:flex; gap:10px; padding:11px 14px; background:var(--sidebar-bg);
+               border:1px solid var(--border); border-radius:8px; font-size:12px;
+               color:var(--text-muted); line-height:1.6; margin-bottom:16px; align-items:flex-start; }
+    .sn-note b { color:var(--text); font-weight:600; }
+
+    /* Buttons */
+    .sn-btn        { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px;
+                     border-radius:7px; font-size:12px; font-weight:500; cursor:pointer;
+                     border:1px solid transparent; transition:opacity .12s, background .12s, border-color .12s;
+                     font-family:inherit; }
+    .sn-btn:disabled     { opacity:.5; cursor:not-allowed; }
+    .sn-btn-primary      { background:var(--text); color:var(--bg-card); }
+    .sn-btn-primary:hover:not(:disabled)  { opacity:.88; }
+    .sn-btn-outline      { background:transparent; color:var(--text); border-color:var(--border); }
+    .sn-btn-outline:hover:not(:disabled)  { background:var(--sidebar-bg); }
+    .sn-btn-ghost        { background:transparent; color:var(--text); }
+    .sn-btn-ghost:hover:not(:disabled)    { background:var(--sidebar-bg); }
+    .sn-btn-sm           { height:28px; padding:0 10px; font-size:11.5px; }
+
+    /* Small text input (for query filter) */
+    .sn-input { height:32px; padding:0 12px; border:1px solid var(--border); border-radius:7px;
+                background:var(--bg); color:var(--text); font-size:12px; box-sizing:border-box;
+                font-family:inherit; }
+    .sn-input:focus { outline:none; border-color:var(--text);
+                      box-shadow:0 0 0 3px color-mix(in srgb, var(--text) 10%, transparent); }
+
+    /* Server list (shadcn data-table look) */
+    .sn-server-list { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .sn-server-row  { padding:16px 20px; border-bottom:1px solid var(--border); }
+    .sn-server-row:last-child { border-bottom:none; }
+
+    .sn-server-head { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:4px; }
+    .sn-server-name { font-size:13.5px; font-weight:600; color:var(--text); flex:1; min-width:150px; }
+    .sn-server-url  { font-size:11px; color:var(--text-muted);
+                      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+                      word-break:break-all; margin-bottom:8px; }
+
+    .sn-stats       { display:flex; gap:24px; font-size:11.5px; color:var(--text-muted);
+                      flex-wrap:wrap; margin-bottom:12px; }
+    .sn-stats > div { display:flex; flex-direction:column; gap:2px; }
+    .sn-stats span  { font-size:10px; letter-spacing:.04em; text-transform:uppercase; }
+    .sn-stats b     { color:var(--text); font-weight:600; font-size:13px; }
+
+    .sn-actions     { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+
+    /* Badges */
+    .sn-badge   { display:inline-flex; align-items:center; gap:4px; padding:2px 9px;
+                  border-radius:999px; font-size:10.5px; font-weight:500;
+                  border:1px solid var(--border); background:var(--bg); color:var(--text-muted); }
+    .sn-badge-green { color:#16a34a; border-color:rgba(22,163,74,.32); background:rgba(22,163,74,.06); }
+    .sn-badge-amber { color:#d97706; border-color:rgba(217,119,6,.32); background:rgba(217,119,6,.06); }
+    .sn-badge-red   { color:#dc2626; border-color:rgba(220,38,38,.32); background:rgba(220,38,38,.06); }
+
+    /* Inline output box (dry-run results / errors) */
+    .sn-output      { margin-top:14px; padding:12px 14px; background:var(--bg);
+                      border:1px solid var(--border); border-radius:8px;
+                      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+                      font-size:11px; color:var(--text-muted); line-height:1.65; max-height:280px; overflow-y:auto; }
+    .sn-output b { color:var(--text); }
+    .sn-output-warning { border-color:rgba(217,119,6,.28); background:rgba(217,119,6,.05); color:#a15c07; }
+    .sn-output-error   { border-color:rgba(220,38,38,.28); background:rgba(220,38,38,.05); color:#b91c1c; }
+    .sn-output-warning b, .sn-output-error b { color:var(--text); }
+    .sn-output details summary { cursor:pointer; margin-top:8px; color:var(--text-muted); }
+    .sn-output pre { margin:8px 0 0; padding:8px; background:var(--sidebar-bg);
+                     border-radius:6px; font-size:10.5px; white-space:pre-wrap; word-break:break-all;
+                     max-height:220px; overflow:auto; color:var(--text); }
+
+    /* Empty state */
+    .sn-empty { text-align:center; padding:44px 24px; color:var(--text-muted); font-size:12.5px; }
+
+    /* Modal (shadcn-style: slim border, rounded, no heavy shadow, backdrop blur) */
+    .sn-modal      { display:flex; position:fixed; inset:0; z-index:1100; align-items:center; justify-content:center;
+                     background:color-mix(in srgb, var(--text) 45%, transparent);
+                     backdrop-filter:blur(4px); padding:24px;
+                     opacity:0; visibility:hidden; transition:opacity .15s, visibility .15s; }
+    .sn-modal.open { opacity:1 !important; visibility:visible !important; }
+    .sn-modal-box  { background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+                     width:520px; max-width:100%; max-height:90vh; display:flex; flex-direction:column;
+                     box-shadow:0 8px 40px rgba(0,0,0,.14); }
+    .sn-modal-head { padding:18px 22px 4px; }
+    .sn-modal-title{ font-size:16px; font-weight:600; color:var(--text); margin:0 0 6px; letter-spacing:-.01em; }
+    .sn-modal-desc { font-size:12.5px; color:var(--text-muted); margin:0; line-height:1.6; }
+    .sn-modal-body { padding:14px 22px; font-size:12.5px; color:var(--text); line-height:1.7; }
+    .sn-modal-list { margin:8px 0 0 18px; padding:0; color:var(--text-muted); }
+    .sn-modal-foot { padding:14px 22px 20px; display:flex; gap:8px; justify-content:flex-end; }
+
+    /* Small icon-style header on server row */
+    .sn-server-icon { width:32px; height:32px; border-radius:8px; background:var(--sidebar-bg);
+                      display:flex; align-items:center; justify-content:center; color:var(--text-muted);
+                      flex-shrink:0; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Batch File Index</div>
+        <div class="page-sub">Crawler · Indexer · SM shared</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="../batch-file-search.html" class="sn-btn sn-btn-outline sn-btn-sm" style="text-decoration:none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
+          Open lookup tool
+        </a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="sn-container">
+
+        <section class="page-hero">
+          <div class="page-hero-mark"><i data-icon="folder-open"></i></div>
+          <div class="page-hero-body">
+            <div class="page-hero-eyebrow">Admin</div>
+            <h1>Batch File Index</h1>
+            <p>Crawl Jenkins job trees and extract file patterns from their console logs — powers the SM triage lookup at <b>File → Job Lookup</b>.</p>
+          </div>
+        </section>
+
+        <div class="sn-note">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;color:#2563eb;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <span><b>Workflow.</b> Crawl (list jobs) → Dry-run (verify regex on one job) → Index logs (parse all logs and build the index) · Full index takes 1–5 min per server. Skips jobs still at the same last-successful build so re-runs are cheap.</span>
+        </div>
+
+        <div id="srv-list">
+          <div class="sn-empty">Loading Jenkins servers…</div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Confirm modal (shadcn-style) -->
+<div class="sn-modal" id="modal-confirm-index">
+  <div class="sn-modal-box">
+    <div class="sn-modal-head">
+      <div class="sn-modal-title">Index logs</div>
+      <div class="sn-modal-desc">Fetch and parse Jenkins console logs for <b id="mci-server">—</b>.</div>
+    </div>
+    <div class="sn-modal-body">
+      <ul class="sn-modal-list">
+        <li>Jobs to scan: <b style="color:var(--text);" id="mci-jobs">—</b></li>
+        <li>Estimated time: <b style="color:var(--text);" id="mci-time">1–5 minutes</b></li>
+        <li>Skips jobs whose last-successful build hasn't changed since last run</li>
+      </ul>
+      <div style="margin-top:12px;color:var(--text-muted);font-size:11.5px;">
+        Long-running request — please don't close this tab until it finishes.
+      </div>
+    </div>
+    <div class="sn-modal-foot">
+      <button class="sn-btn sn-btn-ghost"   onclick="closeConfirmIndex()">Cancel</button>
+      <button class="sn-btn sn-btn-primary" onclick="doIndexLogs()">Start indexing</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+  if (!Auth.requireAdmin()) {}
+  (function () {
+    const u = Auth.getUser?.();
+    if (u && u.role !== 'super_admin' && u.team !== 'sm') {
+      alert('หน้านี้ใช้จัดการ Batch File Index ของทีม SM เท่านั้น');
+      window.location.href = 'index.html';
+    }
+  })();
+  Layout.render('admin-batch-file-index');
+
+  let SERVERS      = [];
+  let CATALOG      = { servers: {} };
+  let INDEX_STATUS = {};
+
+  async function loadAll() {
+    const [srvRes, catRes] = await Promise.all([
+      API.jenkinsServers.list(),
+      API.batchFileIndex.getCatalog(),
+    ]);
+    SERVERS = (srvRes?.ok && Array.isArray(srvRes.data?.data)) ? srvRes.data.data : [];
+    const catPayload = catRes?.ok ? (catRes.data?.data || {}) : {};
+    CATALOG = { servers: catPayload.servers || {} };
+
+    const crawledIds = Object.keys(CATALOG.servers);
+    if (crawledIds.length) {
+      const statusResults = await Promise.all(
+        crawledIds.map(id => API.batchFileIndex.indexStatus(id).then(r => [id, r]))
+      );
+      INDEX_STATUS = {};
+      for (const [id, r] of statusResults) {
+        INDEX_STATUS[id] = (r?.ok && r.data?.data) ? r.data.data : null;
+      }
+    }
+    render();
+  }
+
+  function fmtRelTime(iso) {
+    if (!iso) return 'never';
+    const t = new Date(iso).getTime();
+    if (!t) return iso;
+    const s = Math.floor((Date.now() - t) / 1000);
+    if (s < 60)    return s + 's ago';
+    if (s < 3600)  return Math.floor(s/60)  + 'm ago';
+    if (s < 86400) return Math.floor(s/3600)+ 'h ago';
+    return Math.floor(s/86400) + 'd ago';
+  }
+
+  function render() {
+    const list = document.getElementById('srv-list');
+    if (!SERVERS.length) {
+      list.innerHTML = '<div class="sn-empty">ยังไม่มี Jenkins server — ไปที่ Admin → Integrations → Jenkins เพื่อเพิ่ม</div>';
+      return;
+    }
+    const sorted = [...SERVERS].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+    list.innerHTML = '<div class="sn-server-list">' + sorted.map(s => renderRow(s)).join('') + '</div>';
+  }
+
+  function renderRow(s) {
+    const cat     = CATALOG.servers[s.id] || null;
+    const enabled = !!s.enabled;
+    const idx     = INDEX_STATUS[s.id] || null;
+    const summary = idx?.summary || null;
+    const jobsMap = idx?.jobs || {};
+    const indexedJobsCount = Object.values(jobsMap).filter(j => (j?.status === 'ok')).length;
+
+    const stateBadge = !enabled
+      ? '<span class="sn-badge sn-badge-amber">Disabled</span>'
+      : (cat ? `<span class="sn-badge sn-badge-green">${cat.job_count || 0} jobs</span>`
+             : '<span class="sn-badge">Never crawled</span>');
+
+    return `
+      <div class="sn-server-row" data-server="${escAttr(s.id)}">
+        <div class="sn-server-head">
+          <div class="sn-server-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
+          </div>
+          <div class="sn-server-name">${escHtml(s.display || s.id)}</div>
+          ${stateBadge}
+        </div>
+        <div class="sn-server-url">${escHtml(s.base_url || '')}</div>
+        <div class="sn-stats">
+          <div><span>Catalog</span><b>${cat?.job_count ?? '—'}</b></div>
+          <div><span>Indexed</span><b>${indexedJobsCount || 0}${cat ? ` <span style="color:var(--text-muted);font-weight:400;">/ ${cat.job_count}</span>` : ''}</b></div>
+          <div><span>Last crawled</span><b>${cat ? fmtRelTime(cat.crawled_at) : 'never'}</b></div>
+          <div><span>Last indexed</span><b>${summary?.finished_at ? fmtRelTime(summary.finished_at) : 'never'}</b></div>
+          ${summary ? `<div><span>Patterns +</span><b>${summary.patterns_added ?? 0}</b></div>` : ''}
+          ${summary ? `<div><span>Errors</span><b style="color:${(summary.jobs_error ?? 0) > 0 ? '#dc2626' : 'inherit'};">${summary.jobs_error ?? 0}</b></div>` : ''}
+        </div>
+        <div class="sn-actions">
+          <button class="sn-btn ${cat ? 'sn-btn-outline' : 'sn-btn-primary'}" ${enabled ? '' : 'disabled'} onclick="crawlServer('${escAttr(s.id)}', this)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            ${cat ? 'Re-crawl' : 'Crawl now'}
+          </button>
+          ${cat ? `
+            <input type="text" class="sn-input" id="dry-query-${escAttr(s.id)}" placeholder='pipe substring (e.g. "settlement")' style="min-width:220px;">
+            <button class="sn-btn sn-btn-outline" onclick="dryRunOne('${escAttr(s.id)}', this)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l1 9H8L9 3z"/><path d="M6.7 14.4C5 16 4 18 4 20a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2c0-2-1-4-2.7-5.6"/></svg>
+              Dry-run
+            </button>
+            <button class="sn-btn sn-btn-primary" onclick="indexLogs('${escAttr(s.id)}', this)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              ${summary ? 'Re-index logs' : 'Index logs'}
+            </button>
+            <button class="sn-btn sn-btn-ghost" onclick="toggleSample('${escAttr(s.id)}')">Sample jobs</button>
+          ` : ''}
+        </div>
+        ${cat ? `
+          <div class="sn-output" id="sample-${escAttr(s.id)}" style="display:none;">
+            <b>First ${Math.min(cat.jobs?.length || 0, 12)} of ${cat.job_count} jobs:</b>
+            ${(cat.jobs || []).slice(0, 12).map(j => `<div>• ${escHtml(j.name)}</div>`).join('')}
+          </div>
+        ` : ''}
+        <div id="idx-out-${escAttr(s.id)}" style="display:none;"></div>
+      </div>
+    `;
+  }
+
+  function toggleSample(sid) {
+    const el = document.getElementById('sample-' + sid);
+    if (el) el.style.display = (el.style.display === 'none' ? 'block' : 'none');
+  }
+
+  async function crawlServer(serverId, btn) {
+    btn.disabled = true;
+    const original = btn.innerHTML;
+    btn.innerHTML = 'Crawling…';
+    const res = await API.batchFileIndex.crawl(serverId);
+    btn.disabled = false;
+    btn.innerHTML = original;
+    if (!res?.ok || !res.data?.success) { Toast.error(res?.data?.message || 'Crawl failed'); return; }
+    const d = res.data.data || {};
+    Toast.success(`Crawled ${d.job_count} jobs from ${d.server_display}`);
+    await loadAll();
+  }
+
+  async function dryRunOne(serverId, btn) {
+    const cat = CATALOG.servers[serverId];
+    if (!cat?.jobs?.length) { Toast.error('No jobs in catalog'); return; }
+    const query = (document.getElementById('dry-query-' + serverId)?.value || '').trim();
+
+    btn.disabled = true;
+    const original = btn.innerHTML;
+    btn.innerHTML = 'Dry-running…';
+    const res = await API.batchFileIndex.indexLogs(serverId, { dry_run: true, job_name_query: query });
+    btn.disabled = false;
+    btn.innerHTML = original;
+    if (!res?.ok || !res.data?.success) { Toast.error(res?.data?.message || 'Dry-run failed'); return; }
+
+    const out = document.getElementById('idx-out-' + serverId);
+    const d = res.data.data || {};
+
+    if (d.no_match) {
+      out.style.display = 'block';
+      out.innerHTML = `
+        <div class="sn-output sn-output-warning">
+          <b>No match for filter:</b> <span style="font-family:ui-monospace,monospace;">${escHtml(d.job_name_query || '')}</span><br>
+          <span style="opacity:.75">Catalog มี ${d.catalog_size ?? '?'} jobs · ลองใช้ substring สั้นกว่านี้.</span>
+        </div>
+      `;
+      Toast.error(res.data.message || 'No matching job');
+      return;
+    }
+
+    const samples  = d.sample_extractions   || [];
+    const winner   = d.dry_run_winner       || null;
+    const attempts = d.dry_run_attempts     || [];
+    const lastAtt  = d.dry_run_last_attempt || null;
+
+    out.style.display = 'block';
+    if (winner) {
+      out.innerHTML = `
+        <div class="sn-output">
+          <b>Winner:</b> ${escHtml(winner.job_name)}
+          <span style="opacity:.6"> · build #${winner.build_number} · ${winner.log_bytes.toLocaleString()} bytes</span><br>
+          Tried ${attempts.length} job(s) — first success returned ${samples.length} pattern(s)
+          <br><br>
+          <b>Extracted patterns:</b><br>
+          ${samples.map(s => `
+            <div style="margin:6px 0;padding-bottom:6px;border-bottom:1px dashed var(--border);">
+              <b style="color:var(--text);">${escHtml(s.raw)}</b><br>
+              <span style="opacity:.7">→ ${escHtml(s.normalized)}</span><br>
+              <span style="opacity:.55;font-size:10.5px">${escHtml(s.snippet)}</span>
+            </div>
+          `).join('')}
+          <details>
+            <summary>Show log preview (first 2500 chars)</summary>
+            <pre>${escHtml(winner.log_preview || '')}</pre>
+          </details>
+        </div>
+      `;
+      Toast.success(`Extracted ${samples.length} pattern(s) from ${winner.job_name}`);
+    } else {
+      out.innerHTML = `
+        <div class="sn-output sn-output-warning">
+          <b>Tried ${attempts.length} job(s), 0 patterns extracted</b><br>
+          ${query ? `Filter: <span style="font-family:ui-monospace,monospace;">${escHtml(query)}</span>` : '<i>(no filter — walked first ' + attempts.length + ' catalog jobs)</i>'}
+          <br><br>
+          <b>Attempts:</b><br>
+          ${attempts.map(a => `
+            • ${escHtml(a.job_name)} — ${escHtml(a.status)}
+            ${a.build_number ? `(build #${a.build_number}, ${a.log_bytes?.toLocaleString() ?? 0} bytes)` : ''}
+            ${a.reason ? ` — <span style="opacity:.7">${escHtml(a.reason)}</span>` : ''}
+          `).join('<br>')}
+          ${lastAtt?.log_preview ? `
+            <details>
+              <summary>Show last log preview (${escHtml(lastAtt.job_name)}, first 2500 chars)</summary>
+              <pre>${escHtml(lastAtt.log_preview)}</pre>
+            </details>
+          ` : ''}
+          <br><span style="opacity:.75">Try a more targeted query (e.g. <code>settlement</code>) or crawl a different server.</span>
+        </div>
+      `;
+      Toast.error(`0 patterns from ${attempts.length} job(s)`);
+    }
+  }
+
+  let _pendingIndex = null;
+
+  function indexLogs(serverId, btn) {
+    const cat = CATALOG.servers[serverId];
+    if (!cat) { Toast.error('Server not crawled yet'); return; }
+    _pendingIndex = { serverId, btn };
+    document.getElementById('mci-server').textContent = cat.server_display || serverId;
+    document.getElementById('mci-jobs').textContent   = String(cat.job_count || 0);
+    const estSec = Math.min(Math.round((cat.job_count || 0) * 0.6), 360);
+    document.getElementById('mci-time').textContent =
+      estSec < 60 ? `~${estSec}s` : `~${Math.ceil(estSec/60)} min`;
+    document.getElementById('modal-confirm-index').classList.add('open');
+  }
+
+  function closeConfirmIndex() {
+    document.getElementById('modal-confirm-index').classList.remove('open');
+    _pendingIndex = null;
+  }
+
+  function renderProgressUI(state) {
+    const s = state || {};
+    const stats = s.stats || {};
+    const total = s.total ?? 0;
+    const processed = s.processed ?? 0;
+    const pct = total ? Math.min(100, Math.round((processed / total) * 100)) : 0;
+    const statusColor = s.status === 'done' ? '#16a34a'
+                      : s.status === 'error' ? '#dc2626'
+                      : '#2563eb';
+    const statusLabel = s.status === 'done'    ? 'Done'
+                      : s.status === 'error'   ? 'Error'
+                      : s.status === 'running' ? 'Running…'
+                      : 'Starting…';
+    const elapsed = s.started_at ? Math.max(0, Math.floor((Date.now() - new Date(s.started_at).getTime()) / 1000)) : 0;
+    const elapsedStr = elapsed < 60 ? `${elapsed}s` : `${Math.floor(elapsed/60)}m ${elapsed%60}s`;
+    const skipped = (stats.jobs_skipped_same_build ?? 0)
+                  + (stats.jobs_skipped_backoff ?? 0)
+                  + (stats.jobs_skipped_too_large ?? 0)
+                  + (stats.jobs_skipped_no_build ?? 0);
+    const logMB = ((stats.log_bytes_read ?? 0) / 1024 / 1024).toFixed(1);
+
+    return `
+      <div class="sn-output" style="max-height:none;font-family:inherit;font-size:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <b>Indexing progress</b>
+          <span style="color:${statusColor};font-weight:600;font-size:11px;">${statusLabel} · ${elapsedStr}</span>
+        </div>
+        <div style="background:var(--sidebar-bg);border-radius:6px;height:12px;overflow:hidden;margin-bottom:6px;position:relative;">
+          <div style="background:${statusColor};height:100%;width:${pct}%;transition:width .3s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:10px;">
+          <span>${processed.toLocaleString()} / ${total.toLocaleString()} jobs</span>
+          <b style="color:var(--text);">${pct}%</b>
+        </div>
+        ${s.current_job ? `<div style="margin-bottom:10px;color:var(--text-muted);font-size:11px;">Current: <span style="color:var(--text);font-family:ui-monospace,monospace;">${escHtml(s.current_job)}</span></div>` : ''}
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px 16px;font-size:11px;">
+          <div><span style="opacity:.6;">Indexed</span><br><b style="color:var(--text);">${(stats.jobs_indexed ?? 0).toLocaleString()}</b></div>
+          <div><span style="opacity:.6;">Skipped</span><br><b style="color:var(--text);">${skipped.toLocaleString()}</b></div>
+          <div><span style="opacity:.6;">Errors</span><br><b style="color:${(stats.jobs_error ?? 0) > 0 ? '#dc2626' : 'var(--text)'};">${(stats.jobs_error ?? 0).toLocaleString()}</b></div>
+          <div><span style="opacity:.6;">+Patterns</span><br><b style="color:var(--text);">${(stats.patterns_added ?? 0).toLocaleString()}</b></div>
+          <div><span style="opacity:.6;">~Patterns</span><br><b style="color:var(--text);">${(stats.patterns_updated ?? 0).toLocaleString()}</b></div>
+          <div><span style="opacity:.6;">Log read</span><br><b style="color:var(--text);">${logMB} MB</b></div>
+        </div>
+        ${s.message ? `<div style="margin-top:10px;color:#dc2626;font-size:11px;">${escHtml(s.message)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  async function doIndexLogs() {
+    if (!_pendingIndex) return;
+    const { serverId, btn } = _pendingIndex;
+    _pendingIndex = null;
+    document.getElementById('modal-confirm-index').classList.remove('open');
+
+    btn.disabled = true;
+    const original = btn.innerHTML;
+    btn.innerHTML = 'Indexing…';
+
+    // Show initial progress UI
+    const out = document.getElementById('idx-out-' + serverId);
+    out.style.display = 'block';
+    out.innerHTML = renderProgressUI({ status: 'running', started_at: new Date().toISOString(), total: 0, processed: 0 });
+
+    // Kick off the POST. We do NOT await it here — polling the progress file is
+    // the source of truth. If Apache times out the response, PHP keeps running
+    // (ignore_user_abort), and the progress file will still hit 'done'/'error'.
+    const postPromise = API.batchFileIndex.indexLogs(serverId, {}).catch(err => ({ ok: false, err }));
+
+    let lastState = null;
+    const maxWaitMs = 20 * 60 * 1000; // 20 min ceiling
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < maxWaitMs) {
+      await sleep(1500);
+      try {
+        const r = await API.batchFileIndex.indexProgress(serverId);
+        if (r?.ok && r.data?.data) {
+          lastState = r.data.data;
+          out.innerHTML = renderProgressUI(lastState);
+          if (lastState.status === 'done' || lastState.status === 'error') break;
+        }
+      } catch (_) { /* transient — keep polling */ }
+    }
+
+    await postPromise; // best-effort; may 500 from Apache Timeout even if PHP finished OK
+    btn.disabled = false;
+    btn.innerHTML = original;
+
+    if (lastState?.status === 'done') {
+      const s = lastState.stats || {};
+      Toast.success(`Indexed ${s.jobs_indexed ?? 0} jobs · +${s.patterns_added ?? 0} patterns · ${s.jobs_error ?? 0} errors`);
+      if ((s.jobs_error ?? 0) > 0 && (s.error_samples || []).length) {
+        out.innerHTML += `
+          <div class="sn-output sn-output-error" style="margin-top:10px;">
+            <b>${s.jobs_error} error(s):</b><br>
+            ${s.error_samples.slice(0, 8).map(e => `• ${escHtml(e)}`).join('<br>')}
+          </div>
+        `;
+      }
+      await loadAll();
+      return;
+    }
+    if (lastState?.status === 'error') {
+      Toast.error(lastState.message || 'Indexer failed');
+      await loadAll();
+      return;
+    }
+    Toast.error('Indexer still running past 20 min — check back later');
+    await loadAll();
+  }
+
+  function escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function escAttr(s) { return escHtml(s).replace(/`/g, '&#96;'); }
+
+  loadAll();
+</script>
+</body>
+</html>

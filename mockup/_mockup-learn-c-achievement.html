@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Learn Hero — Design C: Achievement Wall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#F26419; --orange-light:#FB923C; --orange-dark:#EA580C;
+  --amber:#FBBF24; --gold:#F59E0B;
+  --bg:#F5F6F8; --bg-card:#FFFFFF;
+  --text:#1C1C1E; --text-muted:#767676;
+  --border:#E5E5E5;
+  --font:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); font-family:var(--font); color:var(--text); font-size:12px; padding:32px}
+.container{max-width:1180px; margin:0 auto; display:flex; flex-direction:column; gap:22px}
+.hint{color:var(--text-muted); font-size:11px}
+
+/* ═══ ACHIEVEMENT HERO ═══ */
+.ach-hero{
+  position:relative; display:flex; align-items:center; gap:18px;
+  padding:16px 20px; border-radius:16px; overflow:hidden;
+  background:
+    radial-gradient(80% 140% at 25% 100%, rgba(251,191,36,.22), transparent 55%),
+    linear-gradient(135deg, rgba(242,100,25,.14), rgba(251,191,36,.10) 55%, rgba(242,100,25,.05));
+  border:1.5px solid rgba(242,100,25,.32);
+  box-shadow:0 4px 20px -8px rgba(242,100,25,.40);
+  animation:ahEnter .55s cubic-bezier(.22,.9,.32,1.1) both;
+}
+@keyframes ahEnter{ from{opacity:0; transform:translateY(-8px)} to{opacity:1; transform:none} }
+
+/* Confetti burst on load */
+.ah-confetti{position:absolute; inset:0; pointer-events:none; overflow:hidden}
+.ah-conf{
+  position:absolute; width:6px; height:10px; border-radius:2px;
+  animation:ahConfFall 2.4s ease-out both;
+}
+.ah-conf.c1{left:12%; top:-10px; background:var(--orange);   animation-delay:.2s; transform:rotate(15deg)}
+.ah-conf.c2{left:22%; top:-10px; background:var(--amber);    animation-delay:.4s; transform:rotate(-25deg)}
+.ah-conf.c3{left:36%; top:-10px; background:#22C55E;         animation-delay:.1s; transform:rotate(45deg); width:5px}
+.ah-conf.c4{left:52%; top:-10px; background:var(--orange-light); animation-delay:.6s; transform:rotate(-10deg)}
+.ah-conf.c5{left:68%; top:-10px; background:var(--gold);     animation-delay:.35s; width:5px}
+.ah-conf.c6{left:82%; top:-10px; background:#EF4444;         animation-delay:.5s; transform:rotate(30deg); width:5px}
+.ah-conf.c7{left:92%; top:-10px; background:var(--amber);    animation-delay:.15s; transform:rotate(-40deg)}
+@keyframes ahConfFall{
+  0%   {transform:translateY(-20px) rotate(0deg); opacity:0}
+  10%  {opacity:1}
+  100% {transform:translateY(180px) rotate(720deg); opacity:0}
+}
+
+/* ─── Left: Trophy mascot with rotating podium ─── */
+.ah-trophy-wrap{
+  position:relative; flex-shrink:0; width:88px; height:88px;
+  display:grid; place-items:center;
+}
+.ah-glow{
+  position:absolute; inset:-6px; border-radius:50%;
+  background:radial-gradient(circle, rgba(251,191,36,.5) 0%, transparent 62%);
+  animation:ahGlowPulse 2.4s ease-in-out infinite;
+}
+@keyframes ahGlowPulse{
+  0%,100%{transform:scale(.9); opacity:.65}
+  50%    {transform:scale(1.05); opacity:1}
+}
+.ah-trophy{
+  position:relative; z-index:2; width:66px; height:66px; border-radius:20px;
+  background:linear-gradient(135deg, var(--amber) 0%, var(--gold) 60%, var(--orange) 100%);
+  display:grid; place-items:center;
+  box-shadow:0 8px 18px -4px rgba(245,158,11,.6), inset 0 2px 0 rgba(255,255,255,.4);
+  animation:ahTrophyBob 3s ease-in-out infinite;
+}
+@keyframes ahTrophyBob{
+  0%,100%{transform:translateY(0) rotate(-4deg)}
+  50%    {transform:translateY(-4px) rotate(4deg)}
+}
+.ah-trophy svg{width:36px; height:36px; stroke:#7C2D12; fill:none; stroke-width:2}
+.ah-count{
+  position:absolute; bottom:-6px; right:-8px; z-index:3;
+  min-width:30px; height:22px; padding:0 6px;
+  border-radius:11px;
+  background:linear-gradient(135deg, #DC2626, #EF4444);
+  color:#fff; font-size:10px; font-weight:800;
+  display:grid; place-items:center;
+  box-shadow:0 3px 8px -2px rgba(220,38,38,.6);
+  animation:ahCountPop .8s ease-out .3s both;
+}
+@keyframes ahCountPop{ from{transform:scale(0)} 50%{transform:scale(1.2)} to{transform:scale(1)} }
+
+/* Sparkle ring */
+.ah-ring-sparkle{
+  position:absolute; inset:-4px; border-radius:50%; pointer-events:none;
+  animation:ahRingSpin 12s linear infinite;
+}
+.ah-spark{
+  position:absolute; top:50%; left:50%;
+  transform-origin:0 0; font-size:11px; color:var(--amber);
+  text-shadow:0 0 6px rgba(251,191,36,.9);
+  animation:ahSpTwinkle 1.6s ease-in-out infinite;
+}
+.ah-spark.s1{transform:rotate(0deg) translate(46px, -4px)}
+.ah-spark.s2{transform:rotate(120deg) translate(46px, -4px); animation-delay:.5s; color:var(--orange)}
+.ah-spark.s3{transform:rotate(240deg) translate(46px, -4px); animation-delay:1s}
+@keyframes ahRingSpin{ to{transform:rotate(360deg)} }
+@keyframes ahSpTwinkle{
+  0%,100%{opacity:.4; transform:rotate(var(--r,0deg)) translate(46px,-4px) scale(.7)}
+  50%    {opacity:1;  transform:rotate(var(--r,0deg)) translate(46px,-4px) scale(1.2)}
+}
+
+/* ─── Middle body ─── */
+.ah-body{flex:1; min-width:0; display:flex; flex-direction:column; gap:5px}
+.ah-head{display:flex; align-items:center; gap:8px}
+.ah-tag{
+  font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+  color:#7C2D12; background:rgba(251,191,36,.28); border:1px solid rgba(251,191,36,.55);
+  padding:2px 8px; border-radius:999px;
+}
+.ah-rank{
+  font-size:9.5px; font-weight:800; color:var(--orange);
+  background:rgba(242,100,25,.10); padding:2px 8px; border-radius:999px;
+  border:1px solid rgba(242,100,25,.3);
+}
+.ah-title{font-size:14.5px; font-weight:800; letter-spacing:-.01em; line-height:1.25}
+.ah-title .accent{color:var(--orange)}
+.ah-title .new{
+  display:inline-block; font-size:9px; padding:2px 6px; border-radius:5px;
+  background:#DC2626; color:#fff; margin-left:6px; vertical-align:2px;
+  animation:ahNewBlink 1.4s ease-in-out infinite;
+}
+@keyframes ahNewBlink{ 0%,100%{opacity:1} 50%{opacity:.55} }
+
+/* Trophy shelf */
+.ah-shelf{display:flex; gap:6px; margin-top:2px; align-items:center; flex-wrap:wrap}
+.ah-medal{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:4px 9px 4px 6px; border-radius:999px;
+  background:rgba(255,255,255,.7); border:1px solid var(--border);
+  font-size:10.5px; font-weight:700;
+  transition:transform .2s;
+}
+.ah-medal:hover{transform:translateY(-2px)}
+.ah-medal .m{
+  width:18px; height:18px; border-radius:50%;
+  display:grid; place-items:center; font-size:11px;
+}
+.ah-medal.gold   .m{background:linear-gradient(135deg,var(--amber),var(--gold)); color:#7C2D12; box-shadow:0 2px 5px -1px rgba(245,158,11,.5)}
+.ah-medal.silver .m{background:linear-gradient(135deg,#E5E7EB,#9CA3AF); color:#374151}
+.ah-medal.bronze .m{background:linear-gradient(135deg,#F97316,#C2410C); color:#fff}
+.ah-medal.locked{opacity:.5}
+.ah-medal.locked .m{background:#E5E5E5; color:#9CA3AF}
+.ah-medal.latest{
+  background:rgba(251,191,36,.20); border-color:rgba(251,191,36,.55);
+  color:#78350F;
+  animation:ahLatest .6s cubic-bezier(.22,.9,.32,1.1) both;
+}
+@keyframes ahLatest{ from{transform:scale(.5); opacity:0} to{transform:scale(1); opacity:1} }
+.ah-medal .cnt{
+  font-size:9px; font-weight:800; color:var(--text-muted);
+  padding:1px 5px; border-radius:6px; background:var(--bg);
+  margin-left:2px;
+}
+
+/* Small stat row */
+.ah-stats{display:flex; gap:14px; margin-top:2px; font-size:11px; color:var(--text-muted); font-weight:700}
+.ah-stats b{color:var(--text); font-size:12.5px; font-weight:800}
+.ah-stats .div{opacity:.4}
+
+/* ─── CTA ─── */
+.ah-cta{
+  flex-shrink:0; position:relative; overflow:hidden;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:10px 16px 8px; border-radius:12px;
+  background:linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color:#fff !important; text-decoration:none;
+  box-shadow:0 6px 16px -6px rgba(242,100,25,.7), inset 0 1px 0 rgba(255,255,255,.25);
+  transition:transform .15s, box-shadow .15s;
+  min-width:118px;
+}
+.ah-cta::before{
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+  transform:translateX(-100%); animation:ahCtaShine 3s ease-in-out infinite;
+}
+@keyframes ahCtaShine{ 0%,30%{transform:translateX(-100%)} 55%,100%{transform:translateX(110%)} }
+.ah-cta:hover{transform:translateY(-1px); box-shadow:0 10px 22px -6px rgba(242,100,25,.85)}
+.ah-cta .n{font-size:20px; font-weight:800; line-height:1; letter-spacing:-.02em}
+.ah-cta .k{font-size:10px; font-weight:700; letter-spacing:.06em; opacity:.9; text-transform:uppercase}
+.ah-cta .arr{font-size:10px; opacity:.85; margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+  <p class="hint">DESIGN C — <b>Achievement Wall</b> — Trophy showcase + confetti + rotating podium</p>
+
+  <!-- Card -->
+  <div class="ach-hero">
+    <div class="ah-confetti">
+      <span class="ah-conf c1"></span><span class="ah-conf c2"></span><span class="ah-conf c3"></span>
+      <span class="ah-conf c4"></span><span class="ah-conf c5"></span><span class="ah-conf c6"></span>
+      <span class="ah-conf c7"></span>
+    </div>
+
+    <!-- Trophy -->
+    <div class="ah-trophy-wrap">
+      <div class="ah-glow"></div>
+      <div class="ah-trophy">
+        <!-- Trophy icon -->
+        <svg viewBox="0 0 24 24"><path d="M8 21h8m-4-3v3M6 4h12v6a6 6 0 01-12 0V4z"/><path d="M6 6H3a3 3 0 003 3M18 6h3a3 3 0 01-3 3"/></svg>
+      </div>
+      <div class="ah-count">×12</div>
+      <div class="ah-ring-sparkle">
+        <span class="ah-spark s1">✦</span>
+        <span class="ah-spark s2">✦</span>
+        <span class="ah-spark s3">✦</span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="ah-body">
+      <div class="ah-head">
+        <span class="ah-tag">Achievement Unlocked</span>
+        <span class="ah-rank">Rank · Explorer</span>
+      </div>
+      <div class="ah-title">
+        คว้า <span class="accent">Gold Trophy</span> ครบ 4 คอร์สแล้ว!
+        <span class="new">NEW</span>
+      </div>
+      <div class="ah-shelf">
+        <span class="ah-medal latest gold"><span class="m">🏆</span>IMPB Master</span>
+        <span class="ah-medal gold"><span class="m">★</span>Grafana Wizard</span>
+        <span class="ah-medal silver"><span class="m">◆</span>Batch Ninja</span>
+        <span class="ah-medal bronze"><span class="m">▲</span>Docs Reader</span>
+        <span class="ah-medal locked"><span class="m">?</span>Streak 30d<span class="cnt">12/30</span></span>
+      </div>
+      <div class="ah-stats">
+        <span><b>12</b> trophies</span>
+        <span class="div">·</span>
+        <span><b>4</b> gold</span>
+        <span class="div">·</span>
+        <span>this week: <b>+3</b> unlocked</span>
+      </div>
+    </div>
+
+    <!-- CTA — big count -->
+    <a class="ah-cta" href="#">
+      <div class="n">+3</div>
+      <div class="k">new this week</div>
+      <div class="arr">ดูทั้งหมด →</div>
+    </a>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Monitor — Dev Tools — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/dev-system/dev-system.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">System Monitor — Dev Tools</div>
+        <div class="page-sub">ข้อมูล runtime และสถานะระบบแบบ real-time</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="dt-btn primary" id="btn-refresh" onclick="loadAll()">↺ Refresh</button>
+        <span style="font-size:10px;color:var(--text-muted)" id="last-updated"></span>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="monitor"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Dev Tools</div>
+          <h1>System Monitor</h1>
+          <p>ข้อมูล runtime และสถานะระบบแบบ real-time — PHP version, disk, sessions — เฉพาะ Dev SM</p>
+        </div>
+      </section>
+
+      <div class="dt-banner">
+        <span class="dt-banner-tag">DEV SM</span>
+        <span>หน้านี้แสดงข้อมูล runtime และสถานะระบบภายใน — เฉพาะ role <code style="color:var(--orange)">dev_sm</code> เท่านั้น</span>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           Card 0 — Server Resources (CPU/RAM/Disk)
+           ══════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(139,92,246,.12);color:#8b5cf6"><i data-icon="monitor"></i></div>
+          <div style="flex:1">
+            <div class="dt-card-title">Server Resources</div>
+            <div class="dt-card-sub" id="srv-sub">CPU, memory, disk และ load average ของเครื่อง host</div>
+          </div>
+          <label style="font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:5px;cursor:pointer">
+            <input type="checkbox" id="srv-autorefresh" checked style="margin:0">
+            <span>Live (5s)</span>
+          </label>
+        </div>
+        <div class="dt-card-body">
+          <div id="srv-stats"><div class="card-loading"><span class="spin"></span> Loading…</div></div>
+
+          <div class="hist-chart-wrap" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">
+                History <span id="srv-hist-meta" style="color:var(--text-muted);font-weight:500;text-transform:none;margin-left:6px"></span>
+              </div>
+              <div class="hist-tabs">
+                <button class="hist-tab active" data-range="30m">Live · 30m</button>
+                <button class="hist-tab" data-range="6h">6h</button>
+                <button class="hist-tab" data-range="24h">24h</button>
+                <button class="hist-tab" data-range="7d">7d</button>
+              </div>
+            </div>
+            <canvas id="srv-chart" style="width:100%;height:170px;display:block"></canvas>
+            <div class="hist-legend" style="justify-content:space-between">
+              <div style="display:flex;gap:14px">
+                <span><span class="hist-legend-dot" style="background:#8b5cf6"></span>CPU %</span>
+                <span><span class="hist-legend-dot" style="background:#22c55e"></span>RAM %</span>
+                <span><span class="hist-legend-dot" style="background:#f59e0b"></span>Disk %</span>
+              </div>
+              <div id="srv-sampler-status" style="font-size:10px;color:var(--text-muted)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           Card 1 — PHP Runtime
+           ══════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon"><i data-icon="settings"></i></div>
+          <div>
+            <div class="dt-card-title">PHP Runtime</div>
+            <div class="dt-card-sub">PHP version, SAPI, memory และ upload limits</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div id="php-kv"><div class="card-loading"><span class="spin"></span> Loading…</div></div>
+          <div id="mem-bar"></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           Card 2 — Application Stats
+           ══════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(59,130,246,.12);color:#3b82f6"><i data-icon="bar-chart"></i></div>
+          <div>
+            <div class="dt-card-title">Application Stats</div>
+            <div class="dt-card-sub">Board posts และ User accounts breakdown</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div id="app-stats"><div class="card-loading"><span class="spin"></span> Loading…</div></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           Card 3 — Rate Limit Status
+           ══════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(245,158,11,.12);color:#f59e0b"><i data-icon="circle"></i></div>
+          <div>
+            <div class="dt-card-title">Rate Limit Status</div>
+            <div class="dt-card-sub">API rate limit, active windows และ top users</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div id="rl-stats"><div class="card-loading"><span class="spin"></span> Loading…</div></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           Card 4 — Data Files
+           ══════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(34,197,94,.12);color:#22c55e"><i data-icon="folder-open"></i></div>
+          <div>
+            <div class="dt-card-title">Data Files</div>
+            <div class="dt-card-sub" id="data-files-sub">JSON data files ใน /data/</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div class="file-search-row">
+            <input type="text" class="file-search" id="data-search" placeholder="🔍 ค้นหาชื่อไฟล์…" oninput="renderDataFiles()">
+          </div>
+          <div id="data-files-table"><div class="card-loading"><span class="spin"></span> Loading…</div></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           Card 5 — Log Files
+           ══════════════════════════════════════ -->
+      <div class="dt-card">
+        <div class="dt-card-hd">
+          <div class="dt-card-icon" style="background:rgba(239,68,68,.12);color:#ef4444"><i data-icon="file-text"></i></div>
+          <div>
+            <div class="dt-card-title">Log Files</div>
+            <div class="dt-card-sub" id="log-files-sub">Activity &amp; security log files ใน /data/logs/</div>
+          </div>
+        </div>
+        <div class="dt-card-body">
+          <div class="file-search-row">
+            <input type="text" class="file-search" id="log-search" placeholder="🔍 ค้นหาชื่อไฟล์…" oninput="renderLogFiles()">
+          </div>
+          <div id="log-files-table"><div class="card-loading"><span class="spin"></span> Loading…</div></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/dev-system/dev-system.js"></script>
+</body>
+</html>

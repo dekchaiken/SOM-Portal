@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMS Gateway Switches — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/sms-gateway-switches/sms-gateway-switches.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">⇄ SMS Gateway Switches</div>
+        <div class="page-sub">บันทึก gateway switch จาก Jenkins — เพิ่มเติม remark ได้</div>
+      </div>
+      <div class="topbar-actions">
+        <!-- Firt-hop Report button -->
+        <button class="btn-fh" data-action="write" onclick="openFhDrawer()" id="fh-open-btn">
+          <span class="fh-dot"></span>
+          Firt-hop Report
+        </button>
+        <button class="btn btn-ghost" id="refresh-btn" onclick="loadTable()" style="font-size:12px">⟳ Refresh</button>
+        <button class="btn btn-ghost" id="export-btn" onclick="exportCsv()" style="font-size:12px">↓ Export CSV</button>
+        <button class="btn btn-primary" id="sync-btn" onclick="syncBuilds()">
+          <span id="sync-label">⇄ Sync Jenkins</span>
+          <span id="sync-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:#fff"></span>
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- Stats cards (per-project totals — clickable to switch) -->
+      <div class="smsgw-stats" id="smsgw-stats">
+        <div class="smsgw-stat smsgw-stat-tmn active" id="stat-tmn" onclick="switchProject('tmn')">
+          <div class="smsgw-stat-head">
+            <div class="smsgw-stat-lbl"><span class="smsgw-stat-dot tmn"></span>TMN</div>
+            <div class="smsgw-stat-arrow">→</div>
+          </div>
+          <div class="smsgw-stat-val" id="stat-val-tmn">—</div>
+          <div class="smsgw-stat-sub" id="stat-sub-tmn"><span class="sk-cell"></span></div>
+        </div>
+        <div class="smsgw-stat smsgw-stat-nano" id="stat-nano" onclick="switchProject('nano')">
+          <div class="smsgw-stat-head">
+            <div class="smsgw-stat-lbl"><span class="smsgw-stat-dot nano"></span>Nano</div>
+            <div class="smsgw-stat-arrow">→</div>
+          </div>
+          <div class="smsgw-stat-val" id="stat-val-nano">—</div>
+          <div class="smsgw-stat-sub" id="stat-sub-nano"><span class="sk-cell"></span></div>
+        </div>
+        <div class="smsgw-stat smsgw-stat-welth" id="stat-welth" onclick="switchProject('welth')">
+          <div class="smsgw-stat-head">
+            <div class="smsgw-stat-lbl"><span class="smsgw-stat-dot welth"></span>Welth</div>
+            <div class="smsgw-stat-arrow">→</div>
+          </div>
+          <div class="smsgw-stat-val" id="stat-val-welth">—</div>
+          <div class="smsgw-stat-sub" id="stat-sub-welth"><span class="sk-cell"></span></div>
+        </div>
+      </div>
+
+      <!-- Toolbar: segmented tabs left, actions right -->
+      <div class="smsgw-toolbar">
+        <div class="smsgw-seg" role="tablist">
+          <button class="smsgw-seg-btn active" id="tab-tmn"   onclick="switchProject('tmn')" role="tab">
+            <span class="smsgw-seg-dot tmn"></span>TMN
+          </button>
+          <button class="smsgw-seg-btn"        id="tab-nano"  onclick="switchProject('nano')" role="tab">
+            <span class="smsgw-seg-dot nano"></span>Nano
+          </button>
+          <button class="smsgw-seg-btn"        id="tab-welth" onclick="switchProject('welth')" role="tab">
+            <span class="smsgw-seg-dot welth"></span>Welth
+          </button>
+        </div>
+      </div>
+
+      <!-- Data card with header -->
+      <div class="smsgw-card">
+        <div class="smsgw-card-head">
+          <div class="smsgw-card-head-left">
+            <span class="smsgw-card-title" id="card-title">TMN · Switch Log</span>
+            <span class="smsgw-count-badge" id="card-count">—</span>
+          </div>
+          <div class="smsgw-card-sub" id="card-sub">บันทึกล่าสุดจาก Jenkins</div>
+        </div>
+
+        <div class="switch-table-wrap">
+          <table class="switch-table">
+            <thead>
+              <tr>
+                <th class="col-build">#</th>
+                <th class="col-time">Switch Start</th>
+                <th class="col-time">Switch End</th>
+                <th class="col-gateway">From Gateway</th>
+                <th class="col-gateway">To Gateway</th>
+                <th class="col-remark">Remark</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <tr><td colspan="6" class="empty-table">
+                <div class="empty-icon">⟳</div>
+                <p class="empty-title">กำลังโหลด</p>
+                <p>กำลังดึงข้อมูล switch จาก Jenkins…</p>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ════ Firt-hop Drawer ════ -->
+<div class="fh-backdrop" id="fh-backdrop" onclick="closeFhDrawer()"></div>
+
+<div class="fh-drawer" id="fh-drawer">
+
+  <!-- Header -->
+  <div class="fh-drawer-header">
+    <div class="fh-drawer-title">
+      <div class="fh-drawer-dot"></div>
+      <div>
+        <div class="fh-drawer-label">Firt-hop Usage Report</div>
+        <div class="fh-drawer-sub">วิเคราะห์ session ที่ระบบอยู่บน Firt-hop</div>
+      </div>
+    </div>
+    <button class="fh-drawer-close" onclick="closeFhDrawer()">×</button>
+  </div>
+
+  <!-- Controls -->
+  <div class="fh-drawer-controls">
+    <div class="fh-proj-pills">
+      <button class="fh-pill active" id="fh-tab-tmn"   onclick="setFhProject('tmn')">TMN</button>
+      <button class="fh-pill"        id="fh-tab-nano"  onclick="setFhProject('nano')">Nano</button>
+      <button class="fh-pill"        id="fh-tab-welth" onclick="setFhProject('welth')">Welth</button>
+      <button class="fh-pill"        id="fh-tab-all"   onclick="setFhProject('all')">All</button>
+    </div>
+    <select class="fh-month-sel" id="fh-month" onchange="setFhMonth(this.value)">
+      <option value="">ทุกเดือน</option>
+    </select>
+  </div>
+
+  <!-- Scrollable body -->
+  <div class="fh-drawer-body">
+    <!-- Cards -->
+    <div class="fh-cards" id="fh-cards">
+      <div class="fh-card"><div class="fh-card-label">Sessions</div><div class="fh-card-value" style="color:var(--text-muted)">—</div></div>
+      <div class="fh-card"><div class="fh-card-label">Total Time</div><div class="fh-card-value" style="color:var(--text-muted)">—</div></div>
+      <div class="fh-card"><div class="fh-card-label">Avg Duration</div><div class="fh-card-value" style="color:var(--text-muted)">—</div></div>
+    </div>
+    <!-- Table -->
+    <div id="fh-table-wrap">
+      <div class="fh-table-wrap">
+        <div class="empty-table"><div class="empty-icon">⟳</div><p>กำลังโหลด...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="fh-drawer-footer">
+    <div class="fh-footer-meta" id="fh-footer-meta">—</div>
+    <button class="btn btn-primary" onclick="openEmailModal()" style="font-size:12px"><i data-icon="mail"></i> Send Report</button>
+  </div>
+</div>
+
+<!-- ════ Email Modal ════ -->
+<div class="modal-overlay" id="email-modal" style="z-index:1100" onclick="if(event.target===this)closeEmailModal()">
+  <div class="modal" style="max-width:1000px;width:96vw;padding:0;overflow:hidden">
+
+    <!-- Header (no border-bottom, flows into preview) -->
+    <div class="modal-header" style="padding:13px 18px;border-bottom:1.5px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="modal-title" style="margin:0"><i data-icon="mail"></i> Send Firt-hop Report</div>
+        <span id="modal-proj-badge" style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:var(--orange-dim);color:var(--orange)">—</span>
+      </div>
+      <button class="btn-close" onclick="closeEmailModal()">×</button>
+    </div>
+
+    <!-- Split body -->
+    <div class="email-modal-wrap">
+
+      <!-- ═══ Left: Email Preview ═══ -->
+      <div class="email-preview-pane">
+
+        <!-- macOS window chrome -->
+        <div class="email-chrome-bar">
+          <div class="email-chrome-dots">
+            <div class="chrome-dot chrome-dot-r"></div>
+            <div class="chrome-dot chrome-dot-y"></div>
+            <div class="chrome-dot chrome-dot-g"></div>
+          </div>
+          <div class="email-chrome-addr" id="preview-subject">—</div>
+        </div>
+
+        <!-- Email client headers -->
+        <div class="email-chrome-headers">
+          <div class="email-chrome-row">
+            <span class="email-chrome-label">From</span>
+            <span class="email-chrome-val">SOM-Portal &lt;noreply&gt;</span>
+          </div>
+          <div class="email-chrome-row">
+            <span class="email-chrome-label">To</span>
+            <span class="email-chrome-val" id="preview-to-val">—</span>
+            <span class="email-chrome-badge" id="preview-to-count" style="display:none"></span>
+          </div>
+          <div class="email-chrome-row" id="preview-cc-row" style="display:none">
+            <span class="email-chrome-label">CC</span>
+            <span class="email-chrome-val" id="preview-cc-val">—</span>
+            <span class="email-chrome-badge" id="preview-cc-count" style="display:none"></span>
+          </div>
+        </div>
+
+        <!-- Scaled email HTML -->
+        <div class="email-preview-scroll" id="email-preview-scroll">
+          <div class="email-preview-scaler" id="email-preview-scaler">
+            <iframe id="email-preview-frame" class="email-preview-frame"></iframe>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══ Right: Form ═══ -->
+      <div class="email-form-pane">
+        <div class="email-form-scroll">
+
+          <!-- Section: Recipients -->
+          <div class="email-section">
+            <div class="email-section-title">Recipients</div>
+            <div style="margin-bottom:10px">
+              <label class="form-label">To</label>
+              <div class="email-tag-wrap" id="to-wrap" onclick="document.getElementById('to-input').focus()">
+                <input class="email-tag-input" id="to-input" placeholder="email@example.com แล้วกด Enter">
+              </div>
+            </div>
+            <div>
+              <label class="form-label">CC <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+              <div class="email-tag-wrap" id="cc-wrap" onclick="document.getElementById('cc-input').focus()">
+                <input class="email-tag-input" id="cc-input" placeholder="email@example.com แล้วกด Enter">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Content -->
+          <div class="email-section">
+            <div class="email-section-title">Content</div>
+            <div style="margin-bottom:10px">
+              <label class="form-label">Dear</label>
+              <input class="form-input" id="email-dear" type="text" placeholder="เช่น TMN-CBO, All"
+                     oninput="updateEmailPreview()">
+            </div>
+            <div>
+              <label class="form-label">Subject</label>
+              <input class="form-input" id="email-subject" type="text"
+                     oninput="const s=document.getElementById('preview-subject');if(s)s.textContent=this.value||'(ไม่มี subject)'">
+            </div>
+          </div>
+
+          <!-- Section: Report Summary -->
+          <div class="email-section">
+            <div class="email-section-title">Report Summary</div>
+            <div class="email-summary-card">
+              <div class="email-summary-stats">
+                <div class="email-summary-stat">
+                  <div class="email-summary-val accent" id="modal-session-count">—</div>
+                  <div class="email-summary-lbl">Sessions</div>
+                </div>
+                <div class="email-summary-stat">
+                  <div class="email-summary-val" id="modal-total-time" style="font-size:14px">—</div>
+                  <div class="email-summary-lbl">Total Time</div>
+                </div>
+                <div class="email-summary-stat">
+                  <div class="email-summary-val" id="modal-proj-label" style="font-size:13px">—</div>
+                  <div class="email-summary-lbl">Project</div>
+                </div>
+                <div class="email-summary-stat">
+                  <div class="email-summary-val" id="modal-month-label" style="font-size:13px">—</div>
+                  <div class="email-summary-lbl">Month</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="email-modal-footer">
+          <button class="btn btn-ghost" onclick="closeEmailModal()">ยกเลิก</button>
+          <button class="btn btn-primary" id="email-send-btn" onclick="sendEmailReport()"><i data-icon="mail"></i> ส่ง Report</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js?v=smsgw1"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/analytics.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script src="./assets/pages/sms-gateway-switches/sms-gateway-switches.js"></script>
+</body>
+</html>

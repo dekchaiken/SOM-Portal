@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mail Config — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .mc-card {
+      background:var(--bg-card);border:1px solid var(--border);
+      border-radius:14px;overflow:hidden;margin-bottom:16px;
+    }
+    .mc-card-hd {
+      display:flex;align-items:center;gap:10px;
+      padding:14px 20px;border-bottom:1px solid var(--border);
+    }
+    .mc-card-icon {
+      width:34px;height:34px;border-radius:9px;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;font-size:16px;
+      background:rgba(59,130,246,.1);color:#3b82f6;
+    }
+    .mc-card-title { font-size:13px;font-weight:700;color:var(--text); }
+    .mc-card-sub   { font-size:10px;color:var(--text-muted);margin-top:1px; }
+    .mc-body { padding:20px; }
+
+    /* Form */
+    .f-row   { margin-bottom:16px; }
+    .f-row-2 { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px; }
+    .f-row-3 { display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:16px; }
+    .f-label { font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px; }
+    .f-input {
+      width:100%;padding:8px 11px;border-radius:9px;
+      border:1.5px solid var(--border);background:var(--bg);
+      color:var(--text);font-size:13px;font-family:inherit;box-sizing:border-box;
+    }
+    .f-input:focus { outline:none;border-color:var(--orange); }
+    select.f-input { cursor:pointer; }
+    textarea.f-input { resize:vertical;min-height:120px;line-height:1.65; }
+
+    /* Password toggle */
+    .pw-wrap { position:relative; }
+    .pw-wrap .f-input { padding-right:40px; }
+    .pw-eye {
+      position:absolute;right:10px;top:50%;transform:translateY(-50%);
+      background:none;border:none;cursor:pointer;padding:4px;
+      color:var(--text-muted);display:flex;align-items:center;justify-content:center;
+      transition:color .15s;
+    }
+    .pw-eye:hover { color:var(--text); }
+    .pw-eye svg { display:block;width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round; }
+
+    /* Status badge */
+    .cfg-status {
+      display:inline-flex;align-items:center;gap:5px;
+      font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;
+    }
+    .cfg-status.ok  { background:rgba(34,197,94,.12);color:#22c55e; }
+    .cfg-status.bad { background:rgba(239,68,68,.1);color:#ef4444; }
+    .cfg-status-dot { width:6px;height:6px;border-radius:50%;background:currentColor; }
+
+    /* CC chip input */
+    .chip-field {
+      display:flex;flex-wrap:wrap;gap:5px;align-items:center;
+      min-height:42px;padding:6px 10px;border-radius:9px;
+      border:1.5px solid var(--border);background:var(--bg);
+      cursor:text;
+    }
+    .chip-field:focus-within { border-color:var(--orange); }
+    .chip-field input {
+      border:none;background:transparent;outline:none;
+      font-size:13px;font-family:inherit;color:var(--text);
+      flex:1;min-width:200px;padding:2px 0;
+    }
+    .chip {
+      display:inline-flex;align-items:center;gap:4px;
+      background:rgba(59,130,246,.1);color:#3b82f6;
+      border-radius:5px;padding:2px 6px 2px 8px;font-size:11px;font-weight:600;
+      white-space:nowrap;
+    }
+    .chip-x {
+      border:none;background:none;cursor:pointer;color:#3b82f6;
+      font-size:13px;line-height:1;padding:0 1px;opacity:.7;
+    }
+    .chip-x:hover { opacity:1; }
+
+    /* Footer save bar */
+    .save-bar {
+      display:flex;align-items:center;justify-content:flex-end;gap:10px;
+      padding:14px 20px;border-top:1px solid var(--border);
+      background:var(--bg-card);
+    }
+    .save-hint { font-size:11px;color:var(--text-muted);flex:1; }
+
+    /* Connection test steps */
+    .conn-steps {
+      margin-top:14px;display:none;flex-direction:column;gap:6px;
+    }
+    .conn-steps.visible { display:flex; }
+    .conn-step {
+      display:flex;align-items:center;gap:10px;
+      padding:8px 12px;border-radius:8px;font-size:11px;
+      background:var(--bg);border:1px solid var(--border);
+    }
+    .conn-step.ok  { border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.06); }
+    .conn-step.err { border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.05); }
+    .conn-step-icon { font-size:14px;flex-shrink:0;width:18px;text-align:center; }
+    .conn-step-label { font-weight:700;color:var(--text);flex-shrink:0;min-width:160px; }
+    .conn-step-detail { color:var(--text-muted);flex:1; }
+    .conn-step.ok .conn-step-detail { color:#22c55e; }
+    .conn-step.err .conn-step-detail { color:#ef4444; }
+    /* Test email result */
+    .test-result {
+      margin-top:10px;padding:8px 12px;border-radius:8px;font-size:11px;
+      display:none;
+    }
+    .test-result.ok  { background:rgba(34,197,94,.1);color:#22c55e;display:block; }
+    .test-result.err { background:rgba(239,68,68,.08);color:#ef4444;display:block; }
+
+    /* Size settings grid */
+    .sz-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .sz-grid-3 {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+    }
+    .sz-item { display: flex; flex-direction: column; gap: 5px; }
+    .sz-label {
+      font-size: 9.5px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .sz-row {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .sz-input {
+      width: 68px; padding: 5px 8px; font-size: 12px;
+      border-radius: 7px; border: 1.5px solid var(--border);
+      background: var(--bg); color: var(--text);
+      font-family: inherit; box-sizing: border-box;
+      -moz-appearance: textfield;
+    }
+    .sz-input::-webkit-inner-spin-button,
+    .sz-input::-webkit-outer-spin-button { opacity: 1; }
+    .sz-input:focus { outline: none; border-color: var(--orange); }
+    .sz-unit { font-size: 10px; color: var(--text-muted); }
+    .sz-color {
+      width: 32px; height: 32px; border-radius: 7px;
+      border: 1.5px solid var(--border);
+      padding: 2px; cursor: pointer; background: none;
+    }
+    .sz-color:focus { outline: none; border-color: var(--orange); }
+    .sz-section {
+      margin: 16px 0 10px;
+      font-size: 10.5px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .06em;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .sz-section::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ── Footer style selector (radio cards) ── */
+    .fs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+    @media (max-width: 720px) { .fs-grid { grid-template-columns: 1fr; } }
+    .fs-card {
+      position: relative; border: 2px solid var(--border);
+      border-radius: 12px; padding: 14px 14px 12px; cursor: pointer;
+      background: var(--bg); transition: border-color .15s, background .15s;
+    }
+    .fs-card:hover { border-color: color-mix(in srgb, var(--orange) 40%, var(--border)); }
+    .fs-card.is-active {
+      border-color: var(--orange);
+      background: color-mix(in srgb, var(--orange) 6%, var(--bg));
+    }
+    .fs-card.is-disabled {
+      opacity: .5; cursor: not-allowed; pointer-events: none;
+      background: repeating-linear-gradient(45deg, var(--bg), var(--bg) 6px, transparent 6px, transparent 12px);
+    }
+    .fs-card input { position: absolute; opacity: 0; pointer-events: none; }
+    .fs-card-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .fs-card-title { font-size: 12.5px; font-weight: 800; color: var(--text); letter-spacing: -.01em; }
+    .fs-card-badge {
+      font-size: 9px; font-weight: 800; letter-spacing: .1em;
+      padding: 2px 7px; border-radius: 4px; text-transform: uppercase;
+      background: rgba(242,100,25,.15); color: var(--orange);
+    }
+    .fs-card-badge.sm-only { background: rgba(34,197,94,.15); color: #16a34a; }
+    .fs-card-badge.lock    { background: rgba(148,163,184,.18); color: #64748b; }
+    .fs-card-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; line-height: 1.45; }
+    .fs-mini {
+      margin-top: 10px; border-radius: 6px; padding: 10px 12px; overflow: hidden;
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      line-height: 1.55;
+    }
+    .fs-mini-classic { background: #111; color: #cbd5e1; }
+    .fs-mini-classic .k { color: #F26419; font-weight: 800; letter-spacing: .18em; font-size: 9.5px; }
+    .fs-mini-classic .t { color: #cbd5e1; font-weight: 700; margin-top: 3px; font-size: 10px; }
+    .fs-mini-classic .g { color: #888; font-size: 9.5px; margin-top: 3px; }
+    .fs-mini-tw { background: #111; color: #e2e8f0; position: relative; }
+    .fs-mini-tw .sm { color: #F26419; font-weight: 800; font-size: 15px; letter-spacing: -.02em; }
+    .fs-mini-tw .cur { display:inline-block; width:5px; height:11px; background:#F26419; vertical-align:-1px; margin-left:1px; }
+    .fs-mini-tw .bar { display:inline-block; width:2px; height:14px; background:#F26419; vertical-align:-3px; margin:0 6px; }
+    .fs-mini-tw .sv { color: #f4f1eb; font-weight: 800; font-size: 11px; }
+    .fs-mini-tw .lb { color: #94a3b8; font-size: 9px; letter-spacing: .16em; margin-top: 2px; font-weight: 700; }
+    .fs-mini-tw .rw { color: #F26419; font-weight: 800; font-size: 9px; margin-top: 6px; }
+    .fs-mini-tw .rw + .rw { margin-top: 2px; }
+    .fs-mini-tw .rw span { color: #cbd5e1; font-weight: 400; margin-left: 4px; }
+
+    /* Rich text editor */
+    .rich-editor-container {
+      display: flex;
+      flex-direction: column;
+      height: 300px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .rich-editor-toolbar {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .editor-btn {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--text);
+      transition: all 0.12s;
+      padding: 0;
+      font-family: inherit;
+    }
+    .editor-btn:hover {
+      background: var(--border);
+      border-color: var(--orange);
+      color: var(--orange);
+    }
+    .rich-editor-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      outline: none;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .rich-editor-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      margin: 6px 0;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="mail"></i> Mail Config</div>
+        <div class="page-sub">ตั้งค่า SMTP · Global CC · Signature สำหรับส่ง Email หลัง Create Jira Ticket</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="./index.html" class="btn btn-ghost" style="font-size:11px">← Admin Panel</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="mail"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Mail Config</h1>
+          <p>ตั้งค่า SMTP · Global CC · Signature สำหรับส่ง Email หลัง Create Jira Ticket · Test connection ได้</p>
+        </div>
+      </section>
+
+      <!-- ── SMTP Settings ── -->
+      <div class="mc-card">
+        <div class="mc-card-hd">
+          <div class="mc-card-icon"><i data-icon="plug"></i></div>
+          <div>
+            <div class="mc-card-title">SMTP Settings</div>
+            <div class="mc-card-sub">ข้อมูล Mail Server ที่ใช้ส่ง Email</div>
+          </div>
+          <span class="cfg-status bad" id="smtp-status" style="margin-left:auto">
+            <span class="cfg-status-dot"></span><span id="smtp-status-txt">ยังไม่ตั้งค่า</span>
+          </span>
+        </div>
+        <div class="mc-body">
+          <div class="f-row-3">
+            <div>
+              <div class="f-label">SMTP Host <span style="color:#ef4444">*</span></div>
+              <input type="text" id="smtp-host" class="f-input" placeholder="smtp.gmail.com">
+            </div>
+            <div>
+              <div class="f-label">Port</div>
+              <input type="number" id="smtp-port" class="f-input" value="587" min="1" max="65535">
+            </div>
+            <div>
+              <div class="f-label">Encryption</div>
+              <select id="smtp-enc" class="f-input">
+                <option value="tls">TLS (port 587)</option>
+                <option value="ssl">SSL (port 465)</option>
+                <option value="none">None (port 25)</option>
+              </select>
+            </div>
+          </div>
+          <div class="f-row-2">
+            <div>
+              <div class="f-label">Username / Email</div>
+              <input type="text" id="smtp-user" class="f-input" placeholder="your@email.com" autocomplete="off">
+            </div>
+            <div>
+              <div class="f-label">Password</div>
+              <div class="pw-wrap">
+                <input type="password" id="smtp-pass" class="f-input" placeholder="••••••••  (ว่าง = ไม่เปลี่ยน)" autocomplete="new-password">
+                <button class="pw-eye" id="pw-toggle" type="button" title="Show/Hide">
+                  <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="f-row-2">
+            <div>
+              <div class="f-label">From Name <span style="color:#ef4444">*</span></div>
+              <input type="text" id="from-name" class="f-input" placeholder="Service Monitoring Center (SMC)">
+            </div>
+            <div>
+              <div class="f-label">From Email <span style="color:#ef4444">*</span></div>
+              <input type="email" id="from-email" class="f-input" placeholder="sm@company.com">
+            </div>
+          </div>
+
+          <!-- Test connection -->
+          <div style="display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap">
+            <button class="btn btn-ghost" id="btn-test-conn" style="font-size:11px;white-space:nowrap"><i data-icon="plug"></i> ทดสอบการเชื่อมต่อ</button>
+            <span style="font-size:10px;color:var(--text-muted)">ตรวจ TCP + TLS + Auth โดยไม่ส่ง email</span>
+          </div>
+          <div class="conn-steps" id="conn-steps"></div>
+
+          <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+
+          <!-- Test send -->
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="email" id="test-to" class="f-input" placeholder="ส่งทดสอบไปที่ email..." style="max-width:260px">
+            <button class="btn btn-ghost" id="btn-test-send" style="font-size:11px;white-space:nowrap"><i data-icon="mail"></i> ส่งทดสอบ</button>
+          </div>
+          <div class="test-result" id="test-result"></div>
+        </div>
+        <div class="save-bar">
+          <span class="save-hint">การเปลี่ยน password: ว่างไว้ = ไม่เปลี่ยน password เดิม</span>
+          <button class="btn btn-primary" id="btn-save-smtp" style="font-size:11px"><i data-icon="save"></i> บันทึก SMTP</button>
+        </div>
+      </div>
+
+      <!-- ── Global CC ── -->
+      <div class="mc-card">
+        <div class="mc-card-hd">
+          <div class="mc-card-icon" style="background:rgba(139,92,246,.1);color:#8b5cf6"><i data-icon="clipboard"></i></div>
+          <div>
+            <div class="mc-card-title">Global CC</div>
+            <div class="mc-card-sub">Email ที่จะ CC ทุก Email ที่ส่งออก — แก้ไขได้ตอนส่งด้วย</div>
+          </div>
+        </div>
+        <div class="mc-body">
+          <div class="f-label">CC Email (กด Enter หรือ , เพื่อเพิ่ม)</div>
+          <div class="chip-field" id="cc-field" onclick="document.getElementById('cc-input').focus()">
+            <input type="text" id="cc-input" placeholder="email@company.com" autocomplete="off">
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:6px">
+            Email เหล่านี้จะถูกดึงมาใส่ใน CC โดยอัตโนมัติทุกครั้งที่ส่ง Email หลัง Create Jira Ticket
+          </div>
+        </div>
+        <div class="save-bar">
+          <button class="btn btn-primary" id="btn-save-cc" style="font-size:11px"><i data-icon="save"></i> บันทึก CC</button>
+        </div>
+      </div>
+
+      <!-- ── Branded Email Template ── -->
+      <div class="mc-card">
+        <div class="mc-card-hd">
+          <div class="mc-card-icon" style="background:rgba(244,114,182,.12);color:#ec4899"><i data-icon="palette"></i></div>
+          <div>
+            <div class="mc-card-title">Branded Email Template</div>
+            <div class="mc-card-sub">หัวเรื่อง · subtitle · gradient color · Footer banner</div>
+          </div>
+        </div>
+        <div class="mc-body">
+          <div class="f-row">
+            <div class="f-label">Header Title</div>
+            <input type="text" id="brand-title" class="f-input"
+                   placeholder="TechOps · Service Monitoring Center">
+            <div style="font-size:10px;color:var(--text-muted);margin-top:6px">
+              ตัวหนังสือใหญ่บนหัว email — แสดงทุก email ที่ส่งจากระบบ
+            </div>
+          </div>
+
+          <div class="f-row">
+            <div class="f-label">Gradient Colors <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(4 จุดสี — ใช้เป็น divider line + พื้นหลัง pastel)</span></div>
+            <div id="theme-lock-note" style="display:none;font-size:10.5px;color:var(--orange);background:rgba(242,100,25,.1);border:1px solid rgba(242,100,25,.3);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-weight:600">
+              <i data-icon="lock"></i> <strong>Typewriter theme active</strong> — สี Bauhaus (orange · black · cream) ถูก lock ไว้แล้ว · เปลี่ยน Header/Footer เป็น Classic เพื่อปรับสี
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+              <label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-size:10px;color:var(--text-muted)">
+                <input type="color" id="brand-c1" value="#fde047" style="width:28px;height:28px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+                Stop 1
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-size:10px;color:var(--text-muted)">
+                <input type="color" id="brand-c2" value="#fb923c" style="width:28px;height:28px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+                Stop 2
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-size:10px;color:var(--text-muted)">
+                <input type="color" id="brand-c3" value="#ec4899" style="width:28px;height:28px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+                Stop 3
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-size:10px;color:var(--text-muted)">
+                <input type="color" id="brand-c4" value="#a855f7" style="width:28px;height:28px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+                Stop 4
+              </label>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button type="button" class="btn btn-ghost" style="font-size:10px;padding:5px 10px" data-preset="warm"><i data-icon="flame"></i> Warm (default)</button>
+              <button type="button" class="btn btn-ghost" style="font-size:10px;padding:5px 10px" data-preset="ocean">🌊 Ocean</button>
+              <button type="button" class="btn btn-ghost" style="font-size:10px;padding:5px 10px" data-preset="forest">🌿 Forest</button>
+              <button type="button" class="btn btn-ghost" style="font-size:10px;padding:5px 10px" data-preset="mono"><i data-icon="circle"></i> Mono</button>
+            </div>
+          </div>
+
+          <!-- Header style selector — classic (all teams) + typewriter (SM only) -->
+          <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+            <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:.04em"><i data-icon="palette"></i> HEADER STYLE</div>
+            <div style="font-size:10.5px;color:var(--text-muted);margin-bottom:10px">เลือกดีไซน์ header · Typewriter จะเข้าคู่กับ footer Typewriter · SM_</div>
+            <div class="fs-grid" id="hd-style-grid">
+              <label class="fs-card is-active" data-style="classic">
+                <input type="radio" name="hd-style" value="classic" checked>
+                <div class="fs-card-head">
+                  <div class="fs-card-title">Classic Gradient</div>
+                  <span class="fs-card-badge">ALL TEAMS</span>
+                </div>
+                <div class="fs-card-sub">พื้น pastel gradient (4 stops) + brand title (แบบเดิม)</div>
+                <div class="fs-mini" style="background:linear-gradient(135deg,#fef3c7,#fed7aa,#fbcfe8,#e9d5ff);color:#111;font-family:inherit">
+                  <div style="font-size:13px;font-weight:700;color:#0f172a">TechOps · Service Monitoring</div>
+                </div>
+              </label>
+              <label class="fs-card" data-style="typewriter" id="hd-style-typewriter">
+                <input type="radio" name="hd-style" value="typewriter">
+                <div class="fs-card-head">
+                  <div class="fs-card-title">Typewriter · Terminal</div>
+                  <span class="fs-card-badge sm-only">SM ONLY</span>
+                </div>
+                <div class="fs-card-sub">พื้นดำ · terminal chrome (● ● ●) + prompt path + mono title + orange bar</div>
+                <div class="fs-mini fs-mini-tw" style="padding:0">
+                  <!-- title bar strip (dots only) -->
+                  <div style="background:#1a1a1a;padding:5px 8px">
+                    <span style="width:7px;height:7px;background:#ff5f57;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:3px"></span>
+                    <span style="width:7px;height:7px;background:#febc2e;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:3px"></span>
+                    <span style="width:7px;height:7px;background:#28c840;border-radius:50%;display:inline-block;vertical-align:middle"></span>
+                  </div>
+                  <!-- hero -->
+                  <div style="padding:12px 10px">
+                    <div style="color:#f4f1eb;font-size:12px;font-weight:800;letter-spacing:-.01em">TechOps · Service Monitoring</div>
+                    <div style="height:2px;width:32px;background:#F26419;margin-top:6px"></div>
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Header palette (only visible when Typewriter header is selected) -->
+            <div id="hd-tw-palette-row" style="display:none;margin-top:14px;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px">
+              <div style="font-size:11px;font-weight:800;color:var(--text);letter-spacing:.04em;margin-bottom:8px"><i data-icon="palette"></i> TYPEWRITER PALETTE</div>
+              <div style="font-size:10.5px;color:var(--text-muted);margin-bottom:12px">เลือก preset หรือปรับสีเอง 3 จุด (BG · Text · Accent) — title bar strip คำนวณอัตโนมัติจาก BG</div>
+
+              <!-- Presets -->
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px" id="hd-tw-presets">
+                <button type="button" class="btn btn-ghost" style="font-size:10.5px;padding:6px;height:auto"
+                        data-hd-preset='{"bg":"#111111","text":"#f4f1eb","accent":"#F26419"}'>
+                  <div style="height:24px;background:#111;border-radius:3px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;color:#f4f1eb;font-size:9px;font-weight:800">Aa</div>
+                  Dark
+                </button>
+                <button type="button" class="btn btn-ghost" style="font-size:10.5px;padding:6px;height:auto"
+                        data-hd-preset='{"bg":"#ffffff","text":"#111111","accent":"#F26419"}'>
+                  <div style="height:24px;background:#fff;border:1px solid #e5e7eb;border-radius:3px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;color:#111;font-size:9px;font-weight:800">Aa</div>
+                  Light
+                </button>
+                <button type="button" class="btn btn-ghost" style="font-size:10.5px;padding:6px;height:auto"
+                        data-hd-preset='{"bg":"#F26419","text":"#ffffff","accent":"#111111"}'>
+                  <div style="height:24px;background:#F26419;border-radius:3px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:800">Aa</div>
+                  Orange
+                </button>
+                <button type="button" class="btn btn-ghost" style="font-size:10.5px;padding:6px;height:auto"
+                        data-hd-preset='{"bg":"#f4f1eb","text":"#111111","accent":"#F26419"}'>
+                  <div style="height:24px;background:#f4f1eb;border-radius:3px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;color:#111;font-size:9px;font-weight:800">Aa</div>
+                  Cream
+                </button>
+              </div>
+
+              <!-- Custom color pickers -->
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+                <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-card);font-size:11px">
+                  <input type="color" id="hd-tw-bg" value="#111111" style="width:32px;height:28px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+                  <div style="flex:1"><div style="color:var(--text-muted);font-size:9.5px;letter-spacing:.06em;font-weight:700">BACKGROUND</div><div id="hd-tw-bg-lbl" style="color:var(--text);font-weight:600">#111111</div></div>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-card);font-size:11px">
+                  <input type="color" id="hd-tw-text" value="#f4f1eb" style="width:32px;height:28px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+                  <div style="flex:1"><div style="color:var(--text-muted);font-size:9.5px;letter-spacing:.06em;font-weight:700">TITLE TEXT</div><div id="hd-tw-text-lbl" style="color:var(--text);font-weight:600">#f4f1eb</div></div>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-card);font-size:11px">
+                  <input type="color" id="hd-tw-accent" value="#F26419" style="width:32px;height:28px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+                  <div style="flex:1"><div style="color:var(--text-muted);font-size:9.5px;letter-spacing:.06em;font-weight:700">ACCENT BAR</div><div id="hd-tw-accent-lbl" style="color:var(--text);font-weight:600">#F26419</div></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Size Settings ── -->
+          <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--border)">
+            <div class="sz-section"><i data-icon="arrow-up"></i> HEADER</div>
+            <div class="sz-grid-3">
+              <div class="sz-item">
+                <div class="sz-label">Padding บน/ล่าง</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-hdr-pad" value="44" min="4" max="100" step="2">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+              <div class="sz-item">
+                <div class="sz-label">Title ขนาดตัวอักษร</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-hdr-title" value="26" min="10" max="56" step="1">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+              <div class="sz-item">
+                <div class="sz-label">Subject ขนาดตัวอักษร</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-hdr-sub" value="14" min="8" max="32" step="1">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="sz-section" style="margin-top:14px">— DIVIDER</div>
+            <div class="sz-grid">
+              <div class="sz-item">
+                <div class="sz-label">ความหนา Divider</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-divider" value="4" min="1" max="20" step="1">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="sz-section" style="margin-top:14px"><i data-icon="arrow-down"></i> FOOTER</div>
+            <div class="sz-grid-3" style="margin-bottom:10px">
+              <div class="sz-item">
+                <div class="sz-label">Padding บน/ล่าง</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-ft-pad" value="30" min="4" max="100" step="2">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+              <div class="sz-item">
+                <div class="sz-label">Title ขนาดตัวอักษร</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-ft-title" value="18" min="8" max="40" step="1">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+              <div class="sz-item">
+                <div class="sz-label">Contact ขนาดตัวอักษร</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-ft-contact" value="11.5" min="7" max="20" step="0.5">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+            </div>
+            <div class="sz-grid">
+              <div class="sz-item">
+                <div class="sz-label">Address ขนาดตัวอักษร</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-ft-addr" value="11" min="7" max="18" step="0.5">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+              <div class="sz-item">
+                <div class="sz-label">พื้นหลัง Footer</div>
+                <div class="sz-row" style="gap:8px">
+                  <input type="color" class="sz-color" id="sz-ft-bg" value="#0f172a" title="Footer background color">
+                  <span class="sz-unit" id="sz-ft-bg-label">#0f172a</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer style selector — classic (all teams) + typewriter (SM only) -->
+          <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+            <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:.04em"><i data-icon="palette"></i> FOOTER STYLE</div>
+            <div style="font-size:10.5px;color:var(--text-muted);margin-bottom:10px">เลือกดีไซน์ footer ที่จะแสดงในทุก email ที่ส่งจากระบบ · ข้อความในช่องด้านล่างจะถูกใช้ทั้ง 2 แบบ</div>
+            <div class="fs-grid" id="ft-style-grid">
+              <label class="fs-card is-active" data-style="classic">
+                <input type="radio" name="ft-style" value="classic" checked>
+                <div class="fs-card-head">
+                  <div class="fs-card-title">Classic Bauhaus</div>
+                  <span class="fs-card-badge">ALL TEAMS</span>
+                </div>
+                <div class="fs-card-sub">พื้นดำ · SMC label สีส้ม + ข้อความจัดชิดซ้าย + orange bar ทางขวา (แบบเดิม)</div>
+                <div class="fs-mini fs-mini-classic">
+                  <div class="k">SMC</div>
+                  <div class="t">Service Monitoring Center</div>
+                  <div class="g">sm@ascendcorp.com · +66 91 …</div>
+                </div>
+              </label>
+              <label class="fs-card" data-style="typewriter" id="ft-style-typewriter">
+                <input type="radio" name="ft-style" value="typewriter">
+                <div class="fs-card-head">
+                  <div class="fs-card-title">Typewriter · SM_</div>
+                  <span class="fs-card-badge sm-only">SM ONLY</span>
+                </div>
+                <div class="fs-card-sub">พื้นดำ · "SM_" cursor + Service Monitoring wordmark + terminal-style contact block</div>
+                <div class="fs-mini fs-mini-tw">
+                  <div>
+                    <span class="sm">SM<span class="cur"></span></span><span class="bar"></span><span class="sv">Service Monitoring</span>
+                  </div>
+                  <div class="lb">ASCEND MONEY · SMC</div>
+                  <div class="rw">▸ MAIL <span>sm@ascendcorp.com</span></div>
+                  <div class="rw">▸ WEB &nbsp;<span>ascendmoneygroup.com</span></div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Public Base URL (only meaningful for Typewriter footer) -->
+            <div class="f-row" id="pub-url-row" style="margin-top:14px">
+              <div class="f-label">Public Base URL <span style="font-weight:400;color:var(--orange);text-transform:none;letter-spacing:0"><i data-icon="alert-triangle"></i> ตั้งค่านี้เพื่อซ่อน <code>sm-logo.gif</code> chip ใน Gmail inbox</span></div>
+              <input type="text" id="ft-public-url" class="f-input" placeholder="https://som-portal.your-company.com">
+              <div style="font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.65;background:rgba(148,163,184,.08);padding:10px 12px;border-radius:6px;border-left:3px solid var(--orange)">
+                <strong style="color:var(--text)">ทำไมต้องตั้ง URL นี้?</strong><br>
+                Gmail มี "attachment chip" ในหน้าอินบ็อกซ์ที่แสดง inline images ทุกอันเป็นไฟล์แนบ — <strong>ซ่อนไม่ได้ผ่าน MIME header</strong> ใดๆ<br><br>
+                <strong style="color:var(--text)"><i data-icon="check-circle"></i> ตั้งค่า URL:</strong> ระบบจะโหลด GIF ผ่าน <code>&lt;img src="URL/uploads/sm-logo-typewriter.gif"&gt;</code> แทน CID → <strong>ไม่มี chip</strong><br>
+                <strong style="color:var(--text)"><i data-icon="x-circle"></i> ไม่ตั้ง:</strong> ระบบจะฝัง GIF แบบ CID attachment → <strong>ยังมี chip <code>sm-logo.gif</code></strong> ในหน้าอินบ็อกซ์<br><br>
+                <strong style="color:var(--text)">ข้อกำหนด:</strong> URL ต้องเป็น public (เข้าถึงได้จาก Gmail server) เช่น <code>https://your-domain.com</code> — <code>localhost</code> จะไม่ทำงาน
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer text fields -->
+          <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+            <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:12px;letter-spacing:.04em"><i data-icon="arrow-down"></i> FOOTER ข้อความ</div>
+
+            <div class="f-row">
+              <div class="f-label">Footer Title <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(ตัวเหลืองใหญ่ตรงกลาง)</span></div>
+              <input type="text" id="ft-title" class="f-input" placeholder="Service Monitoring Center (SMC)">
+            </div>
+
+            <div class="f-row">
+              <div class="f-label">Contact Line <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(ใช้ <code> | </code> คั่น · email auto-link)</span></div>
+              <input type="text" id="ft-contact" class="f-input" placeholder="Service Management Center, Ascend Money | M +66 91 6969 885 | sm@ascendcorp.com">
+            </div>
+
+            <div class="f-row">
+              <div class="f-label">Address</div>
+              <input type="text" id="ft-address" class="f-input" placeholder="101 True Digital Park, Phoenix Building 7th Floor...">
+            </div>
+
+            <div class="f-row">
+              <div class="f-label">Website URL <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(ใส่ http:// หรือไม่ใส่ก็ได้)</span></div>
+              <input type="text" id="ft-website" class="f-input" placeholder="www.ascendmoneygroup.com">
+            </div>
+          </div>
+
+          <!-- Live preview: full email card -->
+          <div class="f-label" style="margin-top:18px">Live Preview</div>
+          <div style="background:#f8fafc;padding:16px;border-radius:10px;border:1px solid var(--border)">
+            <div style="max-width:100%;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+              <!-- HEADER -->
+              <div id="brand-preview-header" style="padding:24px 28px">
+                <div id="brand-preview-title" style="font-size:18px;font-weight:700;color:#0f172a;line-height:1.3"></div>
+              </div>
+              <div id="brand-preview-divider1" style="height:3px"></div>
+              <!-- BODY (mock content) -->
+              <div style="padding:22px 28px;font-size:12px;color:#1e293b;line-height:1.6;background:#fff">
+                <p style="margin:0 0 8px 0">เรียน ทีมที่เกี่ยวข้อง,</p>
+                <p style="margin:0 0 8px 0">นี่คือเนื้อหาตัวอย่างของ email ที่ส่งจากระบบ — ผู้ใช้พิมพ์ส่วนนี้เอง</p>
+                <p style="margin:0">ขอบคุณค่ะ</p>
+              </div>
+              <div id="brand-preview-divider2" style="height:3px"></div>
+              <!-- FOOTER — populated dynamically -->
+              <div id="brand-preview-footer" style="padding:22px 28px;background:#0f172a;text-align:center">
+                <div id="ft-preview-title" style="font-size:15px;font-weight:700;color:#fcd34d;margin-bottom:6px"></div>
+                <div id="ft-preview-contact" style="font-size:10.5px;color:#cbd5e1;line-height:1.7"></div>
+                <div id="ft-preview-address" style="font-size:10px;color:#94a3b8;line-height:1.7;margin-top:5px"></div>
+                <div id="ft-preview-website" style="font-size:10px;color:#fcd34d;margin-top:3px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="save-bar">
+          <button class="btn btn-primary" id="btn-save-brand" style="font-size:11px"><i data-icon="save"></i> บันทึก Template</button>
+        </div>
+      </div>
+
+      <!-- ── Email Signature ── -->
+      <div class="mc-card">
+        <div class="mc-card-hd">
+          <div class="mc-card-icon" style="background:rgba(242,100,25,.1);color:var(--orange)"><i data-icon="pencil"></i></div>
+          <div>
+            <div class="mc-card-title">Email Signature</div>
+            <div class="mc-card-sub">Signature ที่จะแนบท้าย Email อัตโนมัติ (ใช้ในกรณีที่ปิด Branded Footer)</div>
+          </div>
+        </div>
+        <div class="mc-body">
+          <textarea id="email-sig" class="f-input" style="min-height:150px;font-family:monospace;font-size:12px"
+            placeholder="Best regards,&#10;&#10;Service Monitoring Center (SMC),..."></textarea>
+        </div>
+        <div class="save-bar">
+          <button class="btn btn-primary" id="btn-save-sig" style="font-size:11px"><i data-icon="save"></i> บันทึก Signature</button>
+        </div>
+      </div>
+
+      <!-- ── Advanced Email Tester ── -->
+      <div class="mc-card">
+        <div class="mc-card-hd">
+          <div class="mc-card-icon" style="background:rgba(99,102,241,.1);color:#6366f1"><i data-icon="test-tube"></i></div>
+          <div>
+            <div class="mc-card-title">Advanced Email Tester</div>
+            <div class="mc-card-sub">ส่งเมลทดสอบแบบเต็มฟีเจอร์ — รองรับรูป, จัดรูป, ลายเซ็น</div>
+          </div>
+        </div>
+        <div class="mc-body">
+          <div class="f-row">
+            <div class="f-label">Test To Email <span style="color:#ef4444">*</span></div>
+            <input type="email" id="adv-test-to" class="f-input" placeholder="test@example.com">
+          </div>
+          <div class="f-row">
+            <div class="f-label">Subject</div>
+            <input type="text" id="adv-test-subject" class="f-input" placeholder="Test Email Subject" value="[TEST] SOM-Portal Email Test">
+          </div>
+          <div class="f-row">
+            <div class="f-label">Message (with formatting)</div>
+            <div class="rich-editor-container">
+              <div class="rich-editor-toolbar">
+                <button class="editor-btn" id="adv-btn-bold" title="Bold"><strong style="font-size:11px">B</strong></button>
+                <button class="editor-btn" id="adv-btn-italic" title="Italic"><em style="font-size:11px">I</em></button>
+                <button class="editor-btn" id="adv-btn-underline" title="Underline"><u style="font-size:11px">U</u></button>
+                <button class="editor-btn" id="adv-btn-image" title="Insert Image"><i data-icon="image"></i></button>
+                <input type="file" id="adv-image-input" accept="image/*" style="display:none">
+              </div>
+              <div class="rich-editor-content" id="adv-test-body" contenteditable="true" spellcheck="true"></div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:6px">
+            <i data-icon="lightbulb"></i> ทดสอบการส่งเมลด้วย Rich HTML, รูป, และ Signature ที่ตั้งค่าไว้
+          </div>
+        </div>
+        <div class="save-bar">
+          <div style="flex:1"></div>
+          <button class="btn btn-ghost" style="font-size:11px" id="btn-clear-adv-test"><i data-icon="trash"></i> ล้าง</button>
+          <button class="btn btn-primary" style="font-size:11px" id="btn-send-adv-test"><i data-icon="mail"></i> ส่งเมลทดสอบ</button>
+        </div>
+        <div class="test-result" id="adv-test-result"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Image upload input (hidden) -->
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('admin');
+
+let globalCc = [];
+let _pwVisible = false;
+
+// ── Load config ────────────────────────────────────────────
+async function load() {
+  const res = await API.mailConfig.get();
+  if (!res?.ok) { Toast.error('โหลด config ไม่ได้'); return; }
+  const c = res.data.data || {};
+
+  document.getElementById('smtp-host').value  = c.smtp_host  || '';
+  document.getElementById('smtp-port').value  = c.smtp_port  || 587;
+  document.getElementById('smtp-enc').value   = c.smtp_encryption || 'tls';
+  document.getElementById('smtp-user').value  = c.smtp_user  || '';
+  document.getElementById('smtp-pass').value  = '';   // never pre-fill password
+  document.getElementById('from-name').value  = c.from_name  || '';
+  document.getElementById('from-email').value = c.from_email || '';
+  document.getElementById('email-sig').value  = c.email_signature || '';
+  document.getElementById('brand-title').value = c.email_brand_title || 'TechOps · Service Monitoring Center';
+  const colors = Array.isArray(c.email_brand_colors) && c.email_brand_colors.length === 4
+    ? c.email_brand_colors
+    : ['#fde047','#fb923c','#ec4899','#a855f7'];
+  document.getElementById('brand-c1').value = colors[0];
+  document.getElementById('brand-c2').value = colors[1];
+  document.getElementById('brand-c3').value = colors[2];
+  document.getElementById('brand-c4').value = colors[3];
+  document.getElementById('ft-title').value   = c.email_footer_title   || 'Service Monitoring Center (SMC)';
+  document.getElementById('ft-contact').value = c.email_footer_contact || 'Service Management Center, Ascend Money | M +66 91 6969 885 | sm@ascendcorp.com';
+  document.getElementById('ft-address').value = c.email_footer_address || '101 True Digital Park, Phoenix Building 7th Floor, Sukhumvit Road, Bang Chak, Phra Khanong, Bangkok 10260';
+  document.getElementById('ft-website').value = c.email_footer_website || 'www.ascendmoneygroup.com';
+  document.getElementById('ft-public-url').value = c.email_public_base_url || '';
+
+  // Footer style — pick from saved value; gate 'typewriter' behind team allow-list.
+  const styleAvail = Array.isArray(c._footer_styles_available) ? c._footer_styles_available : ['classic'];
+  const twCard = document.getElementById('ft-style-typewriter');
+  if (twCard) {
+    if (styleAvail.includes('typewriter')) {
+      twCard.classList.remove('is-disabled');
+      const badge = twCard.querySelector('.fs-card-badge');
+      if (badge) { badge.className = 'fs-card-badge sm-only'; badge.textContent = 'SM ONLY'; }
+    } else {
+      twCard.classList.add('is-disabled');
+      const badge = twCard.querySelector('.fs-card-badge');
+      if (badge) { badge.className = 'fs-card-badge lock'; badge.innerHTML = '<i data-icon="lock"></i> SM TEAM ONLY'; }
+    }
+  }
+  let savedStyle = c.email_footer_style || 'classic';
+  if (savedStyle === 'typewriter' && !styleAvail.includes('typewriter')) savedStyle = 'classic';
+  setFooterStyle(savedStyle);
+
+  // Header style — same team allow-list as footer.
+  const hdTwCard = document.getElementById('hd-style-typewriter');
+  if (hdTwCard) {
+    if (styleAvail.includes('typewriter')) {
+      hdTwCard.classList.remove('is-disabled');
+      const badge = hdTwCard.querySelector('.fs-card-badge');
+      if (badge) { badge.className = 'fs-card-badge sm-only'; badge.textContent = 'SM ONLY'; }
+    } else {
+      hdTwCard.classList.add('is-disabled');
+      const badge = hdTwCard.querySelector('.fs-card-badge');
+      if (badge) { badge.className = 'fs-card-badge lock'; badge.innerHTML = '<i data-icon="lock"></i> SM TEAM ONLY'; }
+    }
+  }
+  let savedHdStyle = c.email_header_style || 'classic';
+  if (savedHdStyle === 'typewriter' && !styleAvail.includes('typewriter')) savedHdStyle = 'classic';
+  setHeaderStyle(savedHdStyle);
+
+  // Header Typewriter palette (defaults = dark Bauhaus)
+  setTwColor('hd-tw-bg',     c.email_header_tw_bg     || '#111111');
+  setTwColor('hd-tw-text',   c.email_header_tw_text   || '#f4f1eb');
+  setTwColor('hd-tw-accent', c.email_header_tw_accent || '#F26419');
+
+  // Size settings
+  const sz = c.email_brand_sizes || {};
+  document.getElementById('sz-hdr-pad').value     = sz.hdr_pad    ?? 44;
+  document.getElementById('sz-hdr-title').value   = sz.hdr_title  ?? 26;
+  document.getElementById('sz-hdr-sub').value     = sz.hdr_sub    ?? 14;
+  document.getElementById('sz-divider').value     = sz.divider    ?? 4;
+  document.getElementById('sz-ft-pad').value      = sz.ft_pad     ?? 30;
+  document.getElementById('sz-ft-title').value    = sz.ft_title   ?? 18;
+  document.getElementById('sz-ft-contact').value  = sz.ft_contact ?? 11.5;
+  document.getElementById('sz-ft-addr').value     = sz.ft_addr    ?? 11;
+  const ftBg = sz.ft_bg || '#0f172a';
+  document.getElementById('sz-ft-bg').value       = ftBg;
+  document.getElementById('sz-ft-bg-label').textContent = ftBg;
+
+  updateBrandPreview();
+
+  // SMTP status badge
+  const hasSmtp = c.smtp_host && c.from_email;
+  const st = document.getElementById('smtp-status');
+  const stTxt = document.getElementById('smtp-status-txt');
+  st.className = 'cfg-status ' + (hasSmtp ? 'ok' : 'bad');
+  stTxt.textContent = hasSmtp
+    ? (c.smtp_password_set ? 'ตั้งค่าแล้ว <i data-icon="check"></i>' : 'ตั้งค่าแล้ว (ไม่มี password)')
+    : 'ยังไม่ตั้งค่า';
+
+  globalCc = Array.isArray(c.global_cc) ? c.global_cc : [];
+  renderCcChips();
+}
+
+// ── Password show/hide ─────────────────────────────────────
+document.getElementById('pw-toggle').addEventListener('click', () => {
+  _pwVisible = !_pwVisible;
+  document.getElementById('smtp-pass').type = _pwVisible ? 'text' : 'password';
+  document.getElementById('pw-toggle').querySelector('svg').innerHTML = _pwVisible
+    ? `<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`
+    : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+});
+
+// ── CC Chips ───────────────────────────────────────────────
+function renderCcChips() {
+  const field = document.getElementById('cc-field');
+  const input = document.getElementById('cc-input');
+  field.querySelectorAll('.chip').forEach(c => c.remove());
+  globalCc.forEach(email => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.innerHTML = `${escHtml(email)}<button class="chip-x" data-email="${escHtml(email)}" title="ลบ">×</button>`;
+    field.insertBefore(chip, input);
+  });
+}
+
+document.getElementById('cc-field').addEventListener('click', e => {
+  const btn = e.target.closest('.chip-x');
+  if (!btn) return;
+  globalCc = globalCc.filter(x => x !== btn.dataset.email);
+  renderCcChips();
+});
+
+function addCcEmail() {
+  const input  = document.getElementById('cc-input');
+  const raw    = input.value.trim().replace(/,\s*$/, '');
+  if (!raw) return;
+  const emails = parseEmailList(raw);
+  if (!emails.length && raw.includes('@')) emails.push(raw);
+  if (!emails.length) { Toast.warning('รูปแบบ email ไม่ถูกต้อง'); return; }
+  emails.forEach(em => { if (!globalCc.includes(em)) globalCc.push(em); });
+  renderCcChips();
+  input.value = '';
+}
+
+document.getElementById('cc-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addCcEmail(); }
+  if (e.key === 'Backspace' && !e.target.value && globalCc.length) {
+    globalCc.pop();
+    renderCcChips();
+  }
+});
+document.getElementById('cc-input').addEventListener('blur', addCcEmail);
+document.getElementById('cc-input').addEventListener('paste', e => {
+  e.preventDefault();
+  const pasted = (e.clipboardData || window.clipboardData).getData('text');
+  if (!pasted) return;
+  const emails = parseEmailList(pasted);
+  if (!emails.length) { document.getElementById('cc-input').value = pasted; return; }
+  let added = 0;
+  emails.forEach(em => { if (!globalCc.includes(em)) { globalCc.push(em); added++; } });
+  if (added) { renderCcChips(); Toast.success(`เพิ่ม ${added} email แล้ว`); }
+});
+
+// ── Save SMTP ──────────────────────────────────────────────
+document.getElementById('btn-save-smtp').addEventListener('click', async function() {
+  const host      = document.getElementById('smtp-host').value.trim();
+  const fromEmail = document.getElementById('from-email').value.trim();
+  if (!host)      { Toast.warning('กรอก SMTP Host ก่อน'); return; }
+  if (!fromEmail) { Toast.warning('กรอก From Email ก่อน'); return; }
+
+  this.disabled = true; this.textContent = '⏳…';
+  const payload = {
+    smtp_host:       host,
+    smtp_port:       parseInt(document.getElementById('smtp-port').value) || 587,
+    smtp_encryption: document.getElementById('smtp-enc').value,
+    smtp_user:       document.getElementById('smtp-user').value.trim(),
+    smtp_password:   document.getElementById('smtp-pass').value,
+    from_name:       document.getElementById('from-name').value.trim(),
+    from_email:      fromEmail,
+  };
+  const res = await API.mailConfig.save(payload);
+  if (res?.ok) { Toast.success('บันทึก SMTP แล้ว'); await load(); }
+  else Toast.error(res?.data?.message || 'บันทึกไม่สำเร็จ');
+  this.disabled = false; this.innerHTML = '<i data-icon="save"></i> บันทึก SMTP';
+});
+
+// ── Save CC ────────────────────────────────────────────────
+document.getElementById('btn-save-cc').addEventListener('click', async function() {
+  addCcEmail();   // flush any pending input
+  this.disabled = true; this.textContent = '⏳…';
+  const res = await API.mailConfig.save({ global_cc: globalCc });
+  if (res?.ok) { Toast.success('บันทึก CC แล้ว'); }
+  else Toast.error(res?.data?.message || 'บันทึกไม่สำเร็จ');
+  this.disabled = false; this.innerHTML = '<i data-icon="save"></i> บันทึก CC';
+});
+
+// ── Save Signature ─────────────────────────────────────────
+document.getElementById('btn-save-sig').addEventListener('click', async function() {
+  this.disabled = true; this.textContent = '⏳…';
+  const res = await API.mailConfig.save({ email_signature: document.getElementById('email-sig').value });
+  if (res?.ok) { Toast.success('บันทึก Signature แล้ว'); }
+  else Toast.error(res?.data?.message || 'บันทึกไม่สำเร็จ');
+  this.disabled = false; this.innerHTML = '<i data-icon="save"></i> บันทึก Signature';
+});
+
+// ── Branded Template: presets, preview, save ───────────────
+const BRAND_PRESETS = {
+  warm:   ['#fde047', '#fb923c', '#ec4899', '#a855f7'],
+  ocean:  ['#a5f3fc', '#38bdf8', '#3b82f6', '#1e40af'],
+  forest: ['#fef9c3', '#bef264', '#22c55e', '#14532d'],
+  mono:   ['#e2e8f0', '#94a3b8', '#475569', '#0f172a'],
+};
+
+// Hex → "r,g,b"
+function hexToRgb(hex) {
+  hex = hex.replace('#','');
+  const n = parseInt(hex, 16);
+  return [(n>>16)&255, (n>>8)&255, n&255];
+}
+// Mix hex with white by ratio (0..1) → returns hex
+function lighten(hex, ratio) {
+  const [r,g,b] = hexToRgb(hex);
+  const m = (v) => Math.round(v + (255 - v) * ratio);
+  return '#' + [m(r),m(g),m(b)].map(v => v.toString(16).padStart(2,'0')).join('');
+}
+
+function getBrandColors() {
+  return [
+    document.getElementById('brand-c1').value,
+    document.getElementById('brand-c2').value,
+    document.getElementById('brand-c3').value,
+    document.getElementById('brand-c4').value,
+  ];
+}
+
+function getSizeSettings() {
+  return {
+    hdr_pad:    parseFloat(document.getElementById('sz-hdr-pad').value)    || 44,
+    hdr_title:  parseFloat(document.getElementById('sz-hdr-title').value)  || 26,
+    hdr_sub:    parseFloat(document.getElementById('sz-hdr-sub').value)    || 14,
+    divider:    parseFloat(document.getElementById('sz-divider').value)    || 4,
+    ft_pad:     parseFloat(document.getElementById('sz-ft-pad').value)     || 30,
+    ft_title:   parseFloat(document.getElementById('sz-ft-title').value)   || 18,
+    ft_contact: parseFloat(document.getElementById('sz-ft-contact').value) || 11.5,
+    ft_addr:    parseFloat(document.getElementById('sz-ft-addr').value)    || 11,
+    ft_bg:      document.getElementById('sz-ft-bg').value                  || '#0f172a',
+  };
+}
+
+function updateBrandPreview() {
+  const t = document.getElementById('brand-title').value.trim() || 'TechOps · Service Monitoring Center';
+
+  const sz = getSizeSettings();
+
+  // Header — style-aware (classic pastel gradient / typewriter terminal for SM only)
+  const hdrEl = document.getElementById('brand-preview-header');
+  const c = getBrandColors();
+  const pastel = c.map(h => lighten(h, 0.78));
+  const hdStyle = getHeaderStyle();
+  const d1 = document.getElementById('brand-preview-divider1');
+  const d2 = document.getElementById('brand-preview-divider2');
+
+  if (hdStyle === 'typewriter') {
+    // Two-row terminal header — palette-driven bg/text/accent + auto title-bar
+    const pal = getTwPalette();
+    const barBg = shiftLuma(pal.bg, 12);
+    hdrEl.setAttribute('style', `padding:0;background:${pal.bg}`);
+    hdrEl.innerHTML = `
+      <div style="background:${barBg};padding:9px 16px">
+        <span style="width:11px;height:11px;background:#ff5f57;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:6px"></span>
+        <span style="width:11px;height:11px;background:#febc2e;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:6px"></span>
+        <span style="width:11px;height:11px;background:#28c840;border-radius:50%;display:inline-block;vertical-align:middle"></span>
+      </div>
+      <div style="padding:${sz.hdr_pad}px 28px;background:${pal.bg};color:${pal.text};font-family:JetBrains Mono,IBM Plex Sans Thai,monospace">
+        <div style="font-size:${sz.hdr_title}px;font-weight:800;color:${pal.text};line-height:1.25;letter-spacing:-.01em">${escHtml(t)}</div>
+        <div style="height:4px;width:72px;background:${pal.accent};margin-top:16px"></div>
+      </div>
+    `;
+    // Solid accent divider matches the header's accent
+    d1.style.background = pal.accent;
+    d1.style.height     = sz.divider + 'px';
+  } else {
+    // Classic pastel gradient header
+    hdrEl.setAttribute('style', `padding:${sz.hdr_pad}px 28px;background:linear-gradient(135deg, ${pastel[0]} 0%, ${pastel[1]} 35%, ${pastel[2]} 68%, ${pastel[3]} 100%)`);
+    hdrEl.innerHTML = `<div id="brand-preview-title" style="font-size:${sz.hdr_title}px;font-weight:700;color:#0f172a;line-height:1.3">${escHtml(t)}</div>`;
+    const dividerCss = `linear-gradient(90deg, ${c[0]} 0%, ${c[1]} 35%, ${c[2]} 70%, ${c[3]} 100%)`;
+    d1.style.background = dividerCss;
+    d1.style.height     = sz.divider + 'px';
+  }
+
+  // Bottom divider always follows the gradient (below body → footer)
+  const bottomDividerCss = `linear-gradient(90deg, ${c[0]} 0%, ${c[1]} 35%, ${c[2]} 70%, ${c[3]} 100%)`;
+  d2.style.background = bottomDividerCss;
+  d2.style.height     = sz.divider + 'px';
+
+  // Footer
+  const ftTitle   = document.getElementById('ft-title').value.trim()   || 'Service Monitoring Center (SMC)';
+  const ftContact = document.getElementById('ft-contact').value.trim() || 'Service Management Center, Ascend Money | M +66 91 6969 885 | sm@ascendcorp.com';
+  const ftAddr    = document.getElementById('ft-address').value.trim() || '101 True Digital Park, Phoenix Building 7th Floor, Sukhumvit Road, Bang Chak, Phra Khanong, Bangkok 10260';
+  const ftWeb     = document.getElementById('ft-website').value.trim() || 'www.ascendmoneygroup.com';
+
+  const footerEl = document.getElementById('brand-preview-footer');
+  const style = getFooterStyle();
+
+  if (style === 'typewriter') {
+    // Render the Typewriter footer preview (static — matches _footerRowTypewriter in _branding.php)
+    const webDsp = ftWeb.replace(/^https?:\/\//, '');
+    const contactLinked = escHtml(ftContact)
+      .replace(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '<span style="color:#F26419">$1</span>')
+      .replace(/ \| /g, ' &nbsp;|&nbsp; ');
+    footerEl.setAttribute('style', 'background:#111;color:#e2e8f0;padding:22px 28px;font-family:JetBrains Mono,monospace;text-align:left');
+    footerEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px">
+        <img src="../uploads/sm-logo-typewriter.gif?v=3" width="300" height="85" alt="SM · Service Monitoring"
+             style="display:block;border:0;max-width:300px;height:auto">
+        <div style="flex:1"></div>
+        <div style="background:#22c55e;color:#111;padding:3px 9px;font-size:9px;font-weight:800;letter-spacing:.12em;border-radius:2px">● ONLINE</div>
+      </div>
+      <div style="height:1px;background:#333;margin:12px 0"></div>
+      <div style="font-size:10.5px;line-height:1.85">
+        <div><span style="color:#F26419;font-weight:800">▸ MAIL &nbsp;</span> <span>${contactLinked}</span></div>
+        <div><span style="color:#F26419;font-weight:800">▸ OFC &nbsp;&nbsp;</span> <span style="color:#94a3b8">${escHtml(ftAddr)}</span></div>
+        <div><span style="color:#F26419;font-weight:800">▸ WEB &nbsp;&nbsp;</span> <a href="#" style="color:#fcd34d;text-decoration:none">${escHtml(webDsp)}</a></div>
+        <div style="margin-top:6px;color:#666;font-size:9.5px;font-family:'IBM Plex Sans Thai',monospace">— ${escHtml(ftTitle)}</div>
+      </div>
+    `;
+    return;
+  }
+
+  // Classic footer (default) — restore the original preview markup then hydrate.
+  footerEl.setAttribute('style', `padding:${sz.ft_pad}px 28px;background:${sz.ft_bg};text-align:center`);
+  footerEl.innerHTML = `
+    <div id="ft-preview-title" style="font-size:${sz.ft_title}px;font-weight:700;color:#fcd34d;margin-bottom:6px"></div>
+    <div id="ft-preview-contact" style="font-size:${sz.ft_contact}px;color:#cbd5e1;line-height:1.7"></div>
+    <div id="ft-preview-address" style="font-size:${sz.ft_addr}px;color:#94a3b8;line-height:1.7;margin-top:5px"></div>
+    <div id="ft-preview-website" style="font-size:${sz.ft_addr}px;color:#fcd34d;margin-top:3px"></div>
+  `;
+  document.getElementById('ft-preview-title').textContent = ftTitle;
+  const ftContactHtml = escHtml(ftContact)
+    .replace(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '<span style="color:#fcd34d">$1</span>')
+    .replace(/ \| /g, ' &nbsp;|&nbsp; ');
+  document.getElementById('ft-preview-contact').innerHTML = ftContactHtml;
+  document.getElementById('ft-preview-address').textContent = ftAddr;
+  document.getElementById('ft-preview-website').textContent = ftWeb.replace(/^https?:\/\//, '');
+}
+
+document.getElementById('brand-title').addEventListener('input', updateBrandPreview);
+['brand-c1','brand-c2','brand-c3','brand-c4'].forEach(id =>
+  document.getElementById(id).addEventListener('input', updateBrandPreview));
+['ft-title','ft-contact','ft-address','ft-website'].forEach(id =>
+  document.getElementById(id).addEventListener('input', updateBrandPreview));
+
+// Size settings → live preview
+['sz-hdr-pad','sz-hdr-title','sz-hdr-sub','sz-divider',
+ 'sz-ft-pad','sz-ft-title','sz-ft-contact','sz-ft-addr'].forEach(id =>
+  document.getElementById(id).addEventListener('input', updateBrandPreview));
+
+// Footer BG color — also update hex label
+document.getElementById('sz-ft-bg').addEventListener('input', function() {
+  document.getElementById('sz-ft-bg-label').textContent = this.value;
+  updateBrandPreview();
+});
+
+document.querySelectorAll('[data-preset]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const p = BRAND_PRESETS[btn.dataset.preset];
+    if (!p) return;
+    document.getElementById('brand-c1').value = p[0];
+    document.getElementById('brand-c2').value = p[1];
+    document.getElementById('brand-c3').value = p[2];
+    document.getElementById('brand-c4').value = p[3];
+    updateBrandPreview();
+  });
+});
+
+// ── Footer style picker (Classic / Typewriter-SM-only) ───
+function getFooterStyle() {
+  const el = document.querySelector('input[name="ft-style"]:checked');
+  return el ? el.value : 'classic';
+}
+function setFooterStyle(style) {
+  document.querySelectorAll('#ft-style-grid .fs-card').forEach(card => {
+    const active = card.dataset.style === style;
+    card.classList.toggle('is-active', active);
+    const radio = card.querySelector('input[type="radio"]');
+    if (radio) radio.checked = active;
+  });
+  // Public URL field only makes sense for the Typewriter footer.
+  const pubRow = document.getElementById('pub-url-row');
+  if (pubRow) pubRow.style.display = (style === 'typewriter') ? '' : 'none';
+  applyThemeLocks();
+  updateBrandPreview();
+}
+document.querySelectorAll('#ft-style-grid .fs-card').forEach(card => {
+  card.addEventListener('click', () => {
+    if (card.classList.contains('is-disabled')) return;
+    setFooterStyle(card.dataset.style);
+  });
+});
+
+// ── Header style picker (Classic / Typewriter-SM-only) ───
+function getHeaderStyle() {
+  const el = document.querySelector('input[name="hd-style"]:checked');
+  return el ? el.value : 'classic';
+}
+function setHeaderStyle(style) {
+  document.querySelectorAll('#hd-style-grid .fs-card').forEach(card => {
+    const active = card.dataset.style === style;
+    card.classList.toggle('is-active', active);
+    const radio = card.querySelector('input[type="radio"]');
+    if (radio) radio.checked = active;
+  });
+  // Palette section only makes sense when Typewriter header is picked
+  const pal = document.getElementById('hd-tw-palette-row');
+  if (pal) pal.style.display = (style === 'typewriter') ? '' : 'none';
+  applyThemeLocks();
+  updateBrandPreview();
+}
+
+// Small helper to update a color picker + its hex label in sync.
+function setTwColor(id, hex) {
+  const inp = document.getElementById(id);
+  const lbl = document.getElementById(id + '-lbl');
+  if (inp) inp.value = hex;
+  if (lbl) lbl.textContent = hex;
+}
+function getTwPalette() {
+  return {
+    bg:     document.getElementById('hd-tw-bg').value,
+    text:   document.getElementById('hd-tw-text').value,
+    accent: document.getElementById('hd-tw-accent').value,
+  };
+}
+// Same luminance shift as _shiftLuma() in _branding.php — keeps preview honest.
+function shiftLuma(hex, amount) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const luma = (r * 299 + g * 587 + b * 114) / 1000;
+  const d = luma < 128 ? amount : -amount;
+  const c = v => Math.max(0, Math.min(255, v + d));
+  return '#' + [c(r), c(g), c(b)].map(v => v.toString(16).padStart(2,'0')).join('');
+}
+
+// Preset buttons — populate all 3 colors + refresh preview
+document.querySelectorAll('#hd-tw-presets [data-hd-preset]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const p = JSON.parse(btn.dataset.hdPreset);
+    setTwColor('hd-tw-bg', p.bg);
+    setTwColor('hd-tw-text', p.text);
+    setTwColor('hd-tw-accent', p.accent);
+    updateBrandPreview();
+  });
+});
+
+// Color pickers — sync label + refresh preview on every change
+['hd-tw-bg','hd-tw-text','hd-tw-accent'].forEach(id => {
+  document.getElementById(id).addEventListener('input', function() {
+    const lbl = document.getElementById(id + '-lbl');
+    if (lbl) lbl.textContent = this.value;
+    updateBrandPreview();
+  });
+});
+
+// Disable brand-color pickers + presets when Typewriter is picked for either
+// header or footer — the Typewriter theme uses fixed Bauhaus colors and the
+// pastel gradient stops don't render anywhere the user can see.
+function applyThemeLocks() {
+  const hdTw = getHeaderStyle() === 'typewriter';
+  const ftTw = getFooterStyle() === 'typewriter';
+  const locked = hdTw || ftTw;
+
+  // Brand-color inputs + preset buttons: the gradient is only used by
+  // classic header + classic bottom divider, both bypassed when locked.
+  const colorInputs = ['brand-c1','brand-c2','brand-c3','brand-c4']
+    .map(id => document.getElementById(id))
+    .filter(Boolean);
+  colorInputs.forEach(el => {
+    el.disabled = locked;
+    el.style.opacity = locked ? '.35' : '';
+    el.style.cursor  = locked ? 'not-allowed' : '';
+  });
+  document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.disabled = locked;
+    btn.style.opacity = locked ? '.35' : '';
+    btn.style.pointerEvents = locked ? 'none' : '';
+  });
+
+  // Footer BG color picker — only used by Classic footer.
+  const ftBg = document.getElementById('sz-ft-bg');
+  if (ftBg) {
+    ftBg.disabled = ftTw;
+    ftBg.style.opacity = ftTw ? '.35' : '';
+    ftBg.style.cursor  = ftTw ? 'not-allowed' : '';
+  }
+
+  // Lock indicator on the group headers
+  const lockNote = document.getElementById('theme-lock-note');
+  if (lockNote) lockNote.style.display = locked ? '' : 'none';
+}
+document.querySelectorAll('#hd-style-grid .fs-card').forEach(card => {
+  card.addEventListener('click', () => {
+    if (card.classList.contains('is-disabled')) return;
+    setHeaderStyle(card.dataset.style);
+  });
+});
+
+document.getElementById('btn-save-brand').addEventListener('click', async function() {
+  this.disabled = true; this.textContent = '⏳…';
+  const res = await API.mailConfig.save({
+    email_brand_title:    document.getElementById('brand-title').value.trim(),
+    email_brand_colors:   getBrandColors(),
+    email_footer_title:   document.getElementById('ft-title').value.trim(),
+    email_footer_contact: document.getElementById('ft-contact').value.trim(),
+    email_footer_address: document.getElementById('ft-address').value.trim(),
+    email_footer_website: document.getElementById('ft-website').value.trim(),
+    email_brand_sizes:    getSizeSettings(),
+    email_footer_style:   getFooterStyle(),
+    email_header_style:   getHeaderStyle(),
+    email_public_base_url: document.getElementById('ft-public-url').value.trim(),
+    email_header_tw_bg:     document.getElementById('hd-tw-bg').value,
+    email_header_tw_text:   document.getElementById('hd-tw-text').value,
+    email_header_tw_accent: document.getElementById('hd-tw-accent').value,
+  });
+  if (res?.ok) { Toast.success('บันทึก Branded Template แล้ว'); }
+  else Toast.error(res?.data?.message || 'บันทึกไม่สำเร็จ');
+  this.disabled = false; this.innerHTML = '<i data-icon="save"></i> บันทึก Template';
+});
+
+// ── Test Connection ────────────────────────────────────────
+document.getElementById('btn-test-conn').addEventListener('click', async function() {
+  const stepsEl = document.getElementById('conn-steps');
+  stepsEl.innerHTML = `<div class="conn-step" style="color:var(--text-muted)">
+    <div class="conn-step-icon">⏳</div>
+    <div class="conn-step-label">กำลังทดสอบ…</div>
+    <div class="conn-step-detail">กำลังเชื่อมต่อ ${document.getElementById('smtp-host').value || '(ยังไม่ได้กรอก host)'}:${document.getElementById('smtp-port').value}</div>
+  </div>`;
+  stepsEl.classList.add('visible');
+  this.disabled = true; this.textContent = '⏳ กำลังทดสอบ…';
+
+  // Save current values first (without password change) so PHP reads latest values
+  const res = await API.mail.testConnection();
+
+  this.disabled = false; this.innerHTML = '<i data-icon="plug"></i> ทดสอบการเชื่อมต่อ';
+
+  if (!res) {
+    stepsEl.innerHTML = `<div class="conn-step err">
+      <div class="conn-step-icon"><i data-icon="x-circle"></i></div>
+      <div class="conn-step-label">Network Error</div>
+      <div class="conn-step-detail">ไม่สามารถเรียก API ได้</div>
+    </div>`;
+    return;
+  }
+
+  const steps = res.data?.data?.steps || [];
+  const allOk = res.data?.data?.ok;
+
+  stepsEl.innerHTML = steps.map(s => `
+    <div class="conn-step ${s.ok ? 'ok' : 'err'}">
+      <div class="conn-step-icon">${s.ok ? '✅' : '❌'}</div>
+      <div class="conn-step-label">${escHtml(s.label)}</div>
+      <div class="conn-step-detail">${escHtml(s.detail || '')}</div>
+    </div>`).join('');
+
+  if (allOk) {
+    stepsEl.innerHTML += `<div class="conn-step ok" style="font-weight:700">
+      <div class="conn-step-icon"><i data-icon="sparkles"></i></div>
+      <div class="conn-step-label">เชื่อมต่อสำเร็จ</div>
+      <div class="conn-step-detail">SMTP พร้อมใช้งาน — กด "ส่งทดสอบ" เพื่อส่ง email จริง</div>
+    </div>`;
+  }
+});
+
+// ── Test Send ──────────────────────────────────────────────
+document.getElementById('btn-test-send').addEventListener('click', async function() {
+  const to = document.getElementById('test-to').value.trim();
+  if (!to) { Toast.warning('ระบุ email ที่จะทดสอบส่ง'); return; }
+  const resultEl = document.getElementById('test-result');
+  resultEl.className = 'test-result';
+  resultEl.textContent = '';
+  this.disabled = true; this.textContent = '⏳ กำลังส่ง…';
+
+  // Use API.mail.send with plain text
+  const res = await API.mail.send({
+    to:      [to],
+    cc:      [],
+    subject: '[TEST] SOM-Portal Mail Config Test',
+    body:    'นี่คือ email ทดสอบจาก SOM-Portal\n\nถ้าได้รับ email นี้แสดงว่า SMTP ตั้งค่าถูกต้องแล้ว <i data-icon="check-circle"></i>\n\nทดสอบเมื่อ ' + new Date().toLocaleString('th-TH'),
+    isHtml:  false  // Force plain text for testing
+  });
+
+  this.disabled = false; this.innerHTML = '<i data-icon="mail"></i> ทดสอบส่ง';
+  if (res?.ok) {
+    resultEl.className = 'test-result ok';
+    resultEl.innerHTML = '<i data-icon="check-circle"></i> ส่งสำเร็จ! ตรวจสอบ inbox ของ ' + to + ' ในแถบ 1-2 นาที';
+  } else {
+    resultEl.className = 'test-result err';
+    resultEl.innerHTML = '<i data-icon="x-circle"></i> ' + (res?.data?.message || res?.message || 'ส่งไม่สำเร็จ');
+  }
+});
+
+// ── Advanced Email Tester ──────────────────────────────────
+const advEditor = document.getElementById('adv-test-body');
+
+// Formatting buttons
+document.getElementById('adv-btn-bold').addEventListener('click', () => {
+  document.execCommand('bold', false, null);
+  advEditor.focus();
+});
+
+document.getElementById('adv-btn-italic').addEventListener('click', () => {
+  document.execCommand('italic', false, null);
+  advEditor.focus();
+});
+
+document.getElementById('adv-btn-underline').addEventListener('click', () => {
+  document.execCommand('underline', false, null);
+  advEditor.focus();
+});
+
+// Image upload
+document.getElementById('adv-btn-image').addEventListener('click', () => {
+  document.getElementById('adv-image-input').click();
+});
+
+document.getElementById('adv-image-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const imgHtml = `<img src="${ev.target.result}" style="max-width: 100%; height: auto; border-radius: 4px; margin: 6px 0;">`;
+    document.execCommand('insertHTML', false, imgHtml);
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+  advEditor.focus();
+});
+
+// Clear button
+document.getElementById('btn-clear-adv-test').addEventListener('click', () => {
+  document.getElementById('adv-test-to').value = '';
+  document.getElementById('adv-test-subject').value = '[TEST] SOM-Portal Email Test';
+  advEditor.innerHTML = '';
+  advEditor.focus();
+});
+
+// Send button
+document.getElementById('btn-send-adv-test').addEventListener('click', async function() {
+  const to = document.getElementById('adv-test-to').value.trim();
+  const subject = document.getElementById('adv-test-subject').value.trim();
+  const body = advEditor.innerHTML.trim();
+  const resultEl = document.getElementById('adv-test-result');
+
+  if (!to) { Toast.warning('ระบุ email ที่จะทดสอบส่ง'); return; }
+  if (!subject) { Toast.warning('ระบุ subject'); return; }
+  if (!body) { Toast.warning('ระบุเนื้อหา'); return; }
+
+  resultEl.className = 'test-result';
+  resultEl.textContent = '';
+  this.disabled = true;
+  this.textContent = '⏳ กำลังส่ง…';
+
+  // Get signature
+  const cfg = await API.mailConfig.get();
+  const sig = (cfg?.ok && cfg.data.data?.email_signature) ? cfg.data.data.email_signature : '';
+  const sigHtml = sig ? '<br><br><p style="color: #000; font-size: 12px; white-space: pre-wrap;">' + escHtml(sig) + '</p>' : '';
+  const finalBody = body + sigHtml;
+
+  const res = await API.mail.send({
+    to:     [to],
+    cc:     [],
+    subject: subject,
+    body:   finalBody,
+    isHtml: true
+  });
+
+  this.disabled = false;
+  this.innerHTML = '<i data-icon="mail"></i> ส่งเมลทดสอบ';
+
+  if (res?.ok) {
+    resultEl.className = 'test-result ok';
+    resultEl.innerHTML = '<i data-icon="check-circle"></i> ส่งสำเร็จ! ตรวจสอบ inbox ของ ' + to;
+  } else {
+    resultEl.className = 'test-result err';
+    resultEl.innerHTML = '<i data-icon="x-circle"></i> ' + (res?.data?.message || 'ส่งไม่สำเร็จ');
+  }
+});
+
+load();
+</script>
+</body>
+</html>

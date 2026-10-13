@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Case Notes — GenZ</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <script src="assets/js/theme.js"></script>
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/pages/genz-notes/genz-notes.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content gn-main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="topbar-title-left">
+          <div class="page-title"><i data-icon="book-open"></i> Case Notes</div>
+          <div class="page-sub" id="gn-sub">Knowledge Base · GenZ Team</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="gn-btn-new" id="gn-btn-new">
+          <i data-icon="plus"></i> New Note
+        </button>
+      </div>
+    </header>
+
+    <!-- ════ 3-panel workspace ════ -->
+    <div class="gn-workspace" id="gn-workspace">
+
+      <!-- ── LEFT: Navigator ── -->
+      <aside class="gn-pane-left" id="gn-pane-left">
+
+        <div class="gn-nav-search">
+          <i data-icon="search" class="gn-nav-search-icon"></i>
+          <input id="gn-q" type="text" placeholder="Search notes..." autocomplete="off" spellcheck="false">
+          <button class="gn-q-clear" id="gn-q-clear" title="Clear">
+            <i data-icon="x"></i>
+          </button>
+        </div>
+
+        <nav class="gn-nav" id="gn-nav">
+          <!-- populated by JS: All / Categories / Tags / Severity -->
+        </nav>
+
+        <div class="gn-pane-left-foot">
+          <div class="gn-note-count" id="gn-note-count">— notes</div>
+        </div>
+
+      </aside>
+
+      <!-- ── MAIN: Content (list / detail / editor) ── -->
+      <main class="gn-pane-main" id="gn-pane-main">
+        <div id="gn-view"></div>
+      </main>
+
+      <!-- ── RIGHT: Knowledge Graph ── -->
+      <aside class="gn-pane-graph" id="gn-pane-graph">
+
+        <div class="gn-graph-hd">
+          <div class="gn-graph-hd-left">
+            <i data-icon="git-branch"></i>
+            <span>Knowledge Graph</span>
+          </div>
+          <button class="gn-graph-expand" id="gn-graph-expand" title="Fullscreen graph">
+            <i data-icon="maximize"></i>
+          </button>
+          <button class="gn-graph-close" id="gn-graph-close" title="Hide graph">
+            <i data-icon="x"></i>
+          </button>
+        </div>
+
+        <div class="gn-graph-canvas-wrap" id="gn-graph-canvas-wrap">
+          <canvas id="gn-canvas"></canvas>
+          <div class="gn-graph-empty" id="gn-graph-empty" style="display:none">
+            <i data-icon="git-branch"></i>
+            <p>เพิ่ม Note แรก<br>เพื่อดู graph</p>
+          </div>
+        </div>
+
+        <div class="gn-graph-footer">
+          <div class="gn-graph-legend">
+            <span class="gn-gl gn-gl-note">Note</span>
+            <span class="gn-gl gn-gl-service">Service</span>
+            <span class="gn-gl gn-gl-tag">Tag</span>
+          </div>
+          <div class="gn-graph-info" id="gn-graph-info">Click a node to filter</div>
+        </div>
+
+        <!-- "On This Page" — shows in detail view -->
+        <div class="gn-otp" id="gn-otp" style="display:none">
+          <div class="gn-otp-hd">On This Page</div>
+          <div class="gn-otp-list" id="gn-otp-list"></div>
+        </div>
+
+      </aside>
+
+    </div><!-- /workspace -->
+
+    <!-- Custom confirm dialog -->
+    <div class="gn-confirm-mask" id="gn-confirm-mask" style="display:none">
+      <div class="gn-confirm-box">
+        <div class="gn-confirm-icon"><i data-icon="trash-2"></i></div>
+        <h3 class="gn-confirm-title">ลบ Case Note นี้?</h3>
+        <p class="gn-confirm-msg" id="gn-confirm-msg">การกระทำนี้ไม่สามารถย้อนกลับได้</p>
+        <div class="gn-confirm-btns">
+          <button class="gn-btn ghost" id="gn-conf-cancel">ยกเลิก</button>
+          <button class="gn-btn danger" id="gn-conf-ok"><i data-icon="trash-2"></i> ลบถาวร</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile: graph toggle FAB -->
+    <button class="gn-fab-graph" id="gn-fab-graph" title="Knowledge Graph">
+      <i data-icon="git-branch"></i>
+    </button>
+
+    <!-- Show-graph button when panel is hidden -->
+    <button class="gn-show-graph" id="gn-show-graph" style="display:none" title="Show Knowledge Graph">
+      <i data-icon="git-branch"></i> Graph
+    </button>
+
+    <!-- Fullscreen Knowledge Graph Modal -->
+    <div class="gn-graph-modal" id="gn-graph-modal">
+      <div class="gn-graph-modal-canvas-wrap">
+        <canvas id="gn-canvas-full"></canvas>
+      </div>
+      <div class="gn-graph-modal-hd">
+        <div class="gn-graph-modal-title">
+          <i data-icon="git-branch"></i>
+          <span>Knowledge Graph</span>
+          <span class="gn-graph-modal-stats" id="gn-gm-stats"></span>
+        </div>
+        <div class="gn-graph-modal-controls">
+          <button class="gn-gm-btn" id="gn-gm-fit" title="Fit all nodes"><i data-icon="maximize"></i></button>
+          <button class="gn-gm-btn" id="gn-gm-zoomin" title="Zoom in"><i data-icon="plus-circle"></i></button>
+          <button class="gn-gm-btn" id="gn-gm-zoomout" title="Zoom out"><i data-icon="minus"></i></button>
+          <div class="gn-gm-sep"></div>
+          <button class="gn-gm-btn gn-gm-close-btn" id="gn-gm-close" title="Close (Esc)"><i data-icon="x"></i></button>
+        </div>
+      </div>
+      <div class="gn-graph-modal-footer">
+        <span class="gn-gl gn-gl-note">Note</span>
+        <span class="gn-gl gn-gl-service">Service</span>
+        <span class="gn-gl gn-gl-tag">Tag</span>
+        <span class="gn-gm-hint">Scroll = zoom &nbsp;·&nbsp; Drag background = pan &nbsp;·&nbsp; Drag node = reposition &nbsp;·&nbsp; Click node = filter</span>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js?v=20260827-genz"></script>
+<script src="assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/pages/genz-notes/genz-notes.js?v=20260916"></script>
+</body>
+</html>

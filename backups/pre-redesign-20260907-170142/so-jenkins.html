@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SO Jenkins — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <style>
+    .sj-wrap { max-width: 980px; margin: 0 auto; width: 100%; padding: 4px 0 40px; }
+
+    /* ── Status cards ─────────────────────────────────── */
+    .sj-status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+    @media (max-width: 700px) { .sj-status-grid { grid-template-columns: 1fr; } }
+    .sj-status-card {
+      background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 14px;
+      padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+    }
+    .sj-status-icon {
+      width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
+      background: rgba(242,100,25,.12); color: var(--orange);
+      display: flex; align-items: center; justify-content: center; font-size: 17px;
+    }
+    .sj-status-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+    .sj-status-value { font-size: 12.5px; font-weight: 800; color: var(--text); margin-top: 2px; }
+    .sj-status-value.ok { color: #22c55e; }
+    .sj-status-value.bad { color: #ef4444; }
+
+    /* ── Landing — choice cards (wealth style) ────────── */
+    .sj-checker-home { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 18px; }
+    @media (max-width: 700px) { .sj-checker-home { grid-template-columns: 1fr; } }
+    .sj-ch-card {
+      background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 16px;
+      padding: 24px 20px; cursor: pointer; text-align: left; font-family: inherit;
+      transition: border-color .15s, transform .12s, box-shadow .15s;
+      display: flex; flex-direction: column; gap: 6px; color: var(--text);
+    }
+    .sj-ch-card:hover { border-color: var(--orange); transform: translateY(-2px); box-shadow: 0 6px 22px rgba(0,0,0,.12); }
+    .sj-ch-card:active { transform: scale(.985); }
+    .sj-ch-icon { font-size: 24px; }
+    .sj-ch-title { font-size: 14px; font-weight: 800; }
+    .sj-ch-sub { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+    .sj-ch-count {
+      align-self: flex-start; font-size: 10.5px; font-weight: 800; color: var(--orange);
+      background: rgba(242,100,25,.12); border: 1px solid rgba(242,100,25,.3);
+      border-radius: 999px; padding: 3px 12px; margin-top: 8px;
+    }
+    .sj-ch-count.zero { color: var(--text-muted); background: var(--bg); border-color: var(--border); }
+
+    /* ── Panel slide-in (wealth style) ────────────────── */
+    @keyframes sjSlideIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+    .sj-panel-enter { animation: sjSlideIn .22s ease-out both; }
+    .sj-panel-back {
+      display: inline-flex; align-items: center; gap: 5px; margin-bottom: 12px;
+      background: none; border: none; color: var(--text-muted); font-family: inherit;
+      font-size: 12px; font-weight: 700; cursor: pointer; padding: 4px 6px; border-radius: 8px;
+    }
+    .sj-panel-back:hover { color: var(--text); background: var(--bg); }
+    .sj-checker-panels { display: none; }
+    .sj-checker-panels.visible { display: block; }
+
+    .sj-card {
+      background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 14px;
+      padding: 20px 22px; margin-bottom: 18px;
+    }
+    .sj-card-title { font-size: 13.5px; font-weight: 800; color: var(--text); margin-bottom: 4px; display:flex; align-items:center; gap:8px; justify-content:space-between; }
+    .sj-card-sub  { font-size: 11px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.55; }
+    .sj-card-title .sj-count {
+      font-size: 10px; font-weight: 700; color: var(--text-muted); background: var(--bg);
+      border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px;
+    }
+    .sj-banner { border:1px dashed rgba(139,92,246,.45); background:rgba(139,92,246,.07); color:var(--text); border-radius:10px; padding:10px 14px; font-size:12.5px; margin-bottom:14px; }
+    .sj-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+    .sj-refresh-btn {
+      margin-left: auto; background: var(--bg-card); border: 1.5px solid var(--border);
+      border-radius: 9px; padding: 8px 12px; font-family: inherit; font-size: 11.5px;
+      font-weight: 700; color: var(--text-muted); cursor: pointer; transition: all .15s;
+    }
+    .sj-refresh-btn:hover { color: var(--text); border-color: var(--text-muted); }
+    .sj-refresh-btn:active { transform: scale(.97); }
+
+    /* ── Trigger section ──────────────────────────────── */
+    .sj-info-box {
+      display: flex; gap: 12px; align-items: flex-start;
+      background: var(--bg); border: 1px dashed var(--border); border-radius: 10px;
+      padding: 12px 14px; font-size: 12px; color: var(--text); line-height: 1.6; margin-bottom: 16px;
+    }
+    .sj-info-box .sj-ib-icon { font-size: 16px; flex-shrink: 0; }
+    .sj-server-pill {
+      font-size: 10.5px; font-weight: 700; color: var(--text-muted);
+      background: var(--bg); border: 1px solid var(--border); border-radius: 999px;
+      padding: 4px 10px; letter-spacing: .02em;
+    }
+    .sj-submit {
+      width: 100%; border: none; border-radius: 10px; background: var(--orange, #f26419); color: #fff;
+      font-family: inherit; font-size: 13px; font-weight: 800; padding: 11px 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px; transition: filter .15s, transform .1s;
+    }
+    .sj-submit:hover:not(:disabled) { filter: brightness(1.07); }
+    .sj-submit:active:not(:disabled) { transform: scale(.98); }
+    .sj-submit:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── Tables (history / logs) ──────────────────────── */
+    .sj-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+    .sj-table th {
+      text-align: left; font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: .05em; padding: 8px 10px; border-bottom: 1.5px solid var(--border); white-space: nowrap;
+    }
+    .sj-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+    .sj-table tr:last-child td { border-bottom: none; }
+    .sj-table .sj-meta-cell { color: var(--text-muted); font-size: 10px; white-space: nowrap; }
+    .sj-table .sj-detail-cell { color: var(--text-muted); font-size: 10.5px; max-width: 260px; word-break: break-word; }
+    .sj-table .sj-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; color: var(--text-muted); }
+
+    /* ── Status badge ──────────────────────────────────── */
+    .sj-badge {
+      display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800;
+      border-radius: 999px; padding: 3px 9px; white-space: nowrap; text-transform: uppercase; letter-spacing: .03em;
+    }
+    .sj-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .sj-b-success { background: rgba(34,197,94,.13); color: #22c55e; }
+    .sj-b-failure { background: rgba(239,68,68,.13); color: #ef4444; }
+    .sj-b-aborted { background: rgba(148,163,184,.15); color: #94a3b8; }
+    .sj-b-running { background: rgba(59,130,246,.13); color: #3b82f6; }
+    .sj-b-running::before { animation: sj-pulse 1.1s ease infinite; }
+    @keyframes sj-pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+    .sj-b-unknown { background: rgba(148,163,184,.12); color: #94a3b8; }
+
+    /* ── Logs toolbar ──────────────────────────────────── */
+    .sj-toolbar-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+    .sj-toolbar-row select, .sj-toolbar-row input {
+      background: var(--bg); border: 1.5px solid var(--border); border-radius: 9px;
+      padding: 8px 12px; font-family: inherit; font-size: 12px; color: var(--text); outline: none;
+    }
+    .sj-toolbar-row input { flex: 1; min-width: 160px; }
+    .sj-btn {
+      border-radius: 8px; padding: 8px 14px; font-family: inherit; font-size: 11px; font-weight: 800;
+      cursor: pointer; border: 1.5px solid var(--border); background: var(--bg); color: var(--text);
+      transition: filter .15s, transform .1s;
+    }
+    .sj-btn:hover { filter: brightness(1.08); }
+    .sj-btn:active { transform: scale(.97); }
+    .sj-btn-danger { color: #ef4444; border-color: rgba(239,68,68,.35); }
+    .sj-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Admin tabs + forms ────────────────────────────── */
+    .sja-tabs { display: flex; gap: 6px; border-bottom: 1.5px solid var(--border); margin-bottom: 16px; flex-wrap: wrap; }
+    .sja-tab {
+      background: none; border: none; padding: 9px 14px; font-family: inherit;
+      font-size: 12px; font-weight: 800; color: var(--text-muted); cursor: pointer;
+      border-bottom: 2.5px solid transparent; margin-bottom: -1.5px;
+    }
+    .sja-tab:hover { color: var(--text); }
+    .sja-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+    .sja-panel { display: none; }
+    .sja-panel.active { display: block; }
+    .sja-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .sja-field label { display: block; font-size: 10.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
+    .sja-field input, .sja-field select {
+      width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: 9px;
+      padding: 8px 11px; font-family: inherit; font-size: 12.5px; color: var(--text); outline: none;
+    }
+    .sja-field input:focus, .sja-field select:focus { border-color: var(--orange); }
+    .sja-actions { display: flex; gap: 6px; }
+    .sja-kv { display: flex; flex-direction: column; gap: 8px; font-size: 12px; }
+    .sja-kv-row { display: flex; gap: 10px; align-items: baseline; }
+    .sja-kv-row b { min-width: 130px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+    .sja-kv-row span { color: var(--text); word-break: break-all; }
+    .sja-note { font-size: 10.5px; color: var(--text-muted); line-height: 1.6; margin-top: 12px; }
+
+    .sj-empty { text-align: center; color: var(--text-muted); font-size: 11.5px; padding: 26px 0; opacity: .8; }
+    .sj-loading { text-align: center; padding: 60px 0; color: var(--text-muted); font-size: 12px; }
+
+    /* ── Progress modal ────────────────────────────────── */
+    .sj-modal-overlay {
+      position: fixed; inset: 0; z-index: 1200; display: none; align-items: center; justify-content: center;
+      background: rgba(10,12,16,.6); backdrop-filter: blur(3px);
+    }
+    .sj-modal {
+      background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 16px;
+      padding: 26px 28px; width: min(420px, 92vw);
+    }
+    .sj-modal h3 { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+    .sj-modal .sj-modal-sub { font-size: 11.5px; color: var(--text-muted); margin-bottom: 18px; }
+    .sj-progress-track { height: 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; margin-bottom: 8px; }
+    .sj-progress-bar { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, #f26419, #fbbf24); transition: width .4s ease; }
+    .sj-progress-pct { font-size: 11px; font-weight: 800; color: var(--text-muted); margin-bottom: 16px; }
+    .sj-modal-result {
+      display: none; border-radius: 10px; padding: 12px 14px; font-size: 12px; font-weight: 800; margin-bottom: 16px;
+    }
+    .sj-modal-result.ok   { background: rgba(34,197,94,.13); color: #22c55e; }
+    .sj-modal-result.bad  { background: rgba(239,68,68,.13); color: #ef4444; }
+    .sj-modal-result.mid  { background: rgba(148,163,184,.13); color: #94a3b8; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content" style="display:flex;flex-direction:column">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">🚀 SO Jenkins</div>
+        <div class="page-sub" id="sj-page-sub">CLT RAG Service Pipeline — Production</div>
+      </div>
+    </header>
+
+    <div class="sj-wrap" id="sj-wrap">
+      <div class="sj-loading" id="sj-loading">กำลังโหลด...</div>
+
+      <div id="sj-body" style="display:none">
+        <!-- Admin banner -->
+        <div class="sj-banner" id="sj-admin-banner" style="display:none">
+          👑 คุณเป็น <b>Admin</b> — จัดการผู้ใช้ได้จากเมนู "SO Jenkins Admin"
+        </div>
+
+        <!-- ── Status cards ──────────────────────────── -->
+        <div class="sj-status-grid">
+          <div class="sj-status-card">
+            <div class="sj-status-icon">🖥️</div>
+            <div>
+              <div class="sj-status-label">Jenkins Status</div>
+              <div class="sj-status-value" id="sj-jenkins-status">Checking...</div>
+            </div>
+          </div>
+          <div class="sj-status-card">
+            <div class="sj-status-icon">🔢</div>
+            <div>
+              <div class="sj-status-label">Last Build</div>
+              <div class="sj-status-value" id="sj-last-build">—</div>
+            </div>
+          </div>
+          <div class="sj-status-card">
+            <div class="sj-status-icon">📈</div>
+            <div>
+              <div class="sj-status-label">Success Rate (50 ล่าสุด)</div>
+              <div class="sj-status-value" id="sj-success-rate">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Actions toolbar (History always visible, Admin admin-only) ─── -->
+        <div class="sj-toolbar">
+          <span class="sj-server-pill" id="sj-toolbar-server"></span>
+          <button class="sj-refresh-btn" id="sj-btn-history" style="margin-left:auto">📜 History</button>
+          <button class="sj-refresh-btn" id="sj-btn-admin" style="display:none;margin-left:0">🛠 Admin</button>
+          <button class="sj-refresh-btn" id="sj-refresh-btn" style="margin-left:0">↻ Refresh</button>
+        </div>
+
+        <!-- ── Trigger form (always visible unless a panel is open) ─── -->
+        <div id="sj-panel-trigger">
+          <div class="sj-card">
+            <div class="sj-card-title">⚡ Trigger Jenkins Build</div>
+            <div class="sj-card-sub" id="sj-form-desc"></div>
+            <div class="sj-info-box">
+              <span class="sj-ib-icon">ℹ️</span>
+              <div><strong>No Parameters Required</strong> — job นี้รันด้วยค่า default configuration กดปุ่มด้านล่างเพื่อเริ่ม build</div>
+            </div>
+            <button class="sj-submit" id="sj-trigger-btn">
+              <span>🚀</span> Trigger Build Now
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Slide-in panels (History / Admin) ────────── -->
+        <div class="sj-checker-panels" id="sj-panels">
+          <!-- History (merged Build History + Build Logs) -->
+          <div id="sj-panel-history" style="display:none">
+            <button class="sj-panel-back" onclick="backToTrigger()">← กลับหน้า Trigger</button>
+            <div class="sj-card">
+              <div class="sj-card-title">📜 Build History <span class="sj-count" id="sj-history-count">0</span></div>
+              <div class="sj-card-sub">ประวัติการ Build ทั้งหมด — สถานะ update อัตโนมัติ (refresh ทุก 30 วิ)</div>
+              <div class="sj-toolbar-row">
+                <select id="sj-hist-filter">
+                  <option value="all">ทั้งหมด</option>
+                  <option value="success">สำเร็จ</option>
+                  <option value="failed">ล้มเหลว</option>
+                  <option value="today">วันนี้</option>
+                </select>
+                <input type="text" id="sj-hist-search" placeholder="ค้นหา (User / Build #)...">
+                <button class="sj-btn sj-btn-danger" id="sj-hist-clear" style="display:none">🗑 ล้าง</button>
+                <button class="sj-btn" id="sj-hist-export" style="display:none">⬇ Export</button>
+              </div>
+              <div style="overflow-x:auto">
+                <table class="sj-table">
+                  <thead>
+                    <tr><th>Build #</th><th>Time</th><th>Status / Result</th><th>Triggered By</th><th>Duration</th></tr>
+                  </thead>
+                  <tbody id="sj-history-body">
+                    <tr><td colspan="5" class="sj-empty">ยังไม่มีประวัติ</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin -->
+          <div id="sj-panel-admin" style="display:none">
+            <button class="sj-panel-back" onclick="backToTrigger()">← กลับหน้า Trigger</button>
+            <div class="sj-card">
+              <div class="sj-card-title">🛠 SO Jenkins Admin</div>
+              <div class="sj-card-sub">จัดการ SO Jenkins Portal — เฉพาะ Admin</div>
+              <div class="sja-tabs">
+                <button class="sja-tab active" data-tab="users">👥 ผู้ใช้</button>
+                <button class="sja-tab" data-tab="settings">⚙️ Settings</button>
+              </div>
+
+              <div class="sja-panel active" id="sja-panel-users">
+                <div class="sja-grid">
+                  <div class="sja-field">
+                    <label>Username</label>
+                    <input type="text" id="sja-user-username" placeholder="e.g. somchai.jai">
+                  </div>
+                  <div class="sja-field">
+                    <label>Email</label>
+                    <input type="text" id="sja-user-email" placeholder="name@ascendcorp.com">
+                  </div>
+                  <div class="sja-field">
+                    <label>Role</label>
+                    <select id="sja-user-role">
+                      <option value="user">user</option>
+                      <option value="admin">admin</option>
+                    </select>
+                  </div>
+                  <div class="sja-field" style="display:flex;align-items:flex-end">
+                    <button class="sj-btn" id="sja-user-add" style="width:100%;background:var(--orange, #f26419);color:#fff;border-color:transparent">＋ สร้างผู้ใช้</button>
+                  </div>
+                </div>
+                <div style="overflow-x:auto">
+                  <table class="sj-table">
+                    <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="sja-user-body"><tr><td colspan="5" class="sj-empty">ยังไม่มีผู้ใช้</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="sja-panel" id="sja-panel-settings">
+                <div class="sja-kv" id="sja-me-kv" style="margin-bottom:16px"></div>
+                <div class="sja-note">💡 เปลี่ยนรหัสผ่านได้ที่เมนู <b>เปลี่ยนรหัสผ่าน</b> (ด้านล่างซ้ายของ sidebar)</div>
+                <hr style="border:none;border-top:1px solid var(--border);margin:18px 0">
+                <div style="font-size:12.5px;font-weight:800;color:var(--text);margin-bottom:12px">🔗 Jenkins Server &amp; Job</div>
+                <div class="sja-kv" id="sja-server-kv"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress modal -->
+<div class="sj-modal-overlay" id="sj-progress-modal">
+  <div class="sj-modal">
+    <h3 id="sj-modal-title">Executing Pipeline</h3>
+    <div class="sj-modal-sub" id="sj-modal-status">Waiting in Jenkins queue...</div>
+    <div class="sj-progress-track"><div class="sj-progress-bar" id="sj-progress-bar"></div></div>
+    <div class="sj-progress-pct" id="sj-progress-pct">0%</div>
+    <div class="sj-modal-result" id="sj-modal-result"></div>
+    <button class="sj-submit" id="sj-modal-close" style="display:none">ปิด</button>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script>
+  if (!Auth.requireAuth()) {}
+  Layout.render('so-jenkins');
+
+  const state = {
+    tools: [], servers: {}, canAdmin: false,
+    history: [], users: [],
+    toolId: null, panel: null,
+    histFilter: 'all', histSearch: '',
+  };
+
+  const $ = id => document.getElementById(id);
+
+  // ── Panel navigation ───────────────────────────────────────────────────────
+  // Default view is the Trigger form (always visible). History/Admin slide in
+  // as panels that temporarily replace the form; back button restores it.
+  function backToTrigger() {
+    $('sj-panels').classList.remove('visible');
+    document.querySelectorAll('#sj-panels > div').forEach(p => { p.style.display = 'none'; });
+    $('sj-panel-trigger').style.display = '';
+    state.panel = null;
+  }
+
+  function openPanel(name) {
+    const target = $('sj-panel-' + name);
+    if (!target) { backToTrigger(); return; }
+    $('sj-panel-trigger').style.display = 'none';
+    document.querySelectorAll('#sj-panels > div').forEach(p => { p.style.display = 'none'; });
+    target.style.display = '';
+    target.classList.remove('sj-panel-enter');
+    void target.offsetWidth; // restart animation
+    target.classList.add('sj-panel-enter');
+    $('sj-panels').classList.add('visible');
+    state.panel = name;
+    if (name === 'history') renderHistory();
+    if (name === 'admin')   renderAdmin();
+  }
+
+  // ── Loaders ────────────────────────────────────────────────────────────────
+  async function loadConfig() {
+    const res = await API.get('/so-jenkins/');
+    if (!res?.ok) throw new Error(res?.data?.message || 'โหลดไม่สำเร็จ');
+    const d = res.data.data;
+    state.tools    = d.tools   || [];
+    state.servers  = d.servers || {};
+    state.canAdmin = !!d.can_admin;
+
+    $('sj-admin-banner').style.display = state.canAdmin ? '' : 'none';
+    $('sj-btn-admin').style.display    = state.canAdmin ? '' : 'none';
+    $('sj-hist-clear').style.display   = state.canAdmin ? '' : 'none';
+    $('sj-hist-export').style.display  = state.canAdmin ? '' : 'none';
+    if (state.canAdmin) $('sj-page-sub').textContent = 'Admin — จัดการได้ที่ปุ่ม "Admin" มุมขวาบน';
+
+    if (!state.tools.length) {
+      $('sj-loading').textContent = 'ทีมของคุณยังไม่มี Jenkins tool ที่เปิดใช้งาน — ติดต่อ Admin';
+      $('sj-loading').style.display = '';
+      return;
+    }
+    if (!state.toolId || !state.tools.find(t => t.id === state.toolId)) {
+      state.toolId = state.tools[0].id;
+    }
+    renderStats(d.stats || {});
+    renderServerPill();
+    if (state.panel === 'admin') renderAdmin();
+  }
+
+  async function loadStatus() {
+    const el = $('sj-jenkins-status');
+    el.textContent = 'Checking...';
+    el.className = 'sj-status-value';
+    try {
+      const res = await API.get('/so-jenkins/?status=1');
+      if (!res?.ok) { el.textContent = 'ไม่สามารถเช็คได้'; el.className = 'sj-status-value bad'; return; }
+      const d = res.data.data || {};
+      if (d.reachable) {
+        el.textContent = 'Connected' + (d.last_build ? ' · #' + d.last_build.number : '');
+        el.className = 'sj-status-value ok';
+      } else {
+        // Show the underlying error so debugging isn't a black box.
+        el.textContent = 'Offline';
+        el.title = d.message || 'Unreachable';
+        el.className = 'sj-status-value bad';
+      }
+    } catch (e) {
+      el.textContent = '—';
+    }
+  }
+
+  function renderStats(stats) {
+    $('sj-last-build').textContent = stats.last_build ? '#' + stats.last_build : '—';
+    $('sj-success-rate').textContent = stats.success_rate !== null && stats.success_rate !== undefined
+      ? stats.success_rate + '%' : '—';
+  }
+
+  async function loadHistory() {
+    const res = await API.get('/so-jenkins/?history=1');
+    if (!res?.ok) return;
+    state.history = res.data.data || [];
+    renderHistory();
+    const recent = state.history.slice(0, 50);
+    const succ = recent.filter(h => String(h.status).toLowerCase() === 'success').length;
+    const last = state.history.find(h => h.build_id);
+    $('sj-last-build').textContent = last && last.build_id ? '#' + last.build_id : '—';
+    $('sj-success-rate').textContent = recent.length ? Math.round(succ / recent.length * 100) + '%' : '—';
+  }
+
+  // ── Trigger ────────────────────────────────────────────────────────────────
+  function renderServerPill() {
+    const tool = state.tools.find(t => t.id === state.toolId);
+    const srv  = tool ? state.servers[tool.server_id] : null;
+    $('sj-toolbar-server').textContent = srv ? '🔗 ' + (srv.display || srv.base_url) : '🔗 server not configured';
+  }
+
+  $('sj-trigger-btn').addEventListener('click', async () => {
+    if (!state.toolId) { Toast.error('ไม่พบ tool — ติดต่อ Admin'); return; }
+    if (!await confirmDialog(
+      'Job: acm-clt-rag-service-run-pipeline (Production)\nBuild จะเริ่มทันที',
+      'ยืนยันการ Trigger Build?',
+      { variant: 'primary', confirmText: '🚀 Trigger', cancelText: 'ยกเลิก' }
+    )) return;
+    const btn = $('sj-trigger-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="sj-spinner" style="display:inline-block;animation:sj-pulse 1.1s ease infinite">⏳</span> Triggering...';
+    try {
+      const res = await API.post('/so-jenkins/', { action: 'trigger', tool_id: state.toolId });
+      if (!res?.ok) { Toast.error(res?.data?.message || 'Trigger ล้มเหลว'); return; }
+      const d = res.data.data;
+      Toast.success('Build ถูก queue แล้ว');
+      if (d.queue_id) openProgress(d.queue_id);
+      await loadHistory();
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span>🚀</span> Trigger Build Now';
+    }
+  });
+
+  // ── History ────────────────────────────────────────────────────────────────
+  function fmtDuration(val) {
+    if (!val) return '—';
+    const ms = Number(val);
+    if (isNaN(ms) || ms <= 0) return String(val);
+    const s = Math.round(ms / 1000);
+    if (s < 60) return s + 's';
+    const m = Math.floor(s / 60), rem = s % 60;
+    if (m < 60) return m + 'm' + (rem ? ' ' + rem + 's' : '');
+    return Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+  }
+
+  function buildUrl(h) {
+    if (!h.build_id) return null;
+    const tool = state.tools.find(t => t.id === h.tool_id);
+    if (!tool) return null;
+    const srv = state.servers[tool.server_id];
+    if (!srv?.base_url) return null;
+    return srv.base_url.replace(/\/$/, '') + tool.job_path + '/' + h.build_id + '/';
+  }
+
+  function statusBadge(status) {
+    const s = String(status || '').toLowerCase();
+    const map = {
+      success: ['sj-b-success', 'Success'], failure: ['sj-b-failure', 'Failure'],
+      aborted: ['sj-b-aborted', 'Aborted'],
+      queued: ['sj-b-running', 'Queued'], 'in queue': ['sj-b-running', 'In Queue'],
+      building: ['sj-b-running', 'Building'], running: ['sj-b-running', 'Building'],
+    };
+    const [cls, label] = map[s] || ['sj-b-unknown', status || 'Unknown'];
+    return `<span class="sj-badge ${cls}">${escHtml(label)}</span>`;
+  }
+
+  function renderHistory() {
+    const failedSet = new Set(['failed', 'failure', 'error', 'aborted']);
+    const rows = state.history.filter(h => {
+      const s = String(h.status || '').toLowerCase();
+      if (state.histFilter === 'success' && s !== 'success') return false;
+      if (state.histFilter === 'failed'  && !failedSet.has(s)) return false;
+      if (state.histFilter === 'today') {
+        const d = new Date(h.ts || h.timestamp);
+        if (!isNaN(d) && d.toDateString() !== new Date().toDateString()) return false;
+      }
+      if (state.histSearch) {
+        const q = state.histSearch.toLowerCase();
+        const hay = [h.user_name, h.username, h.user, h.build_id ? '#' + h.build_id : ''].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    $('sj-history-count').textContent = rows.length;
+    const body = $('sj-history-body');
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="5" class="sj-empty">' +
+        (state.history.length ? 'ไม่มีรายการตรงเงื่อนไข' : 'ยังไม่มีประวัติ') + '</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map(h => {
+      const url = buildUrl(h);
+      const s = String(h.status || '').toLowerCase();
+      const isLive = s === 'queued' || s === 'in queue' || s === 'building' || s === 'running';
+      const buildCell = h.build_id
+        ? (url
+            ? `<a href="${url}" target="_blank" rel="noopener" style="color:var(--orange);font-weight:800;text-decoration:none">#${escHtml(String(h.build_id))} <span style="font-size:9px;opacity:.7">↗</span></a>`
+            : `<span style="font-weight:800">#${escHtml(String(h.build_id))}</span>`)
+        : (isLive
+            ? `<span style="color:var(--text-muted);font-size:10px">Queue #${escHtml(String(h.queue_id || '…'))}</span>`
+            : `<span style="opacity:.35">—</span>`);
+      const resultLabel = h.result && !isLive
+        ? `<div style="font-size:9.5px;color:var(--text-muted);margin-top:2px;letter-spacing:.03em">${escHtml(h.result)}</div>`
+        : '';
+      return `<tr>
+        <td class="sj-mono" style="white-space:nowrap">${buildCell}</td>
+        <td class="sj-meta-cell sj-mono">${escHtml(fmtTime(h.ts || h.timestamp))}</td>
+        <td>${statusBadge(h.status)}${resultLabel}</td>
+        <td class="sj-meta-cell">${escHtml(h.user_name || h.username || '')}</td>
+        <td class="sj-meta-cell" style="white-space:nowrap">${fmtDuration(h.duration)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Admin panel ────────────────────────────────────────────────────────────
+  document.querySelectorAll('.sja-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sja-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.sja-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      $('sja-panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  function renderAdmin() {
+    renderUsers();
+    renderSettings();
+  }
+
+  function renderUsers() {
+    const body = $('sja-user-body');
+    if (!state.users.length) {
+      body.innerHTML = '<tr><td colspan="5" class="sj-empty">ยังไม่มีผู้ใช้</td></tr>';
+      return;
+    }
+    body.innerHTML = state.users.map(u => `<tr>
+      <td style="font-weight:700">${escHtml(u.username)}</td>
+      <td class="sj-meta-cell">${escHtml(u.email || '')}</td>
+      <td>${u.soj_role === 'admin'
+        ? '<span class="sj-badge" style="background:rgba(242,100,25,.14);color:var(--orange)">Admin</span>'
+        : '<span class="sj-badge" style="background:rgba(59,130,246,.13);color:#3b82f6">User</span>'}</td>
+      <td>${u.status === 'locked'
+        ? '<span class="sj-badge" style="background:rgba(239,68,68,.13);color:#ef4444">Locked</span>'
+        : '<span class="sj-badge sj-b-success">Active</span>'}</td>
+      <td><div class="sja-actions">
+        <button class="sj-btn" onclick="promoteUser('${escHtml(u.id)}')">${u.soj_role === 'admin' ? '→ user' : '→ admin'}</button>
+        <button class="sj-btn" onclick="resetPw('${escHtml(u.id)}')">รีเซ็ตรหัส</button>
+        ${u.status === 'locked' ? `<button class="sj-btn" onclick="unlockUser('${escHtml(u.id)}')">ปลดล็อค</button>` : ''}
+        <button class="sj-btn sj-btn-danger" onclick="deleteUser('${escHtml(u.id)}')">ลบ</button>
+      </div></td>
+    </tr>`).join('');
+  }
+
+  function renderSettings() {
+    const me = Auth.getUser();
+    $('sja-me-kv').innerHTML = `
+      <div class="sja-kv-row"><b>Username</b><span>${escHtml(me?.username || '')}</span></div>
+      <div class="sja-kv-row"><b>Name</b><span>${escHtml(me?.name || '')}</span></div>
+      <div class="sja-kv-row"><b>Role</b><span>${escHtml(me?.role || '')} (${escHtml(me?.permissions?.join(', ') || '')})</span></div>
+      <div class="sja-kv-row"><b>Team</b><span>${escHtml(me?.team || '')}</span></div>`;
+
+    const srvRows = Object.entries(state.servers).map(([id, s]) => `
+      <div class="sja-kv-row"><b>${escHtml(id)}</b><span class="sj-mono">${escHtml(s.display || '')} — ${escHtml(s.base_url || '')}</span></div>`).join('');
+    const tool = state.tools[0];
+    const toolRows = tool ? `
+      <div class="sja-kv-row"><b>Job Name</b><span class="sj-mono">${escHtml(tool.name || tool.id)}</span></div>
+      <div class="sja-kv-row"><b>Job Path</b><span class="sj-mono">${escHtml(tool.job_path || '')}</span></div>
+      <div class="sja-kv-row"><b>Params</b><span>— (ไม่มี parameter)</span></div>` : '';
+    $('sja-server-kv').innerHTML = srvRows + toolRows || '<div class="sj-empty">ไม่พบ config</div>';
+  }
+
+  // ── Admin actions ──────────────────────────────────────────────────────────
+  $('sja-user-add').addEventListener('click', async () => {
+    const username = $('sja-user-username').value.trim();
+    const email = $('sja-user-email').value.trim();
+    if (!username || !email) { Toast.error('กรุณากรอก username และ email'); return; }
+    const res = await API.post('/so-jenkins/', {
+      action: 'create_user', username, email, soj_role: $('sja-user-role').value,
+    });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'สร้างไม่สำเร็จ'); return; }
+    Toast.success(`สร้างผู้ใช้สำเร็จ — รหัสผ่านชั่วคราว: ${res.data.data.temp_password}`);
+    $('sja-user-username').value = '';
+    $('sja-user-email').value = '';
+    await reloadAll();
+  });
+
+  async function promoteUser(id) {
+    const u = state.users.find(x => x.id === id);
+    if (!u) return;
+    const res = await API.post('/so-jenkins/', { action: 'update_user', user_id: id, soj_role: u.soj_role === 'admin' ? 'user' : 'admin' });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'อัปเดตไม่สำเร็จ'); return; }
+    Toast.success('เปลี่ยน Role เรียบร้อย');
+    await reloadAll();
+  }
+
+  async function resetPw(id) {
+    if (!await confirmDialog('ผู้ใช้จะต้องใช้รหัสผ่านชั่วคราวในการ login ครั้งต่อไป', 'รีเซ็ตรหัสผ่าน?',
+      { variant: 'primary', confirmText: 'รีเซ็ต', cancelText: 'ยกเลิก' })) return;
+    const res = await API.post('/so-jenkins/', { action: 'reset_password', user_id: id });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'รีเซ็ตไม่สำเร็จ'); return; }
+    Toast.success(`รหัสผ่านชั่วคราวใหม่: ${res.data.data.temp_password}`);
+    await reloadAll();
+  }
+
+  async function unlockUser(id) {
+    const res = await API.post('/so-jenkins/', { action: 'unlock_user', user_id: id });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'ปลดล็อคไม่สำเร็จ'); return; }
+    Toast.success('ปลดล็อคเรียบร้อย');
+    await reloadAll();
+  }
+
+  async function deleteUser(id) {
+    if (!await confirmDialog('ผู้ใช้จะถูกลบออกจาก SO Jenkins อย่างถาวร', 'ลบผู้ใช้?',
+      { confirmText: 'ลบ', cancelText: 'ยกเลิก' })) return;
+    const res = await API.post('/so-jenkins/', { action: 'delete_user', user_id: id });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'ลบไม่สำเร็จ'); return; }
+    Toast.success('ลบผู้ใช้เรียบร้อย');
+    await reloadAll();
+  }
+
+  // ── History controls (merged from old Logs panel) ──────────────────────────
+  $('sj-hist-filter').addEventListener('change', e => { state.histFilter = e.target.value; renderHistory(); });
+  $('sj-hist-search').addEventListener('input',  e => { state.histSearch = e.target.value; renderHistory(); });
+  $('sj-hist-clear').addEventListener('click', async () => {
+    if (!await confirmDialog('ประวัติทั้งหมดจะถูกลบถาวร ไม่สามารถกู้คืนได้', 'ล้างประวัติทั้งหมด?',
+      { confirmText: 'ล้าง', cancelText: 'ยกเลิก' })) return;
+    const res = await API.post('/so-jenkins/', { action: 'clear_history' });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'ล้างไม่สำเร็จ'); return; }
+    Toast.success('ล้างประวัติเรียบร้อย');
+    await loadHistory();
+  });
+  $('sj-hist-export').addEventListener('click', () => {
+    const rows = state.history.map(h => [h.build_id || '', h.ts || h.timestamp || '', h.status || '', h.result || '', h.user_name || h.username || '', h.duration ? fmtDuration(h.duration) : '']);
+    const csv = '\uFEFF' + ['Build #,Time,Status,Result,Triggered By,Duration', ...rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','))].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'so-jenkins-history.csv';
+    a.click();
+  });
+
+  // ── Header buttons ─────────────────────────────────────────────────────────
+  $('sj-btn-history').addEventListener('click', () => openPanel('history'));
+  $('sj-btn-admin').addEventListener('click',   () => openPanel('admin'));
+
+  $('sj-refresh-btn').addEventListener('click', async () => {
+    await Promise.all([loadHistory(), loadStatus()]);
+    Toast.success('อัปเดตแล้ว');
+  });
+
+  // ── Progress modal ─────────────────────────────────────────────────────────
+  function openProgress(queueId) {
+    const tool = state.tools.find(t => t.id === state.toolId);
+    if (!tool) return;
+    const modal = $('sj-progress-modal');
+    $('sj-modal-title').textContent = 'Executing Pipeline';
+    $('sj-modal-status').textContent = 'Waiting in Jenkins queue...';
+    $('sj-progress-bar').style.width = '0%';
+    $('sj-progress-pct').textContent = '0%';
+    $('sj-modal-result').style.display = 'none';
+    $('sj-modal-close').style.display = 'none';
+    modal.style.display = 'flex';
+
+    let tries = 0;
+    const poll = async () => {
+      tries++;
+      const res = await API.get(`/so-jenkins/?action=status&tool_id=${encodeURIComponent(tool.id)}&queue_id=${encodeURIComponent(queueId)}`);
+      if (!res?.ok) { $('sj-modal-status').textContent = 'Error polling status'; return; }
+      const st = res.data.data || {};
+      $('sj-progress-bar').style.width = (st.progress || 0) + '%';
+      $('sj-progress-pct').textContent = (st.progress || 0) + '%';
+      if (st.status === 'Finished') {
+        $('sj-modal-status').textContent = 'Build completed.';
+        $('sj-modal-title').textContent = 'Pipeline Finished';
+        const result = (st.result || 'UNKNOWN').toUpperCase();
+        const el = $('sj-modal-result');
+        el.textContent = 'STATUS: ' + result;
+        el.className = 'sj-modal-result ' + (result === 'SUCCESS' ? 'ok' : result === 'FAILURE' ? 'bad' : 'mid');
+        el.style.display = 'block';
+        $('sj-progress-bar').style.width = '100%';
+        $('sj-progress-pct').textContent = '100%';
+        $('sj-modal-close').style.display = '';
+        await loadHistory();
+        return;
+      }
+      if (st.status === 'Building') $('sj-modal-status').textContent = 'Processing pipeline steps...';
+      if (st.status === 'In Queue') $('sj-modal-status').textContent = 'Waiting in Jenkins queue...';
+      if (st.status === 'Unknown' && tries > 40) {
+        $('sj-modal-status').textContent = 'ไม่สามารถติดตามสถานะได้ (Jenkins queue หมดอายุ) — ตรวจใน History';
+        $('sj-modal-close').style.display = '';
+        return;
+      }
+      setTimeout(poll, 1500);
+    };
+    poll();
+  }
+
+  $('sj-modal-close').addEventListener('click', () => { $('sj-progress-modal').style.display = 'none'; });
+
+  // ── Misc ───────────────────────────────────────────────────────────────────
+  function fmtTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  async function reloadAll() {
+    await Promise.all([loadConfig(), loadHistory()]);
+    if (state.canAdmin) {
+      const uRes = await API.get('/so-jenkins/?users=1');
+      if (uRes?.ok) state.users = (uRes.data.data || {}).users || [];
+      if (state.panel === 'admin') renderUsers();
+    }
+  }
+
+  (async function init() {
+    try {
+      await reloadAll();
+      $('sj-loading').style.display = 'none';
+      $('sj-body').style.display = '';
+      // Default view = Trigger form (already visible); panels hidden.
+      backToTrigger();
+      // Non-blocking Jenkins reachability check (upstream may take ~30s to time out).
+      loadStatus();
+    } catch (e) {
+      $('sj-loading').textContent = e.message;
+    }
+    setInterval(loadHistory, 30_000);
+  })();
+</script>
+</body>
+</html>

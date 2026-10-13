@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Service Performance — Layout Mockups</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/ui-themes.css">
+<style>
+  /* ==== Mockup harness ==== */
+  body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .mock-topbar {
+    position:sticky; top:0; z-index:50;
+    background:var(--bg-card); border-bottom:1px solid var(--border);
+    padding:10px 20px; display:flex; align-items:center; gap:16px;
+  }
+  .mock-topbar h1 { margin:0; font-size:14px; font-weight:700; letter-spacing:-.01em; }
+  .mock-tabs { display:flex; gap:4px; margin-left:auto; }
+  .mock-tab {
+    padding:7px 14px; border-radius:8px; border:1px solid var(--border);
+    background:transparent; color:var(--text-muted); font-size:12px; font-weight:600;
+    cursor:pointer; transition:all .15s;
+  }
+  .mock-tab:hover { background:var(--bg-subtle); color:var(--text); }
+  .mock-tab.on { background:var(--brand); color:#fff; border-color:var(--brand); }
+  .mock-note {
+    margin-left:12px; font-size:11px; color:var(--text-muted);
+    padding:4px 10px; border-radius:4px; background:var(--bg-subtle);
+  }
+  .mock-panel { display:none; padding:16px 20px 60px; }
+  .mock-panel.on { display:block; }
+
+  /* ==== Shared card primitives ==== */
+  :root {
+    --sp-hot: #ef4444; --sp-warn: #f59e0b; --sp-ok: #10b981;
+    --sp-cool: #6366f1; --sp-emerald: #10b981; --sp-violet: #8b5cf6;
+    --sp-text-soft: color-mix(in srgb, var(--text) 55%, transparent);
+  }
+  .m-card {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; display:flex; flex-direction:column; gap:8px;
+    box-shadow:0 1px 2px rgba(0,0,0,.04);
+  }
+  .m-card-head { display:flex; align-items:baseline; gap:8px; }
+  .m-card-title {
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
+    font-weight:700; color:var(--text-muted);
+  }
+  .m-card-now { margin-left:auto; font-size:18px; font-weight:700; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
+  .m-card-now.hot  { color:var(--sp-hot); }
+  .m-card-now.warn { color:var(--sp-warn); }
+  .m-card-now.ok   { color:var(--sp-ok); }
+  .m-card-sub { font-size:11px; color:var(--sp-text-soft); }
+
+  .m-spark { width:100%; height:60px; display:block; }
+  .m-spark-tall { width:100%; height:120px; display:block; }
+  .m-bar {
+    height:6px; border-radius:3px; background:var(--bg-subtle); overflow:hidden; position:relative;
+  }
+  .m-bar > span { position:absolute; left:0; top:0; bottom:0; border-radius:3px; }
+  .m-bar-ok   > span { background:var(--sp-ok); }
+  .m-bar-warn > span { background:var(--sp-warn); }
+  .m-bar-hot  > span { background:var(--sp-hot); }
+  .m-pill {
+    display:inline-flex; align-items:center; gap:5px;
+    padding:2px 8px; border-radius:10px; font-size:10.5px; font-weight:600;
+    background:var(--bg-subtle); color:var(--text-muted);
+  }
+  .m-pill.ok   { background:color-mix(in srgb, var(--sp-ok)   15%, transparent); color:var(--sp-ok); }
+  .m-pill.warn { background:color-mix(in srgb, var(--sp-warn) 15%, transparent); color:var(--sp-warn); }
+  .m-pill.hot  { background:color-mix(in srgb, var(--sp-hot)  15%, transparent); color:var(--sp-hot); }
+  .m-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+  /* Service header (shared across all layouts) */
+  .m-hero {
+    display:flex; align-items:center; gap:16px; padding:14px 18px;
+    background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+    margin-bottom:14px;
+  }
+  .m-hero-pulse {
+    width:12px; height:12px; border-radius:50%; background:var(--sp-ok);
+    box-shadow:0 0 0 4px color-mix(in srgb, var(--sp-ok) 25%, transparent);
+    animation:pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.5 } }
+  .m-hero-title { font-size:18px; font-weight:700; letter-spacing:-.01em; }
+  .m-hero-meta  { font-size:11.5px; color:var(--text-muted); display:flex; gap:12px; margin-top:2px; }
+  .m-hero-meta code { font-family:ui-monospace,SFMono-Regular,monospace; color:var(--text); }
+  .m-hero-actions { margin-left:auto; display:flex; gap:8px; }
+  .m-btn {
+    padding:6px 12px; border-radius:8px; border:1px solid var(--border);
+    background:var(--bg-card); color:var(--text); font-size:12px; font-weight:600;
+    cursor:pointer;
+  }
+  .m-btn.primary { background:var(--brand); color:#fff; border-color:var(--brand); }
+
+  /* Range picker (shared) */
+  .m-range {
+    display:flex; align-items:center; gap:6px; padding:8px 14px;
+    background:var(--bg-card); border:1px solid var(--border); border-radius:10px;
+    margin-bottom:14px;
+  }
+  .m-range-lbl { font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); font-weight:700; margin-right:4px; }
+  .m-range-btn {
+    padding:4px 10px; border-radius:6px; border:none; background:transparent;
+    color:var(--text-muted); font-size:11px; font-weight:600; cursor:pointer;
+  }
+  .m-range-btn.on { background:var(--brand); color:#fff; }
+  .m-range-btn:hover:not(.on) { background:var(--bg-subtle); color:var(--text); }
+
+  /* ==== Layout A: Dense grid (Datadog-style) ==== */
+  .la-nav {
+    position:sticky; top:60px; z-index:5;
+    display:flex; gap:2px; padding:8px 10px;
+    background:color-mix(in srgb, var(--bg-card) 92%, transparent);
+    backdrop-filter:blur(8px); border:1px solid var(--border); border-radius:10px;
+    margin-bottom:14px; overflow-x:auto;
+  }
+  .la-nav a {
+    padding:6px 12px; border-radius:6px; font-size:11.5px; font-weight:600;
+    color:var(--text-muted); text-decoration:none; white-space:nowrap;
+  }
+  .la-nav a:hover { background:var(--bg-subtle); color:var(--text); }
+  .la-nav a.active { background:var(--brand); color:#fff; }
+  .la-section {
+    margin-bottom:18px;
+  }
+  .la-section-hd {
+    display:flex; align-items:center; gap:10px; margin-bottom:8px;
+    padding-bottom:6px; border-bottom:1px solid var(--border);
+  }
+  .la-section-hd h3 {
+    margin:0; font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+    font-weight:700; color:var(--text);
+  }
+  .la-section-hd .m-pill { margin-left:auto; }
+  .la-grid-4 { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; }
+  .la-grid-3 { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+  .la-grid-2 { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
+  @media (max-width:1200px) {
+    .la-grid-4 { grid-template-columns:repeat(2, 1fr); }
+    .la-grid-3 { grid-template-columns:repeat(2, 1fr); }
+  }
+
+  /* ==== Layout B: Section-collapse (Notion-style) ==== */
+  .lb-section {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+    margin-bottom:10px; overflow:hidden;
+  }
+  .lb-section-hd {
+    display:flex; align-items:center; gap:12px; padding:12px 16px;
+    cursor:pointer; user-select:none;
+  }
+  .lb-section-hd:hover { background:var(--bg-subtle); }
+  .lb-section-hd .arrow {
+    width:14px; height:14px; transition:transform .2s;
+    color:var(--text-muted);
+  }
+  .lb-section.collapsed .arrow { transform:rotate(-90deg); }
+  .lb-section.collapsed .lb-section-body { display:none; }
+  .lb-section-title { font-size:12.5px; font-weight:700; letter-spacing:-.005em; }
+  .lb-section-summary {
+    margin-left:auto; display:flex; gap:10px; align-items:center;
+    font-size:11px; color:var(--text-muted); font-variant-numeric:tabular-nums;
+  }
+  .lb-section-body {
+    padding:0 16px 16px; display:grid; gap:10px;
+  }
+
+  /* ==== Layout C: Command-center strip + drawer ==== */
+  .lc-cc {
+    display:grid; grid-template-columns:280px 1fr 280px; gap:12px; margin-bottom:14px;
+  }
+  @media (max-width:1100px) { .lc-cc { grid-template-columns:1fr; } }
+  .lc-chip-row {
+    display:grid; grid-template-columns:repeat(6, 1fr); gap:8px; margin-bottom:14px;
+  }
+  @media (max-width:1200px) { .lc-chip-row { grid-template-columns:repeat(3, 1fr); } }
+  @media (max-width:700px)  { .lc-chip-row { grid-template-columns:repeat(2, 1fr); } }
+  .lc-chip {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:10px;
+    padding:10px 12px; cursor:pointer; transition:all .15s;
+    display:flex; flex-direction:column; gap:4px;
+  }
+  .lc-chip:hover { border-color:var(--brand); box-shadow:0 4px 12px color-mix(in srgb, var(--brand) 15%, transparent); transform:translateY(-1px); }
+  .lc-chip-hd { display:flex; align-items:center; gap:6px; }
+  .lc-chip-name { font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; color:var(--text-muted); }
+  .lc-chip-val { font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; margin-top:2px; }
+  .lc-chip-sub { font-size:10.5px; color:var(--sp-text-soft); }
+  .lc-chip-spark { width:100%; height:24px; margin-top:4px; }
+
+  /* Drawer */
+  .lc-drawer {
+    position:fixed; right:0; top:0; bottom:0; width:560px; max-width:95vw;
+    background:var(--bg-card); border-left:1px solid var(--border);
+    box-shadow:-8px 0 24px rgba(0,0,0,.15);
+    transform:translateX(100%); transition:transform .25s ease-out;
+    display:flex; flex-direction:column; z-index:60;
+  }
+  .lc-drawer.on { transform:translateX(0); }
+  .lc-drawer-hd { padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+  .lc-drawer-hd h3 { margin:0; font-size:14px; font-weight:700; }
+  .lc-drawer-close { margin-left:auto; padding:4px 10px; background:transparent; border:1px solid var(--border); border-radius:6px; cursor:pointer; color:var(--text); font-size:11px; }
+  .lc-drawer-body { flex:1; overflow-y:auto; padding:16px 18px; display:flex; flex-direction:column; gap:12px; }
+
+  /* Deps mini graph */
+  .deps-mini { display:grid; grid-template-columns:1fr auto 1fr; gap:12px; align-items:center; font-size:11px; }
+  .deps-col { display:flex; flex-direction:column; gap:6px; }
+  .deps-node {
+    padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    display:flex; align-items:center; gap:8px; font-size:11px;
+  }
+  .deps-node .n-name { flex:1; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .deps-node .n-rate { color:var(--text-muted); font-variant-numeric:tabular-nums; }
+  .deps-node .n-lat  { color:var(--sp-text-soft); font-size:10px; }
+  .deps-center {
+    padding:12px 16px; background:var(--brand); color:#fff;
+    border-radius:10px; text-align:center; font-weight:700; font-size:12px;
+  }
+
+  /* Endpoint mini table */
+  .ep-tbl { width:100%; font-size:11px; border-collapse:collapse; }
+  .ep-tbl th, .ep-tbl td { padding:5px 8px; text-align:left; border-bottom:1px solid var(--border); }
+  .ep-tbl th { font-weight:700; text-transform:uppercase; letter-spacing:.05em; font-size:10px; color:var(--text-muted); }
+  .ep-tbl td.right { text-align:right; font-variant-numeric:tabular-nums; }
+  .ep-method { display:inline-block; padding:1px 6px; border-radius:3px; font-size:9px; font-weight:700; }
+  .ep-method.get  { background:#e0f2fe; color:#0369a1; }
+  .ep-method.post { background:#dcfce7; color:#166534; }
+
+  /* Per-pod mini grid */
+  .pods-mini { display:grid; grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); gap:6px; }
+  .pod-cell {
+    padding:6px; border:1px solid var(--border); border-radius:6px;
+    font-size:10px; display:flex; flex-direction:column; gap:3px;
+  }
+  .pod-cell .p-name { font-family:ui-monospace,monospace; font-size:9px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pod-cell .p-cpu, .pod-cell .p-mem { display:flex; gap:4px; align-items:center; font-variant-numeric:tabular-nums; }
+
+  .disclaimer {
+    padding:10px 14px; margin-bottom:12px; border-radius:8px;
+    background:color-mix(in srgb, var(--sp-warn) 8%, transparent);
+    border:1px solid color-mix(in srgb, var(--sp-warn) 25%, transparent);
+    font-size:11.5px; color:var(--text);
+  }
+</style>
+</head>
+<body>
+
+<div class="mock-topbar">
+  <h1>Service Performance — Layout Mockups</h1>
+  <span class="mock-note">ตัวอย่าง UI (dummy data) — เปรียบเทียบ 3 แนวก่อนตัดสินใจ</span>
+  <div class="mock-tabs">
+    <button class="mock-tab on" data-target="pA">A · Dense grid</button>
+    <button class="mock-tab" data-target="pB">B · Section-collapse</button>
+    <button class="mock-tab" data-target="pC">C · CC + drawer</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- LAYOUT A: Dense grid (Datadog-style)                         -->
+<!-- ============================================================ -->
+<div class="mock-panel on" id="pA">
+
+  <div class="disclaimer">
+    <b>Layout A · Dense grid.</b> ทุก subsystem โผล่ครบเป็นการ์ดเล็กเรียงเป็นแถว. Sticky mini-nav ด้านบนช่วยกระโดดไปแต่ละหมวด. เหมาะกับจอ 24"+ / 27"+ / multi-monitor เพราะข้อมูลอัดแน่น. บนจอ 13" จะต้อง scroll เยอะ.
+  </div>
+
+  <div class="m-hero">
+    <div class="m-hero-pulse"></div>
+    <div>
+      <div class="m-hero-title">payment-service</div>
+      <div class="m-hero-meta">
+        <span><code>ns:prod</code></span>
+        <span><code>cluster:tha-1</code></span>
+        <span>8 pods running · v2.14.3</span>
+      </div>
+    </div>
+    <div class="m-hero-actions">
+      <button class="m-btn">Grafana</button>
+      <button class="m-btn">Logs</button>
+      <button class="m-btn primary">Actions</button>
+    </div>
+  </div>
+
+  <div class="m-range">
+    <span class="m-range-lbl">Range</span>
+    <button class="m-range-btn">15m</button>
+    <button class="m-range-btn on">30m</button>
+    <button class="m-range-btn">1h</button>
+    <button class="m-range-btn">6h</button>
+    <button class="m-range-btn">24h</button>
+    <button class="m-range-btn">3d</button>
+    <button class="m-range-btn">7d</button>
+    <button class="m-range-btn">30d</button>
+    <button class="m-range-btn" style="margin-left:auto">Custom…</button>
+  </div>
+
+  <nav class="la-nav">
+    <a class="active" href="#a-overview">Overview</a>
+    <a href="#a-db">DB Pool</a>
+    <a href="#a-tomcat">Tomcat</a>
+    <a href="#a-runtime">Runtime</a>
+    <a href="#a-trx">Transaction</a>
+    <a href="#a-deps">Dependencies</a>
+    <a href="#a-endpoints">API Endpoints</a>
+    <a href="#a-pods">Per Pod (14)</a>
+  </nav>
+
+  <!-- Overview -->
+  <section class="la-section" id="a-overview">
+    <div class="la-section-hd"><h3>Overview</h3><span class="m-pill ok"><span class="m-dot" style="background:var(--sp-ok)"></span> healthy</span></div>
+    <div class="la-grid-4">
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">CPU avg/pod</span><span class="m-card-now">314m</span></div>
+        <svg class="m-spark" viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0,45 L20,40 L40,42 L60,35 L80,30 L100,32 L120,28 L140,25 L160,30 L180,20 L200,22" fill="none" stroke="var(--sp-violet)" stroke-width="1.5"/><path d="M0,50 L20,42 L40,45 L60,38 L80,32 L100,35 L120,30 L140,28 L160,32 L180,22 L200,24 L200,60 L0,60 Z" fill="var(--sp-violet)" fill-opacity=".13"/></svg>
+        <div class="m-card-sub">8.7% of 3.60 cores limit · min 210m · max 480m</div>
+      </div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">MEM avg/pod</span><span class="m-card-now">2.62 GB</span></div>
+        <svg class="m-spark" viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0,30 L20,28 L40,30 L60,26 L80,25 L100,24 L120,22 L140,20 L160,22 L180,18 L200,20" fill="none" stroke="var(--sp-emerald)" stroke-width="1.5"/></svg>
+        <div class="m-card-sub">65.4% of 4 GB · min 2.1 GB · max 3.3 GB</div>
+      </div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">Pods running</span><span class="m-card-now ok">8/8</span></div>
+        <div style="display:flex; gap:3px; margin:6px 0;">
+          <span class="m-dot" style="background:var(--sp-ok)"></span><span class="m-dot" style="background:var(--sp-ok)"></span><span class="m-dot" style="background:var(--sp-ok)"></span><span class="m-dot" style="background:var(--sp-ok)"></span><span class="m-dot" style="background:var(--sp-ok)"></span><span class="m-dot" style="background:var(--sp-ok)"></span><span class="m-dot" style="background:var(--sp-ok)"></span><span class="m-dot" style="background:var(--sp-ok)"></span>
+        </div>
+        <div class="m-card-sub">all ready · 0 restarts in 24h</div>
+      </div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">JVM Heap</span><span class="m-card-now warn">62%</span></div>
+        <div class="m-bar m-bar-warn"><span style="width:62%"></span></div>
+        <div class="m-card-sub">1.55 GB / 2.5 GB · GC 4.2/s · pause 12ms</div>
+      </div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">TXN rate</span><span class="m-card-now">42 req/s</span></div>
+        <svg class="m-spark" viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0,30 L20,35 L40,25 L60,20 L80,25 L100,15 L120,22 L140,18 L160,28 L180,15 L200,20" fill="none" stroke="var(--sp-violet)" stroke-width="1.5"/></svg>
+        <div class="m-card-sub">peak 68/s · error 0.02%</div>
+      </div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">Avg latency</span><span class="m-card-now ok">124 ms</span></div>
+        <svg class="m-spark" viewBox="0 0 200 60" preserveAspectRatio="none">
+          <path d="M0,25 L20,28 L40,22 L60,20 L80,30 L100,25 L120,22 L140,20 L160,28 L180,15 L200,20" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+          <path d="M0,10 L20,12 L40,8 L60,6 L80,15 L100,10 L120,8 L140,6 L160,12 L180,4 L200,6" fill="none" stroke="var(--sp-hot)" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>
+        </svg>
+        <div class="m-card-sub">p95 <b style="color:var(--sp-hot)">340 ms</b> · p99 620 ms</div>
+      </div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">Error rate</span><span class="m-card-now ok">0.02%</span></div>
+        <svg class="m-spark" viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0,55 L20,54 L40,55 L60,50 L80,55 L100,53 L120,55 L140,55 L160,52 L180,55 L200,54" fill="none" stroke="var(--sp-ok)" stroke-width="1.5"/></svg>
+        <div class="m-card-sub">4xx 0.1% · 5xx 0.02% · timeouts 0</div>
+      </div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">Restarts</span><span class="m-card-now ok">0</span></div>
+        <div style="height:60px; display:flex; align-items:center; justify-content:center; color:var(--sp-text-soft); font-size:11px;">no restarts in window</div>
+        <div class="m-card-sub">last restart: 3d ago (deploy)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DB Pool -->
+  <section class="la-section" id="a-db">
+    <div class="la-section-hd"><h3>DB Pool (HikariCP)</h3><span class="m-pill ok">healthy</span></div>
+    <div class="la-grid-4">
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">Active</span><span class="m-card-now">3</span></div>
+        <div class="m-bar m-bar-ok"><span style="width:15%"></span></div>
+        <div class="m-card-sub">3 / 20 max · peak 8</div>
+      </div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">Idle</span><span class="m-card-now">17</span></div>
+        <div class="m-bar m-bar-ok"><span style="width:85%"></span></div>
+        <div class="m-card-sub">healthy reserve</div>
+      </div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">Waiting</span><span class="m-card-now ok">0</span></div>
+        <div style="height:6px"></div>
+        <div class="m-card-sub">no threads blocked</div>
+      </div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">Acquire p95</span><span class="m-card-now">2.1 ms</span></div>
+        <svg class="m-spark" viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0,50 L200,48" fill="none" stroke="var(--sp-cool)" stroke-width="1.5"/></svg>
+        <div class="m-card-sub">max 8 ms · median 0.4 ms</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tomcat + Runtime + Transaction (3-up) -->
+  <div class="la-grid-3">
+    <section class="la-section" id="a-tomcat" style="margin-bottom:0">
+      <div class="la-section-hd"><h3>Tomcat</h3><span class="m-pill ok">2% busy</span></div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">Threads busy</span><span class="m-card-now">4/200</span></div>
+        <svg class="m-spark-tall" viewBox="0 0 200 120" preserveAspectRatio="none"><path d="M0,100 L20,95 L40,110 L60,90 L80,85 L100,100 L120,80 L140,75 L160,90 L180,70 L200,85" fill="none" stroke="var(--sp-cool)" stroke-width="1.5"/></svg>
+        <div class="m-card-sub">queue 0 · rejected 0 · error 0.02%</div>
+      </div>
+    </section>
+    <section class="la-section" id="a-runtime" style="margin-bottom:0">
+      <div class="la-section-hd"><h3>Runtime (JVM)</h3><span class="m-pill">41 threads</span></div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">GC pause</span><span class="m-card-now">12 ms</span></div>
+        <svg class="m-spark-tall" viewBox="0 0 200 120" preserveAspectRatio="none"><path d="M0,105 L20,100 L40,90 L60,105 L80,95 L100,90 L120,100 L140,85 L160,90 L180,95 L200,88" fill="none" stroke="var(--sp-warn)" stroke-width="1.5"/></svg>
+        <div class="m-card-sub">young 4.2/s · old 0.1/s · load 1.4</div>
+      </div>
+    </section>
+    <section class="la-section" id="a-trx" style="margin-bottom:0">
+      <div class="la-section-hd"><h3>Transaction</h3><span class="m-pill ok">rollback 0</span></div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">Commits/s</span><span class="m-card-now">128</span></div>
+        <svg class="m-spark-tall" viewBox="0 0 200 120" preserveAspectRatio="none"><path d="M0,70 L20,60 L40,55 L60,50 L80,60 L100,45 L120,50 L140,40 L160,55 L180,35 L200,45" fill="none" stroke="var(--sp-emerald)" stroke-width="1.5"/></svg>
+        <div class="m-card-sub">open 2 · duration p95 45 ms · rb 0</div>
+      </div>
+    </section>
+  </div>
+
+  <div style="height:18px"></div>
+
+  <!-- Dependencies + Endpoints (2-up) -->
+  <div class="la-grid-2">
+    <section class="la-section" id="a-deps" style="margin-bottom:0">
+      <div class="la-section-hd"><h3>Dependencies</h3><span class="m-pill">7 up · 4 down</span></div>
+      <div class="m-card">
+        <div class="deps-mini">
+          <div class="deps-col">
+            <div class="deps-node"><span class="m-dot" style="background:var(--sp-cool)"></span><span class="n-name">gateway</span><span class="n-rate">28/s</span><span class="n-lat">45ms</span></div>
+            <div class="deps-node"><span class="m-dot" style="background:var(--sp-cool)"></span><span class="n-name">web-api</span><span class="n-rate">10/s</span><span class="n-lat">62ms</span></div>
+            <div class="deps-node"><span class="m-dot" style="background:var(--sp-cool)"></span><span class="n-name">batch-runner</span><span class="n-rate">4/s</span><span class="n-lat">120ms</span></div>
+          </div>
+          <div class="deps-center">payment<br>service</div>
+          <div class="deps-col">
+            <div class="deps-node"><span class="m-dot" style="background:var(--sp-emerald)"></span><span class="n-name">auth-svc</span><span class="n-rate">42/s</span><span class="n-lat">18ms</span></div>
+            <div class="deps-node"><span class="m-dot" style="background:var(--sp-hot)"></span><span class="n-name">ledger-svc</span><span class="n-rate">42/s</span><span class="n-lat" style="color:var(--sp-hot);font-weight:600">890ms</span></div>
+            <div class="deps-node"><span class="m-dot" style="background:#f59e0b"></span><span class="n-name">redis-cache</span><span class="n-rate">180/s</span><span class="n-lat">2ms</span></div>
+            <div class="deps-node"><span class="m-dot" style="background:#f59e0b"></span><span class="n-name">mongo-txn</span><span class="n-rate">128/s</span><span class="n-lat">8ms</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="la-section" id="a-endpoints" style="margin-bottom:0">
+      <div class="la-section-hd"><h3>API Endpoints — top 6</h3><span class="m-pill">24 total</span></div>
+      <div class="m-card" style="padding:0; overflow:hidden;">
+        <table class="ep-tbl">
+          <thead><tr><th>Method</th><th>URI</th><th class="right">r/s</th><th class="right">p95</th><th class="right">err</th></tr></thead>
+          <tbody>
+            <tr><td><span class="ep-method post">POST</span></td><td>/v1/payments</td><td class="right">18.2</td><td class="right">340ms</td><td class="right">0.03%</td></tr>
+            <tr><td><span class="ep-method get">GET</span></td><td>/v1/payments/{id}</td><td class="right">12.1</td><td class="right">92ms</td><td class="right">0%</td></tr>
+            <tr><td><span class="ep-method post">POST</span></td><td>/v1/refunds</td><td class="right">4.3</td><td class="right">520ms</td><td class="right"><b style="color:var(--sp-warn)">1.2%</b></td></tr>
+            <tr><td><span class="ep-method get">GET</span></td><td>/v1/balances</td><td class="right">3.5</td><td class="right">45ms</td><td class="right">0%</td></tr>
+            <tr><td><span class="ep-method get">GET</span></td><td>/actuator/health</td><td class="right">2.0</td><td class="right">8ms</td><td class="right">0%</td></tr>
+            <tr><td><span class="ep-method post">POST</span></td><td>/v1/vouchers</td><td class="right">1.9</td><td class="right">180ms</td><td class="right">0.5%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div style="height:18px"></div>
+
+  <!-- Per pod -->
+  <section class="la-section" id="a-pods">
+    <div class="la-section-hd"><h3>Per Pod</h3><span class="m-pill">14 pods · click for detail</span></div>
+    <div class="m-card">
+      <div class="pods-mini">
+        <div class="pod-cell"><div class="p-name">pmt-svc-abc12</div><div class="p-cpu"><span class="m-dot" style="background:var(--sp-violet)"></span> 312m</div><div class="p-mem"><span class="m-dot" style="background:var(--sp-emerald)"></span> 2.6G</div></div>
+        <div class="pod-cell"><div class="p-name">pmt-svc-def34</div><div class="p-cpu"><span class="m-dot" style="background:var(--sp-violet)"></span> 298m</div><div class="p-mem"><span class="m-dot" style="background:var(--sp-emerald)"></span> 2.4G</div></div>
+        <div class="pod-cell"><div class="p-name">pmt-svc-ghi56</div><div class="p-cpu"><span class="m-dot" style="background:var(--sp-hot)"></span> 480m</div><div class="p-mem"><span class="m-dot" style="background:var(--sp-emerald)"></span> 3.3G</div></div>
+        <div class="pod-cell"><div class="p-name">pmt-svc-jkl78</div><div class="p-cpu"><span class="m-dot" style="background:var(--sp-violet)"></span> 305m</div><div class="p-mem"><span class="m-dot" style="background:var(--sp-emerald)"></span> 2.5G</div></div>
+        <div class="pod-cell"><div class="p-name">pmt-svc-mno90</div><div class="p-cpu"><span class="m-dot" style="background:var(--sp-violet)"></span> 210m</div><div class="p-mem"><span class="m-dot" style="background:var(--sp-emerald)"></span> 2.1G</div></div>
+        <div class="pod-cell"><div class="p-name">pmt-svc-pqr12</div><div class="p-cpu"><span class="m-dot" style="background:var(--sp-violet)"></span> 340m</div><div class="p-mem"><span class="m-dot" style="background:var(--sp-emerald)"></span> 2.7G</div></div>
+        <div class="pod-cell"><div class="p-name">pmt-svc-stu34</div><div class="p-cpu"><span class="m-dot" style="background:var(--sp-violet)"></span> 290m</div><div class="p-mem"><span class="m-dot" style="background:var(--sp-emerald)"></span> 2.5G</div></div>
+        <div class="pod-cell"><div class="p-name">pmt-svc-vwx56</div><div class="p-cpu"><span class="m-dot" style="background:var(--sp-violet)"></span> 315m</div><div class="p-mem"><span class="m-dot" style="background:var(--sp-emerald)"></span> 2.6G</div></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- LAYOUT B: Section-collapse (Notion-style)                    -->
+<!-- ============================================================ -->
+<div class="mock-panel" id="pB">
+
+  <div class="disclaimer">
+    <b>Layout B · Section-collapse.</b> ทุก subsystem เป็น section ที่คลิกกางได้ (พร้อม summary ในหัวขวา). โหลด default = กาง Overview + DB Pool + Tomcat. Section ที่พับอยู่ก็ยังยิง API เพื่อ update summary. เหมาะกับคนที่ไม่ชอบ scroll ยาว.
+  </div>
+
+  <div class="m-hero">
+    <div class="m-hero-pulse"></div>
+    <div>
+      <div class="m-hero-title">payment-service</div>
+      <div class="m-hero-meta"><span><code>ns:prod</code></span><span><code>cluster:tha-1</code></span><span>8 pods · v2.14.3</span></div>
+    </div>
+    <div class="m-hero-actions"><button class="m-btn">Grafana</button><button class="m-btn primary">Actions</button></div>
+  </div>
+
+  <div class="m-range">
+    <span class="m-range-lbl">Range</span>
+    <button class="m-range-btn">15m</button><button class="m-range-btn on">30m</button><button class="m-range-btn">1h</button><button class="m-range-btn">6h</button><button class="m-range-btn">24h</button>
+    <button class="m-range-btn" style="margin-left:auto">Expand all</button>
+    <button class="m-range-btn">Collapse all</button>
+  </div>
+
+  <!-- Overview (expanded) -->
+  <div class="lb-section">
+    <div class="lb-section-hd" onclick="toggleSection(this)">
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      <span class="lb-section-title">Overview</span>
+      <div class="lb-section-summary">
+        <span class="m-pill ok">healthy</span>
+        <span>CPU 8.7% · MEM 65.4% · lat 124ms</span>
+      </div>
+    </div>
+    <div class="lb-section-body">
+      <div class="la-grid-4">
+        <div class="m-card"><div class="m-card-head"><span class="m-card-title">CPU avg/pod</span><span class="m-card-now">314m</span></div><svg class="m-spark" viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0,45 L100,32 L200,22" fill="none" stroke="var(--sp-violet)" stroke-width="1.5"/></svg><div class="m-card-sub">min 210m · max 480m</div></div>
+        <div class="m-card"><div class="m-card-head"><span class="m-card-title">MEM avg/pod</span><span class="m-card-now">2.62G</span></div><svg class="m-spark" viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0,30 L100,25 L200,20" fill="none" stroke="var(--sp-emerald)" stroke-width="1.5"/></svg><div class="m-card-sub">min 2.1G · max 3.3G</div></div>
+        <div class="m-card"><div class="m-card-head"><span class="m-card-title">TXN rate</span><span class="m-card-now">42/s</span></div><svg class="m-spark" viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0,30 L100,20 L200,25" fill="none" stroke="var(--sp-violet)" stroke-width="1.5"/></svg><div class="m-card-sub">err 0.02%</div></div>
+        <div class="m-card"><div class="m-card-head"><span class="m-card-title">Latency</span><span class="m-card-now">124ms</span></div><svg class="m-spark" viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0,25 L100,20 L200,18" fill="none" stroke="#f59e0b" stroke-width="1.5"/></svg><div class="m-card-sub">p95 340ms · p99 620ms</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DB Pool (expanded) -->
+  <div class="lb-section">
+    <div class="lb-section-hd" onclick="toggleSection(this)">
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      <span class="lb-section-title">DB Pool (HikariCP)</span>
+      <div class="lb-section-summary">
+        <span>3/20 active · wait 0 · acq p95 2.1ms</span>
+        <span class="m-pill ok">healthy</span>
+      </div>
+    </div>
+    <div class="lb-section-body">
+      <div class="la-grid-4">
+        <div class="m-card"><div class="m-card-head"><span class="m-card-title">Active</span><span class="m-card-now">3</span></div><div class="m-bar m-bar-ok"><span style="width:15%"></span></div><div class="m-card-sub">3 / 20 max · peak 8</div></div>
+        <div class="m-card"><div class="m-card-head"><span class="m-card-title">Idle</span><span class="m-card-now">17</span></div><div class="m-bar m-bar-ok"><span style="width:85%"></span></div><div class="m-card-sub">healthy reserve</div></div>
+        <div class="m-card"><div class="m-card-head"><span class="m-card-title">Waiting</span><span class="m-card-now ok">0</span></div><div style="height:6px"></div><div class="m-card-sub">no threads blocked</div></div>
+        <div class="m-card"><div class="m-card-head"><span class="m-card-title">Acquire p95</span><span class="m-card-now">2.1ms</span></div><svg class="m-spark" viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0,50 L200,48" fill="none" stroke="var(--sp-cool)" stroke-width="1.5"/></svg><div class="m-card-sub">max 8ms</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tomcat (expanded) -->
+  <div class="lb-section">
+    <div class="lb-section-hd" onclick="toggleSection(this)">
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      <span class="lb-section-title">Tomcat</span>
+      <div class="lb-section-summary">
+        <span>busy 4/200 · queue 0 · rejected 0</span>
+        <span class="m-pill ok">2% busy</span>
+      </div>
+    </div>
+    <div class="lb-section-body">
+      <div class="m-card"><div class="m-card-head"><span class="m-card-title">Threads busy over time</span><span class="m-card-now">4/200</span></div><svg class="m-spark-tall" viewBox="0 0 200 120" preserveAspectRatio="none"><path d="M0,100 L100,80 L200,85" fill="none" stroke="var(--sp-cool)" stroke-width="1.5"/></svg><div class="m-card-sub">peak 12 · avg 5 · error 0.02%</div></div>
+    </div>
+  </div>
+
+  <!-- Collapsed sections (show summary only) -->
+  <div class="lb-section collapsed">
+    <div class="lb-section-hd" onclick="toggleSection(this)">
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      <span class="lb-section-title">Runtime (JVM)</span>
+      <div class="lb-section-summary"><span>41 threads · GC 4.2/s · pause 12ms</span><span class="m-pill">click to expand</span></div>
+    </div>
+    <div class="lb-section-body"><div class="m-card"><span class="m-card-sub">— content when expanded —</span></div></div>
+  </div>
+  <div class="lb-section collapsed">
+    <div class="lb-section-hd" onclick="toggleSection(this)">
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      <span class="lb-section-title">Transaction</span>
+      <div class="lb-section-summary"><span>open 2 · commit 128/s · rollback 0</span><span class="m-pill ok">healthy</span></div>
+    </div>
+    <div class="lb-section-body"><div class="m-card"><span class="m-card-sub">— content when expanded —</span></div></div>
+  </div>
+  <div class="lb-section collapsed">
+    <div class="lb-section-hd" onclick="toggleSection(this)">
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      <span class="lb-section-title">Dependencies</span>
+      <div class="lb-section-summary"><span>7 up · 4 down · <b style="color:var(--sp-hot)">ledger-svc 890ms</b></span><span class="m-pill hot">1 slow</span></div>
+    </div>
+    <div class="lb-section-body"><div class="m-card"><span class="m-card-sub">— dependency graph when expanded —</span></div></div>
+  </div>
+  <div class="lb-section collapsed">
+    <div class="lb-section-hd" onclick="toggleSection(this)">
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      <span class="lb-section-title">API Endpoints</span>
+      <div class="lb-section-summary"><span>24 routes · top /v1/payments 18/s · <b style="color:var(--sp-warn)">refunds 1.2% err</b></span><span class="m-pill">click to expand</span></div>
+    </div>
+    <div class="lb-section-body"><div class="m-card"><span class="m-card-sub">— endpoint table when expanded —</span></div></div>
+  </div>
+  <div class="lb-section collapsed">
+    <div class="lb-section-hd" onclick="toggleSection(this)">
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      <span class="lb-section-title">Per Pod</span>
+      <div class="lb-section-summary"><span>14 pods · 0 restarts · 1 hot (pmt-svc-ghi56 480m)</span><span class="m-pill warn">1 hot</span></div>
+    </div>
+    <div class="lb-section-body"><div class="m-card"><span class="m-card-sub">— per-pod detail when expanded —</span></div></div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- LAYOUT C: Command-center + drawer                            -->
+<!-- ============================================================ -->
+<div class="mock-panel" id="pC">
+
+  <div class="disclaimer">
+    <b>Layout C · Command Center + Drawer.</b> คงหน้าหลักเดิม (3-col CC). แทนที่ tab strip = แถบ "chip" ที่โชว์ค่าเด่น + sparkline mini ของแต่ละ subsystem. คลิก chip → drawer เลื่อนออกมาขวาแสดง detail แบบเต็ม โดยไม่ปิดหน้าหลัก. เหมาะกับคนที่ยังอยากเก็บ CC เป็น "single-glance overview" แต่ต้องการ drill-down ไว.
+  </div>
+
+  <div class="m-hero">
+    <div class="m-hero-pulse"></div>
+    <div>
+      <div class="m-hero-title">payment-service</div>
+      <div class="m-hero-meta"><span><code>ns:prod</code></span><span><code>cluster:tha-1</code></span><span>8 pods · v2.14.3</span></div>
+    </div>
+    <div class="m-hero-actions"><button class="m-btn">Grafana</button><button class="m-btn primary">Actions</button></div>
+  </div>
+
+  <div class="m-range">
+    <span class="m-range-lbl">Range</span>
+    <button class="m-range-btn">15m</button><button class="m-range-btn on">30m</button><button class="m-range-btn">1h</button><button class="m-range-btn">6h</button><button class="m-range-btn">24h</button>
+  </div>
+
+  <!-- Original CC (keep as-is) -->
+  <div class="lc-cc">
+    <div class="m-card">
+      <div class="m-card-title" style="margin-bottom:8px">Status</div>
+      <div style="display:flex; flex-direction:column; gap:10px; font-size:13px;">
+        <div style="display:flex; align-items:center; gap:8px;"><span class="m-dot" style="background:var(--sp-violet)"></span><span style="flex:1"><b>TXN rate</b><br><span style="color:var(--text-muted); font-size:11px">42 req/s</span></span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span class="m-dot" style="background:var(--sp-ok)"></span><span style="flex:1"><b>Latency</b><br><span style="color:var(--text-muted); font-size:11px">124ms · p95 340ms</span></span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span class="m-dot" style="background:var(--sp-violet)"></span><span style="flex:1"><b>CPU used</b><br><span style="color:var(--text-muted); font-size:11px">314m · 8.7%</span></span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span class="m-dot" style="background:var(--sp-emerald)"></span><span style="flex:1"><b>MEM used</b><br><span style="color:var(--text-muted); font-size:11px">2.62GB · 65.4%</span></span></div>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">CPU avg/pod · last 30m</span><span class="m-card-now">314m · 8.7%</span></div>
+        <svg class="m-spark-tall" viewBox="0 0 400 120" preserveAspectRatio="none">
+          <path d="M0,80 L40,90 L80,70 L120,75 L160,60 L200,65 L240,55 L280,50 L320,60 L360,45 L400,50 L400,120 L0,120 Z" fill="var(--sp-violet)" fill-opacity=".13"/>
+          <path d="M0,60 L40,70 L80,50 L120,55 L160,40 L200,45 L240,35 L280,30 L320,40 L360,25 L400,30" fill="none" stroke="var(--sp-violet)" stroke-width="1.75"/>
+          <path d="M0,105 L40,100 L80,95 L120,105 L160,90 L200,95 L240,85 L280,80 L320,90 L360,75 L400,85" fill="none" stroke="var(--sp-violet)" stroke-width="1" opacity=".4"/>
+        </svg>
+      </div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">MEM avg/pod · last 30m</span><span class="m-card-now">2.62GB · 65.4%</span></div>
+        <svg class="m-spark-tall" viewBox="0 0 400 120" preserveAspectRatio="none">
+          <path d="M0,60 L400,50" fill="none" stroke="var(--sp-emerald)" stroke-width="1.75"/>
+        </svg>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div class="m-card" style="text-align:center;">
+        <div class="m-card-title">Running pods</div>
+        <div style="font-size:40px; font-weight:800; color:var(--sp-ok); line-height:1;">8</div>
+        <div style="color:var(--text-muted); font-size:12px;">8/8 ready · 0 restarts</div>
+      </div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">JVM Heap</span><span class="m-card-now warn">62%</span></div>
+        <div class="m-bar m-bar-warn"><span style="width:62%"></span></div>
+        <div class="m-card-sub" style="margin-top:6px">1.55GB / 2.5GB · GC 4.2/s · pause 12ms</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subsystem chip strip -->
+  <div style="display:flex; align-items:center; gap:10px; margin:6px 0;">
+    <div style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; font-weight:700; color:var(--text-muted);">Subsystems</div>
+    <div style="flex:1; height:1px; background:var(--border);"></div>
+    <div style="font-size:11px; color:var(--text-muted);">click a chip → detail drawer</div>
+  </div>
+  <div class="lc-chip-row">
+    <div class="lc-chip" onclick="openDrawer('DB Pool (HikariCP)')">
+      <div class="lc-chip-hd"><span class="m-dot" style="background:var(--sp-ok)"></span><span class="lc-chip-name">DB Pool</span></div>
+      <div class="lc-chip-val">3<span style="color:var(--text-muted);font-size:11px">/20</span></div>
+      <div class="lc-chip-sub">wait 0 · acq 2.1ms</div>
+      <svg class="lc-chip-spark" viewBox="0 0 100 24" preserveAspectRatio="none"><path d="M0,20 L20,18 L40,20 L60,16 L80,18 L100,16" fill="none" stroke="var(--sp-cool)" stroke-width="1.2"/></svg>
+    </div>
+    <div class="lc-chip" onclick="openDrawer('Tomcat')">
+      <div class="lc-chip-hd"><span class="m-dot" style="background:var(--sp-ok)"></span><span class="lc-chip-name">Tomcat</span></div>
+      <div class="lc-chip-val">4<span style="color:var(--text-muted);font-size:11px">/200 busy</span></div>
+      <div class="lc-chip-sub">err 0.02% · queue 0</div>
+      <svg class="lc-chip-spark" viewBox="0 0 100 24" preserveAspectRatio="none"><path d="M0,22 L20,18 L40,20 L60,15 L80,18 L100,14" fill="none" stroke="var(--sp-cool)" stroke-width="1.2"/></svg>
+    </div>
+    <div class="lc-chip" onclick="openDrawer('Runtime (JVM)')">
+      <div class="lc-chip-hd"><span class="m-dot" style="background:var(--sp-warn)"></span><span class="lc-chip-name">Runtime</span></div>
+      <div class="lc-chip-val">41<span style="color:var(--text-muted);font-size:11px"> threads</span></div>
+      <div class="lc-chip-sub">GC pause 12ms</div>
+      <svg class="lc-chip-spark" viewBox="0 0 100 24" preserveAspectRatio="none"><path d="M0,20 L100,18" fill="none" stroke="var(--sp-warn)" stroke-width="1.2"/></svg>
+    </div>
+    <div class="lc-chip" onclick="openDrawer('Transaction')">
+      <div class="lc-chip-hd"><span class="m-dot" style="background:var(--sp-ok)"></span><span class="lc-chip-name">Transaction</span></div>
+      <div class="lc-chip-val">128<span style="color:var(--text-muted);font-size:11px">/s</span></div>
+      <div class="lc-chip-sub">open 2 · rb 0</div>
+      <svg class="lc-chip-spark" viewBox="0 0 100 24" preserveAspectRatio="none"><path d="M0,15 L20,20 L40,12 L60,14 L80,10 L100,12" fill="none" stroke="var(--sp-emerald)" stroke-width="1.2"/></svg>
+    </div>
+    <div class="lc-chip" onclick="openDrawer('Dependencies')">
+      <div class="lc-chip-hd"><span class="m-dot" style="background:var(--sp-hot)"></span><span class="lc-chip-name">Dependencies</span></div>
+      <div class="lc-chip-val">7<span style="color:var(--text-muted);font-size:11px">u · 4d</span></div>
+      <div class="lc-chip-sub" style="color:var(--sp-hot)"><b>ledger 890ms</b></div>
+      <svg class="lc-chip-spark" viewBox="0 0 100 24" preserveAspectRatio="none"><path d="M0,20 L40,18 L60,10 L80,5 L100,3" fill="none" stroke="var(--sp-hot)" stroke-width="1.2"/></svg>
+    </div>
+    <div class="lc-chip" onclick="openDrawer('API Endpoints')">
+      <div class="lc-chip-hd"><span class="m-dot" style="background:var(--sp-warn)"></span><span class="lc-chip-name">Endpoints</span></div>
+      <div class="lc-chip-val">24<span style="color:var(--text-muted);font-size:11px"> routes</span></div>
+      <div class="lc-chip-sub" style="color:var(--sp-warn)">refunds 1.2%</div>
+      <svg class="lc-chip-spark" viewBox="0 0 100 24" preserveAspectRatio="none"><path d="M0,20 L100,15" fill="none" stroke="var(--sp-violet)" stroke-width="1.2"/></svg>
+    </div>
+  </div>
+
+  <!-- Drawer -->
+  <div class="lc-drawer" id="lcDrawer">
+    <div class="lc-drawer-hd">
+      <span class="m-dot" style="background:var(--sp-ok); width:10px; height:10px;"></span>
+      <h3 id="lcDrawerTitle">DB Pool (HikariCP)</h3>
+      <button class="lc-drawer-close" onclick="closeDrawer()">Close ✕</button>
+    </div>
+    <div class="lc-drawer-body">
+      <div class="la-grid-2">
+        <div class="m-card"><div class="m-card-head"><span class="m-card-title">Active</span><span class="m-card-now">3</span></div><div class="m-bar m-bar-ok"><span style="width:15%"></span></div><div class="m-card-sub">3 / 20 max · peak 8</div></div>
+        <div class="m-card"><div class="m-card-head"><span class="m-card-title">Waiting</span><span class="m-card-now ok">0</span></div><div style="height:6px"></div><div class="m-card-sub">no threads blocked</div></div>
+      </div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">Active / Idle over 30m</span></div>
+        <svg class="m-spark-tall" viewBox="0 0 400 120" preserveAspectRatio="none">
+          <path d="M0,95 L100,90 L200,85 L300,88 L400,90" fill="none" stroke="var(--sp-cool)" stroke-width="1.5"/>
+          <path d="M0,25 L100,30 L200,35 L300,32 L400,30" fill="none" stroke="var(--sp-emerald)" stroke-width="1.5"/>
+        </svg>
+        <div class="m-card-sub"><span style="color:var(--sp-cool)">■ active</span> · <span style="color:var(--sp-emerald)">■ idle</span></div>
+      </div>
+      <div class="m-card">
+        <div class="m-card-head"><span class="m-card-title">Acquire time distribution</span><span class="m-card-now">2.1ms</span></div>
+        <svg class="m-spark-tall" viewBox="0 0 400 120" preserveAspectRatio="none">
+          <rect x="20"  y="80" width="30" height="40" fill="var(--sp-cool)" fill-opacity=".6"/>
+          <rect x="70"  y="50" width="30" height="70" fill="var(--sp-cool)" fill-opacity=".8"/>
+          <rect x="120" y="60" width="30" height="60" fill="var(--sp-cool)"/>
+          <rect x="170" y="90" width="30" height="30" fill="var(--sp-cool)" fill-opacity=".6"/>
+          <rect x="220" y="100" width="30" height="20" fill="var(--sp-cool)" fill-opacity=".4"/>
+          <rect x="270" y="110" width="30" height="10" fill="var(--sp-cool)" fill-opacity=".3"/>
+        </svg>
+        <div class="m-card-sub">p50 0.4ms · p95 2.1ms · p99 8ms · max 8ms</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Tab switcher
+  document.querySelectorAll('.mock-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mock-tab').forEach(b => b.classList.remove('on'));
+      document.querySelectorAll('.mock-panel').forEach(p => p.classList.remove('on'));
+      btn.classList.add('on');
+      document.getElementById(btn.dataset.target).classList.add('on');
+      window.scrollTo({ top:0, behavior:'smooth' });
+    });
+  });
+  // Layout B: collapse toggle
+  function toggleSection(hd) { hd.parentElement.classList.toggle('collapsed'); }
+  // Layout C: drawer
+  function openDrawer(title) {
+    document.getElementById('lcDrawerTitle').textContent = title;
+    document.getElementById('lcDrawer').classList.add('on');
+  }
+  function closeDrawer() { document.getElementById('lcDrawer').classList.remove('on'); }
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+</script>
+
+</body>
+</html>

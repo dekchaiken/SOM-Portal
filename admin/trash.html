@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trash — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/trash/trash.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="trash"></i> Trash</div>
+        <div class="page-sub">โพสต์และ comment ที่ถูกลบ — กู้คืนหรือลบถาวร</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadTrash()" style="font-size:11px">↺ Refresh</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmPurge()" id="purge-btn" style="font-size:11px;display:none">
+          <i data-icon="trash"></i> Purge Expired
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="trash"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Trash</h1>
+          <p>โพสต์และ comment ที่ถูกลบ — เก็บไว้ 30 วัน · กู้คืนหรือลบถาวรได้</p>
+        </div>
+      </section>
+
+      <div id="trash-loading"><div data-skel="table" data-rows="6"></div></div>
+
+      <div id="trash-content" style="display:none">
+
+        <!-- Summary -->
+        <div class="trash-summary">
+          <div class="trash-stat">
+            <div class="trash-stat-val" id="stat-posts">—</div>
+            <div class="trash-stat-lbl">Deleted Posts</div>
+          </div>
+          <div class="trash-stat">
+            <div class="trash-stat-val" id="stat-comments">—</div>
+            <div class="trash-stat-lbl">Deleted Comments</div>
+          </div>
+          <div class="trash-stat">
+            <div class="trash-stat-val" id="stat-expired" style="color:#ef4444">—</div>
+            <div class="trash-stat-lbl">Expired (purge-ready)</div>
+          </div>
+        </div>
+
+        <!-- Danger zone / purge info -->
+        <div class="danger-bar">
+          <div class="danger-bar-info">
+            <strong>Auto-purge:</strong> รายการที่หมดอายุจะถูกลบถาวรโดยอัตโนมัติเมื่อ admin กด "Purge Expired"
+            หรือเมื่อ system ทำ scheduled purge — Retention = <span id="retention-days">—</span> วัน
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="confirmPurge()" id="purge-btn2" style="font-size:10.5px;color:#ef4444;border-color:rgba(239,68,68,.3);display:none">
+            <i data-icon="trash"></i> Purge Expired Now
+          </button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="trash-tabs">
+          <button class="trash-tab active" id="tab-posts"    onclick="switchTab('posts')">Posts (<span id="tab-count-posts">0</span>)</button>
+          <button class="trash-tab"        id="tab-comments" onclick="switchTab('comments')">Comments (<span id="tab-count-comments">0</span>)</button>
+        </div>
+
+        <!-- Posts table -->
+        <div id="pane-posts">
+          <div id="posts-loading" class="loading-state" style="display:none"><div class="spinner"></div></div>
+          <div id="posts-empty"  class="trash-empty" style="display:none">
+            <div class="trash-empty-icon"><i data-icon="sparkles"></i></div>
+            <div>ไม่มีโพสต์ใน Trash</div>
+          </div>
+          <div style="overflow-x:auto" id="posts-table-wrap">
+            <table class="trash-table" id="posts-table">
+              <thead>
+                <tr>
+                  <th>Title / Content</th>
+                  <th>Deleted by</th>
+                  <th>Deleted at</th>
+                  <th>Days left</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="posts-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Comments table -->
+        <div id="pane-comments" style="display:none">
+          <div id="comments-empty" class="trash-empty" style="display:none">
+            <div class="trash-empty-icon"><i data-icon="message-circle"></i></div>
+            <div>ไม่มี comment ใน Trash</div>
+          </div>
+          <div style="overflow-x:auto" id="comments-table-wrap">
+            <table class="trash-table" id="comments-table">
+              <thead>
+                <tr>
+                  <th>Comment</th>
+                  <th>Author</th>
+                  <th>Deleted by</th>
+                  <th>Deleted at</th>
+                  <th>Days left</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="comments-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /trash-content -->
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/trash/trash.js"></script>
+
+</body>
+</html>

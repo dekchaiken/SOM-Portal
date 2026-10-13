@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en" data-ui="glass" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capsule + Topbar Concepts</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --orange:#F26419; --orange-dim:rgba(242,100,25,.12); --orange-hover:#E05510; }
+html[data-ui="glass"]                    { --bg:#fff5ec; --bg-card:rgba(255,253,250,.88); --text:#1a120a; --text-muted:#9a7c5f; --border:rgba(242,100,25,.14); --nav-bg:linear-gradient(90deg,rgba(242,100,25,.08),transparent 40%,rgba(255,160,80,.05)),rgba(255,252,248,.75); --nb:blur(24px) saturate(180%); }
+html[data-ui="glass"][data-theme="dark"] { --bg:#0a0a12; --bg-card:rgba(10,8,22,.88); --text:#f0ece6; --text-muted:rgba(240,230,210,.4); --border:rgba(242,100,25,.22); --nav-bg:linear-gradient(90deg,rgba(242,100,25,.12),transparent 40%,rgba(90,50,210,.09)),rgba(8,10,20,.88); }
+html[data-ui="enterprise"]               { --bg:#fafafa; --bg-card:#fff; --text:#111827; --text-muted:#6b7280; --border:#e5e7eb; --nav-bg:#fff; --nb:none; }
+html[data-ui="enterprise"][data-theme="dark"] { --bg:#0a0c12; --bg-card:#0f1117; --text:#e2e8f0; --text-muted:#94a3b8; --border:#1f2530; --nav-bg:#0f1117; --nb:none; }
+html[data-ui="warm"]                     { --bg:#f5efe5; --bg-card:#fff; --text:#2a2119; --text-muted:#a89b86; --border:#ede6d7; --nav-bg:#fff; --nb:none; }
+html[data-ui="warm"][data-theme="dark"]  { --bg:#14100d; --bg-card:#2e2620; --text:#fff5e6; --text-muted:rgba(255,235,200,.5); --border:#3d2f24; --nav-bg:#2e2620; --nb:none; }
+
+body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif; background:var(--bg); color:var(--text); transition:background .2s,color .2s; }
+
+/* ─── Shared pill atoms ─── */
+.cap {
+  display:inline-flex; align-items:center; gap:3px;
+  background:var(--nav-bg,var(--bg-card));
+  backdrop-filter:var(--nb,blur(20px) saturate(180%));
+  -webkit-backdrop-filter:var(--nb,blur(20px) saturate(180%));
+  border:1px solid var(--border); border-radius:999px;
+  padding:5px 8px 5px 14px;
+  box-shadow:0 2px 16px rgba(0,0,0,.08),0 4px 24px rgba(0,0,0,.05);
+  position:relative; z-index:2; max-width:calc(100vw - 40px);
+}
+.c-logo { font-size:13px; font-weight:900; color:var(--orange); margin-right:10px; white-space:nowrap; }
+.c-link { padding:5px 10px; border-radius:999px; font-size:12.5px; font-weight:500; color:var(--text-muted); border:none; background:transparent; font-family:inherit; white-space:nowrap; cursor:pointer; }
+.c-link.on { background:var(--orange-dim); color:var(--orange); }
+.c-cta { background:var(--orange); color:#fff; border:none; border-radius:999px; padding:6px 12px 6px 8px; font-size:12px; font-weight:700; cursor:pointer; margin-left:6px; display:inline-flex; align-items:center; gap:5px; font-family:inherit; white-space:nowrap; }
+.c-av  { width:18px; height:18px; border-radius:50%; background:rgba(255,255,255,.3); font-size:8px; font-weight:800; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; }
+.c-av img { width:100%; height:100%; object-fit:cover; }
+
+/* GenZ badge */
+.gz-badge { display:inline-flex; align-items:center; gap:4px; background:linear-gradient(90deg,rgba(167,139,250,.15),rgba(244,114,182,.12)); border:1px solid rgba(167,139,250,.28); border-radius:999px; padding:2px 9px 2px 5px; }
+.gz-dot { width:5px; height:5px; border-radius:50%; background:linear-gradient(135deg,#a78bfa,#f472b6); flex-shrink:0; animation:gzd 2s ease-in-out infinite; }
+@keyframes gzd { 0%,100%{box-shadow:0 0 4px rgba(167,139,250,.5)} 50%{box-shadow:0 0 9px rgba(244,114,182,.75)} }
+.gz-txt { background:linear-gradient(90deg,#a78bfa,#f472b6,#fbbf24); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; font-size:9px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; }
+
+/* icon action buttons */
+.act-btn {
+  height:30px; border:1px solid var(--border); background:var(--bg-card);
+  border-radius:8px; padding:0 10px; font-size:11px; font-weight:600;
+  color:var(--text-muted); cursor:pointer; display:inline-flex; align-items:center; gap:5px;
+  font-family:inherit; white-space:nowrap; transition:border-color .12s,color .12s;
+  backdrop-filter:var(--nb); -webkit-backdrop-filter:var(--nb);
+}
+.act-btn:hover { border-color:var(--orange); color:var(--orange); }
+.act-btn.accent { background:var(--orange-dim); border-color:rgba(242,100,25,.25); color:var(--orange); }
+.act-icon { width:28px; height:28px; border-radius:7px; border:1px solid var(--border); background:var(--bg-card); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; color:var(--text-muted); transition:all .12s; }
+.act-icon:hover { border-color:var(--orange); color:var(--orange); }
+.badge-dot { position:relative; }
+.badge-dot::after { content:'3'; position:absolute; top:-4px; right:-5px; min-width:14px; height:14px; background:var(--orange); border-radius:99px; font-size:8px; font-weight:800; color:#fff; display:flex; align-items:center; justify-content:center; padding:0 3px; border:1.5px solid var(--bg); }
+
+/* breadcrumb */
+.bc { font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:4px; }
+.bc b { color:var(--text); font-weight:700; }
+.bc .sep { opacity:.4; }
+.bc .ts { font-size:11px; opacity:.55; margin-left:2px; }
+
+/* page mock content */
+.pcontent { padding:20px 40px 180px; display:grid; grid-template-columns:repeat(3,1fr); gap:12px; max-width:900px; margin:0 auto; }
+.pc { height:70px; background:var(--bg-card); border:1px solid var(--border); border-radius:12px; }
+.lbl { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-muted); padding:20px 40px 4px; opacity:.65; }
+.divider { height:1px; background:var(--border); margin:4px 40px; opacity:.35; }
+
+/* ═══════════════════════════════════════════
+   A  — Capsule + Unified bar below
+   Single thin bar merges breadcrumb + actions
+═══════════════════════════════════════════ */
+.a-zone {
+  display:flex; flex-direction:column; align-items:center;
+  padding:12px 20px 0; width:100%;
+}
+.a-bar {
+  width:100%; display:flex; align-items:center;
+  padding:6px 24px 8px; gap:12px;
+}
+.a-bar .bc { flex:1; }
+
+/* ═══════════════════════════════════════════
+   B  — Actions absorbed inside capsule
+   Right side of pill has action buttons
+═══════════════════════════════════════════ */
+.b-zone {
+  display:flex; flex-direction:column; align-items:center;
+  padding:12px 20px 0; width:100%;
+}
+.b-cap {
+  display:inline-flex; align-items:center; gap:3px;
+  background:var(--nav-bg,var(--bg-card));
+  backdrop-filter:var(--nb,blur(20px) saturate(180%));
+  -webkit-backdrop-filter:var(--nb,blur(20px) saturate(180%));
+  border:1px solid var(--border); border-radius:999px;
+  padding:5px 6px 5px 14px;
+  box-shadow:0 2px 16px rgba(0,0,0,.08);
+  position:relative; z-index:2; max-width:calc(100vw - 20px);
+}
+.b-sep { width:1px; height:18px; background:var(--border); margin:0 4px; flex-shrink:0; opacity:.6; }
+.b-icon { width:28px; height:28px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; color:var(--text-muted); transition:all .12s; border:none; background:transparent; }
+.b-icon:hover { background:var(--orange-dim); color:var(--orange); }
+.b-av { width:26px; height:26px; border-radius:50%; background:var(--orange); color:#fff; font-size:10px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer; flex-shrink:0; }
+.b-av img { width:100%; height:100%; object-fit:cover; }
+.b-bar { width:100%; display:flex; align-items:center; padding:5px 24px 10px; gap:8px; }
+.b-bar .bc { flex:1; }
+
+/* ─── B: 2-row pill ─── */
+.b2-pill {
+  display: flex; flex-direction: column;
+  background: var(--nav-bg, var(--bg-card));
+  backdrop-filter: var(--nb, blur(20px) saturate(180%));
+  -webkit-backdrop-filter: var(--nb, blur(20px) saturate(180%));
+  border: 1px solid var(--border);
+  border-radius: 20px;                   /* rounded rect, not full pill */
+  box-shadow: 0 2px 16px rgba(0,0,0,.08), 0 4px 24px rgba(0,0,0,.05);
+  max-width: calc(100vw - 40px);
+  overflow: visible; position: relative; z-index: 2;
+}
+.b2-row1 {
+  display: flex; align-items: center; gap: 3px;
+  padding: 6px 10px 6px 16px;
+  flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+}
+.b2-row1::-webkit-scrollbar { display: none; }
+.b2-inner-div {
+  height: 1px; background: var(--border);
+  margin: 0 12px; opacity: .6;
+}
+.b2-row2 {
+  display: flex; align-items: center; gap: 10px;
+  padding: 5px 14px 6px 16px;
+}
+
+/* ═══════════════════════════════════════════
+   C  — Two floating pills: nav + actions
+   Capsule stays centered; actions = right pill
+═══════════════════════════════════════════ */
+.c-zone {
+  position:relative; width:100%;
+  padding:12px 20px 0;
+  display:flex; justify-content:center; align-items:center; gap:8px;
+}
+.c-actions-pill {
+  display:inline-flex; align-items:center; gap:4px;
+  background:var(--nav-bg,var(--bg-card));
+  backdrop-filter:var(--nb,blur(20px) saturate(180%));
+  -webkit-backdrop-filter:var(--nb,blur(20px) saturate(180%));
+  border:1px solid var(--border); border-radius:999px;
+  padding:5px 8px;
+  box-shadow:0 2px 16px rgba(0,0,0,.08);
+  position:absolute; right:20px;
+}
+.c-nav-pill { position:absolute; left:20px; }
+.c-bc-pill {
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--bg-card);
+  backdrop-filter:var(--nb,blur(20px) saturate(180%));
+  -webkit-backdrop-filter:var(--nb,blur(20px) saturate(180%));
+  border:1px solid var(--border); border-radius:999px;
+  padding:4px 12px 4px 8px;
+  font-size:11px; color:var(--text-muted);
+}
+.c-pill-sep { width:1px; height:14px; background:var(--border); opacity:.6; }
+.c-badge-row { width:100%; display:flex; justify-content:center; padding:6px 0 0; }
+.c-act-icon { width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; color:var(--text-muted); cursor:pointer; border:none; background:transparent; transition:all .12s; }
+.c-act-icon:hover { color:var(--orange); }
+.c-act-btn { display:inline-flex; align-items:center; gap:4px; padding:0 8px; font-size:11px; font-weight:600; color:var(--orange); border:none; background:transparent; cursor:pointer; font-family:inherit; white-space:nowrap; border-radius:999px; height:26px; transition:background .12s; }
+.c-act-btn:hover { background:var(--orange-dim); }
+
+/* ═══════════════════════════════════════════
+   D  — Capsule + breadcrumb below pill text
+   No separate topbar at all — very minimal
+═══════════════════════════════════════════ */
+.d-zone {
+  display:flex; flex-direction:column; align-items:center;
+  padding:12px 20px 0; width:100%; position:relative;
+}
+.d-sub {
+  font-size:11px; color:var(--text-muted);
+  margin-top:5px; display:flex; align-items:center; gap:6px;
+  opacity:.75;
+}
+.d-sub b { color:var(--text); font-weight:700; opacity:1; }
+.d-sub .ts { opacity:.6; }
+.d-right-float {
+  position:absolute; right:20px; top:50%; transform:translateY(-50%);
+  display:flex; align-items:center; gap:5px;
+}
+
+/* ─── Selector ─── */
+.bar { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:999; display:flex; align-items:center; gap:5px; flex-wrap:wrap; justify-content:center; background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:9px 14px; box-shadow:0 8px 32px rgba(0,0,0,.18); backdrop-filter:blur(20px); max-width:96vw; transition:background .2s; }
+.bl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); }
+.bs { width:1px; height:14px; background:var(--border); }
+.bb { border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:11px; font-weight:600; padding:4px 10px; border-radius:999px; cursor:pointer; transition:all .13s; white-space:nowrap; font-family:inherit; }
+.bb:hover { border-color:var(--orange); color:var(--orange); }
+.bb.on { background:var(--orange); border-color:var(--orange); color:#fff; }
+
+.concept { display:none; }
+.concept.active { display:block; }
+</style>
+</head>
+<body>
+
+<!-- ═══ A — Unified bar below ═══ -->
+<div class="concept active" id="cA">
+  <div class="lbl">A · Unified bar below</div>
+  <div class="a-zone">
+    <div class="cap">
+      <span class="c-logo">SM-HUB</span>
+      <button class="c-link on">Home ▾</button>
+      <button class="c-link">Monitor ▾</button>
+      <button class="c-link">MA Tools ▾</button>
+      <button class="c-link">Operations ▾</button>
+      <button class="c-link">Learn ▾</button>
+      <button class="c-link">GenZ ▾</button>
+      <button class="c-link">Admin ▾</button>
+      <button class="c-cta"><div class="c-av">W</div>Warapon ▾</button>
+    </div>
+    <div class="gz-badge" style="margin-top:5px;">
+      <div class="gz-dot"></div>
+      <span class="gz-txt">SM TEAM · ✦ GenZ</span>
+    </div>
+  </div>
+  <!-- Unified thin bar — breadcrumb left + actions right -->
+  <div class="a-bar">
+    <div class="bc">
+      <span>~/sm</span><span class="sep">•</span>
+      <b>Dashboard</b><span class="sep">·</span>
+      <span class="ts">อาทิตย์ 6 ก.ย. 2569 · 18:04</span>
+    </div>
+    <button class="act-icon">🔍</button>
+    <button class="act-btn accent">🔔 My Alerts</button>
+    <button class="act-icon badge-dot">🔔</button>
+    <button class="act-btn">🎫 Open Ticket</button>
+    <button class="act-icon">⚙️</button>
+  </div>
+  <div class="divider"></div>
+  <div class="pcontent"><div class="pc"></div><div class="pc"></div><div class="pc"></div></div>
+</div>
+
+
+<!-- ═══ B — 2-row pill (nav + breadcrumb inside same container) ═══ -->
+<div class="concept" id="cB">
+  <div class="lbl">B · 2-row pill — nav + breadcrumb inside</div>
+  <div class="b-zone">
+
+    <!-- Single floating container with 2 rows -->
+    <div class="b2-pill">
+      <!-- Row 1: Logo + nav groups + separator + actions + avatar -->
+      <div class="b2-row1">
+        <span class="c-logo">SM-HUB</span>
+        <button class="c-link on">Home ▾</button>
+        <button class="c-link">Monitor ▾</button>
+        <button class="c-link">MA Tools ▾</button>
+        <button class="c-link">Operations ▾</button>
+        <button class="c-link">Learn ▾</button>
+        <button class="c-link">GenZ ▾</button>
+        <button class="c-link">Admin ▾</button>
+        <div class="b-sep"></div>
+        <button class="b-icon">🔍</button>
+        <button class="b-icon" style="position:relative;">🔔<span style="position:absolute;top:1px;right:1px;width:7px;height:7px;background:var(--orange);border-radius:50%;border:1.5px solid var(--bg-card);"></span></button>
+        <button class="b-icon">🎫</button>
+        <div class="b-sep"></div>
+        <button class="b-icon">⚙️</button>
+        <div class="b-av" style="margin-left:4px;">W</div>
+      </div>
+
+      <!-- Divider inside pill -->
+      <div class="b2-inner-div"></div>
+
+      <!-- Row 2: breadcrumb + time — flush inside same pill -->
+      <div class="b2-row2">
+        <div class="bc" style="flex:1;">
+          <span>~/sm</span><span class="sep">•</span>
+          <b>Dashboard</b><span class="sep">·</span>
+          <span class="ts">อาทิตย์ 6 ก.ย. 2569 · 18:04</span>
+        </div>
+        <div class="gz-badge">
+          <div class="gz-dot"></div>
+          <span class="gz-txt">SM TEAM · ✦ GenZ</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="divider" style="margin-top:8px;"></div>
+  <div class="pcontent"><div class="pc"></div><div class="pc"></div><div class="pc"></div></div>
+</div>
+
+
+<!-- ═══ C — Two floating pills ═══ -->
+<div class="concept" id="cC">
+  <div class="lbl">C · Two floating pills</div>
+  <div style="position:relative;width:100%;padding:12px 20px 0;display:flex;justify-content:center;align-items:center;">
+    <!-- Nav pill (centered) -->
+    <div class="cap" style="z-index:2;">
+      <span class="c-logo">SM-HUB</span>
+      <button class="c-link on">Home ▾</button>
+      <button class="c-link">Monitor ▾</button>
+      <button class="c-link">MA Tools ▾</button>
+      <button class="c-link">Operations ▾</button>
+      <button class="c-link">Learn ▾</button>
+      <button class="c-link">GenZ ▾</button>
+      <button class="c-link">Admin ▾</button>
+      <button class="c-cta"><div class="c-av">W</div>Warapon ▾</button>
+    </div>
+    <!-- Actions pill (right) -->
+    <div class="c-actions-pill">
+      <button class="c-act-icon">🔍</button>
+      <button class="c-act-btn accent">🔔 My Alerts</button>
+      <button class="c-act-icon" style="position:relative;">🔔<span style="position:absolute;top:1px;right:1px;width:7px;height:7px;background:var(--orange);border-radius:50%;border:1.5px solid var(--bg-card);"></span></button>
+      <button class="c-act-icon">🎫</button>
+      <button class="c-act-icon">⚙️</button>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:center;padding:6px 0 0;">
+    <div class="gz-badge">
+      <div class="gz-dot"></div>
+      <span class="gz-txt">SM TEAM · ✦ GenZ</span>
+    </div>
+  </div>
+  <!-- thin breadcrumb only -->
+  <div style="padding:6px 24px 10px;display:flex;align-items:center;">
+    <div class="bc">
+      <span>~/sm</span><span class="sep">•</span>
+      <b>Dashboard</b><span class="sep">·</span>
+      <span class="ts">อาทิตย์ 6 ก.ย. 2569 · 18:04</span>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="pcontent"><div class="pc"></div><div class="pc"></div><div class="pc"></div></div>
+</div>
+
+
+<!-- ═══ D — Ultra Minimal (no topbar at all) ═══ -->
+<div class="concept" id="cD">
+  <div class="lbl">D · Ultra minimal — no topbar</div>
+  <div class="d-zone">
+    <div class="cap">
+      <span class="c-logo">SM-HUB</span>
+      <button class="c-link on">Home ▾</button>
+      <button class="c-link">Monitor ▾</button>
+      <button class="c-link">MA Tools ▾</button>
+      <button class="c-link">Operations ▾</button>
+      <button class="c-link">Learn ▾</button>
+      <button class="c-link">GenZ ▾</button>
+      <button class="c-link">Admin ▾</button>
+      <button class="c-cta"><div class="c-av">W</div>Warapon ▾</button>
+    </div>
+    <div class="gz-badge" style="margin-top:5px;">
+      <div class="gz-dot"></div>
+      <span class="gz-txt">SM TEAM · ✦ GenZ</span>
+    </div>
+    <!-- Breadcrumb + time sits tight below badge, right side has floating actions -->
+    <div class="d-sub">
+      <span>~/sm</span><span>•</span><b>Dashboard</b>
+      <span class="ts">อาทิตย์ 6 ก.ย. 2569 · 18:04</span>
+    </div>
+    <!-- Action buttons float right — not in topbar -->
+    <div class="d-right-float">
+      <button class="act-icon">🔍</button>
+      <button class="act-btn accent">🔔 My Alerts</button>
+      <button class="act-icon badge-dot">🔔</button>
+      <button class="act-btn">🎫 Open Ticket</button>
+      <button class="act-icon">⚙️</button>
+    </div>
+  </div>
+  <div style="height:12px;"></div>
+  <div class="divider"></div>
+  <div class="pcontent"><div class="pc"></div><div class="pc"></div><div class="pc"></div></div>
+</div>
+
+
+<!-- ── Selector ── -->
+<div class="bar">
+  <span class="bl">Design</span>
+  <div style="display:flex;gap:3px">
+    <button class="bb on" onclick="show('A',this)">A · Unified Bar</button>
+    <button class="bb"    onclick="show('B',this)">B · Actions In Pill</button>
+    <button class="bb"    onclick="show('C',this)">C · Two Pills</button>
+    <button class="bb"    onclick="show('D',this)">D · Ultra Minimal</button>
+  </div>
+  <div class="bs"></div>
+  <span class="bl">Theme</span>
+  <div style="display:flex;gap:3px">
+    <button class="bb on" onclick="setUI('glass',this)">Glass</button>
+    <button class="bb"    onclick="setUI('enterprise',this)">Enterprise</button>
+    <button class="bb"    onclick="setUI('warm',this)">Warm</button>
+  </div>
+  <div class="bs"></div>
+  <button class="bb" id="md" onclick="toggleMode(this)">Dark</button>
+</div>
+
+<script>
+function show(id,btn){ document.querySelectorAll('.concept').forEach(el=>el.classList.remove('active')); document.getElementById('c'+id).classList.add('active'); btn.closest('div').querySelectorAll('.bb').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); }
+function setUI(ui,btn){ document.documentElement.setAttribute('data-ui',ui); btn.closest('div').querySelectorAll('.bb').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); }
+function toggleMode(btn){ const d=document.documentElement.getAttribute('data-theme')==='dark'; document.documentElement.setAttribute('data-theme',d?'light':'dark'); btn.textContent=d?'Dark':'Light'; }
+</script>
+</body>
+</html>

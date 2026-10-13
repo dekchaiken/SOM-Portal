@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Severity — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ─── Blocks.so-inspired design system ────────────────────────── */
+    :root {
+      --ss-radius: 10px;
+      --ss-radius-lg: 14px;
+      --ss-radius-sm: 7px;
+      --ss-shadow-sm: 0 1px 2px rgba(0,0,0,.04);
+      --ss-shadow-md: 0 4px 12px rgba(0,0,0,.06);
+      --ss-shadow-lg: 0 16px 48px rgba(0,0,0,.18);
+      --ss-p1: #dc2626;
+      --ss-p2: #d97706;
+      --ss-p3: #16a34a;
+    }
+
+    /* ── Page Hero ────────────────────────────────────────────────── */
+    .ss-hero {
+      background: linear-gradient(135deg, rgba(220,38,38,.04) 0%, rgba(217,119,6,.04) 50%, rgba(22,163,74,.04) 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--ss-radius-lg);
+      padding: 22px 26px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .ss-hero-info { display:flex; gap:14px; align-items:center; }
+    .ss-hero-icon {
+      width: 48px; height: 48px;
+      background: var(--bg-card); border:1px solid var(--border); border-radius: 12px;
+      display:flex; align-items:center; justify-content:center; font-size:22px;
+    }
+    .ss-hero h1 { font-size:18px; font-weight:700; margin:0 0 2px; }
+    .ss-hero p  { font-size:12px; color:var(--text-muted); margin:0; }
+    .ss-hero-actions { display:flex; gap:8px; flex-shrink:0; }
+
+    /* ── KPI cards ────────────────────────────────────────────────── */
+    .ss-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .ss-stat {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--ss-radius-lg);
+      padding: 16px 18px;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .ss-stat:hover { transform: translateY(-1px); box-shadow: var(--ss-shadow-md); }
+    .ss-stat-label { font-size:10.5px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px; }
+    .ss-stat-value { font-size:24px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1; }
+    .ss-stat-foot  { font-size:10.5px; color:var(--text-muted); margin-top:5px; }
+    .ss-stat.p1 .ss-stat-value { color: var(--ss-p1); }
+    .ss-stat.p2 .ss-stat-value { color: var(--ss-p2); }
+    .ss-stat.p3 .ss-stat-value { color: var(--ss-p3); }
+
+    /* ── Toolbar ──────────────────────────────────────────────────── */
+    .ss-toolbar {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .ss-search { position: relative; flex: 1; min-width: 220px; }
+    .ss-search input {
+      width: 100%;
+      padding: 9px 12px 9px 34px;
+      border: 1px solid var(--border);
+      border-radius: var(--ss-radius);
+      font-family: var(--font); font-size: 12.5px;
+      background: var(--bg-card); color: var(--text);
+      box-sizing: border-box; outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .ss-search input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(242,100,25,.08); }
+    .ss-search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none; }
+    .ss-search-icon svg { display:block; }
+
+    .ss-tabs {
+      display: inline-flex;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--ss-radius);
+      padding: 3px;
+      gap: 2px;
+    }
+    .ss-tab {
+      padding: 6px 12px;
+      border: none; background: transparent;
+      font-family: var(--font); font-size: 11.5px; font-weight: 600;
+      color: var(--text-muted); cursor: pointer;
+      border-radius: var(--ss-radius-sm);
+      transition: all .15s; white-space: nowrap;
+    }
+    .ss-tab:hover { color: var(--text); }
+    .ss-tab.active { background: var(--bg); color: var(--text); box-shadow: var(--ss-shadow-sm); }
+
+    /* ── Table card ───────────────────────────────────────────────── */
+    .ss-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--ss-radius-lg);
+      overflow: hidden;
+    }
+    .ss-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .ss-table th {
+      text-align: left; padding: 11px 16px;
+      background: var(--sidebar-bg);
+      color: var(--text-muted); font-weight: 600; font-size: 10.5px;
+      text-transform: uppercase; letter-spacing: .6px;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .ss-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .ss-table tbody tr:last-child td { border-bottom: none; }
+    .ss-table tbody tr:hover td { background: rgba(0,0,0,.015); }
+
+    .ss-svcname { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 600; }
+    .ss-svcgrp  { font-size: 11px; color: var(--text-muted); }
+
+    /* Priority badge */
+    .pbadge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 10.5px; font-weight: 700; white-space: nowrap;
+    }
+    .pbadge .dot { width:6px; height:6px; border-radius:50%; }
+    .pbadge.p1 { background: rgba(220,38,38,.10); color: var(--ss-p1); border:1px solid rgba(220,38,38,.2); }
+    .pbadge.p2 { background: rgba(217,119,6,.10); color: var(--ss-p2); border:1px solid rgba(217,119,6,.2); }
+    .pbadge.p3 { background: rgba(22,163,74,.08); color: var(--ss-p3); border:1px solid rgba(22,163,74,.2); }
+    .pbadge.p1 .dot { background: var(--ss-p1); }
+    .pbadge.p2 .dot { background: var(--ss-p2); }
+    .pbadge.p3 .dot { background: var(--ss-p3); }
+
+    /* Runway badges */
+    .rw-badge {
+      display:inline-flex; align-items:center;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: .01em;
+      white-space: nowrap;
+    }
+    .rw-tmn  { background: rgba(59,130,246,.10);  color:#3b82f6; border:1px solid rgba(59,130,246,.22); }
+    .rw-nano { background: rgba(168,85,247,.10);  color:#a855f7; border:1px solid rgba(168,85,247,.22); }
+    .rw-ocp  { background: rgba(20,184,166,.10);  color:#14b8a6; border:1px solid rgba(20,184,166,.22); }
+
+    /* Action buttons in table */
+    .row-actions { display:flex; gap:6px; }
+    .icon-btn {
+      width: 28px; height: 28px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      border-radius: var(--ss-radius-sm);
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all .15s;
+      color: var(--text-muted);
+    }
+    .icon-btn:hover { border-color: var(--text); color: var(--text); }
+    .icon-btn.danger:hover { border-color: var(--ss-p1); color: var(--ss-p1); background: rgba(220,38,38,.04); }
+    .icon-btn svg { display:block; }
+
+    .ss-table-empty { padding: 60px 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+    .ss-table-foot  { padding: 10px 16px; border-top: 1px solid var(--border); background: var(--sidebar-bg); font-size: 11px; color: var(--text-muted); display:flex; justify-content:space-between; align-items:center; }
+
+    /* ── Modal (using global .modal-overlay/.modal pattern) ────────── */
+    .ss-modal {
+      background: var(--bg-card);
+      border-radius: var(--ss-radius-lg);
+      width: 100%; max-width: 520px;
+      box-shadow: var(--ss-shadow-lg);
+      overflow: hidden;
+    }
+    .ss-modal.wide { max-width: 680px; }
+    .ss-modal-head {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .ss-modal-title { font-size: 15px; font-weight: 700; margin: 0; }
+    .ss-modal-close {
+      width: 28px; height: 28px; border: none; background: transparent;
+      border-radius: var(--ss-radius-sm); cursor: pointer; color: var(--text-muted);
+      font-size: 18px; line-height: 1; display:flex; align-items:center; justify-content:center;
+    }
+    .ss-modal-close:hover { background: var(--bg); color: var(--text); }
+    .ss-modal-body { padding: 20px 22px; max-height: 70vh; overflow-y: auto; }
+    .ss-modal-foot {
+      padding: 14px 22px; border-top: 1px solid var(--border);
+      background: var(--sidebar-bg);
+      display: flex; gap: 8px; justify-content: flex-end;
+    }
+
+    /* Form */
+    .frow { margin-bottom: 14px; }
+    .frow-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .flabel {
+      display: block; font-size: 11px; font-weight: 600;
+      color: var(--text-muted); margin-bottom: 6px;
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+    .finput {
+      width: 100%; padding: 9px 12px;
+      border: 1px solid var(--border); border-radius: var(--ss-radius);
+      font-family: var(--font); font-size: 12.5px;
+      background: var(--bg); color: var(--text);
+      box-sizing: border-box; outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .finput:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(242,100,25,.08); }
+    .finput:disabled { opacity: .6; cursor: not-allowed; }
+    .fhint { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Priority selector */
+    .psel { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .popt {
+      border: 2px solid var(--border);
+      border-radius: var(--ss-radius);
+      padding: 12px 10px;
+      cursor: pointer;
+      transition: all .15s;
+      text-align: center;
+      background: var(--bg);
+    }
+    .popt:hover { border-color: var(--text-muted); }
+    .popt-val { font-size: 18px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .popt-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-muted); }
+    .popt[data-p="P1"] .popt-val { color: var(--ss-p1); }
+    .popt[data-p="P2"] .popt-val { color: var(--ss-p2); }
+    .popt[data-p="P3"] .popt-val { color: var(--ss-p3); }
+    .popt.sel.p1 { border-color: var(--ss-p1); background: rgba(220,38,38,.05); }
+    .popt.sel.p2 { border-color: var(--ss-p2); background: rgba(217,119,6,.05); }
+    .popt.sel.p3 { border-color: var(--ss-p3); background: rgba(22,163,74,.05); }
+    .popt.sel .popt-lbl { color: var(--text); }
+
+    /* Drop area */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--ss-radius);
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .15s;
+      background: var(--bg);
+    }
+    .drop-zone:hover, .drop-zone.over { border-color: var(--orange); background: rgba(242,100,25,.03); }
+    .drop-zone input[type=file] { display: none; }
+    .drop-zone-icon { font-size: 32px; margin-bottom: 8px; opacity: .7; }
+    .drop-zone-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .drop-zone-sub   { font-size: 11px; color: var(--text-muted); }
+
+    .info-banner {
+      padding: 11px 14px;
+      background: rgba(37,99,235,.05);
+      border: 1px solid rgba(37,99,235,.18);
+      border-radius: var(--ss-radius);
+      font-size: 11px; line-height: 1.6; color: #1d4ed8;
+      margin-bottom: 14px;
+    }
+    .info-banner code {
+      background: rgba(37,99,235,.08); padding: 1px 6px; border-radius: 4px;
+      font-family: ui-monospace, monospace; font-size: 10.5px;
+    }
+
+    .import-preview-wrap { margin-top: 14px; display: none; }
+    .import-preview-wrap.show { display: block; }
+    .import-preview-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .import-preview-label { font-size: 12px; font-weight: 600; }
+    .import-mode-group { display: inline-flex; gap: 2px; background: var(--bg); border:1px solid var(--border); border-radius: var(--ss-radius-sm); padding: 2px; }
+    .import-mode-group button {
+      padding: 4px 10px; border: none; background: transparent; cursor: pointer;
+      font-size: 10.5px; font-weight: 600; border-radius: 5px;
+      color: var(--text-muted); transition: all .15s;
+    }
+    .import-mode-group button.on { background: var(--bg-card); color: var(--text); box-shadow: var(--ss-shadow-sm); }
+
+    .import-preview-table {
+      max-height: 240px; overflow-y: auto;
+      border: 1px solid var(--border); border-radius: var(--ss-radius);
+    }
+    .import-preview-table table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .import-preview-table th, .import-preview-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+    .import-preview-table th { background: var(--sidebar-bg); font-size: 10px; color: var(--text-muted); font-weight: 600; }
+    .import-preview-table tbody tr:last-child td { border-bottom: none; }
+
+    .del-warn {
+      padding: 14px;
+      background: rgba(220,38,38,.04);
+      border: 1px solid rgba(220,38,38,.2);
+      border-radius: var(--ss-radius);
+      font-size: 12px; line-height: 1.7;
+    }
+    .del-name {
+      font-family: ui-monospace, monospace; font-size: 12.5px;
+      background: var(--bg); padding: 3px 8px; border-radius: 5px;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Service Severity</div>
+        <div class="page-sub">Priority registry สำหรับ Restart Monitor</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="shield"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Service Severity</h1>
+          <p>Priority registry สำหรับ Restart Monitor — กำหนด Sev level ของแต่ละ service</p>
+        </div>
+      </section>
+
+      <!-- Hero -->
+      <div class="ss-hero">
+        <div class="ss-hero-info">
+          <div class="ss-hero-icon"><i data-icon="shield"></i></div>
+          <div>
+            <h1>Service Severity Registry</h1>
+            <p>กำหนด Priority ของแต่ละ service · P1 = <i data-icon="circle"></i> Critical · P2 = <i data-icon="circle"></i> Warning · P3 = <i data-icon="circle"></i> Info</p>
+          </div>
+        </div>
+        <div class="ss-hero-actions">
+          <button class="btn btn-ghost"   id="btn-webhooks" title="ตั้งค่า Google Chat webhook ของ Restart Monitor ต่อ runway"><i data-icon="message-circle"></i> Webhooks</button>
+          <button class="btn btn-ghost"   id="btn-sync"  title="ดึงข้อมูลจาก Google Sheet ผ่าน n8n"><i data-icon="refresh-cw"></i> Sync from Sheet</button>
+          <button class="btn btn-ghost"   id="btn-import"><i data-icon="arrow-up"></i> Import CSV</button>
+          <button class="btn btn-primary" id="btn-add">+ Add Service</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="ss-stats">
+        <div class="ss-stat">
+          <div class="ss-stat-label">Total</div>
+          <div class="ss-stat-value" id="stat-total">—</div>
+          <div class="ss-stat-foot">services registered</div>
+        </div>
+        <div class="ss-stat p1">
+          <div class="ss-stat-label">P1 · Critical</div>
+          <div class="ss-stat-value" id="stat-p1">—</div>
+          <div class="ss-stat-foot">highest priority</div>
+        </div>
+        <div class="ss-stat p2">
+          <div class="ss-stat-label">P2 · Warning</div>
+          <div class="ss-stat-value" id="stat-p2">—</div>
+          <div class="ss-stat-foot">medium priority</div>
+        </div>
+        <div class="ss-stat p3">
+          <div class="ss-stat-label">P3 · Info</div>
+          <div class="ss-stat-value" id="stat-p3">—</div>
+          <div class="ss-stat-foot">low priority</div>
+        </div>
+        <div class="ss-stat">
+          <div class="ss-stat-label">Last Updated</div>
+          <div class="ss-stat-value" id="stat-updated" style="font-size:13px;color:var(--text-muted)">—</div>
+          <div class="ss-stat-foot" id="stat-updatedby">—</div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="ss-toolbar">
+        <div class="ss-search">
+          <span class="ss-search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+          <input type="text" id="search" placeholder="ค้นหา service name หรือ group…">
+        </div>
+        <div class="ss-tabs" id="prio-tabs">
+          <button class="ss-tab active" data-p="all">All</button>
+          <button class="ss-tab" data-p="P1"><i data-icon="circle"></i> P1</button>
+          <button class="ss-tab" data-p="P2"><i data-icon="circle"></i> P2</button>
+          <button class="ss-tab" data-p="P3"><i data-icon="circle"></i> P3</button>
+        </div>
+      </div>
+
+      <!-- Runway filter (each org/runway is a separate Sheet tab) -->
+      <div class="ss-toolbar" style="margin-top:8px">
+        <div class="ss-tabs" id="runway-tabs">
+          <button class="ss-tab active" data-rw="all">All runways</button>
+          <button class="ss-tab" data-rw="EKS TMN">EKS TMN</button>
+          <button class="ss-tab" data-rw="EKS NANO">EKS NANO</button>
+          <button class="ss-tab" data-rw="OCP">OCP</button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="ss-card">
+        <div id="table-wrap">
+          <div class="ss-table-empty">กำลังโหลด…</div>
+        </div>
+        <div class="ss-table-foot" id="table-foot" style="display:none">
+          <span id="table-count"></span>
+          <span id="table-filter"></span>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Add/Edit Modal ─────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="ss-modal">
+    <div class="ss-modal-head">
+      <h3 class="ss-modal-title" id="edit-title">Add Service</h3>
+      <button class="ss-modal-close" data-close="modal-edit">×</button>
+    </div>
+    <div class="ss-modal-body">
+      <div class="frow">
+        <label class="flabel">Service Name</label>
+        <input class="finput" id="f-name" placeholder="เช่น pull-request-noti">
+        <div class="fhint">ชื่อ deployment ตรงกับ pod name prefix (Kubernetes)</div>
+      </div>
+      <div class="frow">
+        <label class="flabel">Priority</label>
+        <div class="psel" id="psel">
+          <div class="popt" data-p="P1">
+            <div class="popt-val">P1</div>
+            <div class="popt-lbl"><i data-icon="circle"></i> Critical</div>
+          </div>
+          <div class="popt" data-p="P2">
+            <div class="popt-val">P2</div>
+            <div class="popt-lbl"><i data-icon="circle"></i> Warning</div>
+          </div>
+          <div class="popt" data-p="P3">
+            <div class="popt-val">P3</div>
+            <div class="popt-lbl"><i data-icon="circle"></i> Info</div>
+          </div>
+        </div>
+      </div>
+      <div class="frow-2">
+        <div>
+          <label class="flabel">Service Group</label>
+          <input class="finput" id="f-group" placeholder="เช่น mobile-backend">
+        </div>
+        <div>
+          <label class="flabel">BU</label>
+          <input class="finput" id="f-bu" value="Truemoney">
+        </div>
+      </div>
+      <div class="frow">
+        <label class="flabel">Runway / Org</label>
+        <select class="finput" id="f-runway">
+          <option value="">— (unspecified)</option>
+          <option value="EKS TMN">EKS TMN</option>
+          <option value="EKS NANO">EKS NANO</option>
+          <option value="OCP">OCP</option>
+        </select>
+        <div class="fhint">ทีม/แพลตฟอร์มที่ service นี้รันอยู่ (จะถูก sync จาก Sheet tab)</div>
+      </div>
+    </div>
+    <div class="ss-modal-foot">
+      <button class="btn btn-ghost" data-close="modal-edit">Cancel</button>
+      <button class="btn btn-primary" id="btn-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Modal ───────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="ss-modal" style="max-width:420px">
+    <div class="ss-modal-head">
+      <h3 class="ss-modal-title">Delete Service</h3>
+      <button class="ss-modal-close" data-close="modal-delete">×</button>
+    </div>
+    <div class="ss-modal-body">
+      <div class="del-warn">
+        <div style="margin-bottom:8px">ต้องการลบ service ออกจาก registry?</div>
+        <div><span class="del-name" id="del-name"></span></div>
+        <div style="margin-top:10px;font-size:11px;color:var(--text-muted)">
+          Pod ที่ match กับ service นี้จะ fallback เป็น <b style="color:var(--ss-p3)">P3 / Info</b>
+        </div>
+      </div>
+    </div>
+    <div class="ss-modal-foot">
+      <button class="btn btn-ghost" data-close="modal-delete">Cancel</button>
+      <button class="btn btn-danger" id="btn-del-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Import Modal ───────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-import">
+  <div class="ss-modal wide">
+    <div class="ss-modal-head">
+      <h3 class="ss-modal-title">Import CSV</h3>
+      <button class="ss-modal-close" data-close="modal-import">×</button>
+    </div>
+    <div class="ss-modal-body">
+      <div class="info-banner">
+        <b>รูปแบบ CSV:</b> ต้องมี <code>Service name</code> และ <code>Priority</code> (P1/P2/P3)<br>
+        ออปชั่น: <code>Service group</code>, <code>BU</code><br>
+        <b>Merge</b> = เพิ่ม/อัพเดต ไม่ลบของเดิม · <b>Replace</b> = แทนที่ทั้งหมด
+      </div>
+
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="csv-input" accept=".csv,text/csv">
+        <div class="drop-zone-icon"><i data-icon="folder-open"></i></div>
+        <div class="drop-zone-title">คลิกหรือลาก CSV มาวางที่นี่</div>
+        <div class="drop-zone-sub">รองรับ .csv เท่านั้น</div>
+      </div>
+
+      <div class="import-preview-wrap" id="preview-wrap">
+        <div class="import-preview-head">
+          <span class="import-preview-label" id="preview-label"></span>
+          <div class="import-mode-group">
+            <button id="mode-merge"  data-mode="merge">Merge</button>
+            <button id="mode-replace" data-mode="replace" class="on">Replace</button>
+          </div>
+        </div>
+        <div class="import-preview-table" id="preview-table"></div>
+      </div>
+    </div>
+    <div class="ss-modal-foot">
+      <button class="btn btn-ghost" data-close="modal-import">Cancel</button>
+      <button class="btn btn-primary" id="btn-import-do" disabled>Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Sync from Sheet modal ──────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-sync">
+  <div class="ss-modal">
+    <div class="ss-modal-head">
+      <h3 class="ss-modal-title"><i data-icon="refresh-cw"></i> Sync from Google Sheet (via n8n)</h3>
+      <button class="ss-modal-close" data-close="modal-sync">×</button>
+    </div>
+    <div class="ss-modal-body">
+      <div class="info-banner">
+        <b>How it works:</b> ระบบจะเรียก n8n webhook → n8n อ่าน Sheet → ส่งกลับเป็นรายการ services<br>
+        <b>Mode:</b> Sheet is the source of truth — services ที่ไม่อยู่ใน Sheet จะถูกลบ, ใหม่จะถูกเพิ่ม, ที่เปลี่ยนจะถูกอัพเดต
+      </div>
+
+      <div class="form-row" style="margin-top:14px">
+        <label class="form-label" for="sync-url">n8n Webhook URL</label>
+        <input type="url" id="sync-url" class="form-control" placeholder="https://nodemation-console.tmn-dev.com/webhook/service-severity-sync">
+        <div class="form-hint">Production Webhook URL จาก n8n workflow "Service Severity Sync"</div>
+      </div>
+
+      <div id="sync-last" style="margin-top:14px;font-size:12px;color:var(--text-muted)"></div>
+      <div id="sync-result" style="margin-top:10px"></div>
+    </div>
+    <div class="ss-modal-foot">
+      <button class="btn btn-ghost"   data-close="modal-sync">Close</button>
+      <button class="btn btn-ghost"   id="btn-sync-save">Save URL</button>
+      <button class="btn btn-primary" id="btn-sync-run">Sync now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Sync confirmation modal ──────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-sync-confirm">
+  <div class="ss-modal" style="max-width:440px">
+    <div class="ss-modal-head">
+      <h3 class="ss-modal-title">Sync จาก Google Sheet?</h3>
+      <button class="ss-modal-close" data-close="modal-sync-confirm">×</button>
+    </div>
+    <div class="ss-modal-body">
+      <div class="del-warn">
+        <div style="margin-bottom:10px;font-size:13px;color:var(--text)">
+          ระบบจะดึงข้อมูลจาก Sheet ผ่าน n8n แล้ว <b>เขียนทับ</b> registry ทั้งหมด
+        </div>
+        <div style="font-size:11.5px;color:var(--text-muted);line-height:1.6">
+          <i data-icon="circle"></i> Service ใหม่ใน Sheet → <b style="color:var(--ss-p3)">เพิ่ม</b><br>
+          <i data-icon="circle"></i> Priority/Group เปลี่ยน → <b style="color:#3b82f6">อัพเดต</b><br>
+          <i data-icon="circle"></i> ไม่อยู่ใน Sheet แล้ว → <b style="color:#dc2626">ลบทิ้ง</b>
+        </div>
+      </div>
+    </div>
+    <div class="ss-modal-foot">
+      <button class="btn btn-ghost"   data-close="modal-sync-confirm">Cancel</button>
+      <button class="btn btn-primary" id="btn-sync-confirm">Yes, sync now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Webhooks modal — per-runway Google Chat webhook URLs ───────────── -->
+<div class="modal-overlay" id="modal-webhooks">
+  <div class="ss-modal wide">
+    <div class="ss-modal-head">
+      <h3 class="ss-modal-title"><i data-icon="message-circle"></i> Restart Monitor · Google Chat Webhooks</h3>
+      <button class="ss-modal-close" data-close="modal-webhooks">×</button>
+    </div>
+    <div class="ss-modal-body">
+      <div class="info-banner">
+        <b>How it works:</b> ทุก 9 โมงระบบจะ fetch pod-restart แล้ว POST ไปที่ <code>api/restart-monitor/upload.php</code><br>
+        หลังบันทึกไฟล์ ระบบจะส่ง Google Chat แจ้งเตือนไปยัง webhook ของ runway นั้น<br>
+        <b>ลำดับความสำคัญ URL:</b> ค่าที่ตั้งในหน้านี้ &gt; <code>.env[chatWebhookEnv]</code> &gt; <code>.env[RESTART_MONITOR_CHAT_WEBHOOK]</code>
+      </div>
+
+      <div id="webhooks-list" style="margin-top:14px">
+        <div class="ss-table-empty">กำลังโหลด…</div>
+      </div>
+
+      <div id="webhooks-meta" style="margin-top:14px;font-size:11.5px;color:var(--text-muted)"></div>
+    </div>
+    <div class="ss-modal-foot">
+      <button class="btn btn-primary" data-close="modal-webhooks">Done</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  if (!Auth.requireAdmin()) return;
+  Layout.render('admin-service-severity');
+
+  // ── State ────────────────────────────────────────────────────────
+  const state = {
+    all: [],
+    filter: 'all',
+    runway: 'all',
+    search: '',
+    editing: null,
+    editPriority: 'P3',
+    deleting: null,
+    importRows: [],
+    importMode: 'replace',
+  };
+
+  // ── DOM helpers ──────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  // ── Modal: uses global .modal-overlay + .active pattern ───────────
+  function openModal(id) {
+    const el = $(id);
+    if (!el) return;
+    el.classList.add('active');
+  }
+  function closeModal(id) {
+    const el = $(id);
+    if (!el) return;
+    el.classList.remove('active');
+  }
+
+  // ── API ──────────────────────────────────────────────────────────
+  async function apiGet(action, extra = '') {
+    return await API.get('/service-severity/index.php?action=' + action + extra);
+  }
+  async function apiPost(body) {
+    return await API.post('/service-severity/index.php', body);
+  }
+
+  // ── Load ─────────────────────────────────────────────────────────
+  async function loadStats() {
+    const res = await apiGet('stats');
+    if (!res?.ok) return;
+    const d = res.data?.data || {};
+    $('stat-total').textContent = d.total ?? 0;
+    $('stat-p1').textContent    = d.byPriority?.P1 ?? 0;
+    $('stat-p2').textContent    = d.byPriority?.P2 ?? 0;
+    $('stat-p3').textContent    = d.byPriority?.P3 ?? 0;
+    if (d.lastUpdated) {
+      $('stat-updated').textContent = new Date(d.lastUpdated).toLocaleString('th-TH', { dateStyle:'short', timeStyle:'short' });
+    } else {
+      $('stat-updated').textContent = '—';
+    }
+  }
+
+  async function loadList() {
+    const qp = state.search ? '&search=' + encodeURIComponent(state.search) : '';
+    const res = await apiGet('list', qp);
+    if (!res?.ok) {
+      $('table-wrap').innerHTML = '<div class="ss-table-empty" style="color:#dc2626">โหลดไม่สำเร็จ: ' + esc(res?.data?.message || 'unknown error') + '</div>';
+      return;
+    }
+    state.all = res.data?.data?.services || [];
+    renderTable();
+  }
+
+  async function loadAll() {
+    await Promise.all([loadStats(), loadList()]);
+  }
+
+  // ── Render table ─────────────────────────────────────────────────
+  function pbadge(p) {
+    if (p === 'P1') return '<span class="pbadge p1"><span class="dot"></span>P1 · Critical</span>';
+    if (p === 'P2') return '<span class="pbadge p2"><span class="dot"></span>P2 · Warning</span>';
+    return '<span class="pbadge p3"><span class="dot"></span>P3 · Info</span>';
+  }
+
+  const ICON_EDIT = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+  const ICON_DEL  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>';
+
+  function rwbadge(rw) {
+    if (!rw) return '<span class="ss-svcgrp" style="color:var(--text-muted)">—</span>';
+    const cls = rw === 'OCP' ? 'ocp' : (rw === 'EKS NANO' ? 'nano' : 'tmn');
+    return `<span class="rw-badge rw-${cls}">${esc(rw)}</span>`;
+  }
+
+  function renderTable() {
+    const rows = state.all.filter(s =>
+      (state.filter === 'all' || s.priority === state.filter) &&
+      (state.runway === 'all' || (s.runway || '') === state.runway)
+    );
+
+    if (!rows.length) {
+      $('table-wrap').innerHTML = '<div class="ss-table-empty">ไม่พบ service ที่ตรงกัน</div>';
+      $('table-foot').style.display = 'none';
+      return;
+    }
+
+    const html = `
+      <table class="ss-table">
+        <thead><tr>
+          <th style="width:34%">Service Name</th>
+          <th>Group</th>
+          <th>BU</th>
+          <th style="width:110px">Runway</th>
+          <th style="width:170px">Priority</th>
+          <th style="width:90px;text-align:right">Actions</th>
+        </tr></thead>
+        <tbody>${rows.map(s => `
+          <tr data-name="${esc(s.name)}">
+            <td class="ss-svcname">${esc(s.name)}</td>
+            <td class="ss-svcgrp">${esc(s.serviceGroup || '—')}</td>
+            <td class="ss-svcgrp">${esc(s.bu || '—')}</td>
+            <td>${rwbadge(s.runway || '')}</td>
+            <td>${pbadge(s.priority)}</td>
+            <td>
+              <div class="row-actions" style="justify-content:flex-end">
+                <button class="icon-btn"        data-action="edit"   title="Edit">${ICON_EDIT}</button>
+                <button class="icon-btn danger" data-action="delete" title="Delete">${ICON_DEL}</button>
+              </div>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+
+    $('table-wrap').innerHTML = html;
+    $('table-foot').style.display = 'flex';
+    $('table-count').textContent = `${rows.length} services`;
+    const parts = [];
+    if (state.filter !== 'all') parts.push(state.filter);
+    if (state.runway !== 'all') parts.push(state.runway);
+    if (state.search)           parts.push(`"${state.search}"`);
+    $('table-filter').textContent = parts.length ? 'Filter: ' + parts.join(' · ') : 'All services';
+  }
+
+  // ── Edit modal ───────────────────────────────────────────────────
+  function selectPriority(p) {
+    state.editPriority = p;
+    document.querySelectorAll('#psel .popt').forEach(el => {
+      el.classList.remove('sel','p1','p2','p3');
+      if (el.dataset.p === p) {
+        el.classList.add('sel', p.toLowerCase());
+      }
+    });
+  }
+
+  function openAdd() {
+    state.editing = null;
+    $('edit-title').textContent = 'Add Service';
+    $('f-name').value   = '';
+    $('f-name').disabled = false;
+    $('f-group').value  = '';
+    $('f-bu').value     = 'Truemoney';
+    $('f-runway').value = state.runway === 'all' ? '' : state.runway;
+    selectPriority('P3');
+    openModal('modal-edit');
+    setTimeout(() => $('f-name').focus(), 60);
+  }
+
+  function openEdit(svc) {
+    state.editing = svc.name;
+    $('edit-title').textContent = 'Edit Service';
+    $('f-name').value   = svc.name;
+    $('f-name').disabled = true;
+    $('f-group').value  = svc.serviceGroup || '';
+    $('f-bu').value     = svc.bu || 'Truemoney';
+    $('f-runway').value = svc.runway || '';
+    selectPriority(svc.priority || 'P3');
+    openModal('modal-edit');
+  }
+
+  async function saveEdit() {
+    const name   = $('f-name').value.trim();
+    const prio   = state.editPriority;
+    const group  = $('f-group').value.trim();
+    const bu     = $('f-bu').value.trim() || 'Truemoney';
+    const runway = $('f-runway').value;
+
+    if (!name) { showToast?.('กรุณากรอก Service Name', 'error'); return; }
+
+    const btn = $('btn-save');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    const res = await apiPost({ action: 'upsert', name, priority: prio, serviceGroup: group, bu, runway });
+
+    btn.disabled = false; btn.textContent = 'Save';
+    if (res?.ok) {
+      showToast?.(`Saved: ${name} → ${prio}`, 'success');
+      closeModal('modal-edit');
+      loadAll();
+    } else {
+      showToast?.(res?.data?.message || 'บันทึกไม่สำเร็จ', 'error');
+    }
+  }
+
+  // ── Delete modal ─────────────────────────────────────────────────
+  function openDelete(name) {
+    state.deleting = name;
+    $('del-name').textContent = name;
+    openModal('modal-delete');
+  }
+
+  async function confirmDelete() {
+    if (!state.deleting) return;
+    const btn = $('btn-del-confirm');
+    btn.disabled = true; btn.textContent = 'Deleting…';
+
+    const res = await apiPost({ action: 'delete', name: state.deleting });
+
+    btn.disabled = false; btn.textContent = 'Delete';
+    if (res?.ok) {
+      showToast?.('Deleted: ' + state.deleting, 'success');
+      closeModal('modal-delete');
+      loadAll();
+    } else {
+      showToast?.(res?.data?.message || 'ลบไม่สำเร็จ', 'error');
+    }
+    state.deleting = null;
+  }
+
+  // ── Import modal ─────────────────────────────────────────────────
+  function openImport() {
+    state.importRows = [];
+    state.importMode = 'replace';
+    $('preview-wrap').classList.remove('show');
+    $('btn-import-do').disabled = true;
+    $('csv-input').value = '';
+    setImportMode('replace');
+    openModal('modal-import');
+  }
+
+  function setImportMode(m) {
+    state.importMode = m;
+    $('mode-merge').classList.toggle('on', m === 'merge');
+    $('mode-replace').classList.toggle('on', m === 'replace');
+  }
+
+  function parseCsv(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const lines = e.target.result.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      if (!lines.length) return;
+
+      const header = lines[0].split(',').map(h => h.replace(/^"+|"+$/g,'').trim());
+      const nameIdx  = header.findIndex(h => /service.?name/i.test(h));
+      const prioIdx  = header.findIndex(h => /priority/i.test(h));
+      const groupIdx = header.findIndex(h => /service.?group/i.test(h));
+      const buIdx    = header.findIndex(h => /^bu$/i.test(h));
+
+      if (nameIdx < 0 || prioIdx < 0) {
+        showToast?.('CSV ต้องมีคอลัมน์ "Service name" และ "Priority"', 'error');
+        return;
+      }
+
+      state.importRows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',').map(c => c.replace(/^"+|"+$/g,'').trim());
+        const name = cols[nameIdx];
+        const prio = (cols[prioIdx] || '').toUpperCase();
+        if (!name || !['P1','P2','P3'].includes(prio)) continue;
+        state.importRows.push({
+          name,
+          priority: prio,
+          serviceGroup: groupIdx >= 0 ? cols[groupIdx] : '',
+          bu: buIdx >= 0 ? cols[buIdx] : 'Truemoney',
+        });
+      }
+
+      const preview = state.importRows.slice(0, 10);
+      const more = state.importRows.length > 10
+        ? `<tr><td colspan="3" style="color:var(--text-muted);font-style:italic;text-align:center">…และอีก ${state.importRows.length - 10} services</td></tr>` : '';
+
+      $('preview-label').textContent = `พบ ${state.importRows.length} services valid`;
+      $('preview-table').innerHTML = `
+        <table>
+          <thead><tr><th>Service</th><th>Priority</th><th>Group</th></tr></thead>
+          <tbody>
+            ${preview.map(r => `<tr>
+              <td style="font-family:ui-monospace,monospace;font-size:11px">${esc(r.name)}</td>
+              <td>${pbadge(r.priority)}</td>
+              <td style="color:var(--text-muted)">${esc(r.serviceGroup)}</td>
+            </tr>`).join('')}
+            ${more}
+          </tbody>
+        </table>`;
+      $('preview-wrap').classList.add('show');
+      $('btn-import-do').disabled = state.importRows.length === 0;
+    };
+    reader.readAsText(file);
+  }
+
+  async function doImport() {
+    if (!state.importRows.length) return;
+    const btn = $('btn-import-do');
+    btn.disabled = true; btn.textContent = 'Importing…';
+
+    const res = await apiPost({ action: 'import', mode: state.importMode, data: state.importRows });
+
+    btn.disabled = false; btn.textContent = 'Import';
+    if (res?.ok) {
+      const d = res.data?.data;
+      showToast?.(`Imported ${d?.imported} services (skipped: ${d?.skipped})`, 'success');
+      closeModal('modal-import');
+      loadAll();
+    } else {
+      showToast?.(res?.data?.message || 'Import ไม่สำเร็จ', 'error');
+    }
+  }
+
+  // ── Wire up event listeners ──────────────────────────────────────
+  function wire() {
+    // Top buttons
+    $('btn-add').addEventListener('click', openAdd);
+    $('btn-import').addEventListener('click', openImport);
+    $('btn-sync').addEventListener('click', openSync);
+    $('btn-sync-save').addEventListener('click', saveSyncUrl);
+    $('btn-sync-run').addEventListener('click', runSync);
+    $('btn-sync-confirm').addEventListener('click', performSync);
+    $('btn-webhooks').addEventListener('click', openWebhooks);
+    $('webhooks-list').addEventListener('click', onWebhooksAction);
+
+    // Modal close buttons (all elements with data-close)
+    document.querySelectorAll('[data-close]').forEach(b => {
+      b.addEventListener('click', () => closeModal(b.dataset.close));
+    });
+
+    // Close modal by clicking overlay
+    document.querySelectorAll('.modal-overlay').forEach(ov => {
+      ov.addEventListener('click', e => {
+        if (e.target === ov) closeModal(ov.id);
+      });
+    });
+
+    // Priority selector
+    document.querySelectorAll('#psel .popt').forEach(el => {
+      el.addEventListener('click', () => selectPriority(el.dataset.p));
+    });
+
+    // Save / Delete
+    $('btn-save').addEventListener('click', saveEdit);
+    $('btn-del-confirm').addEventListener('click', confirmDelete);
+
+    // Priority tabs
+    document.querySelectorAll('#prio-tabs .ss-tab').forEach(t => {
+      t.addEventListener('click', () => {
+        state.filter = t.dataset.p;
+        document.querySelectorAll('#prio-tabs .ss-tab').forEach(x => x.classList.toggle('active', x === t));
+        renderTable();
+      });
+    });
+
+    // Runway tabs
+    document.querySelectorAll('#runway-tabs .ss-tab').forEach(t => {
+      t.addEventListener('click', () => {
+        state.runway = t.dataset.rw;
+        document.querySelectorAll('#runway-tabs .ss-tab').forEach(x => x.classList.toggle('active', x === t));
+        renderTable();
+      });
+    });
+
+    // Search (debounced)
+    let searchTimer;
+    $('search').addEventListener('input', e => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        state.search = e.target.value.trim();
+        loadList();
+      }, 200);
+    });
+
+    // Table action delegation
+    $('table-wrap').addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const tr = btn.closest('tr[data-name]');
+      if (!tr) return;
+      const name = tr.dataset.name;
+      const svc = state.all.find(s => s.name === name);
+      if (!svc) return;
+      if (btn.dataset.action === 'edit')   openEdit(svc);
+      if (btn.dataset.action === 'delete') openDelete(name);
+    });
+
+    // Import: drop zone
+    const dz = $('drop-zone');
+    const ci = $('csv-input');
+    dz.addEventListener('click', () => ci.click());
+    ci.addEventListener('change', e => { if (e.target.files[0]) parseCsv(e.target.files[0]); });
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+    dz.addEventListener('drop', e => {
+      e.preventDefault();
+      dz.classList.remove('over');
+      if (e.dataTransfer.files[0]) parseCsv(e.dataTransfer.files[0]);
+    });
+
+    // Import mode toggle
+    $('mode-merge').addEventListener('click', () => setImportMode('merge'));
+    $('mode-replace').addEventListener('click', () => setImportMode('replace'));
+    $('btn-import-do').addEventListener('click', doImport);
+
+    // Keyboard: ESC close, Ctrl+Enter save
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        ['modal-edit','modal-delete','modal-import'].forEach(closeModal);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        if ($('modal-edit').classList.contains('active')) saveEdit();
+      }
+    });
+  }
+
+  // ── Sync from Sheet (via n8n) ───────────────────────────────────
+  // API wrapper shape: res = { ok, status, data: { success, message, data: <payload> } }
+  // So actual payload lives at res.data.data
+  async function openSync() {
+    openModal('modal-sync');
+    $('sync-result').innerHTML = '';
+    $('sync-last').textContent  = 'Loading…';
+
+    const [cfg, last] = await Promise.all([
+      API.get('/n8n-severity-config.php'),
+      API.get('/n8n-severity-sync.php'),
+    ]);
+    $('sync-url').value = cfg?.data?.data?.webhook_url || '';
+    renderLastSync(last?.data?.data?.lastSync);
+  }
+
+  function renderLastSync(s) {
+    if (!s) { $('sync-last').textContent = 'ยังไม่เคย sync'; return; }
+    $('sync-last').innerHTML =
+      `<b>ครั้งล่าสุด:</b> ${new Date(s.syncedAt).toLocaleString('th-TH')} โดย ${esc(s.syncedBy || '')} · ` +
+      `<b>+${s.added}</b> / <b>~${s.updated}</b> / <b>−${s.deleted}</b> · ` +
+      `total ${s.sheetTotal}` +
+      (s.skippedInvalid ? ` · skipped ${s.skippedInvalid}` : '');
+  }
+
+  async function saveSyncUrl() {
+    const url = $('sync-url').value.trim();
+    if (!url) { Toast.warning('กรอก webhook URL ก่อน'); return; }
+    const res = await API.post('/n8n-severity-config.php', { webhook_url: url });
+    if (res?.ok && res?.data?.success) {
+      Toast.success('บันทึก URL แล้ว');
+    } else {
+      Toast.error(res?.data?.message || 'บันทึกไม่สำเร็จ');
+    }
+  }
+
+  function runSync() {
+    const url = $('sync-url').value.trim();
+    if (!url) { Toast.warning('กรอก webhook URL + กด Save URL ก่อน'); return; }
+    openModal('modal-sync-confirm');
+  }
+
+  async function performSync() {
+    closeModal('modal-sync-confirm');
+    const btn = $('btn-sync-run');
+
+    btn.disabled = true;
+    const oldLbl = btn.textContent;
+    btn.textContent = 'Syncing…';
+    $('sync-result').innerHTML = '<div style="padding:10px 12px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.25);border-radius:8px;font-size:12px;color:var(--text-muted)">⏳ กำลังดึงข้อมูลจาก Sheet ผ่าน n8n…</div>';
+
+    const res = await API.post('/n8n-severity-sync.php', {});
+
+    btn.disabled = false;
+    btn.textContent = oldLbl;
+
+    // Failure path — surface the server message (e.g. "n8n webhook returned HTTP 404 | …")
+    if (!res?.ok || !res?.data?.success) {
+      const msg = res?.data?.message || `HTTP ${res?.status || 'error'}`;
+      $('sync-result').innerHTML =
+        `<div style="padding:10px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:12px">` +
+        `<b>Sync ไม่สำเร็จ:</b> ${esc(msg)}</div>`;
+      Toast.error(msg);
+      return;
+    }
+
+    const s = res.data.data || {};
+    renderLastSync(s);
+
+    const rwParts = Object.entries(s.byRunway || {}).map(([k,v]) => `${esc(k)}: <b>${v}</b>`).join(' · ');
+    const addedSample   = s.addedSample   || [];
+    const deletedSample = s.deletedSample || [];
+    const collisions    = s.collisions    || [];
+    const defaultedByRw = s.defaultedByRunway || {};
+    const defaultedSamples = s.defaultedSamples || {};
+    const lines = [
+      `<div style="padding:10px 12px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.3);border-radius:8px;font-size:12px;line-height:1.6">`,
+      `<b>Sync สำเร็จ</b> · total ${s.sheetTotal || 0} services`,
+      rwParts ? `<br><i data-icon=\"circle\"></i> by runway: ${rwParts}` : '',
+      `<br><i data-icon=\"circle\"></i> เพิ่ม <b>${s.added || 0}</b> · อัพเดต <b>${s.updated || 0}</b> · ลบ <b>${s.deleted || 0}</b> · ไม่เปลี่ยน ${s.unchanged || 0}`,
+      s.skippedInvalid ? `<br><i data-icon=\"circle\"></i> <i data-icon=\"alert-triangle\"></i> skipped invalid: ${s.skippedInvalid}` : '',
+      collisions.length    ? `<br><i data-icon=\"circle\"></i> <i data-icon=\"alert-triangle\"></i> cross-tab collisions: <code style="font-size:11px">${collisions.map(esc).join(', ')}</code>` : '',
+      addedSample.length   ? `<br><i data-icon=\"circle\"></i> added: <code style="font-size:11px">${addedSample.map(esc).join(', ')}${s.added > addedSample.length ? ', …' : ''}</code>` : '',
+      deletedSample.length ? `<br><i data-icon=\"circle\"></i> deleted: <code style="font-size:11px">${deletedSample.map(esc).join(', ')}${s.deleted > deletedSample.length ? ', …' : ''}</code>` : '',
+      `</div>`,
+    ];
+
+    // Defaulted-priority warning (separate yellow box)
+    if (s.defaulted && s.defaulted > 0) {
+      const rwBreakdown = Object.entries(defaultedByRw).map(([k,v]) => `${esc(k)}: <b>${v}</b>`).join(' · ');
+      const sampleBlocks = Object.entries(defaultedSamples).map(([rw, names]) =>
+        `<div style="margin-top:4px"><b>${esc(rw)}:</b> <code style="font-size:11px">${names.map(esc).join(', ')}${(defaultedByRw[rw]||0) > names.length ? ', …' : ''}</code></div>`
+      ).join('');
+      lines.push(
+        `<div style="margin-top:8px;padding:10px 12px;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.32);border-radius:8px;font-size:12px;line-height:1.6">`,
+        `<b><i data-icon=\"alert-triangle\"></i> Priority ว่างใน Sheet — default เป็น P3 (info)</b> · รวม <b>${s.defaulted}</b> รายการ`,
+        rwBreakdown ? `<br><i data-icon=\"circle\"></i> ${rwBreakdown}` : '',
+        sampleBlocks ? `<div style="margin-top:6px;font-size:11px;color:var(--text-muted)">โปรดเติม Priority ใน Sheet ให้รายการเหล่านี้:</div>${sampleBlocks}` : '',
+        `</div>`
+      );
+    }
+
+    $('sync-result').innerHTML = lines.join('');
+    Toast.success('Sync สำเร็จ');
+    await loadAll();
+  }
+
+  // ── Webhooks (Restart Monitor → Google Chat) ─────────────────────
+  const webhooksState = { rows: [], dirty: {} };
+
+  async function openWebhooks() {
+    openModal('modal-webhooks');
+    $('webhooks-list').innerHTML = '<div class="ss-table-empty">กำลังโหลด…</div>';
+    $('webhooks-meta').textContent = '';
+    await loadWebhooks();
+  }
+
+  async function loadWebhooks() {
+    const res = await API.get('/restart-monitor-webhooks/index.php');
+    if (!res?.ok || !res?.data?.success) {
+      $('webhooks-list').innerHTML =
+        `<div class="ss-table-empty" style="color:#dc2626">โหลดไม่สำเร็จ: ${esc(res?.data?.message || 'unknown error')}</div>`;
+      return;
+    }
+    const payload = res.data.data || {};
+    webhooksState.rows  = payload.runways || [];
+    webhooksState.dirty = {};
+    renderWebhooks(payload);
+  }
+
+  function srcLabel(src) {
+    if (src === 'override') return '<span style="display:inline-block;padding:2px 7px;font-size:10px;font-weight:700;background:rgba(34,197,94,.12);color:#16a34a;border-radius:5px">OVERRIDE</span>';
+    if (src === 'env')      return '<span style="display:inline-block;padding:2px 7px;font-size:10px;font-weight:700;background:rgba(59,130,246,.12);color:#3b82f6;border-radius:5px">FROM .ENV</span>';
+    return '<span style="display:inline-block;padding:2px 7px;font-size:10px;font-weight:700;background:rgba(239,68,68,.12);color:#dc2626;border-radius:5px">NOT SET</span>';
+  }
+
+  function renderWebhooks(payload) {
+    const rows = webhooksState.rows;
+    if (!rows.length) {
+      $('webhooks-list').innerHTML = '<div class="ss-table-empty">ยังไม่ได้กำหนด runway ใน <code>data/grafana-runways.json</code></div>';
+      return;
+    }
+
+    const html = rows.map(r => {
+      const accent  = r.color || '#71717a';
+      const envHint = r.envName ? `env: <code>${esc(r.envName)}</code>` : 'no env binding';
+      const placeholder = r.hasEnv
+        ? 'ใช้ค่าจาก .env (ปล่อยว่างเพื่อใช้ค่า .env)'
+        : 'วาง Google Chat webhook URL ที่นี่';
+      return `
+        <div class="webhook-card" data-slug="${esc(r.slug)}" style="margin-bottom:12px;padding:14px 16px;background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:8px;border-left:3px solid ${esc(accent)}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+            <div>
+              <div style="font-weight:700;font-size:14px;color:var(--text)">${esc(r.name)}</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px">
+                cluster: <code>${esc(r.cluster)}</code> · ${envHint}
+              </div>
+            </div>
+            <div>${srcLabel(r.source)}</div>
+          </div>
+
+          <div style="margin-top:10px">
+            <input type="url" class="form-control wh-url"
+              placeholder="${esc(placeholder)}"
+              value="${esc(r.overrideUrl || '')}"
+              style="font-family:ui-monospace,SF Mono,monospace;font-size:11.5px">
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+              effective: <code>${esc(r.maskedUrl || '— (ยังไม่ได้ตั้งค่า)')}</code>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button class="btn btn-primary wh-save" data-act="save"><i data-icon=\"save\"></i> Save</button>
+            <button class="btn btn-ghost wh-test"   data-act="test"><i data-icon=\"mail\"></i> Test send</button>
+            ${r.hasOverride ? '<button class="btn btn-ghost wh-clear" data-act="clear" style="color:#dc2626">↺ Revert to .env</button>' : ''}
+          </div>
+          <div class="wh-result" style="margin-top:8px;font-size:11.5px"></div>
+        </div>`;
+    }).join('');
+
+    $('webhooks-list').innerHTML = html;
+
+    const meta = [];
+    if (payload?.legacyFallback) meta.push('legacy <code>RESTART_MONITOR_CHAT_WEBHOOK</code> set in .env (used when no per-runway match)');
+    if (payload?.updatedAt) meta.push(`last edit: ${new Date(payload.updatedAt).toLocaleString('th-TH')} by ${esc(payload.updatedBy || '')}`);
+    $('webhooks-meta').innerHTML = meta.join(' · ');
+  }
+
+  function onWebhooksAction(e) {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const card = btn.closest('.webhook-card');
+    if (!card) return;
+    const slug   = card.dataset.slug;
+    const urlEl  = card.querySelector('.wh-url');
+    const result = card.querySelector('.wh-result');
+    if (btn.dataset.act === 'save')  saveWebhook(slug, urlEl, result, btn);
+    if (btn.dataset.act === 'test')  testWebhook(slug, urlEl, result, btn);
+    if (btn.dataset.act === 'clear') clearWebhook(slug, result, btn);
+  }
+
+  function setResult(el, kind, text) {
+    const colors = {
+      ok:   ['rgba(34,197,94,.08)',  'rgba(34,197,94,.3)',  '#166534'],
+      warn: ['rgba(217,119,6,.08)',  'rgba(217,119,6,.32)', '#92400e'],
+      err:  ['rgba(239,68,68,.08)',  'rgba(239,68,68,.3)',  '#991b1b'],
+    };
+    const [bg, br, fg] = colors[kind] || colors.warn;
+    el.innerHTML = `<div style="padding:8px 10px;background:${bg};border:1px solid ${br};color:${fg};border-radius:6px">${text}</div>`;
+  }
+
+  async function saveWebhook(slug, urlEl, result, btn) {
+    const url = urlEl.value.trim();
+    if (!url) { Toast.warning('กรอก webhook URL ก่อน (หรือกด Revert to .env)'); return; }
+    btn.disabled = true;
+    const oldLbl = btn.textContent; btn.textContent = 'Saving…';
+    const res = await API.put('/restart-monitor-webhooks/index.php?slug=' + encodeURIComponent(slug), { url });
+    btn.disabled = false; btn.textContent = oldLbl;
+    if (res?.ok && res?.data?.success) {
+      Toast.success('Saved');
+      setResult(result, 'ok', '<i data-icon=\"check\"></i> บันทึก URL แล้ว · จะใช้ตอนรอบ 9 โมงรอบถัดไป');
+      await loadWebhooks();
+    } else {
+      const msg = res?.data?.message || 'บันทึกไม่สำเร็จ';
+      Toast.error(msg);
+      setResult(result, 'err', '<i data-icon=\"x\"></i> ' + esc(msg));
+    }
+  }
+
+  async function clearWebhook(slug, result, btn) {
+    btn.disabled = true;
+    const oldLbl = btn.textContent; btn.textContent = 'Clearing…';
+    const res = await API.delete('/restart-monitor-webhooks/index.php?slug=' + encodeURIComponent(slug));
+    btn.disabled = false; btn.textContent = oldLbl;
+    if (res?.ok && res?.data?.success) {
+      Toast.success('Reverted to .env');
+      await loadWebhooks();
+    } else {
+      const msg = res?.data?.message || 'ลบ override ไม่สำเร็จ';
+      Toast.error(msg);
+      setResult(result, 'err', '<i data-icon=\"x\"></i> ' + esc(msg));
+    }
+  }
+
+  async function testWebhook(slug, urlEl, result, btn) {
+    btn.disabled = true;
+    const oldLbl = btn.textContent; btn.textContent = 'Sending…';
+    setResult(result, 'warn', '⏳ กำลังส่ง test card…');
+    // If user typed a URL, test that one (so they can verify before saving).
+    // Otherwise test the resolved effective URL on the server.
+    const body = { slug };
+    const typed = urlEl.value.trim();
+    if (typed) body.url = typed;
+    const res = await API.post('/restart-monitor-webhooks/index.php?action=test', body);
+    btn.disabled = false; btn.textContent = oldLbl;
+    if (res?.ok && res?.data?.success) {
+      const code = res.data.data?.httpCode || 200;
+      setResult(result, 'ok', `<i data-icon=\"check\"></i> ส่งสำเร็จ (HTTP ${code}) — ตรวจสอบ Google Chat space`);
+      Toast.success('Test sent');
+    } else {
+      const msg = res?.data?.message || 'ส่งไม่สำเร็จ';
+      setResult(result, 'err', '<i data-icon=\"x\"></i> ' + esc(msg));
+      Toast.error(msg);
+    }
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────
+  wire();
+  loadAll();
+
+})();
+</script>
+</body>
+</html>

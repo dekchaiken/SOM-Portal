@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Noti — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .en-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden; margin-bottom: 16px;
+    }
+    .en-card-hd {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 20px; border-bottom: 1px solid var(--border);
+    }
+    .en-card-icon {
+      width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      background: rgba(249,115,22,.1); color: var(--orange);
+    }
+    .en-card-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .en-card-sub   { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+    .en-body { padding: 20px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; align-items: start; }
+    @media (max-width: 1100px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    /* Mode picker */
+    .mode-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    }
+    @media (max-width: 640px) {
+      .mode-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .mode-card {
+      padding: 14px 12px; border: 1.5px solid var(--border);
+      border-radius: 10px; cursor: pointer; text-align: center;
+      transition: all .15s; background: var(--bg);
+    }
+    .mode-card:hover { border-color: var(--orange); }
+    .mode-card.active {
+      border-color: var(--orange); background: rgba(249,115,22,.08);
+      box-shadow: 0 0 0 3px rgba(249,115,22,.1);
+    }
+    .mode-icon  { font-size: 22px; margin-bottom: 6px; }
+    .mode-title { font-size: 12px; font-weight: 700; color: var(--text); }
+    .mode-sub   { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Form */
+    .f-row    { margin-bottom: 14px; }
+    .f-label  { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+    .f-input  {
+      width: 100%; padding: 9px 12px; border-radius: 9px;
+      border: 1.5px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 13px; font-family: inherit; box-sizing: border-box;
+    }
+    .f-input:focus { outline: none; border-color: var(--orange); }
+    textarea.f-input { resize: vertical; min-height: 120px; line-height: 1.65; }
+    select.f-input  { cursor: pointer; }
+    .f-hint { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Recipient picker */
+    .rcpt-toolbar {
+      display: flex; gap: 10px; align-items: center;
+      padding: 10px 14px; border: 1px solid var(--border); border-radius: 9px;
+      background: var(--bg); margin-bottom: 10px;
+    }
+    .rcpt-search {
+      flex: 1; padding: 6px 10px; border: 1px solid var(--border);
+      border-radius: 7px; background: var(--bg-card); color: var(--text);
+      font-size: 12px; font-family: inherit;
+    }
+    .rcpt-counter {
+      font-size: 11px; color: var(--text-muted); white-space: nowrap;
+    }
+    .rcpt-counter strong { color: var(--orange); }
+
+    .rcpt-list {
+      max-height: 360px; overflow-y: auto;
+      border: 1px solid var(--border); border-radius: 9px;
+      background: var(--bg);
+    }
+    .rcpt-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background .12s;
+    }
+    .rcpt-row:last-child { border-bottom: none; }
+    .rcpt-row:hover { background: var(--bg-card); }
+    .rcpt-row input[type=checkbox] {
+      width: 16px; height: 16px; accent-color: var(--orange);
+      cursor: pointer; flex-shrink: 0;
+    }
+    .rcpt-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--orange); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .rcpt-name { font-size: 13px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+    .rcpt-email { font-size: 11px; color: var(--text-muted); flex: 1; min-width: 0;
+                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rcpt-role-badge {
+      font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+      text-transform: uppercase; letter-spacing: .03em; flex-shrink: 0;
+    }
+    .rcpt-role-badge.admin { background: rgba(239,68,68,.12); color: #ef4444; }
+    .rcpt-role-badge.lead  { background: rgba(59,130,246,.12); color: #3b82f6; }
+    .rcpt-role-badge.user  { background: rgba(100,116,139,.12); color: #64748b; }
+    .rcpt-role-badge.ext   { background: rgba(245,158,11,.12); color: #f59e0b; }
+
+    /* Preview panel */
+    .preview-box {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 9px; padding: 16px;
+    }
+    .preview-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+    .preview-value { font-size: 13px; color: var(--text); margin-bottom: 12px; word-break: break-word; }
+    .preview-value:last-child { margin-bottom: 0; }
+    .preview-value.empty { color: var(--text-muted); font-style: italic; }
+    .preview-body {
+      max-height: 200px; overflow-y: auto;
+      background: var(--bg-card); padding: 10px 12px; border-radius: 7px;
+      font-size: 12px; line-height: 1.65; color: var(--text);
+      white-space: pre-wrap;
+    }
+
+    /* Result summary */
+    .send-result {
+      display: none; margin-top: 12px; padding: 12px 14px;
+      border-radius: 9px; font-size: 12px;
+    }
+    .send-result.ok  { background: rgba(34,197,94,.1);  color: #22c55e; border: 1px solid rgba(34,197,94,.3); }
+    .send-result.err { background: rgba(239,68,68,.08); color: #ef4444; border: 1px solid rgba(239,68,68,.3); }
+    .send-result.warn{ background: rgba(245,158,11,.1); color: #f59e0b; border: 1px solid rgba(245,158,11,.3); }
+    .send-result h4  { margin: 0 0 6px 0; font-size: 13px; }
+    .send-result ul  { margin: 6px 0 0 0; padding-left: 18px; font-size: 11px; opacity: .9; }
+
+    .save-bar {
+      display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+      padding: 14px 20px; border-top: 1px solid var(--border); background: var(--bg-card);
+    }
+    .save-hint { font-size: 11px; color: var(--text-muted); flex: 1; }
+
+    .skel { height: 38px; background: var(--bg); border-radius: 7px; margin-bottom: 6px; animation: pulse 1.4s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+
+    /* ── Send-confirmation modal with email preview ── */
+    .pv-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.55);
+      display: none; align-items: center; justify-content: center;
+      z-index: 9999; padding: 24px;
+    }
+    .pv-overlay.show { display: flex; animation: pvFadeIn .18s ease both; }
+    @keyframes pvFadeIn { from { opacity:0 } to { opacity:1 } }
+    .pv-modal {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+      width: 100%; max-width: 720px; max-height: 90vh;
+      display: flex; flex-direction: column;
+      animation: pvSlideIn .25s cubic-bezier(.2,.7,.2,1.2) both;
+    }
+    @keyframes pvSlideIn { from { opacity:0; transform: translateY(20px) scale(.97) } to { opacity:1; transform:none } }
+    .pv-hd {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .pv-hd-icon {
+      width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+      background: rgba(249,115,22,.15); color: var(--orange);
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .pv-hd-title { font-size: 14px; font-weight: 700; color: var(--text); }
+    .pv-hd-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .pv-body {
+      flex: 1; overflow: auto; padding: 16px 20px;
+      background: var(--bg);
+    }
+    .pv-meta-row {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      padding: 10px 14px; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: 8px;
+      margin-bottom: 12px; font-size: 11px;
+    }
+    .pv-meta-item { display: flex; gap: 6px; align-items: center; color: var(--text-muted); }
+    .pv-meta-item strong { color: var(--text); font-weight: 700; }
+    .pv-subject-box {
+      padding: 12px 16px; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .pv-subject-lbl  { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+    .pv-subject-text { font-size: 14px; font-weight: 600; color: var(--text); }
+    .pv-iframe {
+      width: 100%; height: 480px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: #fff; /* email preview always on white */
+    }
+    .pv-loading {
+      padding: 60px 20px; text-align: center; color: var(--text-muted); font-size: 12px;
+    }
+    .pv-loading::before {
+      content: ''; display: inline-block; width: 24px; height: 24px;
+      border: 3px solid var(--border); border-top-color: var(--orange);
+      border-radius: 50%; animation: spin .8s linear infinite; margin-bottom: 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .pv-ft {
+      padding: 12px 20px; border-top: 1px solid var(--border);
+      display: flex; gap: 8px; justify-content: flex-end;
+      background: var(--bg-card);
+    }
+    .pv-btn-cancel {
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 9px 18px; font-size: 12px; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .pv-btn-cancel:hover { border-color: var(--text-muted); }
+    .pv-btn-send {
+      background: var(--orange); color: #fff;
+      border: none; border-radius: 8px;
+      padding: 9px 20px; font-size: 12px; font-weight: 700;
+      font-family: inherit; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(249,115,22,.3);
+      transition: background .15s, transform .1s;
+    }
+    .pv-btn-send:hover:not(:disabled) { background: #ea580c; }
+    .pv-btn-send:active:not(:disabled) { transform: scale(.97); }
+    .pv-btn-send:disabled { opacity: .55; cursor: wait; }
+
+    /* "Required" badge for mandatory courses in dropdown — option element styling is limited */
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="megaphone"></i> Email Notification</div>
+        <div class="page-sub">ส่งเมลแจ้งข่าวสารคอร์สใหม่ / ข้อสอบใหม่ / ประกาศทั่วไป ให้ทีม</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="./mail-logs.html" class="btn btn-ghost" style="font-size:11px"><i data-icon="clipboard"></i> Mail Logs</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="megaphone"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Email Notification</h1>
+          <p>ส่งเมลแจ้งข่าวสาร — คอร์สใหม่ · ข้อสอบใหม่ · ประกาศทั่วไป ให้ทีม SM</p>
+        </div>
+      </section>
+
+      <div class="grid-2">
+        <!-- ─────────── LEFT: Compose ─────────── -->
+        <div>
+          <!-- Mode picker -->
+          <div class="en-card">
+            <div class="en-card-hd">
+              <div class="en-card-icon"><i data-icon="upload"></i></div>
+              <div>
+                <div class="en-card-title">1. เลือกประเภทการแจ้งเตือน</div>
+                <div class="en-card-sub">เลือกว่าจะส่งเรื่องอะไร — template จะถูกเตรียมให้อัตโนมัติ</div>
+              </div>
+            </div>
+            <div class="en-body">
+              <div class="mode-grid">
+                <div class="mode-card active" data-mode="course" onclick="setMode('course')">
+                  <div class="mode-icon"><i data-icon="book-open"></i></div>
+                  <div class="mode-title">New Course</div>
+                  <div class="mode-sub">แจ้งคอร์สเรียนใหม่</div>
+                </div>
+                <div class="mode-card" data-mode="exam" onclick="setMode('exam')">
+                  <div class="mode-icon"><i data-icon="edit"></i></div>
+                  <div class="mode-title">New Exam</div>
+                  <div class="mode-sub">แจ้งข้อสอบใหม่</div>
+                </div>
+                <div class="mode-card" data-mode="course_exam" onclick="setMode('course_exam')">
+                  <div class="mode-icon"><i data-icon="book-open"></i><i data-icon="edit"></i></div>
+                  <div class="mode-title">Course + Exam</div>
+                  <div class="mode-sub">คอร์ส + ข้อสอบจบคอร์ส</div>
+                </div>
+                <div class="mode-card" data-mode="custom" onclick="setMode('custom')">
+                  <div class="mode-icon"><i data-icon="megaphone"></i></div>
+                  <div class="mode-title">Custom</div>
+                  <div class="mode-sub">ประกาศเขียนเอง</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div class="en-card">
+            <div class="en-card-hd">
+              <div class="en-card-icon"><i data-icon="pencil"></i></div>
+              <div>
+                <div class="en-card-title">2. กรอกเนื้อหา</div>
+                <div class="en-card-sub" id="content-sub">เลือกคอร์สและเขียนข้อความเพิ่มเติม (ถ้าต้องการ)</div>
+              </div>
+            </div>
+            <div class="en-body">
+
+              <!-- Always-visible subject field — auto-fills based on mode + selection -->
+              <div class="f-row">
+                <div class="f-label">หัวข้ออีเมล <span style="color:#ef4444">*</span></div>
+                <input type="text" id="email-subject" class="f-input" maxlength="200"
+                       placeholder="🚀 [SM - Action Required] Mandatory Training: ..."
+                       oninput="onSubjectEdit()">
+                <div class="f-hint" id="subject-hint">
+                  ระบบเติม default ให้เมื่อเลือกคอร์ส/ข้อสอบ — แก้ได้ตามต้องการ
+                  <a href="javascript:void(0)" onclick="resetSubjectToDefault()" style="color:var(--orange);margin-left:6px">↻ คืนค่า default</a>
+                </div>
+              </div>
+
+              <!-- Course mode -->
+              <div id="mode-course" class="mode-pane">
+                <div class="f-row">
+                  <div class="f-label">เลือกคอร์ส <span style="color:#ef4444">*</span></div>
+                  <select id="course-select" class="f-input" onchange="onContentChange()">
+                    <option value="">— เลือกคอร์ส —</option>
+                  </select>
+                  <div class="f-hint">แสดงเฉพาะคอร์สที่ published แล้ว — สามารถจัดการได้ที่ <a href="./courses.html">Courses</a></div>
+                </div>
+                <div class="f-row">
+                  <div class="f-label">ข้อความเพิ่มเติม (ไม่บังคับ)</div>
+                  <textarea id="course-extra" class="f-input" placeholder="เช่น คอร์สนี้เป็นคอร์สบังคับ — กรุณาเรียนให้จบภายในวันที่ 30 มิ.ย."
+                            oninput="updatePreview()"></textarea>
+                </div>
+              </div>
+
+              <!-- Exam mode -->
+              <div id="mode-exam" class="mode-pane" style="display:none">
+                <div class="f-row">
+                  <div class="f-label">เลือกข้อสอบ <span style="color:#ef4444">*</span></div>
+                  <select id="exam-select" class="f-input" onchange="onContentChange()">
+                    <option value="">— เลือกข้อสอบ —</option>
+                  </select>
+                  <div class="f-hint">จัดการได้ที่ <a href="./exams.html">Exams</a></div>
+                </div>
+                <div class="f-row">
+                  <div class="f-label">ข้อความเพิ่มเติม (ไม่บังคับ)</div>
+                  <textarea id="exam-extra" class="f-input" placeholder="เช่น ข้อสอบประจำปี — กรุณาทำให้เสร็จภายในสัปดาห์นี้"
+                            oninput="updatePreview()"></textarea>
+                </div>
+              </div>
+
+              <!-- Course + Exam mode (combined announcement) -->
+              <div id="mode-course_exam" class="mode-pane" style="display:none">
+                <div class="f-row">
+                  <div class="f-label">เลือกคอร์ส <span style="color:#ef4444">*</span></div>
+                  <select id="ce-course-select" class="f-input" onchange="onContentChange()">
+                    <option value="">— เลือกคอร์ส —</option>
+                  </select>
+                  <div class="f-hint">แสดงเฉพาะคอร์สที่ published แล้ว</div>
+                </div>
+                <div class="f-row">
+                  <div class="f-label">เลือกข้อสอบ (จบคอร์ส) <span style="color:#ef4444">*</span></div>
+                  <select id="ce-exam-select" class="f-input" onchange="onContentChange()">
+                    <option value="">— เลือกข้อสอบ —</option>
+                  </select>
+                  <div class="f-hint" id="ce-exam-hint">
+                    เลือกข้อสอบที่ผู้เรียนจะทำหลังจบคอร์ส — ระบบจะแนะนำอัตโนมัติหากข้อสอบมี prerequisite ตรงกับคอร์สที่เลือก
+                  </div>
+                </div>
+                <div class="f-row">
+                  <div class="f-label">ข้อความเพิ่มเติม (ไม่บังคับ)</div>
+                  <textarea id="ce-extra" class="f-input" placeholder="เช่น กรุณาเรียนคอร์สให้จบทุก lesson ก่อนเข้าทำข้อสอบ — ทำได้ครั้งเดียวเท่านั้น"
+                            oninput="updatePreview()"></textarea>
+                </div>
+              </div>
+
+              <!-- Custom mode -->
+              <div id="mode-custom" class="mode-pane" style="display:none">
+                <div class="f-row">
+                  <div class="f-label">เนื้อหา <span style="color:#ef4444">*</span></div>
+                  <textarea id="custom-body" class="f-input" style="min-height:200px"
+                            placeholder="พิมพ์เนื้อหาที่ต้องการส่งให้ทีม..."
+                            oninput="updatePreview()"></textarea>
+                  <div class="f-hint">รองรับการขึ้นบรรทัดใหม่ — ระบบจะห่อด้วย email template สวยๆ ให้อัตโนมัติ</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Google Chat (optional) -->
+          <div class="en-card">
+            <div class="en-card-hd">
+              <div class="en-card-icon" style="background:rgba(66,133,244,.12);color:#4285F4"><i data-icon="message-circle"></i></div>
+              <div style="flex:1">
+                <div class="en-card-title">3. Google Chat (Optional)</div>
+                <div class="en-card-sub">ยิงการ์ดแจ้งเตือนเข้า Google Chat ควบคู่กับการส่งเมล</div>
+              </div>
+              <label style="display:flex;gap:6px;align-items:center;cursor:pointer;font-size:12px;font-weight:600">
+                <input type="checkbox" id="chat-toggle" onchange="onChatToggle()" style="accent-color:#4285F4;width:16px;height:16px">
+                <span>เปิดใช้</span>
+              </label>
+            </div>
+            <div class="en-body" id="chat-body" style="display:none">
+              <div class="f-row">
+                <div class="f-label">Webhook URL(s) <span style="color:var(--text-muted);font-weight:400">— 1 URL ต่อบรรทัด</span></div>
+                <textarea id="chat-webhooks" class="f-input" rows="3"
+                          placeholder="https://chat.googleapis.com/v1/spaces/.../messages?key=...&token=..."
+                          style="font-family:monospace;font-size:11px;line-height:1.6"></textarea>
+                <div class="f-hint" id="chat-webhook-hint">
+                  ถ้าเว้นว่างจะใช้ค่า default จาก
+                  <a href="./system-settings.html" style="color:var(--orange)">System Settings</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recipients -->
+          <div class="en-card">
+            <div class="en-card-hd">
+              <div class="en-card-icon"><i data-icon="users"></i></div>
+              <div>
+                <div class="en-card-title">4. เลือกผู้รับ</div>
+                <div class="en-card-sub">ติ๊กเฉพาะคนที่ต้องการส่ง — ผู้ใช้ที่ไม่มีอีเมลจะไม่แสดงในรายการ</div>
+              </div>
+            </div>
+            <div class="en-body">
+              <div class="rcpt-toolbar">
+                <label style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--text);cursor:pointer">
+                  <input type="checkbox" id="rcpt-all" onchange="toggleAll(this.checked)" checked>
+                  เลือกทั้งหมด
+                </label>
+                <input type="text" id="rcpt-search" class="rcpt-search" placeholder="🔍 ค้นหา name / username / email"
+                       oninput="renderRecipients()">
+                <div class="rcpt-counter">เลือก <strong id="rcpt-sel-count">0</strong> / <span id="rcpt-total-count">0</span></div>
+              </div>
+              <div id="rcpt-list" class="rcpt-list">
+                <div class="skel"></div><div class="skel"></div><div class="skel"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─────────── RIGHT: Preview ─────────── -->
+        <div>
+          <div class="en-card" style="position:sticky;top:16px">
+            <div class="en-card-hd">
+              <div class="en-card-icon"><i data-icon="eye"></i></div>
+              <div>
+                <div class="en-card-title">Preview ก่อนส่ง</div>
+                <div class="en-card-sub">ตรวจสอบรายละเอียดก่อนกด Send</div>
+              </div>
+            </div>
+            <div class="en-body">
+              <div class="preview-box">
+                <div class="preview-label">ประเภท</div>
+                <div class="preview-value" id="prev-type"><i data-icon="book-open"></i> New Course</div>
+
+                <div class="preview-label">หัวข้ออีเมล</div>
+                <div class="preview-value empty" id="prev-subject">(ยังไม่ได้เลือก)</div>
+
+                <div class="preview-label">เนื้อหา / ข้อความ</div>
+                <div class="preview-body" id="prev-body">—</div>
+
+                <div class="preview-label" style="margin-top:12px">ผู้รับ</div>
+                <div class="preview-value" id="prev-recipients">0 คน</div>
+
+                <div class="preview-label">ผู้ที่ถูก<strong>ติ๊กออก</strong></div>
+                <div class="preview-value empty" id="prev-excluded">(ส่งให้ทุกคน)</div>
+
+                <div class="preview-label" style="margin-top:12px">Google Chat</div>
+                <div class="preview-value empty" id="prev-chat">ปิด — ส่งเฉพาะเมล</div>
+              </div>
+
+              <button id="send-btn" class="btn btn-primary" style="width:100%;margin-top:14px;font-size:13px;padding:11px"
+                      onclick="confirmSend()">
+                <span id="send-btn-text"><i data-icon="upload"></i> ส่งอีเมลเลย</span>
+              </button>
+
+              <div id="send-result" class="send-result"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Send-confirmation modal ── -->
+<div class="pv-overlay" id="pv-overlay">
+  <div class="pv-modal">
+    <div class="pv-hd">
+      <div class="pv-hd-icon"><i data-icon="upload"></i></div>
+      <div>
+        <div class="pv-hd-title">ตรวจสอบก่อนส่ง</div>
+        <div class="pv-hd-sub">นี่คือหน้าตาจริงของอีเมลที่จะส่งไปยังผู้รับทั้งหมด</div>
+      </div>
+    </div>
+    <div class="pv-body">
+      <div class="pv-meta-row" id="pv-meta"></div>
+      <div class="pv-subject-box">
+        <div class="pv-subject-lbl">หัวข้ออีเมล</div>
+        <div class="pv-subject-text" id="pv-subject">—</div>
+      </div>
+      <iframe class="pv-iframe" id="pv-iframe" srcdoc="" title="Email preview" sandbox="allow-same-origin"></iframe>
+      <div class="pv-loading" id="pv-loading" style="display:none">กำลังเรนเดอร์ตัวอย่างอีเมล...</div>
+    </div>
+    <div class="pv-ft">
+      <button type="button" class="pv-btn-cancel" onclick="closePreview()">Cancel</button>
+      <button type="button" class="pv-btn-send" id="pv-btn-send" onclick="doSend()"><i data-icon="upload"></i> ยืนยันส่งอีเมล</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('admin');
+
+const State = {
+  mode:        'course',
+  recipients:  [],   // [{id, name, username, email, role}]
+  selectedIds: new Set(),
+  courses:     [],
+  exams:       [],
+  defaultChatWebhooks: [],  // resolved once at bootstrap from system-settings
+  // Subject auto-fill bookkeeping:
+  //   _lastAutoSubject — the most recent value we auto-filled into #email-subject
+  //   _subjectDirty    — true if admin edited the subject AFTER auto-fill
+  //                       (we won't overwrite their edit without explicit reset)
+  _lastAutoSubject: '',
+  _subjectDirty:    false,
+};
+
+// ── Initial data load ───────────────────────────────────────
+async function bootstrap() {
+  const [r, c, e, w] = await Promise.all([
+    API.get('/email-noti/?action=recipients'),
+    API.get('/email-noti/?action=courses'),
+    API.get('/email-noti/?action=exams'),
+    API.get('/email-noti/?action=chat_webhooks'),
+  ]);
+  State.recipients = r?.data?.data || [];
+  State.courses    = c?.data?.data || [];
+  State.exams      = e?.data?.data || [];
+  State.defaultChatWebhooks = (w?.data?.data?.webhooks) || [];
+  updateChatHint();
+
+  // Default: all recipients selected
+  State.selectedIds = new Set(State.recipients.map(u => u.id));
+
+  // Populate course/exam dropdowns (both Course mode + Course+Exam mode)
+  const cSel  = document.getElementById('course-select');
+  const ceCSel = document.getElementById('ce-course-select');
+  State.courses.forEach(c => {
+    const label = c.mandatory
+      ? `${c.icon} ${c.title}  <i data-icon="star"></i> บังคับเรียน`
+      : `${c.icon} ${c.title}`;
+    const opt = `<option value="${escapeHtml(c.id)}">${escapeHtml(label)}</option>`;
+    cSel.insertAdjacentHTML('beforeend', opt);
+    ceCSel.insertAdjacentHTML('beforeend', opt);
+  });
+  const eSel  = document.getElementById('exam-select');
+  const ceESel = document.getElementById('ce-exam-select');
+  State.exams.forEach(e => {
+    const opt = `<option value="${e.id}">${escapeHtml(e.icon)} ${escapeHtml(e.title)}${e.status === 'draft' ? ' (draft)' : ''}</option>`;
+    eSel.insertAdjacentHTML('beforeend', opt);
+    ceESel.insertAdjacentHTML('beforeend', opt);
+  });
+
+  renderRecipients();
+  updatePreview();
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+// ── Mode switch ─────────────────────────────────────────────
+function setMode(m) {
+  State.mode = m;
+  document.querySelectorAll('.mode-card').forEach(el => el.classList.toggle('active', el.dataset.mode === m));
+  ['course', 'exam', 'course_exam', 'custom'].forEach(k => {
+    document.getElementById('mode-' + k).style.display = (k === m) ? '' : 'none';
+  });
+  document.getElementById('content-sub').textContent = ({
+    course:      'เลือกคอร์สและเขียนข้อความเพิ่มเติม (ถ้าต้องการ)',
+    exam:        'เลือกข้อสอบและเขียนข้อความเพิ่มเติม (ถ้าต้องการ)',
+    course_exam: 'เลือกคอร์ส + ข้อสอบจบคอร์ส — อีเมลฉบับเดียวประกาศทั้งสองเลย',
+    custom:      'พิมพ์เนื้อหาเอง — เหมาะกับประกาศทั่วไป (กรอกหัวข้ออีเมลด้านบน)',
+  })[m];
+  // Mode switch → clear dirty flag and reset to default for the new mode
+  State._subjectDirty = false;
+  applyAutoSubject();
+  updatePreview();
+}
+
+// ── Subject auto-fill ───────────────────────────────────────
+function computeDefaultSubject() {
+  if (State.mode === 'course') {
+    const id = document.getElementById('course-select').value;
+    const c  = State.courses.find(x => x.id === id);
+    if (!c) return '';
+    if (c.id === '__onboarding__') {
+      return '<i data-icon=\"rocket\"></i> [SM - Action Required] Mandatory Training: Team Onboarding Platform';
+    }
+    return `<i data-icon=\"rocket\"></i> [SM - Action Required] Mandatory Training: ${c.title}`;
+  }
+  if (State.mode === 'exam') {
+    const id = document.getElementById('exam-select').value;
+    const e  = State.exams.find(x => x.id === id);
+    return e ? `<i data-icon=\"rocket\"></i> [SM - Action Required] Mandatory Exam: ${e.title}` : '';
+  }
+  if (State.mode === 'course_exam') {
+    const cid = document.getElementById('ce-course-select').value;
+    const c   = State.courses.find(x => x.id === cid);
+    if (!c) return '';
+    return `<i data-icon=\"rocket\"></i> [SM - Action Required] Mandatory Training + Exam: ${c.title}`;
+  }
+  return ''; // custom — admin types their own
+}
+
+// Auto-fill the subject input — unless admin has manually edited it
+function applyAutoSubject() {
+  const inp = document.getElementById('email-subject');
+  const def = computeDefaultSubject();
+  if (State._subjectDirty) return;       // respect admin's edit
+  inp.value = def;
+  State._lastAutoSubject = def;
+}
+
+// Fired when admin types in the subject field
+function onSubjectEdit() {
+  const inp = document.getElementById('email-subject');
+  // Only mark dirty if value differs from what we auto-filled
+  State._subjectDirty = (inp.value !== State._lastAutoSubject);
+  updatePreview();
+}
+
+// Force-reset to computed default (clears dirty flag)
+function resetSubjectToDefault() {
+  State._subjectDirty = false;
+  applyAutoSubject();
+  updatePreview();
+}
+
+// Fired when course/exam selection changes
+function onContentChange() {
+  // In "Course + Exam" mode, when admin picks a course, try to auto-select
+  // the exam whose course_prerequisites includes that course. We only
+  // auto-fill when the exam field is still empty — never overwrite a manual pick.
+  if (State.mode === 'course_exam') {
+    const ceCourseSel = document.getElementById('ce-course-select');
+    const ceExamSel   = document.getElementById('ce-exam-select');
+    const hintEl      = document.getElementById('ce-exam-hint');
+    const cid = ceCourseSel.value;
+    if (cid && !ceExamSel.value) {
+      const matched = State.exams.find(e =>
+        Array.isArray(e.course_prerequisites) && e.course_prerequisites.includes(cid)
+      );
+      if (matched) {
+        ceExamSel.value = matched.id;
+        hintEl.innerHTML = `<i data-icon=\"check\"></i> แนะนำ <strong>${escapeHtml(matched.icon)} ${escapeHtml(matched.title)}</strong> โดยอัตโนมัติ (course_prerequisites ตรงกัน) — เปลี่ยนได้ตามต้องการ`;
+      } else {
+        hintEl.textContent = 'ไม่พบข้อสอบที่ตั้ง prerequisite เป็นคอร์สนี้ — กรุณาเลือกเอง';
+      }
+    }
+  }
+  applyAutoSubject();
+  updatePreview();
+}
+
+// ── Recipient picker ────────────────────────────────────────
+function renderRecipients() {
+  const q = (document.getElementById('rcpt-search').value || '').trim().toLowerCase();
+  const list = document.getElementById('rcpt-list');
+  const filtered = State.recipients.filter(u => {
+    if (!q) return true;
+    return [u.name, u.username, u.email].some(v => (v||'').toLowerCase().includes(q));
+  });
+
+  list.innerHTML = '';
+  if (!filtered.length) {
+    list.innerHTML = '<div style="padding:18px;text-align:center;color:var(--text-muted);font-size:12px">ไม่พบผู้รับที่ตรงกับคำค้น</div>';
+    return;
+  }
+
+  filtered.forEach(u => {
+    const initial = (u.name || u.username || '?').charAt(0).toUpperCase();
+    const checked = State.selectedIds.has(u.id);
+    const roleClass = ({sm_admin:'admin', dev_sm:'admin', sm_lead:'lead', sm_user:'user', external:'ext'})[u.role] || 'user';
+    const roleLabel = ({sm_admin:'Admin', dev_sm:'Dev', sm_lead:'Lead', sm_user:'User', external:'Ext'})[u.role] || u.role;
+    const row = document.createElement('label');
+    row.className = 'rcpt-row';
+    row.innerHTML = `
+      <input type="checkbox" data-id="${escapeHtml(u.id)}" ${checked ? 'checked' : ''}>
+      <div class="rcpt-avatar">${escapeHtml(initial)}</div>
+      <div class="rcpt-name">${escapeHtml(u.name)}</div>
+      <div class="rcpt-email">${escapeHtml(u.email)}</div>
+      <span class="rcpt-role-badge ${roleClass}">${escapeHtml(roleLabel)}</span>
+    `;
+    row.querySelector('input').addEventListener('change', e => {
+      if (e.target.checked) State.selectedIds.add(u.id);
+      else                   State.selectedIds.delete(u.id);
+      updateRecipientStats();
+      updatePreview();
+    });
+    list.appendChild(row);
+  });
+  updateRecipientStats();
+}
+
+function toggleAll(check) {
+  if (check) {
+    State.recipients.forEach(u => State.selectedIds.add(u.id));
+  } else {
+    State.selectedIds.clear();
+  }
+  renderRecipients();
+}
+
+function updateRecipientStats() {
+  document.getElementById('rcpt-sel-count').textContent   = State.selectedIds.size;
+  document.getElementById('rcpt-total-count').textContent = State.recipients.length;
+  // Sync "select all" checkbox state
+  const all = document.getElementById('rcpt-all');
+  all.checked = State.selectedIds.size === State.recipients.length;
+  all.indeterminate = State.selectedIds.size > 0 && State.selectedIds.size < State.recipients.length;
+}
+
+// ── Preview ────────────────────────────────────────────────
+function updatePreview() {
+  const typeLabel = ({
+    course:      '<i data-icon=\"book-open\"></i> New Course',
+    exam:        '<i data-icon=\"edit\"></i> New Exam',
+    course_exam: '<i data-icon=\"book-open\"></i><i data-icon=\"edit\"></i> Course + Exam',
+    custom:      '<i data-icon=\"megaphone\"></i> Custom Announcement',
+  })[State.mode];
+  document.getElementById('prev-type').textContent = typeLabel;
+
+  const subject = document.getElementById('email-subject').value.trim();
+  let body = '';
+  if (State.mode === 'course') {
+    const id = document.getElementById('course-select').value;
+    const c  = State.courses.find(x => x.id === id);
+    body = c ? (c.description || c.subtitle || '') : '';
+    const extra = document.getElementById('course-extra').value.trim();
+    if (extra) body += '\n\n--- ข้อความจากแอดมิน ---\n' + extra;
+  } else if (State.mode === 'exam') {
+    const id = document.getElementById('exam-select').value;
+    const e  = State.exams.find(x => x.id === id);
+    body = e ? `${e.description || e.subtitle || ''}\n\nเกณฑ์ผ่าน: ${e.pass_score}%` : '';
+    const extra = document.getElementById('exam-extra').value.trim();
+    if (extra) body += '\n\n--- ข้อความจากแอดมิน ---\n' + extra;
+  } else if (State.mode === 'course_exam') {
+    const cid = document.getElementById('ce-course-select').value;
+    const eid = document.getElementById('ce-exam-select').value;
+    const c   = State.courses.find(x => x.id === cid);
+    const e   = State.exams.find(x => x.id === eid);
+    if (c) {
+      body += `<i data-icon=\"book-open\"></i> ${c.title}\n${c.description || c.subtitle || ''}`;
+    }
+    if (e) {
+      if (body) body += '\n\n';
+      body += `<i data-icon=\"edit\"></i> ${e.title}\n${e.description || e.subtitle || ''}\nเกณฑ์ผ่าน: ${e.pass_score}%`;
+    }
+    const extra = document.getElementById('ce-extra').value.trim();
+    if (extra) body += '\n\n--- ข้อความจากแอดมิน ---\n' + extra;
+  } else {
+    body = document.getElementById('custom-body').value.trim();
+  }
+
+  const subEl = document.getElementById('prev-subject');
+  subEl.textContent = subject || '(ยังไม่ได้กรอกหัวข้อ)';
+  subEl.classList.toggle('empty', !subject);
+
+  const bodyEl = document.getElementById('prev-body');
+  bodyEl.textContent = body || '—';
+
+  document.getElementById('prev-recipients').textContent = `${State.selectedIds.size} คน`;
+
+  updateChatPreview();
+
+  const excluded = State.recipients.filter(u => !State.selectedIds.has(u.id));
+  const exEl = document.getElementById('prev-excluded');
+  if (!excluded.length) {
+    exEl.textContent = '(ส่งให้ทุกคน)';
+    exEl.classList.add('empty');
+  } else {
+    exEl.textContent = excluded.map(u => u.name).join(', ');
+    exEl.classList.remove('empty');
+  }
+}
+
+// ── Google Chat toggle ──────────────────────────────────────
+function onChatToggle() {
+  const on = document.getElementById('chat-toggle').checked;
+  document.getElementById('chat-body').style.display = on ? '' : 'none';
+  updateChatPreview();
+}
+function updateChatHint() {
+  const n = State.defaultChatWebhooks.length;
+  const el = document.getElementById('chat-webhook-hint');
+  if (!el) return;
+  if (n > 0) {
+    el.innerHTML = `พบ default ใน System Settings แล้ว <strong>${n}</strong> URL — จะใช้ค่านั้นถ้าเว้นว่าง (<a href="./system-settings.html" style="color:var(--orange)">แก้ที่ System Settings</a>)`;
+  } else {
+    el.innerHTML = `ยังไม่มี default — โปรดกรอก URL ที่นี่ หรือตั้งที่ <a href="./system-settings.html" style="color:var(--orange)">System Settings</a>`;
+  }
+}
+function getChatWebhooks() {
+  const raw = (document.getElementById('chat-webhooks')?.value || '').trim();
+  if (!raw) return { source: 'default', urls: State.defaultChatWebhooks };
+  const urls = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  return { source: 'override', urls };
+}
+function updateChatPreview() {
+  const on = document.getElementById('chat-toggle').checked;
+  const el = document.getElementById('prev-chat');
+  if (!on) {
+    el.textContent = 'ปิด — ส่งเฉพาะเมล';
+    el.classList.add('empty');
+    return;
+  }
+  const {source, urls} = getChatWebhooks();
+  el.classList.remove('empty');
+  if (!urls.length) {
+    el.innerHTML = '<span style="color:#ef4444"><i data-icon=\"alert-triangle\"></i> ยังไม่มี webhook — จะข้ามการส่ง Chat</span>';
+  } else {
+    const label = source === 'default' ? 'default' : 'override';
+    el.innerHTML = `เปิด — ยิง <strong>${urls.length}</strong> webhook (${label})`;
+  }
+}
+// Watch the webhook textarea to update the preview live
+document.addEventListener('input', e => {
+  if (e.target && e.target.id === 'chat-webhooks') updateChatPreview();
+});
+
+// ── Build the payload from current form state ───────────────
+function buildPayload() {
+  const subject = document.getElementById('email-subject').value.trim();
+  const chatOn  = document.getElementById('chat-toggle').checked;
+  const chat    = chatOn ? getChatWebhooks() : null;
+  const payload = {
+    type:          State.mode,
+    subject:       subject, // server uses as override for course/exam, required for custom
+    recipient_ids: Array.from(State.selectedIds),
+    also_chat:         chatOn,
+    // Only send override URLs when the admin typed something; else server uses default
+    chat_webhook_urls: chat && chat.source === 'override' ? chat.urls : [],
+  };
+  if (State.mode === 'course') {
+    payload.ref_id  = document.getElementById('course-select').value;
+    payload.message = document.getElementById('course-extra').value.trim();
+  } else if (State.mode === 'exam') {
+    payload.ref_id  = document.getElementById('exam-select').value;
+    payload.message = document.getElementById('exam-extra').value.trim();
+  } else if (State.mode === 'course_exam') {
+    payload.ref_id      = document.getElementById('ce-course-select').value;
+    payload.exam_ref_id = document.getElementById('ce-exam-select').value;
+    payload.message     = document.getElementById('ce-extra').value.trim();
+  } else {
+    payload.message = document.getElementById('custom-body').value.trim();
+  }
+  return payload;
+}
+
+// ── Validate inputs before opening preview ──────────────────
+function validateForm() {
+  const errs = [];
+  if (State.selectedIds.size === 0) errs.push('กรุณาเลือกผู้รับอย่างน้อย 1 คน');
+  if (!document.getElementById('email-subject').value.trim()) errs.push('กรุณากรอกหัวข้ออีเมล');
+  if (State.mode === 'course' && !document.getElementById('course-select').value) errs.push('กรุณาเลือกคอร์ส');
+  if (State.mode === 'exam'   && !document.getElementById('exam-select').value)   errs.push('กรุณาเลือกข้อสอบ');
+  if (State.mode === 'course_exam') {
+    if (!document.getElementById('ce-course-select').value) errs.push('กรุณาเลือกคอร์ส');
+    if (!document.getElementById('ce-exam-select').value)   errs.push('กรุณาเลือกข้อสอบ');
+  }
+  if (State.mode === 'custom' && !document.getElementById('custom-body').value.trim()) errs.push('กรุณากรอกเนื้อหา');
+  return errs;
+}
+
+// ── Open preview modal: validate → fetch render → display ──
+async function confirmSend() {
+  const errs = validateForm();
+  if (errs.length) { Toast.warning(errs.join('\n')); return; }
+
+  const overlay = document.getElementById('pv-overlay');
+  const iframe  = document.getElementById('pv-iframe');
+  const loading = document.getElementById('pv-loading');
+  const subjEl  = document.getElementById('pv-subject');
+  const metaEl  = document.getElementById('pv-meta');
+  const btn     = document.getElementById('pv-btn-send');
+
+  // Show modal in loading state
+  iframe.style.display  = 'none';
+  loading.style.display = '';
+  subjEl.textContent    = '...';
+  metaEl.innerHTML      = '';
+  btn.disabled          = true;
+  overlay.classList.add('show');
+
+  const typeLabel = ({
+    course:      '<i data-icon=\"book-open\"></i> New Course',
+    exam:        '<i data-icon=\"edit\"></i> New Exam',
+    course_exam: '<i data-icon=\"book-open\"></i><i data-icon=\"edit\"></i> Course + Exam',
+    custom:      '<i data-icon=\"megaphone\"></i> Custom',
+  })[State.mode];
+  const n         = State.selectedIds.size;
+  const excluded  = State.recipients.length - n;
+  metaEl.innerHTML = `
+    <span class="pv-meta-item">ประเภท: <strong>${typeLabel}</strong></span>
+    <span class="pv-meta-item"><i data-icon=\"mail\"></i> ผู้รับ: <strong>${n} คน</strong></span>
+    ${excluded > 0 ? `<span class="pv-meta-item">⊘ ติ๊กออก: <strong>${excluded} คน</strong></span>` : ''}
+  `;
+
+  // Fetch server-rendered email HTML
+  const res = await API.post('/email-noti/?action=preview', buildPayload());
+  loading.style.display = 'none';
+  btn.disabled          = false;
+
+  if (!res?.ok) {
+    Toast.error(res?.data?.message || 'ไม่สามารถสร้าง preview ได้');
+    closePreview();
+    return;
+  }
+
+  const data = res.data?.data || {};
+  subjEl.textContent = data.subject || '(no subject)';
+  iframe.srcdoc      = data.html    || '';
+  iframe.style.display = '';
+}
+
+function closePreview() {
+  document.getElementById('pv-overlay').classList.remove('show');
+}
+
+// Close on backdrop click
+document.getElementById('pv-overlay').addEventListener('click', e => {
+  if (e.target.id === 'pv-overlay') closePreview();
+});
+// Close on Esc
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('pv-overlay').classList.contains('show')) closePreview();
+});
+
+// ── Actual send (only called from preview modal confirmation) ──
+async function doSend() {
+  const btn        = document.getElementById('pv-btn-send');
+  const pageSendBtn= document.getElementById('send-btn');
+  const pageText   = document.getElementById('send-btn-text');
+
+  btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...';
+  pageSendBtn.disabled = true; pageText.textContent = '⏳ กำลังส่ง...';
+
+  const res = await API.post('/email-noti/?action=send', buildPayload());
+
+  btn.disabled = false; btn.innerHTML = '<i data-icon=\"upload\"></i> ยืนยันส่งอีเมล';
+  pageSendBtn.disabled = false; pageText.innerHTML = '<i data-icon=\"upload\"></i> ส่งอีเมลเลย';
+  closePreview();
+
+  const box = document.getElementById('send-result');
+  if (res?.ok) {
+    const d = res.data?.data || {};
+    const emailFailed = d.failed > 0;
+    const chatFailed  = d.chat && !d.chat.success;
+    const cls = (emailFailed || chatFailed) ? 'warn' : 'ok';
+    let html = `<h4>${cls === 'ok' ? '<i data-icon=\"check\"></i>' : '<i data-icon=\"alert-triangle\"></i>'} ส่งเมลสำเร็จ ${d.sent} / ${d.total} ฉบับ</h4>`;
+    if (emailFailed) {
+      html += `<div>ส่งเมลไม่สำเร็จ: ${d.failed} ฉบับ</div><ul>`;
+      (d.details || []).filter(x => x.status !== 'sent').forEach(x => {
+        html += `<li>${escapeHtml(x.email || x.user_id)} — ${escapeHtml(x.error || x.status)}</li>`;
+      });
+      html += '</ul>';
+    }
+    if (d.chat) {
+      if (d.chat.skipped_reason === 'no_webhook') {
+        html += `<div style="margin-top:8px"><i data-icon=\"message-circle\"></i> Google Chat: ข้ามการส่ง — ${escapeHtml((d.chat.errors||[])[0]||'no webhook')}</div>`;
+      } else {
+        const chatIcon = d.chat.success ? '<i data-icon=\"check\"></i>' : '<i data-icon=\"alert-triangle\"></i>';
+        html += `<div style="margin-top:8px"><i data-icon=\"message-circle\"></i> Google Chat: ${chatIcon} ยิงสำเร็จ ${d.chat.sent} / ${d.chat.sent + d.chat.failed} webhook</div>`;
+        if ((d.chat.errors || []).length) {
+          html += '<ul>';
+          d.chat.errors.forEach(er => { html += `<li>${escapeHtml(er)}</li>`; });
+          html += '</ul>';
+        }
+      }
+    }
+    box.className = 'send-result ' + cls;
+    box.innerHTML = html;
+    const summary = d.chat && d.chat.success
+      ? `ส่งเมล ${d.sent}/${d.total} + Chat ${d.chat.sent} webhook <i data-icon=\"check\"></i>`
+      : `ส่งเมล ${d.sent}/${d.total} ฉบับสำเร็จ`;
+    Toast.success(summary);
+  } else {
+    box.className = 'send-result err';
+    box.innerHTML = `<h4><i data-icon=\"x\"></i> ส่งไม่สำเร็จ</h4><div>${escapeHtml(res?.data?.message || 'Unknown error')}</div>`;
+    Toast.error(res?.data?.message || 'ส่งไม่สำเร็จ');
+  }
+}
+
+bootstrap();
+</script>
+
+</body>
+</html>

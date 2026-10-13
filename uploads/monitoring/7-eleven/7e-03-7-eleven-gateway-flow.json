@@ -1,0 +1,483 @@
+{
+  "title": "7-Eleven · Gateway Flow",
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "valueName": "last"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "id": 2002,
+      "options": {
+        "composites": [],
+        "content": "%%{init: {\"flowchart\": {\"useMaxWidth\": true, \"htmlLabels\": true}, \"theme\": \"dark\"}}%%\ngraph TD\n  subgraph CLIENT[\"Client Layer\"]\n    POS[\"7-11 POS Counter\"]\n    APP[\"7App / Mobile SDK\"]\n  end\n\n  GW711[\"seven-custom-in-gateway\"]\n\n  POS -->|Payment Code| GW711\n  APP -->|Barcode| GW711\n\n  GW711 -->|200 OK| charge_ok([\"Charge: OK\"])\n  GW711 -->|non-200| charge_fail([\"Charge: Fail\"])\n  GW711 --> cancel_ok([\"Cancel: OK\"])\n  GW711 --> refund_ok([\"Refund: OK\"])\n  GW711 --> consent_ok([\"Consent: OK\"])\n  classDef svc    fill:#242930,stroke:#5794c7,stroke-width:2px,color:#fff\n  classDef ok     fill:#1c2c22,stroke:#47a468,stroke-width:2px,color:#fff\n  classDef fail   fill:#2c1e1e,stroke:#cc3333,stroke-width:2px,color:#fff\n  classDef client fill:#2c2020,stroke:#e05252,stroke-width:3px,color:#e05252,font-weight:bold\n  classDef net    fill:#2c251e,stroke:#ff8c42,stroke-width:2px,color:#fff",
+        "legend": {
+          "show": true
+        },
+        "links": [],
+        "mermaidThemeVariablesDark": {
+          "common": {
+            "fontFamily": "Roboto,Helvetica Neue,Arial,sans-serif"
+          }
+        },
+        "mermaidThemeVariablesLight": {
+          "common": {
+            "fontFamily": "Roboto,Helvetica Neue,Arial,sans-serif"
+          }
+        },
+        "nodeSize": {
+          "minHeight": 30,
+          "minWidth": 30
+        },
+        "pluginVersion": "latest",
+        "style": "width:100%;",
+        "useBackground": false,
+        "valueName": "current"
+      },
+      "pluginVersion": "1.10.4",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CHARGE\",status_code=\"200 OK\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "charge_ok",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CHARGE\",status_code!=\"200 OK\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "charge_fail",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CANCEL\",status_code=\"200 OK\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "cancel_ok",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"REFUNDS\",status_code=\"200 OK\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "refund_ok",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"users-consent\",status_code=\"200 OK\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "consent_ok",
+          "refId": "E"
+        }
+      ],
+      "title": "Gateway - Transaction Flow (5m window)",
+      "type": "jdbranham-diagram-panel"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "tOZ1JoTMk"
+      },
+      "description": "จำนวน Charge transaction ทั้งหมดที่เข้ามาที่ seven-custom-in-gateway\n\nดูยังไง: ค่าควรเป็นปกติต่อเนื่อง ถ้า drop ลงกะทันหันหมายความว่า 7-11 หยุดส่ง request เข้ามา (ปัญหาฝั่ง 7-11 หรือ network)\n\nใช้เป็น: first check ว่า traffic เรียกเข้ามาระบบหรือเปล่า",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "hiddenSeries": false,
+      "id": 2003,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "tOZ1JoTMk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum by (status_code, service) (increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{status_code=\"200 OK\"}[1m]))",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{service}} - {{status_code}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "tOZ1JoTMk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum by (status_code, service) (increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CHARGE\",status_code=\"200 OK\"}[1m]))",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{service}} - {{status_code}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Payment at 7-Eleven",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:206",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:207",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "tOZ1JoTMk"
+      },
+      "description": "จำนวน transaction ที่ fail ที่ Gateway layer แยกตาม status_code และ service (CHARGE/CANCEL/REFUND)\n\nดูยังไง: ถ้า fail spike ขึ้นให้ดู status_code ว่าเป็น 500 (app พัง) หรือ 504 (timeout) หรือ 400 (data ผิด)\n\nใช้ร่วมกับ: Section D Error Breakdown เพื่อ drill down สาเหตุ",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "hiddenSeries": false,
+      "id": 2004,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "max",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [
+        {
+          "title": "",
+          "url": "https://grafana-thanos.truemoney.com/d/000000901k/seven-custom-in-gateway-transaction-count?orgId=3&refresh=30s&var-Interval=1h&var-Datasource=ThanosQuerier&var-env=production&var-pod=All&var-cluster=All&from=now-6h&to=now"
+        }
+      ],
+      "nullPointMode": "null as zero",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "tOZ1JoTMk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum by (status_code, service) (increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{status_code!=\"200 OK\"}[1m]))",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{service}} - {{status_code}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "tOZ1JoTMk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum by (status_code, service) (increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{status_code=\"200 OK\"}[1m]))",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{service}} - {{status_code}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "tOZ1JoTMk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum by (status_code, service) (increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{status_code=\"500 INTERNAL_SERVER_ERROR\"}[1m]))",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{service}} - {{status_code}}",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 10,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "Payment at 7-Eleven Fail",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:206",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:207",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "Average processing time ของ seven-custom-in-gateway แยกตาม service (CHARGE/CANCEL/REFUND)\n\nดูยังไง: ค่าปกติอยู่ที่ ~300-600ms ถ้าสูงเกิน 1,000ms ให้ตรวจสอบ upstream SoF ว่าตัวไหน slow\n\nสำคัญ: 7-Eleven timeout ที่ 12,000ms ดู P99 ใน Section C เพิ่มเติม",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "hiddenSeries": false,
+      "id": 2006,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "sort": "max",
+        "sortDesc": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_count{service=~\"CHARGE|CANCEL|REFUNDS\"}[1m])) by(service,status_code)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{service}} - {{status_code}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 5000,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "Response Time - SEVEN_CUSTOM_IN_GATEWAY",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:40",
+          "format": "ms",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:41",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MA Status Board — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/ma-status/ma-status.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <div class="tb-prompt">
+        <span class="tb-path">~/sm</span>
+        <span class="tb-arrow"><i data-icon="play"></i></span>
+      </div>
+      <div class="topbar-title">
+        <span class="page-title">MA Status Board</span>
+        <span class="page-sub">Real-time maintenance status</span>
+      </div>
+      <div class="topbar-actions">
+        <a id="mst-admin-link" href="./admin/ma-status.html" class="mas-topnav-btn" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>Admin</span>
+        </a>
+        <a href="./ma-services.html" class="mas-topnav-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+          <span>MA Services</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <div class="mst">
+
+        <!-- ── ERROR BANNER (hidden until fetch fails) ─────── -->
+        <div id="mst-error" class="mst-error" style="display:none">
+          <div class="ico"><i data-icon="alert-triangle"></i></div>
+          <div class="mst-error-body">
+            <div class="mst-error-title">Failed to load MA status</div>
+            <div class="mst-error-msg" id="mst-error-msg">Network error</div>
+            <div class="mst-error-actions">
+              <button onclick="MAStatus.refresh(true)">↻ Retry</button>
+              <button onclick="location.reload()" style="border-color:var(--border);color:var(--text-muted)">Reload page</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mst-content" id="mst-content">
+
+        <!-- ── HERO ────────────────────────────────────────── -->
+        <div class="mst-hero" id="mst-hero">
+          <div class="mst-hero-left">
+            <div class="mst-hero-status" id="mst-hero-status">
+              <span class="dot"></span>
+              <span id="mst-hero-status-txt">ALL SYSTEMS OPERATIONAL</span>
+            </div>
+            <h1 class="mst-hero-title">MA Status Board</h1>
+            <div class="mst-hero-sub" id="mst-sub">Aggregating live maintenance flags from NANO CDN, TMN Jenkins, and ACM Admin Portal.</div>
+          </div>
+          <div class="mst-hero-actions">
+            <button id="mst-refresh" class="mst-btn" onclick="MAStatus.refresh(true)" title="Refresh now (bypass cache)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+              <span>Refresh</span>
+            </button>
+            <button id="mst-auto" class="mst-btn-toggle" onclick="MAStatus.toggleAuto()" title="Toggle 30-second auto-refresh">
+              <span class="dot"></span>
+              <span id="mst-auto-lbl">Auto 30s</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ── KPI STRIP ─────────────────────────────────────── -->
+        <div class="mst-kpis">
+          <div class="mst-kpi ok" id="kpi-open">
+            <div class="mst-kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <div class="mst-kpi-body">
+              <div class="mst-kpi-label">Operational</div>
+              <div class="mst-kpi-value">—</div>
+              <div class="mst-kpi-hint">services running normally</div>
+            </div>
+          </div>
+          <div class="mst-kpi bad" id="kpi-closed">
+            <div class="mst-kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div class="mst-kpi-body">
+              <div class="mst-kpi-label">In Maintenance</div>
+              <div class="mst-kpi-value">—</div>
+              <div class="mst-kpi-hint" id="kpi-closed-hint">no services closed</div>
+            </div>
+          </div>
+          <div class="mst-kpi warn" id="kpi-unknown">
+            <div class="mst-kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div class="mst-kpi-body">
+              <div class="mst-kpi-label">Unknown</div>
+              <div class="mst-kpi-value">—</div>
+              <div class="mst-kpi-hint">unmapped or not fetched</div>
+            </div>
+          </div>
+          <div class="mst-kpi neutral" id="kpi-total">
+            <div class="mst-kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+            </div>
+            <div class="mst-kpi-body">
+              <div class="mst-kpi-label">Monitored</div>
+              <div class="mst-kpi-value">—</div>
+              <div class="mst-kpi-hint"><span id="kpi-matched-num">—</span> matched · <span id="kpi-total-num">—</span> total</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SOURCE TABS (hash routing) ──────────────────── -->
+        <div class="mst-tabs" role="tablist">
+          <a class="mst-tab" data-view="all"      href="#all"      onclick="MAStatus.switchView('all', event)">
+            <span class="ic"><i data-icon="globe"></i></span><span>All</span><span class="cnt" id="tc-all">0</span>
+          </a>
+          <a class="mst-tab" data-view="nano"     href="#nano"     onclick="MAStatus.switchView('nano', event)">
+            <span class="ic">🅝</span><span>NANO Products</span><span class="cnt" id="tc-nano">0</span>
+          </a>
+          <a class="mst-tab" data-view="jenkins"  href="#jenkins"  onclick="MAStatus.switchView('jenkins', event)">
+            <span class="ic">🅟</span><span>TMN Jenkins</span><span class="cnt" id="tc-jenkins">0</span>
+          </a>
+          <a class="mst-tab" data-view="features" href="#features" onclick="MAStatus.switchView('features', event)">
+            <span class="ic">🅕</span><span>Feature Toggles</span><span class="cnt" id="tc-features">0</span>
+          </a>
+          <a class="mst-tab" data-view="admin"    href="#admin"    onclick="MAStatus.switchView('admin', event)">
+            <span class="ic">🅑</span><span>Admin Portal</span><span class="cnt" id="tc-admin">0</span>
+          </a>
+        </div>
+
+        <!-- ── TOOLBAR: search + status filter + source chips ─ -->
+        <div class="mst-toolbar">
+          <div class="mst-toolbar-left">
+            <div class="mst-search">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
+              <input type="search" id="mst-search-input" placeholder="Search services…" oninput="MAStatus.setSearch(this.value)">
+              <button id="mst-search-clear" type="button" onclick="MAStatus.setSearch('')" title="Clear"><i data-icon="x"></i></button>
+            </div>
+            <div class="mst-filters" id="mst-filters">
+              <button class="mst-filter active" data-filter="all"      onclick="MAStatus.setFilter('all')">All <span class="count" id="fc-all">0</span></button>
+              <button class="mst-filter"        data-filter="closed"   onclick="MAStatus.setFilter('closed')"><i data-icon="circle"></i> Closed <span class="count" id="fc-closed">0</span></button>
+              <button class="mst-filter"        data-filter="open"     onclick="MAStatus.setFilter('open')"><i data-icon="circle"></i> Open <span class="count" id="fc-open">0</span></button>
+              <button class="mst-filter"        data-filter="critical" onclick="MAStatus.setFilter('critical')"><i data-icon="star"></i> Critical <span class="count" id="fc-crit">0</span></button>
+            </div>
+          </div>
+          <div class="mst-src-chips" id="mst-src-chips"></div>
+        </div>
+
+        <!-- ── SECTIONS ────────────────────────────────────── -->
+        <div id="sec-critical" class="mst-sec" style="display:none">
+          <div class="mst-sec-head">
+            <div class="mst-sec-title"><span class="emoji"><i data-icon="star"></i></span>Critical Services <span class="cnt" id="cnt-critical">0</span></div>
+            <div class="mst-sec-meta">Services flagged as critical for wallet operation</div>
+          </div>
+          <div class="mst-grid" id="grid-critical"></div>
+        </div>
+
+        <div id="sec-nano" class="mst-sec">
+          <div class="mst-sec-head">
+            <div class="mst-sec-title"><span class="emoji">🅝</span>NANO Products <span class="cnt" id="cnt-nano">0</span></div>
+            <div class="mst-sec-meta"><span id="meta-nano">loading…</span><span class="badge">CDN · public</span></div>
+          </div>
+          <div class="mst-grid" id="grid-nano">
+            <div class="mst-skel-card"></div><div class="mst-skel-card"></div><div class="mst-skel-card"></div><div class="mst-skel-card"></div>
+          </div>
+        </div>
+
+        <div id="sec-jenkins" class="mst-sec">
+          <div class="mst-sec-head">
+            <div class="mst-sec-title"><span class="emoji">🅟</span>TMN Jenkins Jobs <span class="cnt" id="cnt-jenkins">0</span></div>
+            <div class="mst-sec-meta"><span id="meta-jenkins">loading…</span><span class="badge">Basic auth</span></div>
+          </div>
+          <div class="mst-grid" id="grid-jenkins">
+            <div class="mst-skel-card"></div><div class="mst-skel-card"></div><div class="mst-skel-card"></div>
+          </div>
+        </div>
+
+        <div id="sec-features" class="mst-sec">
+          <div class="mst-sec-head">
+            <div class="mst-sec-title"><span class="emoji">🅕</span>Mobile Gateway Feature Toggles <span class="cnt" id="cnt-features">0</span></div>
+            <div class="mst-sec-meta"><span id="meta-features">loading…</span><span class="badge">from Jenkins log</span></div>
+          </div>
+          <div class="mst-grid" id="grid-features">
+            <div class="mst-skel-card"></div><div class="mst-skel-card"></div><div class="mst-skel-card"></div>
+          </div>
+        </div>
+
+        <div id="sec-bo" class="mst-sec">
+          <div class="mst-sec-head">
+            <div class="mst-sec-title"><span class="emoji">🅑</span>Admin Portal (matched) <span class="cnt" id="cnt-bo">0</span></div>
+            <div class="mst-sec-meta"><span id="meta-bo">loading…</span><span class="badge">OAuth</span></div>
+          </div>
+          <div class="mst-grid" id="grid-bo">
+            <div class="mst-skel-card"></div><div class="mst-skel-card"></div>
+          </div>
+        </div>
+
+        <div id="sec-disc" class="mst-sec mst-disc">
+          <details>
+            <summary>
+              <i data-icon="search"></i> Unmapped items in Backoffice
+              <span class="cnt" id="cnt-disc">0</span>
+              <span class="hint">click to expand · items known to Admin Portal but not linked in ma-services.json</span>
+            </summary>
+            <div id="disc-body" class="mst-disc-body"></div>
+          </details>
+        </div>
+
+        </div><!-- /.mst-content -->
+      </div><!-- /.mst -->
+    </div><!-- /.page-content -->
+  </main>
+</div><!-- /.app-shell -->
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/pages/ma-status/ma-status.js"></script>
+</body>
+</html>

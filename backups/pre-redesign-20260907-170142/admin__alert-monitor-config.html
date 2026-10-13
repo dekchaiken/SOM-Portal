@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alert Monitor Config — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/dev-badge.css">
+  <style>
+    /* ══════════════════════════════════════════════════════════════
+       Alert Monitor Config — blocks.so styling
+       Scoped to .amc-wrap only.
+       ══════════════════════════════════════════════════════════════ */
+    .amc-wrap {
+      --bg-card:      #ffffff;
+      --border:       #e4e4e7;
+      --text:         #09090b;
+      --text-muted:   #71717a;
+      --amc-bg-subtle: #fafafa;
+      --amc-hover:     rgba(9,9,11,.04);
+      --amc-r-card:    14px;
+      --amc-r-input:   8px;
+      --amc-shadow:    0 1px 2px rgba(9,9,11,.04);
+      --amc-c-info:    #3b82f6;
+      --amc-c-warn:    #f59e0b;
+      --amc-c-ok:      #16a34a;
+      --amc-c-err:     #ef4444;
+      color: var(--text);
+    }
+    html[data-theme="dark"] .amc-wrap {
+      --bg-card:      #0a0a0a;
+      --border:       #27272a;
+      --text:         #fafafa;
+      --text-muted:   #a1a1aa;
+      --amc-bg-subtle: #18181b;
+      --amc-hover:     rgba(255,255,255,.05);
+      --amc-shadow:    none;
+      --amc-c-info:    #60a5fa;
+      --amc-c-warn:    #fbbf24;
+      --amc-c-ok:      #4ade80;
+      --amc-c-err:     #f87171;
+    }
+
+    .amc-wrap * { box-sizing: border-box; }
+
+    /* ── Page header ─────────────────────────────────────────────── */
+    .amc-page-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .amc-page-head h1 {
+      margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -.02em;
+    }
+    .amc-page-head p {
+      margin: 4px 0 0; font-size: 12.5px; color: var(--text-muted);
+    }
+    .amc-page-actions { display: flex; gap: 10px; align-items: center; }
+
+    /* ── Card / section ──────────────────────────────────────────── */
+    .amc-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--amc-r-card); padding: 20px 22px;
+      box-shadow: var(--amc-shadow); margin-bottom: 16px;
+    }
+    .amc-card h2 {
+      margin: 0 0 4px; font-size: 14px; font-weight: 700; letter-spacing: -.01em;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .amc-card h2 .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10.5px; font-weight: 700; letter-spacing: .05em;
+      text-transform: uppercase;
+      padding: 2px 8px; border-radius: 999px;
+      background: color-mix(in srgb, var(--amc-c-info) 12%, transparent);
+      color: var(--amc-c-info);
+    }
+    .amc-card p.desc {
+      margin: 4px 0 16px; font-size: 12px; color: var(--text-muted); line-height: 1.55;
+    }
+
+    /* ── Buttons ─────────────────────────────────────────────────── */
+    .amc-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; font-size: 12px; font-weight: 600;
+      letter-spacing: -.005em;
+      border: 1px solid var(--border); border-radius: var(--amc-r-input);
+      background: var(--bg-card); color: var(--text);
+      cursor: pointer; font-family: inherit; text-decoration: none;
+      transition: background .12s, border-color .12s, transform .06s;
+    }
+    .amc-btn:hover { background: var(--amc-hover); }
+    .amc-btn:active { transform: translateY(.5px); }
+    .amc-btn.primary { background: var(--text); color: var(--bg-card); border-color: var(--text); }
+    .amc-btn.primary:hover { opacity: .9; }
+    .amc-btn.danger  { color: var(--amc-c-err); border-color: color-mix(in srgb, var(--amc-c-err) 30%, var(--border)); }
+    .amc-btn.danger:hover { background: color-mix(in srgb, var(--amc-c-err) 8%, transparent); }
+    .amc-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .amc-btn .spinner {
+      width: 12px; height: 12px; border: 2px solid currentColor;
+      border-top-color: transparent; border-radius: 50%;
+      animation: amcSpin .7s linear infinite;
+    }
+    @keyframes amcSpin { to { transform: rotate(360deg); } }
+
+    /* ── Sync status grid ────────────────────────────────────────── */
+    .amc-sync-grid {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px; margin-bottom: 14px;
+    }
+    @media (max-width: 720px) { .amc-sync-grid { grid-template-columns: 1fr 1fr; } }
+    .amc-sync-item {
+      padding: 10px 14px;
+      background: var(--amc-bg-subtle);
+      border: 1px solid var(--border); border-radius: 10px;
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .amc-sync-item .lbl {
+      font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+      color: var(--text-muted); font-weight: 700;
+    }
+    .amc-sync-item .val {
+      font-size: 15px; font-weight: 700; letter-spacing: -.01em;
+      font-feature-settings: 'tnum' 1;
+    }
+    .amc-sync-item .sub { font-size: 10.5px; color: var(--text-muted); }
+    .amc-sync-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .amc-status-dot {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      margin-right: 4px; vertical-align: 2px;
+    }
+    .amc-status-dot.ok  { background: var(--amc-c-ok); }
+    .amc-status-dot.err { background: var(--amc-c-err); }
+    .amc-status-dot.warn{ background: var(--amc-c-warn); }
+    .amc-status-dot.idle{ background: var(--text-muted); opacity: .4; }
+
+    /* ── Form fields ─────────────────────────────────────────────── */
+    .amc-form-grid {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px 16px;
+    }
+    @media (max-width: 720px) { .amc-form-grid { grid-template-columns: 1fr; } }
+    .amc-field { display: flex; flex-direction: column; gap: 6px; }
+    .amc-field.full { grid-column: 1 / -1; }
+    .amc-field label {
+      font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+      color: var(--text-muted); font-weight: 700;
+    }
+    .amc-field label .hint { text-transform: none; letter-spacing: 0; color: var(--text-muted); font-weight: 400; margin-left: 6px; font-size: 10.5px; }
+    .amc-field input, .amc-field select {
+      padding: 8px 12px; font-size: 13px; font-family: inherit;
+      background: var(--bg-card); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--amc-r-input);
+      font-feature-settings: 'tnum' 1;
+    }
+    .amc-field input:focus, .amc-field select:focus {
+      outline: none; border-color: var(--amc-c-info);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--amc-c-info) 15%, transparent);
+    }
+    .amc-field input[type="number"] { max-width: 140px; }
+
+    /* ── Categories chips ────────────────────────────────────────── */
+    .amc-cats {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      padding: 12px; background: var(--amc-bg-subtle);
+      border: 1px solid var(--border); border-radius: 10px;
+    }
+    .amc-cat-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 10px; font-size: 12px; font-weight: 600;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .amc-cat-chip .swatch {
+      width: 12px; height: 12px; border-radius: 3px;
+    }
+
+    /* ── Rules table ─────────────────────────────────────────────── */
+    .amc-rules-wrap { overflow-x: auto; }
+    .amc-rules {
+      width: 100%; border-collapse: collapse; font-size: 12.5px;
+      min-width: 780px;
+    }
+    .amc-rules th {
+      padding: 10px 12px; text-align: left;
+      font-size: 10.5px; font-weight: 700; letter-spacing: .05em;
+      color: var(--text-muted); text-transform: uppercase;
+      background: var(--amc-bg-subtle);
+      border-bottom: 1px solid var(--border);
+    }
+    .amc-rules td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .amc-rules tbody tr:last-child td { border-bottom: none; }
+    .amc-rules tbody tr.disabled { opacity: .45; }
+    .amc-rules input, .amc-rules select {
+      padding: 5px 8px; font-size: 12px; font-family: inherit;
+      background: var(--bg-card); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      font-feature-settings: 'tnum' 1; width: 100%;
+    }
+    .amc-rules input[type="number"] { width: 68px; text-align: center; }
+    .amc-rules .drag-h {
+      color: var(--text-muted); cursor: grab; font-size: 14px; text-align: center;
+    }
+    .amc-rules .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
+    .amc-rules .icon-btn {
+      width: 26px; height: 26px; border-radius: 6px;
+      display: inline-grid; place-items: center;
+      border: 1px solid transparent; background: transparent;
+      cursor: pointer; color: var(--text-muted);
+      transition: background .12s, color .12s;
+    }
+    .amc-rules .icon-btn:hover { background: var(--amc-hover); color: var(--text); }
+    .amc-rules .icon-btn.del:hover { background: color-mix(in srgb, var(--amc-c-err) 12%, transparent); color: var(--amc-c-err); }
+
+    .amc-toggle {
+      position: relative; display: inline-block;
+      width: 32px; height: 18px; cursor: pointer;
+      vertical-align: middle;
+    }
+    .amc-toggle input { display: none; }
+    .amc-toggle-slider {
+      position: absolute; inset: 0;
+      background: color-mix(in srgb, var(--text-muted) 35%, transparent);
+      border-radius: 10px;
+      transition: background .18s;
+    }
+    .amc-toggle-slider::before {
+      content: ''; position: absolute; left: 2px; top: 2px;
+      width: 14px; height: 14px; background: white; border-radius: 50%;
+      transition: transform .18s;
+    }
+    .amc-toggle input:checked + .amc-toggle-slider { background: var(--amc-c-ok); }
+    .amc-toggle input:checked + .amc-toggle-slider::before { transform: translateX(14px); }
+
+    /* ── Test result panel ───────────────────────────────────────── */
+    .amc-test-out {
+      margin-top: 12px; padding: 10px 14px;
+      background: var(--amc-bg-subtle); border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+      font-size: 11.5px; color: var(--text);
+      white-space: pre-wrap; word-break: break-word;
+      max-height: 240px; overflow: auto;
+      display: none;
+    }
+    .amc-test-out.visible { display: block; }
+    .amc-test-out.ok  { border-color: color-mix(in srgb, var(--amc-c-ok)  30%, var(--border)); }
+    .amc-test-out.err { border-color: color-mix(in srgb, var(--amc-c-err) 30%, var(--border)); }
+
+    /* ── History table ───────────────────────────────────────────── */
+    .amc-hist { width: 100%; border-collapse: collapse; font-size: 12px; font-family: ui-monospace, monospace; }
+    .amc-hist th {
+      padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 700;
+      letter-spacing: .05em; color: var(--text-muted); text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    .amc-hist td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+    .amc-hist tbody tr:last-child td { border-bottom: none; }
+    .amc-hist .mode {
+      display: inline-block; padding: 1px 6px; border-radius: 4px;
+      font-size: 10px; font-weight: 700; letter-spacing: .03em;
+    }
+    .amc-hist .mode.backfill { background: color-mix(in srgb, var(--amc-c-warn) 18%, transparent); color: var(--amc-c-warn); }
+    .amc-hist .mode.delta    { background: color-mix(in srgb, var(--amc-c-info) 18%, transparent); color: var(--amc-c-info); }
+
+    .amc-toast {
+      position: fixed; bottom: 24px; right: 24px;
+      padding: 12px 20px; border-radius: 10px;
+      background: var(--text); color: var(--bg-card);
+      font-size: 13.5px; font-weight: 600;
+      box-shadow: 0 12px 32px rgba(0,0,0,.28);
+      opacity: 0; transform: translateY(10px);
+      transition: opacity .2s, transform .2s;
+      z-index: 9999;                        /* on top of sidebar */
+      pointer-events: none;
+      max-width: 420px;
+    }
+    .amc-toast.visible { opacity: 1; transform: translateY(0); }
+    .amc-toast.err { background: var(--amc-c-err); color: #fff; }
+    .amc-toast.ok  { background: var(--amc-c-ok);  color: #fff; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Alert Monitor · Config</div>
+        <div class="page-sub">JSM Ops classification rules &amp; sync settings</div>
+      </div>
+      <div class="topbar-actions">
+        <a class="amc-btn" href="../alert-monitor.html" style="font-size:11.5px">← กลับหน้า Dashboard</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="amc-wrap">
+
+        <div class="amc-page-head">
+          <div>
+            <h1>Alert Monitor · Config</h1>
+            <p>JSM connection, sync behavior, categories และ classification rules</p>
+          </div>
+          <div class="amc-page-actions">
+            <button class="amc-btn primary" id="btn-save-all"><i data-icon="save"></i> Save changes</button>
+          </div>
+        </div>
+
+        <!-- ── SYNC STATUS ─────────────────────────────────── -->
+        <section class="amc-card">
+          <h2>Sync Status <span class="badge" id="sync-badge">idle</span></h2>
+          <p class="desc">สถานะ backfill + delta sync ล่าสุด และปุ่ม trigger manual</p>
+
+          <div class="amc-sync-grid">
+            <div class="amc-sync-item">
+              <span class="lbl">Total alerts (cache)</span>
+              <span class="val" id="ss-total">—</span>
+              <span class="sub" id="ss-total-sub">across all months</span>
+            </div>
+            <div class="amc-sync-item">
+              <span class="lbl">Months cached</span>
+              <span class="val" id="ss-months">—</span>
+              <span class="sub" id="ss-months-sub">files on disk</span>
+            </div>
+            <div class="amc-sync-item">
+              <span class="lbl">Last sync</span>
+              <span class="val" id="ss-last">—</span>
+              <span class="sub" id="ss-last-sub">JSM Ops</span>
+            </div>
+            <div class="amc-sync-item">
+              <span class="lbl">Backfill</span>
+              <span class="val" id="ss-backfill">—</span>
+              <span class="sub" id="ss-backfill-sub"></span>
+            </div>
+          </div>
+
+          <div class="amc-sync-actions">
+            <button class="amc-btn primary" id="btn-force-sync">
+              <span id="fs-icon">↻</span> Force sync (delta)
+            </button>
+            <button class="amc-btn" id="btn-full-backfill">
+              <i data-icon="refresh-cw"></i> Full backfill (reset cursor)
+            </button>
+            <span id="sync-msg" style="font-size:11.5px;color:var(--text-muted);align-self:center;margin-left:6px"></span>
+          </div>
+        </section>
+
+        <!-- ── JSM CONNECTION ──────────────────────────────── -->
+        <section class="amc-card">
+          <h2>JSM Connection</h2>
+          <p class="desc">Atlassian tenant + team ID สำหรับ filter alerts. Credentials (email/token) มาจาก <code>.env</code></p>
+
+          <div class="amc-form-grid">
+            <div class="amc-field">
+              <label>Cloud ID <span class="hint">Atlassian tenant identifier</span></label>
+              <input type="text" id="jsm-cloud-id" placeholder="uuid">
+            </div>
+            <div class="amc-field">
+              <label>Team Name <span class="hint">display only</span></label>
+              <input type="text" id="jsm-team-name" placeholder="Service Monitoring - SM">
+            </div>
+            <div class="amc-field full">
+              <label>Team ID <span class="hint">Opsgenie team id (og-...) — used in query filter</span></label>
+              <input type="text" id="jsm-team-id" placeholder="og-...">
+            </div>
+            <div class="amc-field full">
+              <label>Responder Filter <span class="hint">JSM search query — override if Team ID doesn't work</span></label>
+              <input type="text" id="jsm-responder-filter" placeholder='responders: "og-..."'>
+            </div>
+            <div class="amc-field full">
+              <label>Base URL <span class="hint">Atlassian JSM Ops API endpoint</span></label>
+              <input type="text" id="jsm-base-url" placeholder="https://api.atlassian.com/jsm/ops/api">
+            </div>
+            <div class="amc-field">
+              <label>TLS verify <span class="hint">ปิดถ้า server ไม่มี CA bundle</span></label>
+              <div style="display:flex;align-items:center;gap:10px">
+                <label class="amc-toggle">
+                  <input type="checkbox" id="jsm-ssl-verify" checked>
+                  <span class="amc-toggle-slider"></span>
+                </label>
+                <span style="font-size:11.5px;color:var(--text-muted)">verify TLS certificate</span>
+              </div>
+            </div>
+            <div class="amc-field">
+              <label>CA bundle path <span class="hint">optional — /etc/ssl/certs/ca-certificates.crt เป็นต้น</span></label>
+              <input type="text" id="jsm-ssl-ca" placeholder="(auto-detect)">
+            </div>
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="amc-btn" id="btn-test-jsm"><i data-icon="plug"></i> Test connection</button>
+            <span id="jsm-test-status" style="font-size:11.5px;color:var(--text-muted);align-self:center"></span>
+          </div>
+          <div class="amc-test-out" id="jsm-test-out"></div>
+        </section>
+
+        <!-- ── SYNC BEHAVIOR ───────────────────────────────── -->
+        <section class="amc-card">
+          <h2>Sync Behavior</h2>
+          <p class="desc">ปรับ tempo ของ auto-sync + ขอบเขต backfill</p>
+
+          <div class="amc-form-grid">
+            <div class="amc-field">
+              <label>Min interval (seconds) <span class="hint">debounce ระหว่างครั้ง</span></label>
+              <input type="number" id="sy-min" min="0" step="5">
+            </div>
+            <div class="amc-field">
+              <label>Page size <span class="hint">JSM ignore ค่านี้อยู่แล้ว (คืน 20/page) — ใช้ป้องกันข้อผิดพลาด</span></label>
+              <input type="number" id="sy-page-size" min="1" max="100">
+            </div>
+            <div class="amc-field">
+              <label>Max pages per chunk <span class="hint">10 = ~15s ต่อ sync (ปลอดภัยกับ nginx timeout 60s)</span></label>
+              <input type="number" id="sy-max-pages" min="1" max="200">
+            </div>
+            <div class="amc-field">
+              <label>History months <span class="hint">ย้อนหลังกี่เดือน (initial backfill window)</span></label>
+              <input type="number" id="sy-history-months" min="1" max="60">
+            </div>
+            <div class="amc-field">
+              <label>Request timeout (seconds)</label>
+              <input type="number" id="sy-req-timeout" min="5" max="120">
+            </div>
+          </div>
+        </section>
+
+        <!-- ── CATEGORIES ──────────────────────────────────── -->
+        <section class="amc-card">
+          <h2>Categories</h2>
+          <p class="desc">ประเภทที่ classification rules ใช้ (id, label, color) — ปรับแล้ว refresh dashboard</p>
+
+          <div class="amc-cats" id="cats-list"></div>
+        </section>
+
+        <!-- ── CLASSIFICATION RULES ────────────────────────── -->
+        <section class="amc-card">
+          <h2>Classification Rules</h2>
+          <p class="desc">
+            ประเมินจาก priority น้อยไปมาก (rule ที่ priority ต่ำ = match ก่อน) rules ที่ match แรกจะกำหนด category<br>
+            Field: message / tags / source / alias · Match: contains / starts_with / equals / regex
+          </p>
+
+          <div class="amc-rules-wrap">
+            <table class="amc-rules">
+              <thead>
+                <tr>
+                  <th style="width:36px"></th>
+                  <th style="width:76px">Priority</th>
+                  <th style="width:100px">Field</th>
+                  <th style="width:120px">Match</th>
+                  <th>Keyword</th>
+                  <th style="width:130px">Category</th>
+                  <th style="width:70px">Enabled</th>
+                  <th style="width:70px"></th>
+                </tr>
+              </thead>
+              <tbody id="rules-tbody"></tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="amc-btn" id="btn-add-rule">+ เพิ่ม rule</button>
+            <button class="amc-btn" id="btn-resort" title="เรียง priority ตามลำดับปัจจุบัน แล้ว renumber ให้เป็น 10, 20, 30…">↕ Renumber priorities</button>
+          </div>
+        </section>
+
+        <!-- ── SYNC HISTORY ────────────────────────────────── -->
+        <section class="amc-card">
+          <h2>Recent Sync History</h2>
+          <p class="desc">30 syncs ล่าสุด — เห็น mode, ระยะเวลา, จำนวนใหม่/อัปเดต, ผู้ trigger</p>
+          <table class="amc-hist">
+            <thead>
+              <tr>
+                <th>At</th><th>Mode</th><th style="width:70px">Dur</th>
+                <th style="text-align:right">New</th><th style="text-align:right">Upd</th>
+                <th>Months</th><th>User</th>
+              </tr>
+            </thead>
+            <tbody id="hist-tbody">
+              <tr><td colspan="7" style="color:var(--text-muted);text-align:center;padding:24px">— ยังไม่มี history —</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+      </div>
+
+      <div class="amc-toast" id="toast"></div>
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/theme.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+  Auth.requireAuth();
+  Layout.render('admin');
+</script>
+<script src="../assets/js/alert-monitor-config.js"></script>
+<script>
+  AlertMonitorConfig.init();
+</script>
+
+</body>
+</html>

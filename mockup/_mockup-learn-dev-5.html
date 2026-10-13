@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Learn Hero — Developer Style · 5 designs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═════════════════════════════════════════════════════════════════
+   Shared dev-theme tokens
+   ═════════════════════════════════════════════════════════════════ */
+:root{
+  --orange:#F26419; --orange-dark:#EA580C; --amber:#FBBF24;
+  --bg:#F5F6F8; --page-text:#1C1C1E; --page-muted:#767676;
+  --border:#E5E5E5;
+
+  /* Dev theme */
+  --dv-bg:#0F1116;
+  --dv-bg2:#161923;
+  --dv-panel:#1F2330;
+  --dv-panel-2:#252A3A;
+  --dv-border:#2E3446;
+  --dv-line:#3A4258;
+  --dv-text:#E8E8EF;
+  --dv-muted:#8A8FA3;
+  --dv-cyan:#22D3EE;
+  --dv-green:#22C55E;
+  --dv-purple:#A78BFA;
+  --dv-pink:#F472B6;
+  --dv-blue:#60A5FA;
+  --dv-yellow:#FDE047;
+  --dv-red:#EF4444;
+
+  --font:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--page-text); font-family:var(--font); font-size:12px}
+.page{max-width:1220px; margin:0 auto; padding:32px 32px 80px; display:flex; flex-direction:column; gap:26px}
+
+.pageHead{padding-bottom:14px; border-bottom:2px solid var(--page-text)}
+.pageHead h1{margin:0; font-size:22px; font-weight:800; letter-spacing:-.02em}
+.pageHead p{margin:6px 0 0; color:var(--page-muted); font-size:12px}
+
+.sec-head{display:flex; align-items:baseline; gap:12px; padding:0 2px}
+.sec-num{font-size:10px; font-weight:800; color:#fff; background:var(--page-text);
+  padding:3px 8px; border-radius:6px; letter-spacing:.06em}
+.sec-title{font-size:14px; font-weight:800; letter-spacing:-.01em}
+.sec-hint{font-size:11px; color:var(--page-muted); margin-left:auto}
+
+@keyframes shine{ 0%,30%{transform:translateX(-100%)} 55%,100%{transform:translateX(110%)} }
+@keyframes enterY{ from{opacity:0; transform:translateY(-8px)} to{opacity:1; transform:none} }
+.enter{animation:enterY .55s cubic-bezier(.22,.9,.32,1.1) both}
+
+/* ═════════════════════════════════════════════════════════════════
+   D1 — VS Code Editor
+   ═════════════════════════════════════════════════════════════════ */
+.d1{
+  position:relative; display:flex; align-items:stretch; gap:0;
+  background:var(--dv-bg); color:var(--dv-text);
+  border:1px solid var(--dv-border); border-radius:12px; overflow:hidden;
+  box-shadow:0 10px 30px -12px rgba(0,0,0,.45);
+  min-height:150px;
+}
+/* Traffic-light title bar */
+.d1::before{content:''; position:absolute; top:0; left:0; right:0; height:28px;
+  background:linear-gradient(180deg, #2A2F42, #1B1E2A); border-bottom:1px solid var(--dv-border); z-index:2}
+.d1::after{content:'lesson-impb-ch4.md — SOM-Portal'; position:absolute; top:6px; left:50%; transform:translateX(-50%); z-index:3;
+  font-size:10.5px; color:var(--dv-muted); font-weight:700; letter-spacing:.02em}
+.d1-dots{position:absolute; top:9px; left:14px; z-index:4; display:flex; gap:6px}
+.d1-dots i{width:10px; height:10px; border-radius:50%}
+.d1-dots i:nth-child(1){background:#FF5F56}
+.d1-dots i:nth-child(2){background:#FFBD2E}
+.d1-dots i:nth-child(3){background:#27CA40}
+
+/* Sidebar file explorer */
+.d1-side{flex:0 0 190px; padding:36px 0 32px; background:var(--dv-bg2);
+  border-right:1px solid var(--dv-border); font-size:10.5px}
+.d1-side-h{padding:6px 14px 8px; font-size:9px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--dv-muted); font-weight:800}
+.d1-file{display:flex; align-items:center; gap:7px; padding:4px 14px; color:var(--dv-muted); position:relative}
+.d1-file .ic{width:12px; text-align:center; opacity:.85}
+.d1-file.folder{color:#93C5FD}
+.d1-file.active{background:linear-gradient(90deg, rgba(242,100,25,.20), transparent); color:var(--orange)}
+.d1-file.active::before{content:''; position:absolute; left:0; top:0; bottom:0; width:2px; background:var(--orange)}
+.d1-file.done::after{content:'●'; margin-left:auto; color:var(--dv-green); font-size:8px}
+.d1-file.new::after{content:'●'; margin-left:auto; color:var(--dv-yellow); font-size:8px; animation:d1pulse 1.4s ease-in-out infinite}
+@keyframes d1pulse{ 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* Main code area */
+.d1-main{flex:1; padding:36px 0 32px; overflow:hidden; position:relative; min-width:0}
+.d1-tabs{display:flex; gap:0; border-bottom:1px solid var(--dv-border); background:var(--dv-bg2); font-size:10.5px}
+.d1-tab{padding:6px 14px; color:var(--dv-muted); background:var(--dv-bg2); border-right:1px solid var(--dv-border); cursor:default}
+.d1-tab.active{background:var(--dv-bg); color:var(--dv-text); border-bottom:2px solid var(--orange)}
+.d1-tab .cl{opacity:.5; margin-left:6px}
+.d1-code{padding:10px 0 10px; font-size:11.5px; line-height:1.65}
+.d1-ln{display:flex; padding:0 12px 0 0}
+.d1-ln .n{color:var(--dv-muted); opacity:.5; text-align:right; padding:0 12px 0 8px; user-select:none; min-width:34px; font-size:10.5px}
+.d1-ln.active{background:rgba(242,100,25,.05); border-left:2px solid var(--orange); padding-left:0}
+.d1-h1{color:#F9A8D4; font-weight:800}
+.d1-h2{color:var(--dv-purple); font-weight:800}
+.d1-key{color:var(--dv-blue)}
+.d1-str{color:var(--dv-green)}
+.d1-num{color:var(--amber)}
+.d1-com{color:var(--dv-muted); font-style:italic}
+.d1-flag{color:var(--orange); font-weight:800}
+.d1-caret{display:inline-block; width:8px; height:14px; background:var(--orange);
+  vertical-align:-3px; margin-left:1px; animation:d1blink 1s steps(2) infinite}
+@keyframes d1blink{50%{opacity:0}}
+
+/* Minimap */
+.d1-mini{flex:0 0 60px; padding:36px 8px 32px; background:var(--dv-bg2); display:flex; flex-direction:column; gap:2px; opacity:.75}
+.d1-mini i{display:block; height:3px; border-radius:1px; background:var(--dv-line)}
+.d1-mini i.h{background:var(--dv-purple); width:80%}
+.d1-mini i.a{background:var(--orange); width:70%; box-shadow:0 0 6px rgba(242,100,25,.6)}
+.d1-mini i.g{background:var(--dv-green); width:60%}
+.d1-mini i.b{background:var(--dv-blue); width:55%}
+.d1-mini i.s{width:40%}
+
+/* Status bar */
+.d1-status{position:absolute; left:0; right:0; bottom:0; height:24px;
+  background:linear-gradient(90deg, var(--orange), var(--orange-dark));
+  color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; gap:14px; padding:0 12px; z-index:2}
+.d1-status .item{display:inline-flex; align-items:center; gap:4px}
+.d1-status .spacer{flex:1}
+.d1-status .item.g{color:#DCFCE7}
+.d1-status .pill{background:rgba(255,255,255,.18); padding:1px 7px; border-radius:5px; font-size:9.5px}
+
+/* CTA overlay on top of status bar */
+.d1-cta{position:absolute; top:38px; right:14px; z-index:5;
+  display:inline-flex; align-items:center; gap:6px; padding:7px 14px;
+  border-radius:6px; text-decoration:none; color:#0B0B0F !important;
+  font-family:var(--font); font-size:11px; font-weight:800;
+  background:linear-gradient(135deg, var(--amber), var(--orange));
+  box-shadow:0 4px 14px -3px rgba(242,100,25,.6);
+  transition:transform .12s}
+.d1-cta:hover{transform:translateY(-1px)}
+.d1-cta .arr{animation:d1arr 1.4s ease-in-out infinite}
+@keyframes d1arr{ 0%,100%{transform:translateX(0)} 50%{transform:translateX(3px)} }
+
+/* ═════════════════════════════════════════════════════════════════
+   D2 — GitHub PR (Ready to merge)
+   ═════════════════════════════════════════════════════════════════ */
+.d2{
+  position:relative; display:flex; align-items:stretch; gap:0;
+  background:#FFFFFF; color:#1F2328;
+  border:1px solid #D0D7DE; border-radius:12px; overflow:hidden;
+  box-shadow:0 3px 14px -4px rgba(31,35,40,.20);
+  min-height:150px;
+}
+.d2-side{flex-shrink:0; padding:16px 18px; background:linear-gradient(180deg, #F6F8FA, #FFF);
+  border-right:1px solid #D0D7DE; min-width:260px; display:flex; flex-direction:column; gap:8px}
+.d2-hd{display:flex; align-items:center; gap:8px; margin-bottom:2px}
+.d2-badge{display:inline-flex; align-items:center; gap:5px; padding:3px 10px 3px 8px;
+  border-radius:999px; font-size:10.5px; font-weight:700;
+  background:#DAFBE1; color:#116329; border:1px solid #4EBE6A}
+.d2-badge .ic{font-size:11px}
+.d2-num{font-size:10px; color:#57606A; font-weight:700}
+.d2-title{font-size:14px; font-weight:800; line-height:1.35; color:#0969DA}
+.d2-meta{font-size:10.5px; color:#57606A; font-weight:600}
+.d2-meta b{color:#0969DA; font-weight:700}
+.d2-avars{display:flex; align-items:center; gap:4px; margin-top:2px}
+.d2-av{width:22px; height:22px; border-radius:50%;
+  background:linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color:#fff; font-size:9px; font-weight:800; display:grid; place-items:center;
+  border:2px solid #FFF; box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.d2-av + .d2-av{margin-left:-8px}
+.d2-av.b1{background:linear-gradient(135deg, #60A5FA, #2563EB)}
+.d2-av.b2{background:linear-gradient(135deg, #A78BFA, #7C3AED)}
+.d2-approved{font-size:10.5px; color:#116329; font-weight:800; display:inline-flex; align-items:center; gap:5px}
+
+.d2-main{flex:1; padding:16px 18px; display:flex; flex-direction:column; gap:8px; min-width:0}
+.d2-check{display:flex; align-items:center; gap:8px; padding:7px 10px; border:1px solid #D0D7DE; border-radius:6px; background:#F6F8FA; font-size:11px}
+.d2-check .ic{width:20px; height:20px; border-radius:50%; display:grid; place-items:center; font-size:10px; font-weight:800; color:#fff}
+.d2-check.ok .ic{background:#2DA44E}
+.d2-check.run .ic{background:var(--amber); color:#7C2D12; animation:d2spin 1.4s linear infinite}
+@keyframes d2spin{to{transform:rotate(360deg)}}
+.d2-check .k{font-weight:800; color:#1F2328}
+.d2-check .kd{color:#57606A; font-size:10.5px}
+.d2-check .t{margin-left:auto; color:#57606A; font-size:10px; font-weight:700}
+.d2-check.ok{background:linear-gradient(90deg, rgba(45,164,78,.06), #F6F8FA 40%)}
+
+.d2-commits{margin-top:2px; font-size:10.5px; color:#57606A}
+.d2-commits .row{display:flex; align-items:center; gap:8px; padding:3px 0}
+.d2-commits .sha{font-family:var(--font); color:#8250DF; font-weight:800; font-size:10.5px}
+.d2-commits .msg{color:#1F2328; font-weight:600}
+.d2-commits .ago{margin-left:auto; color:#57606A; font-size:10px}
+
+.d2-mergebar{flex-shrink:0; background:#DAFBE1; border-left:1px solid #4EBE6A;
+  padding:16px 18px; display:flex; flex-direction:column; justify-content:center; gap:10px; min-width:200px}
+.d2-mergebar .hd{font-size:12px; font-weight:800; color:#116329; display:inline-flex; align-items:center; gap:5px}
+.d2-mergebar .sub{font-size:10.5px; color:#116329; line-height:1.45; font-weight:600}
+.d2-mergebtn{position:relative; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:10px 16px; border-radius:8px; text-decoration:none;
+  background:linear-gradient(180deg, #2DA44E, #1F883D); color:#fff !important;
+  font-size:12.5px; font-weight:800; letter-spacing:.02em;
+  border:1px solid rgba(31,35,40,.15);
+  box-shadow:0 3px 10px -3px rgba(45,164,78,.5), inset 0 1px 0 rgba(255,255,255,.15);
+  transition:transform .15s}
+.d2-mergebtn::before{content:''; position:absolute; inset:0;
+  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.4) 50%, transparent 70%);
+  transform:translateX(-100%); animation:shine 3s ease-in-out infinite}
+.d2-mergebtn:hover{transform:translateY(-1px)}
+
+/* ═════════════════════════════════════════════════════════════════
+   D3 — CI/CD Pipeline
+   ═════════════════════════════════════════════════════════════════ */
+.d3{
+  position:relative; display:flex; flex-direction:column; gap:0;
+  background:var(--dv-bg); color:var(--dv-text);
+  border:1px solid var(--dv-border); border-radius:12px; overflow:hidden;
+  box-shadow:0 10px 30px -12px rgba(0,0,0,.45);
+}
+.d3-hd{display:flex; align-items:center; gap:12px; padding:14px 18px; border-bottom:1px solid var(--dv-border);
+  background:linear-gradient(180deg, #1B1E2A, var(--dv-bg))}
+.d3-repo{display:flex; align-items:center; gap:8px; font-size:12px; font-weight:800}
+.d3-repo .ic{width:26px; height:26px; border-radius:8px; background:linear-gradient(135deg, var(--orange), var(--orange-dark));
+  display:grid; place-items:center; color:#fff; font-size:14px}
+.d3-repo .b{color:var(--dv-muted); font-weight:600}
+.d3-repo .b b{color:var(--dv-text); font-weight:800}
+.d3-live{margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:800;
+  color:var(--amber); background:rgba(251,191,36,.14); padding:4px 10px; border-radius:999px; border:1px solid rgba(251,191,36,.35)}
+.d3-live .p{width:6px; height:6px; border-radius:50%; background:var(--amber); animation:d3pulse 1s ease-in-out infinite}
+@keyframes d3pulse{ 0%,100%{opacity:1; box-shadow:0 0 0 0 rgba(251,191,36,.5)} 100%{opacity:.5; box-shadow:0 0 0 6px transparent} }
+.d3-time{font-size:10.5px; color:var(--dv-muted); font-weight:700; font-variant-numeric:tabular-nums}
+.d3-time b{color:var(--dv-text)}
+
+/* Pipeline stages */
+.d3-stages{padding:20px 22px 14px; position:relative}
+.d3-track{position:absolute; left:60px; right:60px; top:50%; height:2px; background:var(--dv-line); transform:translateY(-50%)}
+.d3-track::after{content:''; position:absolute; left:0; top:0; bottom:0; width:75%;
+  background:linear-gradient(90deg, var(--dv-green) 0%, var(--dv-green) 80%, var(--amber));
+  border-radius:2px; box-shadow:0 0 12px rgba(34,197,94,.4)}
+.d3-stgrid{position:relative; z-index:2; display:grid; grid-template-columns:repeat(5, 1fr); gap:8px}
+.d3-stage{display:flex; flex-direction:column; align-items:center; gap:6px}
+.d3-node{width:38px; height:38px; border-radius:50%; display:grid; place-items:center;
+  font-size:14px; font-weight:800; color:#fff; position:relative;
+  box-shadow:0 4px 12px -3px rgba(0,0,0,.4)}
+.d3-node.ok{background:linear-gradient(135deg, #22C55E, #16A34A)}
+.d3-node.run{background:linear-gradient(135deg, var(--amber), var(--orange))}
+.d3-node.run::before{content:''; position:absolute; inset:-4px; border-radius:50%;
+  border:2px dashed var(--amber); animation:d3spin 3s linear infinite}
+@keyframes d3spin{to{transform:rotate(360deg)}}
+.d3-node.run::after{content:''; position:absolute; inset:-6px; border-radius:50%;
+  border:2px solid var(--amber); opacity:0; animation:d3rip 1.6s ease-out infinite}
+@keyframes d3rip{ 0%{transform:scale(.9); opacity:.7} 100%{transform:scale(1.4); opacity:0} }
+.d3-node.q{background:#2E3446; color:var(--dv-muted); box-shadow:none}
+.d3-lbl{font-size:10.5px; font-weight:800; color:var(--dv-text); text-align:center}
+.d3-stage.q .d3-lbl{color:var(--dv-muted)}
+.d3-mini{font-size:9px; font-weight:700; color:var(--dv-muted); font-variant-numeric:tabular-nums; text-align:center}
+.d3-stage.ok .d3-mini{color:var(--dv-green)}
+.d3-stage.run .d3-mini{color:var(--amber)}
+
+/* Log */
+.d3-log{border-top:1px solid var(--dv-border); background:#0B0E14; padding:10px 18px; font-size:10.5px; line-height:1.6}
+.d3-log .line{white-space:nowrap; overflow:hidden}
+.d3-log .t{color:var(--dv-muted); margin-right:8px}
+.d3-log .ok{color:var(--dv-green)}
+.d3-log .info{color:var(--dv-cyan)}
+.d3-log .warn{color:var(--amber)}
+.d3-log .active{color:var(--dv-text); font-weight:700}
+.d3-log .caret{display:inline-block; width:7px; height:11px; background:var(--orange); vertical-align:-2px; animation:d1blink 1s steps(2) infinite}
+
+.d3-cta{position:absolute; top:14px; right:110px; z-index:3;
+  padding:6px 12px; border-radius:6px; text-decoration:none; color:var(--dv-text) !important;
+  font-size:11px; font-weight:800; background:var(--dv-panel-2);
+  border:1px solid var(--dv-line); transition:background .15s}
+.d3-cta:hover{background:var(--dv-line)}
+.d3-cta.primary{background:linear-gradient(135deg, var(--amber), var(--orange)); color:#0B0B0F !important; border-color:transparent;
+  box-shadow:0 4px 12px -3px rgba(242,100,25,.5); right:14px}
+
+/* ═════════════════════════════════════════════════════════════════
+   D4 — cURL + JSON Response
+   ═════════════════════════════════════════════════════════════════ */
+.d4{
+  position:relative; display:flex; align-items:stretch; gap:0;
+  background:var(--dv-bg); color:var(--dv-text);
+  border:1px solid var(--dv-border); border-radius:12px; overflow:hidden;
+  box-shadow:0 10px 30px -12px rgba(0,0,0,.45);
+  min-height:150px;
+}
+.d4-req{flex:0 0 46%; padding:14px 18px; border-right:1px solid var(--dv-border); background:var(--dv-bg2); display:flex; flex-direction:column; gap:8px; min-width:0}
+.d4-hd{display:flex; align-items:center; gap:8px; font-size:11px; color:var(--dv-muted); font-weight:700}
+.d4-method{padding:2px 8px; border-radius:5px; font-weight:800; font-size:10.5px}
+.d4-method.post{background:rgba(34,197,94,.18); color:var(--dv-green); border:1px solid rgba(34,197,94,.35)}
+.d4-url{color:var(--dv-text); font-weight:700; font-size:11.5px}
+.d4-url .p{color:var(--dv-cyan)}
+.d4-cmd{font-size:11.5px; color:var(--dv-text); line-height:1.6; word-break:break-all}
+.d4-cmd .dollar{color:var(--dv-cyan)}
+.d4-cmd .cmd{color:var(--dv-text)}
+.d4-cmd .flag{color:var(--amber)}
+.d4-cmd .str{color:var(--dv-green)}
+.d4-cmd .key{color:var(--dv-purple)}
+.d4-cmd .caret{display:inline-block; width:8px; height:12px; background:var(--orange); vertical-align:-2px; animation:d1blink 1s steps(2) infinite}
+.d4-meta{margin-top:auto; display:flex; align-items:center; gap:6px; font-size:10px; color:var(--dv-muted); font-weight:700}
+.d4-chip{padding:2px 7px; border-radius:5px; background:var(--dv-panel-2); border:1px solid var(--dv-line)}
+.d4-chip.ok{background:rgba(34,197,94,.15); color:var(--dv-green); border-color:rgba(34,197,94,.35)}
+
+.d4-res{flex:1; padding:14px 18px; display:flex; flex-direction:column; gap:8px; min-width:0; position:relative}
+.d4-res-hd{display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700}
+.d4-res-hd .code{padding:2px 8px; border-radius:5px; background:rgba(34,197,94,.18); color:var(--dv-green); font-weight:800; border:1px solid rgba(34,197,94,.35)}
+.d4-res-hd .ms{color:var(--dv-cyan); font-weight:800}
+.d4-res-hd .sz{color:var(--dv-muted); margin-left:auto}
+.d4-json{font-size:11px; line-height:1.6; padding-left:2px; color:var(--dv-text); flex:1; overflow:hidden}
+.d4-json .k{color:var(--dv-blue)}
+.d4-json .s{color:var(--amber)}
+.d4-json .n{color:var(--dv-pink)}
+.d4-json .b{color:var(--dv-purple)}
+.d4-json .c{color:var(--dv-muted); font-style:italic}
+.d4-json .highlight{background:rgba(242,100,25,.15); border-left:2px solid var(--orange); padding-left:6px; margin-left:-8px}
+
+.d4-cta{position:absolute; bottom:12px; right:14px;
+  display:inline-flex; align-items:center; gap:6px; padding:8px 14px;
+  border-radius:8px; text-decoration:none; color:#0B0B0F !important;
+  font-size:11px; font-weight:800;
+  background:linear-gradient(135deg, var(--amber), var(--orange));
+  box-shadow:0 4px 12px -3px rgba(242,100,25,.5); transition:transform .15s}
+.d4-cta:hover{transform:translateY(-1px)}
+.d4-cta .arr{animation:d1arr 1.4s ease-in-out infinite}
+
+/* ═════════════════════════════════════════════════════════════════
+   D5 — Kanban Board (Sprint)
+   ═════════════════════════════════════════════════════════════════ */
+.d5{
+  position:relative; display:flex; align-items:stretch; gap:0;
+  background:var(--dv-bg2); color:var(--dv-text);
+  border:1px solid var(--dv-border); border-radius:12px; overflow:hidden;
+  box-shadow:0 10px 30px -12px rgba(0,0,0,.45);
+  min-height:170px;
+}
+.d5-side{flex:0 0 200px; padding:16px 18px; background:var(--dv-bg); border-right:1px solid var(--dv-border);
+  display:flex; flex-direction:column; justify-content:center; gap:6px}
+.d5-tag{align-self:flex-start; font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--amber); background:rgba(251,191,36,.14); border:1px solid rgba(251,191,36,.35);
+  padding:2px 8px; border-radius:999px; margin-bottom:6px}
+.d5-title{font-size:14.5px; font-weight:800; line-height:1.3}
+.d5-title b{color:var(--orange)}
+.d5-sub{font-size:10.5px; color:var(--dv-muted); font-weight:600}
+.d5-sub b{color:var(--dv-text)}
+.d5-pctwrap{margin-top:6px; display:flex; align-items:baseline; gap:6px}
+.d5-pctwrap .n{font-size:26px; font-weight:800; color:var(--orange); letter-spacing:-.02em; line-height:1; font-variant-numeric:tabular-nums}
+.d5-pctwrap .u{font-size:12px; color:var(--dv-muted); font-weight:700}
+.d5-pctwrap .k{font-size:10px; color:var(--dv-muted); font-weight:700; margin-left:4px}
+
+.d5-cols{flex:1; display:grid; grid-template-columns:repeat(3, 1fr); gap:0; min-width:0}
+.d5-col{padding:12px 14px; border-right:1px solid var(--dv-border); display:flex; flex-direction:column; gap:8px}
+.d5-col:last-child{border-right:0}
+.d5-colhd{display:flex; align-items:center; gap:8px; font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--dv-muted); padding-bottom:6px; border-bottom:1px dashed var(--dv-border)}
+.d5-colhd .dot{width:6px; height:6px; border-radius:50%}
+.d5-col.todo .dot{background:var(--dv-muted)}
+.d5-col.wip  .dot{background:var(--amber); box-shadow:0 0 8px rgba(251,191,36,.6)}
+.d5-col.done .dot{background:var(--dv-green)}
+.d5-colhd .n{margin-left:auto; padding:1px 7px; border-radius:999px; background:var(--dv-panel-2); color:var(--dv-text); font-size:9.5px}
+.d5-card{background:var(--dv-panel); border:1px solid var(--dv-border); border-radius:8px; padding:8px 10px;
+  display:flex; flex-direction:column; gap:4px; position:relative}
+.d5-card.active{
+  border-color:var(--orange); background:linear-gradient(135deg, rgba(242,100,25,.14), var(--dv-panel));
+  box-shadow:0 4px 14px -4px rgba(242,100,25,.4);
+}
+.d5-card.active::before{content:''; position:absolute; inset:-2px; border-radius:9px; border:1.5px solid var(--orange);
+  opacity:0; animation:d5pulse 2s ease-out infinite; pointer-events:none}
+@keyframes d5pulse{ 0%{opacity:.6; transform:scale(1)} 100%{opacity:0; transform:scale(1.06)} }
+.d5-ct{font-size:11px; font-weight:800; color:var(--dv-text); line-height:1.35}
+.d5-cm{display:flex; align-items:center; gap:6px; font-size:9.5px; color:var(--dv-muted); font-weight:700}
+.d5-cm .badge{padding:1px 6px; border-radius:4px; background:var(--dv-panel-2); font-weight:800}
+.d5-cm .badge.easy{background:rgba(34,197,94,.15); color:var(--dv-green)}
+.d5-cm .badge.med{background:rgba(251,191,36,.15); color:var(--amber)}
+.d5-cm .badge.hard{background:rgba(239,68,68,.15); color:var(--dv-red)}
+.d5-cm .time{margin-left:auto; font-variant-numeric:tabular-nums}
+.d5-card.done .d5-ct{color:var(--dv-muted); text-decoration:line-through}
+.d5-card.done{opacity:.75}
+.d5-card.done::after{content:'✓'; position:absolute; top:8px; right:10px; color:var(--dv-green); font-weight:800}
+
+.d5-cta{position:absolute; top:14px; right:14px; z-index:3;
+  display:inline-flex; align-items:center; gap:6px; padding:8px 14px;
+  border-radius:8px; text-decoration:none; color:#0B0B0F !important;
+  font-size:11px; font-weight:800;
+  background:linear-gradient(135deg, var(--amber), var(--orange));
+  box-shadow:0 4px 12px -3px rgba(242,100,25,.5); transition:transform .15s}
+.d5-cta:hover{transform:translateY(-1px)}
+
+/* ═════════════════════════════════════════════════════════════════
+   Section footer (comparison)
+   ═════════════════════════════════════════════════════════════════ */
+.summary{background:#FFFFFF; border:1px solid var(--border); border-radius:14px; padding:18px 22px; font-size:12px}
+.summary h3{margin:0 0 10px; font-size:12px; letter-spacing:.14em; font-weight:800; text-transform:uppercase}
+.summary table{width:100%; border-collapse:collapse; font-size:11.5px}
+.summary td, .summary th{padding:8px 10px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top}
+.summary th{font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--page-muted); font-weight:800}
+.summary tr:last-child td{border-bottom:0}
+.summary td b{color:var(--orange)}
+.summary .rank{font-size:14px; font-weight:800; color:var(--orange); font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="pageHead">
+    <h1>Developer-style Learn Hero — 5 designs</h1>
+    <p>5 แนวจาก devtools ที่ dev คุ้นเคย — เลือกอันที่รู้สึกว่า “อยากคลิก” ที่สุด · scroll ดูตารางเปรียบเทียบด้านล่างสุด</p>
+  </div>
+
+  <!-- ═══ D1 — VS Code Editor ═══ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><span class="sec-title">VS Code Editor · เปิดไฟล์บทเรียน</span><span class="sec-hint">คุ้นตาสำหรับ dev · file tree + syntax + minimap</span></div>
+    <div class="d1 enter">
+      <div class="d1-dots"><i></i><i></i><i></i></div>
+      <!-- Sidebar -->
+      <div class="d1-side">
+        <div class="d1-side-h">Explorer</div>
+        <div class="d1-file folder"><span class="ic">▾</span>📁 courses/</div>
+        <div class="d1-file done" style="padding-left:28px"><span class="ic">✓</span>grafana-102.md</div>
+        <div class="d1-file done" style="padding-left:28px"><span class="ic">✓</span>7-eleven.md</div>
+        <div class="d1-file folder" style="padding-left:14px"><span class="ic">▾</span>📁 impb/</div>
+        <div class="d1-file done" style="padding-left:34px"><span class="ic">✓</span>ch1-intro.md</div>
+        <div class="d1-file done" style="padding-left:34px"><span class="ic">✓</span>ch2-severity.md</div>
+        <div class="d1-file done" style="padding-left:34px"><span class="ic">✓</span>ch3-workflow.md</div>
+        <div class="d1-file active new" style="padding-left:34px"><span class="ic">▸</span>ch4-escalation.md</div>
+        <div class="d1-file" style="padding-left:34px; opacity:.55"><span class="ic">🔒</span>ch5-postmortem.md</div>
+      </div>
+      <!-- Main -->
+      <div class="d1-main">
+        <div class="d1-tabs">
+          <span class="d1-tab active">ch4-escalation.md<span class="cl">●</span></span>
+          <span class="d1-tab">progress.json<span class="cl">×</span></span>
+        </div>
+        <div class="d1-code">
+          <div class="d1-ln"><span class="n">1</span><span><span class="d1-h1"># Chapter 4 — Incident Escalation</span></span></div>
+          <div class="d1-ln"><span class="n">2</span><span><span class="d1-com">> อ่าน 8 นาที · ต่ออีก 2 บท จบ course</span></span></div>
+          <div class="d1-ln"><span class="n">3</span><span>&nbsp;</span></div>
+          <div class="d1-ln"><span class="n">4</span><span><span class="d1-h2">## Severity Matrix</span></span></div>
+          <div class="d1-ln"><span class="n">5</span><span>&nbsp;</span></div>
+          <div class="d1-ln"><span class="n">6</span><span><span class="d1-flag">-</span> <span class="d1-key">S1</span> · P0 · <span class="d1-str">"page immediately"</span></span></div>
+          <div class="d1-ln"><span class="n">7</span><span><span class="d1-flag">-</span> <span class="d1-key">S2</span> · P1 · escalate within <span class="d1-num">30</span> min</span></div>
+          <div class="d1-ln active"><span class="n">8</span><span><span class="d1-flag">-</span> <span class="d1-key">S3</span> · P2 · next business hour<span class="d1-caret"></span></span></div>
+          <div class="d1-ln"><span class="n">9</span><span>&nbsp;</span></div>
+          <div class="d1-ln"><span class="n">10</span><span><span class="d1-com">// Quiz: ตอบ 4/5 ผ่าน · +50 XP</span></span></div>
+        </div>
+      </div>
+      <!-- Minimap -->
+      <div class="d1-mini">
+        <i class="h"></i><i class="s"></i><i class="s"></i>
+        <i class="b"></i><i class="s"></i>
+        <i class="g"></i><i class="g"></i><i class="a"></i>
+        <i class="s"></i><i class="com" style="width:50%"></i>
+        <i></i><i></i><i class="b"></i><i></i><i></i>
+      </div>
+      <!-- Status bar -->
+      <div class="d1-status">
+        <span class="item">⎇ <b>learn/impb</b></span>
+        <span class="item">Ln 8, Col 32</span>
+        <span class="item">UTF-8</span>
+        <span class="spacer"></span>
+        <span class="item g">● 12 lessons done</span>
+        <span class="pill">+50 XP pending</span>
+        <span class="pill" style="background:rgba(255,255,255,.28)">🔥 14d</span>
+      </div>
+      <a class="d1-cta" href="#">▸ Run lesson <span class="arr">→</span></a>
+    </div>
+  </section>
+
+  <!-- ═══ D2 — GitHub PR ═══ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><span class="sec-title">GitHub PR · Ready to Merge</span><span class="sec-hint">PR checks passed → merge = จบบทเรียน</span></div>
+    <div class="d2 enter">
+      <div class="d2-side">
+        <div class="d2-hd">
+          <span class="d2-badge"><span class="ic">◐</span> Open</span>
+          <span class="d2-num">#142 · 3 commits</span>
+        </div>
+        <div class="d2-title">Learn: complete IMPB Chapter 4 — Incident Escalation</div>
+        <div class="d2-meta"><b>wa.rap</b> wants to merge <b>3 commits</b> into <b>main</b> from <b>learn/impb-ch4</b></div>
+        <div class="d2-avars">
+          <span class="d2-av">WR</span>
+          <span class="d2-av b1">RV</span>
+          <span class="d2-av b2">SM</span>
+          <span class="d2-approved">· ✓ 2 approvals</span>
+        </div>
+      </div>
+      <div class="d2-main">
+        <div class="d2-check ok">
+          <span class="ic">✓</span>
+          <div><div class="k">quiz-runner</div><div class="kd">Quiz passed 4/5 · score 80/100</div></div>
+          <span class="t">2s</span>
+        </div>
+        <div class="d2-check ok">
+          <span class="ic">✓</span>
+          <div><div class="k">xp-check</div><div class="kd">Awarded +50 XP · streak +1</div></div>
+          <span class="t">1s</span>
+        </div>
+        <div class="d2-check run">
+          <span class="ic">◐</span>
+          <div><div class="k">unlock-next</div><div class="kd">Preparing Chapter 5 — Post-mortem</div></div>
+          <span class="t">3s</span>
+        </div>
+        <div class="d2-commits">
+          <div class="row"><span class="sha">a1b2c3d</span><span class="msg">read severity-matrix section</span><span class="ago">8m ago</span></div>
+          <div class="row"><span class="sha">e4f5678</span><span class="msg">watch escalation walkthrough video</span><span class="ago">5m ago</span></div>
+          <div class="row"><span class="sha">9abc012</span><span class="msg">submit quiz (4/5 passed)</span><span class="ago">just now</span></div>
+        </div>
+      </div>
+      <div class="d2-mergebar">
+        <div class="hd">✓ Ready to merge</div>
+        <div class="sub">All checks passed · เหลืออีก <b>1 chapter</b> จบ course</div>
+        <a class="d2-mergebtn" href="#">✓ Merge & continue</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ D3 — CI/CD Pipeline ═══ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">03</span><span class="sec-title">CI/CD Pipeline · Learning Progress</span><span class="sec-hint">แต่ละ stage = 1 บท · เห็น progress ไหลจากซ้ายไปขวา</span></div>
+    <div class="d3 enter">
+      <div class="d3-hd">
+        <div class="d3-repo">
+          <span class="ic">⎇</span>
+          <div>
+            <div>learn-impb-course</div>
+            <div class="b">run <b>#142</b> · triggered by <b>@wa.rap</b> · commit <b>9abc012</b></div>
+          </div>
+        </div>
+        <a class="d3-cta" href="#">↻ Re-run</a>
+        <a class="d3-cta primary" href="#">▶ Continue</a>
+      </div>
+
+      <div class="d3-stages">
+        <div class="d3-track"></div>
+        <div class="d3-stgrid">
+          <div class="d3-stage ok"><div class="d3-node ok">✓</div><div class="d3-lbl">Read Intro</div><div class="d3-mini">passed · 8m</div></div>
+          <div class="d3-stage ok"><div class="d3-node ok">✓</div><div class="d3-lbl">Severity</div><div class="d3-mini">passed · 12m</div></div>
+          <div class="d3-stage ok"><div class="d3-node ok">✓</div><div class="d3-lbl">Workflow</div><div class="d3-mini">passed · 15m</div></div>
+          <div class="d3-stage run"><div class="d3-node run">▸</div><div class="d3-lbl">Escalation</div><div class="d3-mini">running · 3m in</div></div>
+          <div class="d3-stage q"><div class="d3-node q">5</div><div class="d3-lbl">Post-mortem</div><div class="d3-mini">queued</div></div>
+        </div>
+      </div>
+
+      <div class="d3-log">
+        <div class="line"><span class="t">14:32:11</span> <span class="ok">✓</span> ch3-workflow.md · passed with score 90/100</div>
+        <div class="line"><span class="t">14:35:04</span> <span class="info">▸</span> starting ch4-escalation.md · estimated 8min</div>
+        <div class="line"><span class="t">14:38:22</span> <span class="active">▸ reading section "Severity Matrix" (S1 · S2 · S3)</span> <span class="caret"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ D4 — cURL + JSON Response ═══ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">04</span><span class="sec-title">API Response · POST /api/learn/complete</span><span class="sec-hint">อารมณ์ Postman · เห็น XP มา realtime</span></div>
+    <div class="d4 enter">
+      <div class="d4-req">
+        <div class="d4-hd"><span class="d4-method post">POST</span> <span class="d4-url"><span class="p">/api/learn/</span>complete</span></div>
+        <div class="d4-cmd">
+          <span class="dollar">$</span> <span class="cmd">curl</span> <span class="flag">-X</span> <span class="str">POST</span> \<br>
+          &nbsp;&nbsp;<span class="flag">-H</span> <span class="str">"Content-Type: application/json"</span> \<br>
+          &nbsp;&nbsp;<span class="flag">-d</span> <span class="str">'{ <span class="key">"phase_id"</span>: <span class="str">"ph_impb_ch4"</span>,<br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"score"</span>: <span class="str">80</span> }'</span><span class="caret"></span>
+        </div>
+        <div class="d4-meta">
+          <span class="d4-chip">🔐 Bearer eyJhb…</span>
+          <span class="d4-chip">📎 v2</span>
+        </div>
+      </div>
+      <div class="d4-res">
+        <div class="d4-res-hd">
+          <span class="code">200 OK</span>
+          <span class="ms">⚡ 43ms</span>
+          <span class="sz">312 bytes</span>
+        </div>
+        <div class="d4-json">
+{ <span class="c">// XP awarded</span><br>
+&nbsp;&nbsp;<span class="k">"ok"</span>: <span class="b">true</span>,<br>
+&nbsp;&nbsp;<span class="k">"phase"</span>: <span class="s">"ch4-escalation"</span>,<br>
+<span class="highlight">&nbsp;&nbsp;<span class="k">"xp_earned"</span>: <span class="n">50</span>,</span><br>
+&nbsp;&nbsp;<span class="k">"level"</span>: { <span class="k">"cur"</span>: <span class="n">7</span>, <span class="k">"next"</span>: <span class="n">8</span>, <span class="k">"xp_to"</span>: <span class="n">40</span> },<br>
+&nbsp;&nbsp;<span class="k">"streak_days"</span>: <span class="n">14</span>,<br>
+&nbsp;&nbsp;<span class="k">"next"</span>: <span class="s">"ch5-postmortem"</span><br>
+}
+        </div>
+        <a class="d4-cta" href="#">↻ Send again <span class="arr">→</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ D5 — Kanban Sprint ═══ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">05</span><span class="sec-title">Kanban Sprint · Learning Backlog</span><span class="sec-hint">อารมณ์ Linear / Jira · แต่ละบทเรียน = ticket</span></div>
+    <div class="d5 enter">
+      <div class="d5-side">
+        <span class="d5-tag">Sprint 24 · Week 33</span>
+        <div class="d5-title">IMPB <b>Chapter 4</b> — Escalation</div>
+        <div class="d5-sub">3 <b>to do</b> · 1 <b>in progress</b> · 4 <b>done</b></div>
+        <div class="d5-pctwrap"><span class="n">50</span><span class="u">%</span><span class="k">this sprint</span></div>
+        <a class="d5-cta" href="#">▸ Open ticket</a>
+      </div>
+      <div class="d5-cols">
+        <div class="d5-col todo">
+          <div class="d5-colhd"><span class="dot"></span>To Learn<span class="n">3</span></div>
+          <div class="d5-card"><div class="d5-ct">Read: Post-mortem template</div><div class="d5-cm"><span class="badge easy">easy</span>Ch5<span class="time">6m</span></div></div>
+          <div class="d5-card"><div class="d5-ct">Quiz: 5-Why analysis</div><div class="d5-cm"><span class="badge med">med</span>quiz<span class="time">4m</span></div></div>
+          <div class="d5-card"><div class="d5-ct">Watch: Real incident replay</div><div class="d5-cm"><span class="badge hard">hard</span>video<span class="time">18m</span></div></div>
+        </div>
+        <div class="d5-col wip">
+          <div class="d5-colhd"><span class="dot"></span>In Progress<span class="n">1</span></div>
+          <div class="d5-card active">
+            <div class="d5-ct">Read: Severity matrix &amp; ownership</div>
+            <div class="d5-cm"><span class="badge med">med</span>Ch4 · 3m in<span class="time">8m</span></div>
+          </div>
+          <div style="text-align:center; color:var(--dv-muted); font-size:9.5px; padding:12px 0">— empty —</div>
+        </div>
+        <div class="d5-col done">
+          <div class="d5-colhd"><span class="dot"></span>Done<span class="n">4</span></div>
+          <div class="d5-card done"><div class="d5-ct">Read: Intro to incident response</div><div class="d5-cm"><span class="badge easy">easy</span>Ch1</div></div>
+          <div class="d5-card done"><div class="d5-ct">Quiz: Ticket triage</div><div class="d5-cm"><span class="badge easy">easy</span>quiz · 100</div></div>
+          <div class="d5-card done"><div class="d5-ct">Read: Workflow &amp; ownership</div><div class="d5-cm"><span class="badge med">med</span>Ch3</div></div>
+          <div class="d5-card done"><div class="d5-ct">Walkthrough: Sample incident</div><div class="d5-cm"><span class="badge med">med</span>Ch2</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Comparison summary ═══ -->
+  <div class="summary">
+    <h3>Recommendation · เอามาใช้ในหน้า dashboard จริง</h3>
+    <table>
+      <thead>
+        <tr><th style="width:32px">#</th><th>Design</th><th>เหมาะกับ</th><th>ข้อดี</th><th>ข้อควรระวัง</th><th style="width:70px; text-align:center">Score</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="rank">01</span></td><td><b>VS Code Editor</b></td>
+          <td>ทีมที่ code เป็นส่วนใหญ่ · เจอ file tree ทุกวัน</td>
+          <td>รู้จักทันที · โชว์ progress ผ่าน file tree (✓ dots) ได้ตรง</td>
+          <td>File tree แน่น · อาจไม่ scale ถ้าคอร์สเยอะ</td>
+          <td class="rank" style="text-align:center">8.5</td>
+        </tr>
+        <tr>
+          <td><span class="rank">02</span></td><td><b>GitHub PR</b></td>
+          <td>ทีมที่ทำ PR ทุกวัน · อารมณ์ "รอ merge"</td>
+          <td>ปุ่ม "Merge &amp; continue" เขียวๆ ดึงดูดสุด · reward ชัด</td>
+          <td>บริบทค่อนข้าง GitHub เฉพาะ · non-dev อาจงง</td>
+          <td class="rank" style="text-align:center">9.0</td>
+        </tr>
+        <tr>
+          <td><span class="rank">03</span></td><td><b>CI/CD Pipeline</b></td>
+          <td>ทุกคน (ตี stage ให้เป็นบทเรียน) · animation flow</td>
+          <td>เห็นทั้ง progress + current stage + log · เข้าใจง่ายที่สุด</td>
+          <td>ต้องมี stage 4-6 พอดี · เกินไปแออัด</td>
+          <td class="rank" style="text-align:center">9.5</td>
+        </tr>
+        <tr>
+          <td><span class="rank">04</span></td><td><b>cURL + JSON</b></td>
+          <td>API-heavy team · SM ที่ debug API เป็นประจำ</td>
+          <td>Playful · เห็น +50 XP highlighted ในผลลัพธ์ตรงๆ</td>
+          <td>ข้อมูลเยอะ · อ่านตอนแรกๆ ต้อง scan</td>
+          <td class="rank" style="text-align:center">7.5</td>
+        </tr>
+        <tr>
+          <td><span class="rank">05</span></td><td><b>Kanban Sprint</b></td>
+          <td>PM/lead ที่ใช้ Linear/Jira · เห็น backlog รวม</td>
+          <td>โชว์ทั้ง to-do + in-progress + done ในการ์ดเดียว · เห็นภาพรวม</td>
+          <td>สูงกว่าอันอื่น 20px · ต้อง breakpoint แม่นๆ</td>
+          <td class="rank" style="text-align:center">8.0</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="margin:12px 0 0; font-size:11.5px; color:var(--page-muted); line-height:1.55">
+      <b style="color:var(--page-text)">แนะนำ:</b> <b>#3 CI/CD Pipeline</b> เพราะ (1) animation ไหลจากซ้ายไปขวาสื่อ progress ตรงๆ
+      (2) เห็น current stage + log line ที่กำลังทำ (3) ยืดหยุ่นสุด — เปลี่ยน stage เป็นอะไรก็ได้
+      รองลงมา <b>#2 GitHub PR</b> ที่ดึงดูดคลิกด้วยปุ่ม merge เขียวๆ
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

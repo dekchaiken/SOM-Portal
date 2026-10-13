@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Board — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/dev-badge.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+  <link rel="stylesheet" href="./assets/pages/board/board.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+
+  <div class="main-content" style="display:flex;flex-direction:column;overflow:hidden">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Web Board</div>
+        <div class="page-sub">Team updates &amp; announcements</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input type="text" id="search-input" class="form-control" placeholder="Search posts..." style="width:220px">
+        </div>
+        <button class="btn btn-primary" data-action="add" onclick="openCreateModal()">+ New Post</button>
+      </div>
+    </header>
+
+    <!-- Board Type Tabs -->
+    <div class="board-tabs" id="board-tabs">
+      <div class="board-tab active" data-type="" onclick="switchTab(this, '')">All</div>
+      <!-- Populated by loadConfig() -->
+    </div>
+
+    <!-- New posts banner (real-time poll) -->
+    <div id="new-posts-banner" style="display:none;background:var(--orange);color:#fff;padding:8px 16px;font-size:12px;font-weight:600;display:none;align-items:center;gap:10px;cursor:pointer" onclick="reloadAndDismissBanner()">
+      <span><i data-icon="bell"></i></span>
+      <span id="new-posts-text">มีโพสต์ใหม่</span>
+      <span style="margin-left:auto;opacity:.7;font-size:11px">คลิกเพื่อโหลด</span>
+      <button onclick="dismissBanner(event)" style="background:none;border:none;color:#fff;font-size:14px;cursor:pointer;padding:0 4px;opacity:.8"><i data-icon="x"></i></button>
+    </div>
+
+    <main class="page-content" style="flex:1;overflow:hidden;padding:0">
+      <div id="board-container" class="kanban-wrap">
+        <!-- Pin strip -->
+        <div id="pin-strip" class="pin-strip" style="display:none">
+          <div class="pin-strip-label"><i data-icon="map-pin"></i> Pinned <span id="pin-strip-count">0</span></div>
+          <div id="pin-strip-scroll" class="pin-strip-scroll"></div>
+        </div>
+
+        <!-- Kanban columns -->
+        <div id="kanban-cols" class="kanban-cols">
+          <div class="kanban-col" data-status="open"
+               ondragover="onColDragOver(event,'open')"
+               ondragleave="onColDragLeave(event)"
+               ondrop="onColDrop(event,'open')">
+            <div class="kanban-col-head">
+              <span class="kanban-col-dot"></span>
+              <span class="kanban-col-name">Open</span>
+              <span class="kanban-col-count" id="col-count-open">0</span>
+            </div>
+            <div class="kanban-col-body" id="col-body-open"></div>
+          </div>
+
+          <div class="kanban-col" data-status="in_progress"
+               ondragover="onColDragOver(event,'in_progress')"
+               ondragleave="onColDragLeave(event)"
+               ondrop="onColDrop(event,'in_progress')">
+            <div class="kanban-col-head">
+              <span class="kanban-col-dot"></span>
+              <span class="kanban-col-name">In Progress</span>
+              <span class="kanban-col-count" id="col-count-in_progress">0</span>
+            </div>
+            <div class="kanban-col-body" id="col-body-in_progress"></div>
+          </div>
+
+          <div class="kanban-col" data-status="resolved"
+               ondragover="onColDragOver(event,'resolved')"
+               ondragleave="onColDragLeave(event)"
+               ondrop="onColDrop(event,'resolved')">
+            <div class="kanban-col-head">
+              <span class="kanban-col-dot"></span>
+              <span class="kanban-col-name">Resolved</span>
+              <span class="kanban-col-count" id="col-count-resolved">0</span>
+            </div>
+            <div class="kanban-col-body" id="col-body-resolved"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ── Detail Modal ──────────────────────────────────────── -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal board-detail-modal" style="max-width:680px;display:flex;flex-direction:column;max-height:90vh">
+    <div class="modal-header" style="flex-shrink:0">
+      <span class="modal-title" id="detail-modal-title">Post</span>
+      <button class="btn-close" onclick="Modal.close('detail-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;min-height:0">
+      <img id="detail-img" class="detail-img" src="" alt="" style="display:none;flex-shrink:0">
+      <div class="detail-body" style="flex-shrink:0">
+        <div id="detail-badges" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+        <div class="detail-title" id="detail-title"></div>
+        <div class="detail-content" id="detail-content"></div>
+      </div>
+      <div class="detail-footer" style="flex-shrink:0">
+        <div class="board-card-meta" id="detail-meta"></div>
+        <div style="display:flex;gap:6px" id="detail-actions"></div>
+      </div>
+
+      <!-- ── Edit History Section ──────────────────────── -->
+      <div id="detail-history-section" style="display:none;flex-shrink:0;border-top:1px solid var(--border);padding:10px 20px 2px">
+        <div class="hist-toggle" id="hist-toggle" onclick="toggleHistoryPanel()">
+          <span id="history-toggle-icon"><i data-icon="play"></i></span>
+          Edit History
+          <span id="history-count-badge" style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:1px 7px;font-size:9.5px">0</span>
+        </div>
+        <div id="history-panel" style="display:none;padding-top:6px;padding-bottom:10px;display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto"></div>
+      </div>
+
+      <!-- ── Comments Section ─────────────────────────── -->
+      <div id="comments-section" style="border-top:1.5px solid var(--border);flex:1;display:flex;flex-direction:column">
+        <!-- Comments list -->
+        <div id="comments-list" style="flex:1;padding:14px 20px 0;display:flex;flex-direction:column;gap:10px;min-height:60px">
+          <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:12px 0">Loading comments...</div>
+        </div>
+
+        <!-- Comment input -->
+        <div data-action="write" style="padding:12px 18px 16px;border-top:1px solid #f0f0f0;display:flex;gap:10px;align-items:flex-start;flex-shrink:0">
+          <div id="cmt-my-avatar" style="width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff"></div>
+          <div style="flex:1;position:relative">
+            <textarea id="cmt-input" placeholder="Write a comment... use @ to mention, paste/attach image" rows="2"
+              style="width:100%;resize:none;border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;font-family:var(--font);font-size:12px;color:var(--text);outline:none;transition:border-color .15s;background:var(--bg);line-height:1.5"
+              onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+            <!-- @mention dropdown -->
+            <div id="cmt-mention-dd" style="display:none;position:absolute;bottom:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200;overflow:hidden;max-height:200px;overflow-y:auto"></div>
+            <div id="cmt-img-uploading" style="display:none;font-size:10px;color:var(--text-muted);margin-top:2px">⏳ กำลังอัปโหลดรูป...</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">
+            <label title="แนบรูป" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);transition:all .15s"
+              onmouseover="this.style.borderColor='var(--orange)'" onmouseout="this.style.borderColor='var(--border)'">
+              <i data-icon="paperclip"></i>
+              <input type="file" accept="image/*" style="display:none" multiple onchange="handleContentImageFiles(this.files,'cmt-input')">
+            </label>
+            <button id="cmt-send-btn" onclick="submitComment()" style="height:30px;padding:0 14px;font-size:11.5px" class="btn btn-primary btn-sm">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ── Create / Edit Modal ────────────────────────────────── -->
+<div class="modal-overlay" id="post-modal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">New Post</span>
+      <button class="btn-close" onclick="Modal.close('post-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:0">
+      <input type="hidden" id="edit-post-id">
+
+      <!-- Board Type -->
+      <div class="form-group">
+        <label class="form-label">Board <span style="color:var(--danger)">*</span></label>
+        <select id="post-board-type" class="form-control">
+          <option value="">— Select Board —</option>
+        </select>
+      </div>
+
+      <!-- Service Type + Subtype (2 cols) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Service Type</label>
+          <select id="post-service-type" class="form-control" onchange="onServiceTypeChange()">
+            <option value="">— Select —</option>
+          </select>
+          <div id="new-st-row" style="display:none;margin-top:6px">
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="new-st-name" class="form-control" placeholder="ชื่อ Service Type ใหม่" style="flex:1;font-size:12px;height:32px;padding:4px 10px"
+                onkeydown="if(event.key==='Enter')saveNewServiceType();else if(event.key==='Escape')cancelNewServiceType()">
+              <button onclick="saveNewServiceType()" class="btn btn-primary" style="height:32px;padding:0 12px;font-size:12px;white-space:nowrap">เพิ่ม</button>
+              <button onclick="cancelNewServiceType()" class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:12px"><i data-icon="x"></i></button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Sub Type</label>
+          <select id="post-service-subtype" class="form-control" onchange="onSubtypeChange()">
+            <option value="">— Select —</option>
+          </select>
+          <div id="new-sst-row" style="display:none;margin-top:6px">
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="new-sst-name" class="form-control" placeholder="ชื่อ Sub Type ใหม่" style="flex:1;font-size:12px;height:32px;padding:4px 10px"
+                onkeydown="if(event.key==='Enter')saveNewSubtype();else if(event.key==='Escape')cancelNewSubtype()">
+              <button onclick="saveNewSubtype()" class="btn btn-primary" style="height:32px;padding:0 12px;font-size:12px;white-space:nowrap">เพิ่ม</button>
+              <button onclick="cancelNewSubtype()" class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:12px"><i data-icon="x"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" id="status-field-row" style="margin-top:14px;display:none">
+        <label class="form-label">Status</label>
+        <select id="post-status" class="form-control">
+          <option value="open">Open</option>
+          <option value="in_progress">In Progress</option>
+          <option value="resolved">Resolved</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">Title <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="post-title" class="form-control" placeholder="Post title" maxlength="200">
+      </div>
+      <div class="form-group" style="position:relative">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <label class="form-label" style="margin-bottom:0">Content</label>
+          <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;font-weight:600;color:var(--text-muted);padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);transition:all .15s"
+            onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">
+            <i data-icon="paperclip"></i> แนบรูป
+            <input type="file" id="img-file" accept="image/*" style="display:none" multiple onchange="handleContentImageFiles(this.files,'post-content')">
+          </label>
+        </div>
+        <textarea id="post-content" class="form-control" placeholder="Write your update... (@ to mention, paste image to upload)" rows="6"></textarea>
+        <div id="post-mention-dd" style="display:none;position:absolute;bottom:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:300;overflow:hidden;max-height:200px;overflow-y:auto"></div>
+        <div id="post-img-uploading" style="display:none;font-size:10px;color:var(--text-muted);margin-top:4px">⏳ กำลังอัปโหลดรูป...</div>
+      </div>
+      <input type="hidden" id="post-image-url">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('post-modal')">Cancel</button>
+      <button class="btn btn-primary" id="save-post-btn" onclick="savePost()">
+        <span id="save-post-text">Create Post</span>
+        <span id="save-post-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/skeletons.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/analytics.js"></script>
+<script src="./assets/js/analytics-features.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script src="./assets/pages/board/board.js"></script>
+
+</body>
+</html>

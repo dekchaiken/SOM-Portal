@@ -1,0 +1,695 @@
+{
+    "orgs": [
+        "NANO",
+        "TMN",
+        "WEALTH"
+    ],
+    "flows": [
+        {
+            "id": "nano_collection_lead",
+            "org": "NANO",
+            "name": "Collection Lead",
+            "source": "CSV: [Batch NANO] Collection Lead Files",
+            "jobs": [
+                {
+                    "pattern": "acm-nano-prod-collection-lead-get-risk-data",
+                    "jenkins_raw": "acm-nano-prod-collection-lead-get-risk-data",
+                    "category": "Collection Lead",
+                    "label": "get-risk-data",
+                    "purpose": "เพื่ออ่าน File Telephone Priority จากทาง Risk --> DP จัดการปั้นเป็น Interface File วางที่  S3 \nและ Job ทำการเก็บลง  colld DB",
+                    "schedule": {
+                        "frequency": "Daily",
+                        "date": "-",
+                        "time": "8:15:00 PM",
+                        "sort_key": -225
+                    },
+                    "critical": "Yes",
+                    "monitor": "Yes",
+                    "rerun": "No : ทันที",
+                    "params": "Jenkins Job Parameter",
+                    "confluence": "API - Get telephone priority\n\nLead telephone priority file",
+                    "dev_owner": "IC & DP",
+                    "dev_owner_detail": "IC : Oncall\nDP : Apilada H.\nKarin T.",
+                    "user_group": "Collection",
+                    "user_owners": "Surasavadee K. Wasan P.",
+                    "files": [
+                        {
+                            "io": "in",
+                            "file": "cms_mobile_priority_YYYYMMDD.csv",
+                            "s3": "s3:\/\/prod-ascendnano-collection-service\/cms_mobile_priority\/"
+                        },
+                        {
+                            "io": "in",
+                            "file": "cms_welcome_call_YYYYMMDD.csv",
+                            "s3": "s3:\/\/prod-ascendnano-collection-service\/cms_welcome_call\/"
+                        }
+                    ],
+                    "dbs": [
+                        "colld.collection_telephone_priority",
+                        "colld.collection_welcome_call"
+                    ]
+                },
+                {
+                    "pattern": "acm-nano-prod-collection-lead-gen-lead-files-begin-campaign",
+                    "jenkins_raw": "acm-nano-prod-collection-lead-gen-lead-files-begin-campaign",
+                    "category": "Collection Lead",
+                    "label": "Get Begin Campaign",
+                    "purpose": "ยกเลิก Job Begin Campaign --> Ref Ticket : FAS-16336\nย้ายไปอยู่กับ Job Update Collection Action\n\nเอาไว้ update ค่า collection action ที่ได้จากการเก็บ value มาจากไฟล์ เข้าไปที่ table collection lead เพื่อ update ว่าแต่ละ account มีค่า collection action เป็นอะไร และมีการ update พวกข้อมูล welcome call กับ telephone priority ด้วย\nแต่หลังๆ มีแยก job สำหรับ update collection action เป็นอีก 1 job คือ lead-update-collection-action   -->   (อยู่ Row 12)\n\nเนื่องจากมีการ config cron time ที่รันเฉพาะบางวัน\nแล้วก็แยก job ที่ update พวกข้อมูล welcome call กับ telephone priority มาเป็น job collection-lead-update-data-daily แทน --> (อยู่ Row 13)\nเนื่องจากการ update 2 ค่านี้ทำทุกวัน\n\nปัจจุบันก็เลย disable job begin campaign ไป ไม่ได้ใช้แล้ว ใช้ 2 jobs บนแทน",
+                    "schedule": {
+                        "frequency": "Specific",
+                        "date": "2",
+                        "time": "7:00:00 AM",
+                        "sort_key": 420
+                    },
+                    "critical": "Yes",
+                    "monitor": "Yes",
+                    "rerun": "No : ทันที",
+                    "params": "-",
+                    "confluence": "-",
+                    "dev_owner": "IC",
+                    "dev_owner_detail": "IC : Oncall",
+                    "user_group": "Collection",
+                    "user_owners": "Surasavadee K. Wasan P.",
+                    "files": [],
+                    "dbs": []
+                },
+                {
+                    "pattern": "SyncPayNextArrearsAccountsJob-run-pipeline",
+                    "jenkins_raw": "Pipeline SyncPayNextArrearsAccountsJob-run-pipeline",
+                    "category": "Collection Lead",
+                    "label": "syncPayNextArrearsAccountsJob",
+                    "purpose": "มีการต่อกับ arrea-db-rep DB (Norma) \nเพื่อ Get Account List เฉพาะลูกค้าที่ค้างชำระ\nมาเก็บไว้ที่ colld DB",
+                    "schedule": {
+                        "frequency": "Monthly",
+                        "date": "2",
+                        "time": "3:00:00 AM",
+                        "sort_key": 180
+                    },
+                    "critical": "Yes",
+                    "monitor": "Yes",
+                    "rerun": "No : ทันที",
+                    "params": "-",
+                    "confluence": "Sync Arrears Accounts",
+                    "dev_owner": "IC",
+                    "dev_owner_detail": "IC : Oncall",
+                    "user_group": "Collection",
+                    "user_owners": "Surasavadee K. Wasan P.",
+                    "files": [],
+                    "dbs": [
+                        "Source DB --> arrea-db-rep DB",
+                        "account_yyyyMMdd",
+                        "account_lenders_yyyyMMdd",
+                        "loans_yyyyMMdd",
+                        "Destination DB --> colld DB",
+                        "arrears_accounts"
+                    ]
+                },
+                {
+                    "pattern": "GetPayNextMambuDataJob-run-pipeline",
+                    "jenkins_raw": "Pipeline GetPayNextMambuDataJob-run-pipeline",
+                    "category": "Collection Lead",
+                    "label": "getPayNextMambuDataJob - Lead Membu Product",
+                    "purpose": "1. Get Data จาก Source ต่างๆ \n tapmb DB, Billing, accpf DB และ arrea DB\nมาเก็บไว้ที่ colld DB เพื่อ Export Collection Lead Files\n\n2. เฉพาะวันที่ 02 จะ Downstream ต่อจาก Pipeline SyncPayNextArrearsAccountsJob-run-pipeline",
+                    "schedule": {
+                        "frequency": "Daily",
+                        "date": "1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31",
+                        "time": "3:00:00 AM",
+                        "sort_key": 180
+                    },
+                    "critical": "Yes",
+                    "monitor": "Yes",
+                    "rerun": "No : ทันที",
+                    "params": "",
+                    "confluence": "Get Mambu data",
+                    "dev_owner": "IC",
+                    "dev_owner_detail": "IC : Oncall",
+                    "user_group": "Collection",
+                    "user_owners": "Surasavadee K. Wasan P.",
+                    "files": [],
+                    "dbs": [
+                        "colld DB",
+                        "collection_lead",
+                        "lms_plan",
+                        "collection_lender_information"
+                    ]
+                },
+                {
+                    "pattern": "acm-nano-prod-collection-lead-get-collection-action",
+                    "jenkins_raw": "acm-nano-prod-collection-lead-get-collection-action",
+                    "category": "Collection Lead",
+                    "label": "get-collection-action",
+                    "purpose": "เพื่ออ่าน File Collection Action จากทาง Risk --> DP จัดการปั้นเป็น Interface File วางที่  S3 \nและ Job ทำการเก็บลง  DB โดยดึงมาเก็บไว้เฉยๆ ใน Step นี้\n\nOA เราจะส่งสำนักงานกฎหมายภายใน (OA) ตามหนี้\nPDS เราจะใช้ระบบ Auto โทรหาลูกค้า\nFCR เราจะให้เจ้าหน้าทีภาคสนามไปหาลูกค้าที่บ้าน ที่ทำงาน\nIVR จะใช้ Robot ในการโทร",
+                    "schedule": {
+                        "frequency": "Specific",
+                        "date": "2,3,4,6,7,20,21",
+                        "time": "4:30:00 AM",
+                        "sort_key": 270
+                    },
+                    "critical": "Yes",
+                    "monitor": "Yes",
+                    "rerun": "No : ทันที",
+                    "params": "-",
+                    "confluence": "Lead collection action file\n\nGet Collection Action Job\n\nAPI - Get collection action",
+                    "dev_owner": "IC and DP",
+                    "dev_owner_detail": "IC : Oncall\nDP : Apilada H.\nKarin T.",
+                    "user_group": "Collection",
+                    "user_owners": "Surasavadee K. Wasan P.",
+                    "files": [
+                        {
+                            "io": "in",
+                            "file": "cms_collection_action_YYYYMMDD.csv",
+                            "s3": "s3:\/\/prod-ascendnano-collection-service\/cms_collection_action\/"
+                        }
+                    ],
+                    "dbs": [
+                        "colld.collection_action"
+                    ]
+                },
+                {
+                    "pattern": "SyncPNEArrearsAccountsJob-run-pipeline",
+                    "jenkins_raw": "Pipeline SyncPNEArrearsAccountsJob-run-pipeline",
+                    "category": "Collection Lead",
+                    "label": "syncPNEArrearsAccountsJob",
+                    "purpose": "มีการต่อกับ arrea-db-rep DB เพื่อ Get Account List เฉพาะลูกค้าที่ค้างชำระ\nมาเก็บไว้ที่ colld.arrears_accounts",
+                    "schedule": {
+                        "frequency": "Monthly",
+                        "date": "2",
+                        "time": "5:30:00 AM",
+                        "sort_key": 330
+                    },
+                    "critical": "Yes",
+                    "monitor": "Yes",
+                    "rerun": "No : ทันที",
+                    "params": "",
+                    "confluence": "Sync Arrears Accounts",
+                    "dev_owner": "IC",
+                    "dev_owner_detail": "IC : Oncall",
+                    "user_group": "Collection",
+                    "user_owners": "Surasavadee K. Wasan P.",
+                    "files": [],
+                    "dbs": [
+                        "Source DB --> arrea-db-rep DB",
+                        "account_yyyyMMdd",
+                        "account_lenders_yyyyMMdd",
+                        "loans_yyyyMMdd",
+                        "Destination DB --> colld DB",
+                        "arrears_accounts"
+                    ]
+                },
+                {
+                    "pattern": "GetPayNextExtraMambuDataJob-run-pipeline",
+                    "jenkins_raw": "Pipeline GetPayNextExtraMambuDataJob-run-pipeline",
+                    "category": "Collection Lead",
+                    "label": "getPayNextExtraMambuDataJob - Lead Membu Product",
+                    "purpose": "1. Get Data จาก Source ต่างๆ \n tapmb DB, Billing listener, accpf DB และ arrea DB\nมาเก็บไว้ที่ colld DB เพื่อ Export Collection Lead Files\n\n2. เฉพาะวันที่ 02 จะ Downstream ต่อจาก Pineline SyncPayNextExtraArrearsAccountsJob-pineline",
+                    "schedule": {
+                        "frequency": "Daily",
+                        "date": "1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31",
+                        "time": "5:30:00 AM",
+                        "sort_key": 330
+                    },
+                    "critical": "Yes",
+                    "monitor": "Yes",
+                    "rerun": "No : ทันที",
+                    "params": "",
+                    "confluence": "Get Mambu data",
+                    "dev_owner": "IC",
+                    "dev_owner_detail": "IC : Oncall",
+                    "user_group": "Collection",
+                    "user_owners": "Surasavadee K. Wasan P.",
+                    "files": [],
+                    "dbs": [
+                        "colld DB",
+                        "collection_lead",
+                        "lms_plan",
+                        "collection_lender_information"
+                    ]
+                },
+                {
+                    "pattern": "acm-nano-prod-collection-lead-get-lms-chuta-data",
+                    "jenkins_raw": "acm-nano-prod-collection-lead-get-lms-chuta-data",
+                    "category": "Collection Lead",
+                    "label": "getMambuDataJob - Lead Chuta Product",
+                    "purpose": "Collection Service ทำการ Get ข้อมูลจาก \nChuta (lmsdb DB) มาเก็บไว้ที่ colld DB\nโดย Job นี้จะเริ่มทำงานได้ ก็ต่อเมื่อ Job Post Offline Repayment ของทาง Chuta ทำงานเสร็จ",
+                    "schedule": {
+                        "frequency": "Daily",
+                        "date": "-",
+                        "time": "6:00:00 AM",
+                        "sort_key": 360
+                    },
+                    "critical": "Yes",
+                    "monitor": "Yes",
+                    "rerun": "No : ทันที",
+                    "params": "-",
+                    "confluence": "Case: Importing Chuta Bill Payment \n\nHow to check progress of the Batch DownloadRepaymentFile (Posted repayment bulk form file)\n\nAPI - Get chuta job status\n\nAPI - Get chuta data",
+                    "dev_owner": "IC",
+                    "dev_owner_detail": "IC : Oncall",
+                    "user_group": "Collection",
+                    "user_owners": "Surasavadee K. Wasan P.",
+                    "files": [],
+                    "dbs": [
+                        "colld DB",
+                        "collection_lead",
+                        "lms_plan",
+                        "collection_lender_information"
+                    ]
+                },
+                {
+                    "pattern": "acm-nano-prod-collection-lead-update-collection-action",
+                    "jenkins_raw": "acm-nano-prod-collection-lead-update-collection-action",
+                    "category": "Collection Lead",
+                    "label": "update-collection-action",
+                    "purpose": "Job Begin Campaign\n- ย้ายมาอยู่กับ Job นี้ โดยเพิ่มรอบวันที่ 2 เข้าไป\n- ทำการ Update ข้อมูล Action การติดตามหนี้ (collection action) สำหรับรายการที่ Program Type = \"collection\" ในรอบ First Cycle\n\nJob Collection Action\n- ทำการอัปเดตข้อมูล Collection Action สำหรับรายการที่เป็น Program Type = 'collection'\"\n- ความต่างจาก Begin Campaign คือ เป็นการอัปเดตเคสติดตามหนี้ในรอบวันถัดๆ ไป ที่ไม่ใช่ First Cycle",
+                    "schedule": {
+                        "frequency": "Specific",
+                        "date": "2,3,4,6,7,20,21",
+                        "time": "7:00:00 AM",
+                        "sort_key": 420
+                    },
+                    "critical": "Yes",
+                    "monitor": "Yes",
+                    "rerun": "No : ทันที",
+                    "params": "-",
+                    "confluence": "API - Update begin campaign\n\nAPI - Update collection action data",
+                    "dev_owner": "IC and DP",
+                    "dev_owner_detail": "IC : Oncall",
+                    "user_group": "Collection",
+                    "user_owners": "Surasavadee K. Wasan P.",
+                    "files": [],
+                    "dbs": [
+                        "colld DB",
+                        "collection_action",
+                        "collection_lead"
+                    ]
+                },
+                {
+                    "pattern": "acm-nano-prod-collection-lead-update-data-daily",
+                    "jenkins_raw": "acm-nano-prod-collection-lead-update-data-daily",
+                    "category": "Collection Lead",
+                    "label": "update-data-daily",
+                    "purpose": "1. Process UpdateCollectionLeadActionWelcomeCall\nเพื่อใช้ในการ Update ข้อมูล ใน Collection Lead สำหรับ Program Type = \"welcomecall\"\n\n2. Process AddNewTelephonePriorityFlag\nเพื่อใช้ในการ Add New Mobile Number เพื่อระบุได้ว่าเจ้าหน้าที่ติดตามหนี้หรือระบบโทรอัตโนมัติจะติดต่อลูกค้าด้วยบอร์ไหนก่อน-หลัง (Priority 1, 2, 3...)",
+                    "schedule": {
+                        "frequency": "Daily",
+                        "date": "-",
+                        "time": "7:30:00 AM",
+                        "sort_key": 450
+                    },
+                    "critical": "Yes",
+                    "monitor": "Yes",
+                    "rerun": "No : ทันที",
+                    "params": "-",
+                    "confluence": "API - Update welcome call data\n\nAPI - Add new telephone priority",
+                    "dev_owner": "IC",
+                    "dev_owner_detail": "IC : Oncall",
+                    "user_group": "Collection",
+                    "user_owners": "Surasavadee K. Wasan P.",
+                    "files": [],
+                    "dbs": [
+                        "colld DB",
+                        "collection_welcome_call",
+                        "collection_lead",
+                        "collection_telephone_priority"
+                    ]
+                },
+                {
+                    "pattern": "ExportInterfaceFileJob-run-pipeline",
+                    "jenkins_raw": "Pipeline ExportInterfaceFileJob-run-pipeline",
+                    "category": "Collection Lead",
+                    "label": "exportInterfaceFileJob",
+                    "purpose": "เพื่อ Export interface files customer info, lms plan, lender info, telephone priority ให้ Volare",
+                    "schedule": {
+                        "frequency": "Daily",
+                        "date": "-",
+                        "time": "7:45:00 AM",
+                        "sort_key": 465
+                    },
+                    "critical": "Yes",
+                    "monitor": "Yes",
+                    "rerun": "No : ทันที",
+                    "params": "-",
+                    "confluence": "[NANO] Customer information file",
+                    "dev_owner": "IC",
+                    "dev_owner_detail": "IC : Oncall",
+                    "user_group": "Volare Collection",
+                    "user_owners": "Surasavadee K. Wasan P.",
+                    "files": [
+                        {
+                            "io": "out",
+                            "file": "yyyymmdd_customer_information-01.csv.enc\nCTRL_yyyymmdd_customer_information.txt",
+                            "s3": "s3:\/\/prod-ascendnano-external-sharing\/collection-system\/volare\/inbound\/"
+                        },
+                        {
+                            "io": "out",
+                            "file": "yyyymmdd_lender_information-01.csv.enc\nCTRL_yyyymmdd_lender_information.txt",
+                            "s3": "s3:\/\/prod-ascendnano-external-sharing\/collection-system\/volare\/inbound\/"
+                        },
+                        {
+                            "io": "out",
+                            "file": "yyyymmdd_plan_information-01.csv.enc\nCTRL_yyyymmdd_plan_information.txt",
+                            "s3": "s3:\/\/prod-ascendnano-external-sharing\/collection-system\/volare\/inbound\/"
+                        },
+                        {
+                            "io": "out",
+                            "file": "yyyymmdd_telephone_priority-01.csv.enc\nCTRL_yyyymmdd_telephone_priority.txt",
+                            "s3": "s3:\/\/prod-ascendnano-external-sharing\/collection-system\/volare\/inbound\/"
+                        }
+                    ],
+                    "dbs": []
+                },
+                {
+                    "pattern": "ExportRepaymentFileJob-run-pipeline",
+                    "jenkins_raw": "Pipeline ExportRepaymentFileJob-run-pipeline",
+                    "category": "Collection Lead",
+                    "label": "exportRepaymentFileJob",
+                    "purpose": "Generate the repayment file and upload it to the S3 bucket\n\nระบบต้องส่งข้อมูลรายการชำระเงินล่าสุดของลูกค้าไปยัง Volare เพื่อแสดงผลบนหน้าจอการใช้งาน (UI) ของ Volare โดยที่ผู้ใช้งานสามารถดูข้อมูลดังกล่าวได้ในกรณีที่มีการชำระเงินเกิดขึ้นระหว่างวัน ซึ่งข้อมูลประกอบด้วย",
+                    "schedule": {
+                        "frequency": "Daily",
+                        "date": "",
+                        "time": "Every 2 hours start from 02.00 AM",
+                        "sort_key": 9998
+                    },
+                    "critical": "Yes",
+                    "monitor": "Yes",
+                    "rerun": "No : ทันที",
+                    "params": "-",
+                    "confluence": "Export repayment file",
+                    "dev_owner": "IC",
+                    "dev_owner_detail": "IC : Oncall",
+                    "user_group": "Volare Collection",
+                    "user_owners": "Surasavadee K. Wasan P.",
+                    "files": [
+                        {
+                            "io": "out",
+                            "file": "20260812220149_repayment-01.csv.enc",
+                            "s3": "s3:\/\/prod-ascendnano-external-sharing\/collection-system\/volare\/repayment\/"
+                        }
+                    ],
+                    "dbs": [
+                        "colld DB",
+                        "repayment",
+                        "shop_repayment"
+                    ]
+                }
+            ],
+            "auto_edges": [
+                {
+                    "from": "acm-nano-prod-collection-lead-get-risk-data",
+                    "to": "SyncPayNextArrearsAccountsJob-run-pipeline",
+                    "kind": "sequence"
+                },
+                {
+                    "from": "SyncPayNextArrearsAccountsJob-run-pipeline",
+                    "to": "GetPayNextMambuDataJob-run-pipeline",
+                    "kind": "sequence"
+                },
+                {
+                    "from": "GetPayNextMambuDataJob-run-pipeline",
+                    "to": "acm-nano-prod-collection-lead-get-collection-action",
+                    "kind": "sequence"
+                },
+                {
+                    "from": "acm-nano-prod-collection-lead-get-collection-action",
+                    "to": "SyncPNEArrearsAccountsJob-run-pipeline",
+                    "kind": "sequence"
+                },
+                {
+                    "from": "SyncPNEArrearsAccountsJob-run-pipeline",
+                    "to": "GetPayNextExtraMambuDataJob-run-pipeline",
+                    "kind": "sequence"
+                },
+                {
+                    "from": "GetPayNextExtraMambuDataJob-run-pipeline",
+                    "to": "acm-nano-prod-collection-lead-get-lms-chuta-data",
+                    "kind": "sequence"
+                },
+                {
+                    "from": "acm-nano-prod-collection-lead-get-lms-chuta-data",
+                    "to": "acm-nano-prod-collection-lead-gen-lead-files-begin-campaign",
+                    "kind": "sequence"
+                },
+                {
+                    "from": "acm-nano-prod-collection-lead-gen-lead-files-begin-campaign",
+                    "to": "acm-nano-prod-collection-lead-update-collection-action",
+                    "kind": "sequence"
+                },
+                {
+                    "from": "acm-nano-prod-collection-lead-update-collection-action",
+                    "to": "acm-nano-prod-collection-lead-update-data-daily",
+                    "kind": "sequence"
+                },
+                {
+                    "from": "acm-nano-prod-collection-lead-update-data-daily",
+                    "to": "ExportInterfaceFileJob-run-pipeline",
+                    "kind": "sequence"
+                },
+                {
+                    "from": "ExportInterfaceFileJob-run-pipeline",
+                    "to": "ExportRepaymentFileJob-run-pipeline",
+                    "kind": "sequence"
+                }
+            ],
+            "user_edges": [],
+            "notes": [],
+            "created_at": null,
+            "created_by": "migration"
+        },
+        {
+            "id": "nano_collection_activity_eoc",
+            "org": "NANO",
+            "name": "Collection Activity (EOC)",
+            "source": "CSV: [Batch NANO] Collection Lead Files",
+            "jobs": [
+                {
+                    "pattern": "collection-activity-lh-run-pipeline",
+                    "jenkins_raw": "Pipeline collection-activity-lh-run-pipeline",
+                    "category": "Collection Activity (EOC)",
+                    "label": "Collection Interface job (Existing job) - Send file for lender Volare --> Nano --> LH",
+                    "purpose": "ความเคลื่อนไหวล่าสุดของแต่ละ Account โดย จะถูกแยกตาม Lender หมายความว่าจะต้องมีไฟล์ EOC จำนวน 3 ไฟล์ ได้แก่ NANO, TCRB และ LH",
+                    "schedule": {
+                        "frequency": "Daily",
+                        "date": "-",
+                        "time": "11:15:00 AM",
+                        "sort_key": 675
+                    },
+                    "critical": "No",
+                    "monitor": "Yes",
+                    "rerun": "Yes",
+                    "params": "-",
+                    "confluence": "T&E - LH Collection Activity job",
+                    "dev_owner": "Norma",
+                    "dev_owner_detail": "-",
+                    "user_group": "Lender LH",
+                    "user_owners": "-",
+                    "files": [
+                        {
+                            "io": "in",
+                            "file": "CTRL_LH_EOC_LOG_REPORT_20260803.txt\nLH_EOC_LOG_REPORT_20260803-01of01.csv.enc",
+                            "s3": "s3:\/\/prod-ascendnano-external-sharing\/collection-system\/volare\/outbound\/interface\/lh\/collection-activity\/"
+                        },
+                        {
+                            "io": "out",
+                            "file": "CTRL_LH_EOC_LOG_REPORT_20260803.txt\nLH_EOC_LOG_REPORT_20260803-01of01.csv.enc",
+                            "s3": "Unkonwn"
+                        }
+                    ],
+                    "dbs": []
+                },
+                {
+                    "pattern": "collection-activity-tcrb-run-pipeline",
+                    "jenkins_raw": "Pipeline collection-activity-tcrb-run-pipeline",
+                    "category": "Collection Activity (EOC)",
+                    "label": "Collection Interface job (Existing job) - Send file for lender Volare --> Nano --> TCB",
+                    "purpose": "ความเคลื่อนไหวล่าสุดของแต่ละ Account โดย จะถูกแยกตาม Lender หมายความว่าจะต้องมีไฟล์ EOC จำนวน 3 ไฟล์ ได้แก่ NANO, TCRB และ LH",
+                    "schedule": {
+                        "frequency": "Daily",
+                        "date": "-",
+                        "time": "8:00:00 AM",
+                        "sort_key": 480
+                    },
+                    "critical": "No",
+                    "monitor": "Yes",
+                    "rerun": "Yes",
+                    "params": "-",
+                    "confluence": "T&E - TCRB Collection Activity job",
+                    "dev_owner": "Norma",
+                    "dev_owner_detail": "-",
+                    "user_group": "Lender TCB",
+                    "user_owners": "-",
+                    "files": [
+                        {
+                            "io": "in",
+                            "file": "CTRL_TCRB_EOC_LOG_REPORT_20260807.txt\nTCRB_EOC_LOG_REPORT_20260807-01of01.csv.enc",
+                            "s3": "s3:\/\/prod-ascendnano-external-sharing\/collection-system\/volare\/outbound\/interface\/tcrb\/collection-activity\/"
+                        },
+                        {
+                            "io": "out",
+                            "file": "CTRL_TCRB_Collection_activity_20260807001_001of001.txt\nTCRB_Collection_activity_20260807001_001of001.csv.enc",
+                            "s3": "SFTP : \/ascend\/outbox\/collection\/collection_activity_eoc"
+                        }
+                    ],
+                    "dbs": []
+                }
+            ],
+            "auto_edges": [
+                {
+                    "from": "collection-activity-tcrb-run-pipeline",
+                    "to": "collection-activity-lh-run-pipeline",
+                    "kind": "sequence"
+                }
+            ],
+            "user_edges": [],
+            "notes": [],
+            "created_at": null,
+            "created_by": "migration"
+        },
+        {
+            "id": "nano_collection_contact_result",
+            "org": "NANO",
+            "name": "Collection Contact Result",
+            "source": "CSV: [Batch NANO] Collection Lead Files",
+            "jobs": [
+                {
+                    "pattern": "contact-result-tcrb-run-pipeline",
+                    "jenkins_raw": "Pipeline contact-result-tcrb-run-pipeline",
+                    "category": "Collection Contact Result",
+                    "label": "Collection Interface job (Existing job) - Send file for lender Volare --> Nano --> TCB",
+                    "purpose": "Job สำหรับ รับ Contact Result และส่งต่อให้ TCB (Branch TCRB)",
+                    "schedule": {
+                        "frequency": "Daily",
+                        "date": "-",
+                        "time": "8:00:00 AM",
+                        "sort_key": 480
+                    },
+                    "critical": "No",
+                    "monitor": "Yes",
+                    "rerun": "Yes",
+                    "params": "-",
+                    "confluence": "T&E - Collection Contact Result job",
+                    "dev_owner": "Norma",
+                    "dev_owner_detail": "-",
+                    "user_group": "-",
+                    "user_owners": "-",
+                    "files": [
+                        {
+                            "io": "in",
+                            "file": "CTRL_TCRB_CONTACT_RESULT_20260812.txt\nTCRB_CONTACT_RESULT_20260812-01of01.csv.enc",
+                            "s3": "s3:\/\/prod-ascendnano-external-sharing\/collection-system\/volare\/outbound\/interface\/tcrb\/collection-contact-result\/"
+                        },
+                        {
+                            "io": "out",
+                            "file": "CTRL_TCRB_Contact_Result_20260812001_001of001.txt\nCRB_Contact_Result_20260812001_001of001.csv.enc",
+                            "s3": "SFTP : \/ascend\/outbox\/collection\/collection_contact_result"
+                        }
+                    ],
+                    "dbs": []
+                }
+            ],
+            "auto_edges": [],
+            "user_edges": [],
+            "notes": [],
+            "created_at": null,
+            "created_by": "migration"
+        },
+        {
+            "id": "nano_collection_transfer",
+            "org": "NANO",
+            "name": "Collection Transfer",
+            "source": "CSV: [Batch NANO] Collection Lead Files",
+            "jobs": [
+                {
+                    "pattern": "transfer-collection-activity-run-pipeline",
+                    "jenkins_raw": "Pipeline transfer-collection-activity-run-pipeline",
+                    "category": "Collection Transfer",
+                    "label": "Collection Transfer job (New job) - Send file for Ocean Volare --> Nano --> Ocean",
+                    "purpose": "Job สำหรับ transfer-contact-result-tcrb ที่รับจาก Volare (Encrypt) ส่งต่อให้ Ocean (Decrypt)",
+                    "schedule": {
+                        "frequency": "Daily",
+                        "date": "-",
+                        "time": "5:00:00 AM",
+                        "sort_key": 300
+                    },
+                    "critical": "No",
+                    "monitor": "Yes",
+                    "rerun": "Yes",
+                    "params": "-",
+                    "confluence": "T&E - Collection Transfer for Data Ocean",
+                    "dev_owner": "Norma",
+                    "dev_owner_detail": "-",
+                    "user_group": "DP : Apilada H. Karin T.",
+                    "user_owners": "-",
+                    "files": [
+                        {
+                            "io": "in",
+                            "file": "BF_ACTIVITY_ALL_20260812_01.csv.enc\nBF_ACTIVITY_ALL_20260812_02.csv.enc\nBF_ACTIVITY_ALL_20260812_03.csv.enc\nBF_ACTIVITY_ALL_20260812.schema",
+                            "s3": "s3:\/\/prod-ascendnano-external-sharing\/collection-system\/volare\/outbound\/ocean\/collection-activity\/"
+                        },
+                        {
+                            "io": "out",
+                            "file": "BF_ACTIVITY_ALL_20260801_01.csv\nBF_ACTIVITY_ALL_20260801_02.csv\nBF_ACTIVITY_ALL_20260801_03.csv\nBF_ACTIVITY_ALL_20260801.schema",
+                            "s3": "s3:\/\/prod-ascendnano-external-sharing\/collection-system\/ocean\/dp-sync\/collection-activity\/"
+                        }
+                    ],
+                    "dbs": []
+                },
+                {
+                    "pattern": "transfer-contact-result-run-pipeline",
+                    "jenkins_raw": "Pipeline transfer-contact-result-run-pipeline",
+                    "category": "Collection Transfer",
+                    "label": "Collection Transfer job (New job) - Send file for Ocean Volare --> Nano --> Ocean",
+                    "purpose": "Job สำหรับ transfer-contact-result-tcrb ที่รับจาก Volare (Encrypt) ส่งต่อให้ Ocean (Decrypt)",
+                    "schedule": {
+                        "frequency": "Daily",
+                        "date": "-",
+                        "time": "5:00:00 AM",
+                        "sort_key": 300
+                    },
+                    "critical": "No",
+                    "monitor": "Yes",
+                    "rerun": "Yes",
+                    "params": "-",
+                    "confluence": "T&E - Collection Transfer for Data Ocean",
+                    "dev_owner": "Norma",
+                    "dev_owner_detail": "-",
+                    "user_group": "DP : Apilada H. Karin T.",
+                    "user_owners": "-",
+                    "files": [
+                        {
+                            "io": "in",
+                            "file": "BF_CONTACT_RESULT_ALL_20260812_01.csv.enc\nBF_CONTACT_RESULT_ALL_20260812_02.csv.enc\nBF_CONTACT_RESULT_ALL_20260812.schema",
+                            "s3": "s3:\/\/prod-ascendnano-external-sharing\/collection-system\/volare\/outbound\/ocean\/collection-contact-result\/"
+                        },
+                        {
+                            "io": "out",
+                            "file": "BF_CONTACT_RESULT_ALL_20260813_01.csv\nBF_CONTACT_RESULT_ALL_20260813.schema",
+                            "s3": "s3:\/\/prod-ascendnano-external-sharing\/collection-system\/ocean\/dp-sync\/collection-contact-result\/"
+                        }
+                    ],
+                    "dbs": []
+                }
+            ],
+            "auto_edges": [
+                {
+                    "from": "transfer-collection-activity-run-pipeline",
+                    "to": "transfer-contact-result-run-pipeline",
+                    "kind": "sequence"
+                }
+            ],
+            "user_edges": [],
+            "notes": [],
+            "created_at": null,
+            "created_by": "migration"
+        },
+        {
+            "id": "tmn_test",
+            "org": "TMN",
+            "name": "Test",
+            "source": "manual",
+            "jobs": [],
+            "auto_edges": [],
+            "user_edges": [],
+            "notes": {},
+            "created_at": "2026-08-17T06:42:34+07:00",
+            "created_by": "Warapon Leadlum"
+        }
+    ]
+}

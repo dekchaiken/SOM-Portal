@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Debug: NANO MA_PAGE</title>
+<script src="./assets/js/theme.js"></script>
+<link rel="stylesheet" href="./assets/css/dark.css">
+<link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+<style>
+  .dbg { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  .dbg-warn { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); border-radius: 8px; padding: 10px 16px; color: #fca5a5; font-size: 12px; margin-bottom: 20px; }
+  h2 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin: 24px 0 8px; }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .kv { display: flex; gap: 20px; flex-wrap: wrap; }
+  .kv-item { display: flex; flex-direction: column; gap: 3px; }
+  .kv-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+  .kv-val { font-size: 12px; font-family: ui-monospace, monospace; color: var(--text); }
+  .ok   { color: #4ade80 !important; }
+  .err  { color: #f87171 !important; }
+  .warn { color: #fbbf24 !important; }
+  pre { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 11px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; margin: 8px 0; font-family: ui-monospace, monospace; }
+  table { border-collapse: collapse; width: 100%; font-size: 11px; }
+  th { background: var(--bg); color: var(--text-muted); padding: 6px 10px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; position: sticky; top: 0; }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; font-family: ui-monospace, monospace; }
+  .badge { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+  .b-ok   { background: rgba(74,222,128,.15); color: #4ade80; }
+  .b-err  { background: rgba(248,113,113,.15); color: #f87171; }
+  .b-run  { background: rgba(59,130,246,.15);  color: #60a5fa; }
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .pname { color: #fbbf24; font-weight: 700; }
+  .trig  { color: #4ade80; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">🔬 Debug: NANO MA_PAGE Jenkins</div>
+        <div class="page-sub">Temporary debug page — delete after use</div>
+      </div>
+    </header>
+    <main class="page-content" style="padding:24px">
+      <div class="dbg">
+        <div class="dbg-warn">⚠ DEBUG PAGE — ลบไฟล์นี้หลังใช้งาน: <code>debug-nano-ma.html</code> และ <code>api/debug-nano-ma.php</code></div>
+        <div id="loading" style="padding:40px;text-align:center;color:var(--text-muted)">
+          <span class="spinner"></span> กำลัง probe NANO Jenkins…
+        </div>
+        <div id="result" style="display:none"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script>
+Auth.requireAuth();
+
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function statusBadge(r) {
+  if (!r || r === 'RUNNING') return `<span class="badge b-run">${esc(r||'RUNNING')}</span>`;
+  if (r === 'SUCCESS') return `<span class="badge b-ok">SUCCESS</span>`;
+  return `<span class="badge b-err">${esc(r)}</span>`;
+}
+
+async function load() {
+  try {
+    const res = await API.get('/debug-nano-ma.php');
+    document.getElementById('loading').style.display = 'none';
+    const el = document.getElementById('result');
+    el.style.display = '';
+
+    if (!res?.ok) {
+      el.innerHTML = `<pre class="err">${esc(JSON.stringify(res?.data, null, 2))}</pre>`;
+      return;
+    }
+
+    const d = res.data.data || res.data;
+    let html = '';
+
+    // Server info
+    html += `<h2>Server</h2><div class="card"><div class="kv">
+      <div class="kv-item"><div class="kv-label">Display</div><div class="kv-val ok">${esc(d.server?.display)}</div></div>
+      <div class="kv-item"><div class="kv-label">Base URL</div><div class="kv-val">${esc(d.server?.base_url)}</div></div>
+      <div class="kv-item"><div class="kv-label">Auth Mode</div><div class="kv-val">${esc(d.server?.mode)}</div></div>
+      <div class="kv-item"><div class="kv-label">User</div><div class="kv-val">${esc(d.server?.user)}</div></div>
+      <div class="kv-item"><div class="kv-label">HTTP (job/hist/last)</div>
+        <div class="kv-val ${d.http?.job===200?'ok':'err'}">${d.http?.job} / ${d.http?.hist} / ${d.http?.last}</div>
+      </div>
+    </div>`;
+    if (Object.keys(d.errors||{}).length) {
+      html += `<div style="margin-top:10px;color:#f87171;font-size:11px">Errors: ${esc(JSON.stringify(d.errors))}</div>`;
+    }
+    html += `</div>`;
+
+    // Job info
+    html += `<h2>Job Info</h2><div class="card"><div class="kv">
+      <div class="kv-item"><div class="kv-label">Name</div><div class="kv-val">${esc(d.job?.name ?? '—')}</div></div>
+      <div class="kv-item"><div class="kv-label">Next Build</div><div class="kv-val">#${esc(d.job?.next_build ?? '—')}</div></div>
+    </div></div>`;
+
+    // Parameter definitions
+    html += `<h2>Parameter Definitions (${(d.param_defs||[]).length} params)</h2><div class="card">`;
+    if ((d.param_defs||[]).length) {
+      html += `<table><thead><tr><th>Name</th><th>Type</th><th>Default</th><th>Choices</th><th>Description</th></tr></thead><tbody>`;
+      for (const p of d.param_defs) {
+        const type = (p._class||'').replace('hudson.model.','').replace('ParameterDefinition','');
+        html += `<tr>
+          <td class="pname">${esc(p.name)}</td>
+          <td style="color:var(--text-muted)">${esc(type)}</td>
+          <td>${esc(p.defaultParameterValue?.value ?? '')}</td>
+          <td>${p.choices ? esc(p.choices.join(', ')) : '—'}</td>
+          <td style="color:var(--text-muted)">${esc(p.description||'')}</td>
+        </tr>`;
+      }
+      html += `</tbody></table>`;
+    } else {
+      html += `<span class="warn">No parameter definitions returned (job may not be parameterized, or HTTP failed)</span>`;
+    }
+    html += `</div>`;
+
+    // Build history
+    const builds = d.builds || [];
+    const allParams = [...new Set(builds.flatMap(b => Object.keys(b.params||{})))];
+    html += `<h2>Last ${builds.length} Builds</h2><div class="card" style="overflow-x:auto">`;
+    if (builds.length) {
+      html += `<table><thead><tr><th>#</th><th>Result</th><th>Time</th><th>Triggered By</th>`;
+      for (const pn of allParams) html += `<th class="pname">${esc(pn)}</th>`;
+      html += `</tr></thead><tbody>`;
+      for (const b of builds) {
+        const ts = b.timestamp ? new Date(b.timestamp).toLocaleString('sv-SE').slice(5,16) : '—';
+        html += `<tr>
+          <td style="font-weight:700">#${b.number}</td>
+          <td>${statusBadge(b.result)}</td>
+          <td>${esc(ts)}</td>
+          <td class="trig">${esc(b.trigger || '—')}</td>`;
+        for (const pn of allParams) html += `<td>${esc(String(b.params?.[pn] ?? '—'))}</td>`;
+        html += `</tr>`;
+      }
+      html += `</tbody></table>`;
+    } else {
+      html += `<span class="warn">No builds returned</span>`;
+    }
+    html += `</div>`;
+
+    // lastBuild raw
+    html += `<h2>lastBuild Raw JSON</h2><div class="card"><pre>${esc(JSON.stringify(d.last_raw, null, 2))}</pre></div>`;
+
+    el.innerHTML = html;
+  } catch(e) {
+    document.getElementById('loading').innerHTML = `<span class="err">Error: ${esc(e.message)}</span>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>

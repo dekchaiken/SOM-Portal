@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Center — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <style>
+    /* ══════════════════════════════════════════════════════════════
+       Report Center
+       Inherits --bg-card, --border, --text, --text-muted, --shadow,
+       --orange, --orange-dim, --radius, --radius-lg, --font from theme.
+       gm-* tokens from analytics.html reproduced below.
+    ══════════════════════════════════════════════════════════════ */
+
+    /* ── gm token set (matches analytics.html exactly) ─────────── */
+    :root {
+      --gm-good:      #16A34A;
+      --gm-good-bg:   #EAF9EF;
+      --gm-good-line: #BBE7C8;
+      --gm-good-text: #0B7A2C;
+      --gm-bad:       #DC2626;
+      --gm-bad-bg:    #FFEEEE;
+      --gm-bad-line:  #F6C8C8;
+      --gm-bad-text:  #B01717;
+      --gm-warn:      #F59E0B;
+      --gm-future-bg: rgba(127,127,127,.06);
+    }
+
+    /* ── gm-kpi ────────────────────────────────────────────────── */
+    .gm-kpi-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 14px; margin: 0 0 20px;
+    }
+    .gm-kpi {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px 20px 16px;
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .gm-kpi:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.06); }
+    .gm-kpi .v { font-size: 36px; font-weight: 800; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+    .gm-kpi .v.good { color: var(--gm-good); }
+    .gm-kpi .v.warn { color: var(--gm-warn); }
+    .gm-kpi .v.bad  { color: var(--gm-bad);  }
+    .gm-kpi .l { margin-top: 7px; font-size: 12.5px; font-weight: 700; color: var(--text); }
+    .gm-kpi .s { margin-top: 2px; font-size: 10.5px; color: var(--text-muted); }
+
+    /* ── gm-section-head ────────────────────────────────────────── */
+    .gm-section-head {
+      font-size: 10.5px; font-weight: 800; color: var(--text);
+      letter-spacing: .18em; text-transform: uppercase; margin: 16px 0 12px;
+    }
+
+    /* ── gm-months / gm-mcell (copied from analytics.html) ──────── */
+    .gm-months {
+      display: grid; grid-template-columns: repeat(12, 1fr); gap: 10px;
+      margin-bottom: 8px;
+    }
+    @media (max-width: 1100px) { .gm-months { grid-template-columns: repeat(6, 1fr); } }
+    @media (max-width: 640px)  { .gm-months { grid-template-columns: repeat(4, 1fr); } }
+
+    .gm-mcell {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 10px 12px;
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 160px; transition: transform .15s ease, box-shadow .15s ease;
+      cursor: pointer; width: 100%;
+    }
+    .gm-mcell:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.06); }
+    .gm-mcell.clean  { background: var(--gm-good-bg);  border-color: var(--gm-good-line); }
+    .gm-mcell.miss   { background: var(--gm-bad-bg);   border-color: var(--gm-bad-line);  }
+    .gm-mcell.future { background: var(--gm-future-bg); border-color: var(--border); cursor: default; }
+    .gm-mcell.warn   { background: #FFFBEB; border-color: #FDE68A; }
+
+    .gm-mcell .m { font-size: 12px; font-weight: 800; letter-spacing: -.01em; }
+    .gm-mcell.clean  .m { color: var(--gm-good-text); }
+    .gm-mcell.miss   .m { color: var(--gm-bad-text);  }
+    .gm-mcell.future .m { color: var(--text-muted); }
+    .gm-mcell.warn   .m { color: #92400E; }
+
+    .gm-mcell .badge {
+      margin: 8px 0 6px; width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; color: #fff;
+    }
+    .gm-mcell.clean  .badge { background: var(--gm-good); }
+    .gm-mcell.miss   .badge { background: var(--gm-bad);  }
+    .gm-mcell.future .badge { background: #D9D9D9; color: #8A8A8A; }
+    .gm-mcell.warn   .badge { background: var(--gm-warn); }
+
+    .gm-mcell .sub  { font-size: 10px; font-weight: 700; letter-spacing: .01em; text-align: center; line-height: 1.3; }
+    .gm-mcell.clean .sub  { color: var(--gm-good-text); }
+    .gm-mcell.miss  .sub  { color: var(--gm-bad-text);  }
+    .gm-mcell.future .sub { color: var(--text-muted); }
+    .gm-mcell.warn  .sub  { color: #92400E; }
+
+    /* ── Category breakdown inside month cell ─────────────────── */
+    .gm-mcell .gm-cats {
+      width: 100%;
+      display: flex; flex-direction: column; gap: 2px;
+      margin-top: 8px; padding-top: 7px;
+      border-top: 1px dashed color-mix(in srgb, currentColor 22%, transparent);
+    }
+    .gm-mcell .gm-catr {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 9.5px; line-height: 1.3;
+    }
+    .gm-mcell .gm-catr span { opacity: .8; font-weight: 500; }
+    .gm-mcell .gm-catr b    { font-variant-numeric: tabular-nums; font-weight: 700; }
+    .gm-mcell.clean  .gm-catr { color: var(--gm-good-text); }
+    .gm-mcell.miss   .gm-catr { color: var(--gm-bad-text);  }
+    .gm-mcell.future .gm-catr { color: var(--text-muted); }
+    .gm-mcell.warn   .gm-catr { color: #92400E; }
+
+    .gm-mcell .cnt { font-size: 9.5px; margin-top: 2px; text-align: center; }
+    .gm-mcell.clean .cnt  { color: var(--gm-good-text); }
+    .gm-mcell.miss  .cnt  { color: var(--gm-bad-text);  }
+    .gm-mcell.future .cnt { color: var(--text-muted); }
+    .gm-mcell.warn  .cnt  { color: #92400E; }
+
+    /* ══════════════════════════════════════════════════════════════
+       rc- scoped components
+    ══════════════════════════════════════════════════════════════ */
+    .rc-hidden { display: none !important; }
+
+    /* ── Mode tabs ──────────────────────────────────────────────── */
+    .rc-topbar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding-bottom: 16px;
+    }
+    .rc-mode-tabs {
+      display: flex; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius, 8px); padding: 3px; gap: 2px;
+    }
+    .rc-mode-tab {
+      padding: 6px 18px; border-radius: 6px; border: none;
+      font-family: var(--font); font-size: 11.5px; font-weight: 700;
+      cursor: pointer; background: transparent; color: var(--text-muted);
+      letter-spacing: -.01em; transition: all .15s;
+    }
+    .rc-mode-tab.active { background: var(--orange); color: #fff; box-shadow: 0 1px 4px rgba(242,100,25,.3); }
+    .rc-mode-tab:not(.active):hover { background: var(--bg); color: var(--text); }
+
+    /* ── Date navigator ─────────────────────────────────────────── */
+    .rc-date-nav {
+      display: flex; align-items: center; gap: 2px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius, 8px); padding: 3px;
+    }
+    .rc-date-nav button {
+      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+      border: none; border-radius: 5px; background: transparent;
+      color: var(--text-muted); cursor: pointer; transition: all .15s;
+    }
+    .rc-date-nav button:hover:not(:disabled) { background: var(--bg); color: var(--text); }
+    .rc-date-nav button:disabled { opacity: .3; cursor: not-allowed; }
+    .rc-date-nav button svg { width: 13px; height: 13px; }
+    .rc-date-label {
+      padding: 0 12px; font-family: var(--font); font-size: 11.5px;
+      font-weight: 700; color: var(--text); letter-spacing: -.01em;
+      min-width: 180px; text-align: center;
+    }
+
+    /* ── Present button ─────────────────────────────────────────── */
+    .rc-spacer { flex: 1; }
+    .rc-present-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 16px; background: var(--orange); color: #fff;
+      border: none; border-radius: var(--radius, 8px);
+      font-family: var(--font); font-size: 11.5px; font-weight: 700;
+      cursor: pointer; transition: all .15s; box-shadow: 0 2px 8px rgba(242,100,25,.25);
+    }
+    .rc-present-btn:hover { background: var(--orange-hover, #e05510); }
+    .rc-present-btn svg { width: 13px; height: 13px; }
+
+    /* ── Body layout ────────────────────────────────────────────── */
+    .rc-body { display: flex; gap: 14px; align-items: flex-start; }
+
+    /* ── Sidebar ────────────────────────────────────────────────── */
+    .rc-sidebar {
+      width: 210px; flex-shrink: 0;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg, 12px); overflow: hidden;
+      position: sticky; top: 72px;
+    }
+    .rc-sb-head {
+      padding: 11px 14px 10px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .rc-sb-title { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: .1em; }
+    .rc-sb-reset { font-size: 9px; font-weight: 600; color: var(--orange); border: none; background: none; cursor: pointer; padding: 0; font-family: var(--font); }
+    .rc-sb-reset:hover { text-decoration: underline; }
+    .rc-sb-group { border-bottom: 1px solid var(--border); }
+    .rc-sb-group:last-child { border-bottom: none; }
+    .rc-sb-group-label {
+      padding: 7px 14px 5px; font-size: 8px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .1em; background: var(--bg);
+    }
+    .rc-sb-item {
+      display: flex; align-items: flex-start; gap: 9px;
+      padding: 8px 14px; cursor: pointer; transition: background .1s;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    }
+    .rc-sb-item:last-child { border-bottom: none; }
+    .rc-sb-item:hover { background: var(--bg); }
+    .rc-sb-check { width: 14px; height: 14px; margin-top: 2px; flex-shrink: 0; accent-color: var(--orange); cursor: pointer; }
+    .rc-sb-info { flex: 1; min-width: 0; }
+    .rc-sb-name { font-size: 11px; font-weight: 600; color: var(--text); letter-spacing: -.01em; line-height: 1.2; }
+    .rc-sb-sub  { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+
+    /* ── Content pane ───────────────────────────────────────────── */
+    .rc-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Section card ───────────────────────────────────────────── */
+    .rc-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg, 12px); box-shadow: var(--shadow-sm); overflow: hidden;
+    }
+    .rc-card-head {
+      padding: 12px 18px 10px; display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--border); background: var(--bg);
+    }
+    .rc-card-icon {
+      width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .rc-card-icon svg { width: 15px; height: 15px; }
+    .rc-card-title { font-size: 12.5px; font-weight: 700; letter-spacing: -.01em; flex: 1; }
+    .rc-card-sub { font-size: 10px; color: var(--text-muted); }
+    .rc-card-body { padding: 16px 18px; }
+
+    /* ── Loading / Error states ─────────────────────────────────── */
+    .rc-loading {
+      display: flex; align-items: center; gap: 10px;
+      padding: 20px; color: var(--text-muted); font-size: 11.5px;
+    }
+    .rc-spin {
+      width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid var(--border); border-top-color: var(--orange);
+      animation: rcSpin .8s linear infinite;
+    }
+    @keyframes rcSpin { to { transform: rotate(360deg); } }
+    .rc-error-box {
+      padding: 14px 18px; background: rgba(239,68,68,.06);
+      border: 1px solid rgba(239,68,68,.25); border-radius: 8px;
+      font-size: 11.5px; color: var(--gm-bad); margin: 6px 0;
+    }
+    .rc-empty {
+      padding: 18px 0; font-size: 12px; color: var(--text-muted); text-align: center;
+    }
+
+    /* ── Item row list ──────────────────────────────────────────── */
+    .rc-item-list { display: flex; flex-direction: column; }
+    .rc-item-row {
+      display: flex; align-items: baseline; gap: 8px;
+      padding: 7px 10px; border-radius: 7px; font-size: 11.5px;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    }
+    .rc-item-row:last-child { border-bottom: none; }
+    .rc-item-row:hover { background: var(--bg); }
+    .rc-iname { flex: 1; color: var(--text); font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rc-idesc { font-size: 10.5px; color: var(--text-muted); flex-shrink: 0; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rc-key {
+      font-weight: 700; color: var(--orange); white-space: nowrap;
+      font-size: 10.5px; text-decoration: none; flex-shrink: 0;
+    }
+    .rc-key:hover { text-decoration: underline; }
+    .rc-owner { font-size: 10px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+    .rc-tag-sm {
+      font-size: 9.5px; font-weight: 600; padding: 1px 6px; border-radius: 999px;
+      background: var(--bg); border: 1px solid var(--border); color: var(--text-muted);
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    /* ── Severity badge ─────────────────────────────────────────── */
+    .rc-sev {
+      font-size: 9.5px; font-weight: 800; padding: 2px 6px;
+      border-radius: 5px; letter-spacing: .04em; flex-shrink: 0; white-space: nowrap;
+    }
+    .rc-sev.s1 { background: rgba(220,38,38,.1); color: #B01717; }
+    .rc-sev.s2 { background: rgba(245,158,11,.1); color: #92400E; }
+    .rc-sev.s3 { background: rgba(22,163,74,.1);  color: #0B7A2C; }
+
+    /* ── Detection badge ────────────────────────────────────────── */
+    /* ── Clickable incident row ─────────────────────────────────── */
+    .rc-row-click { cursor: pointer; }
+    .rc-row-click:hover { background: var(--bg) !important; }
+    .rc-open-jira {
+      font-size: 10px; color: var(--text-muted); flex-shrink: 0;
+      margin-left: 2px; opacity: 0; transition: opacity .1s;
+    }
+    .rc-row-click:hover .rc-open-jira { opacity: 1; color: var(--orange); }
+
+    .rc-det {
+      font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px;
+      flex-shrink: 0; white-space: nowrap;
+    }
+    .rc-det.good { background: rgba(22,163,74,.1);  color: #0B7A2C; }
+    .rc-det.bad  { background: rgba(220,38,38,.1);  color: #B01717; }
+
+    /* ── Status dot ─────────────────────────────────────────────── */
+    .rc-dot {
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px;
+    }
+    .rc-dot.ok   { background: var(--gm-good); }
+    .rc-dot.warn { background: var(--gm-warn); }
+    .rc-dot.info { background: #3B82F6; }
+    .rc-dot.bad  { background: var(--gm-bad); }
+
+    /* ── Progress bar ───────────────────────────────────────────── */
+    .rc-prog-wrap { margin: 12px 0 16px; }
+    .rc-prog-labels {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 10.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;
+    }
+    .rc-prog-pct { font-size: 13px; font-weight: 800; color: var(--text); }
+    .rc-prog-track {
+      height: 7px; border-radius: 999px;
+      background: var(--bg); border: 1px solid var(--border); overflow: hidden;
+    }
+    .rc-prog-fill { height: 100%; border-radius: 999px; transition: width .4s ease; }
+
+    /* ── MA Test item list ──────────────────────────────────────── */
+    .rc-test-list { display: flex; flex-direction: column; gap: 4px; }
+    .rc-scroll-list { max-height: 340px; overflow-y: auto; padding-right: 2px; }
+    .rc-scroll-list::-webkit-scrollbar { width: 4px; }
+    .rc-scroll-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    /* Fixed ≈5-row viewport for Monitoring List — overflow scrolls, works in Present too. */
+    .rc-scroll-5 { max-height: 210px; overflow-y: auto; padding-right: 2px; border-radius: 6px; }
+    .rc-scroll-5::-webkit-scrollbar { width: 4px; }
+    .rc-scroll-5::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .rc-slide-clone .rc-scroll-5 { max-height: 380px; }
+    .rc-test-row {
+      display: flex; flex-direction: column; gap: 0;
+      padding: 6px 10px; border-radius: 7px; font-size: 11.5px;
+    }
+    .rc-test-row.rc-expandable { cursor: pointer; }
+    .rc-test-row.rc-expandable:hover { background: var(--bg); }
+    .rc-test-row:not(.rc-expandable):hover { background: var(--bg); }
+    .rc-expand-icon {
+      margin-left: auto; font-size: 13px; color: var(--text-muted);
+      transition: transform .15s; flex-shrink: 0;
+    }
+    .rc-expand[style*="block"] ~ * .rc-expand-icon,
+    .rc-test-row .rc-expand[style*="block"] { color: var(--orange); }
+
+    /* Detail tags inside expanded row */
+    .rc-dtag {
+      display: inline-flex; align-items: center; height: 17px; padding: 0 7px;
+      font-size: 9.5px; font-weight: 600; border-radius: 999px;
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted);
+    }
+    .rc-dtag-link { color: var(--orange); border-color: var(--orange); cursor: pointer; text-decoration: none; }
+    .rc-dtag-link:hover { background: var(--orange-dim); }
+    .rc-dnote { font-size: 10px; color: var(--text-muted); line-height: 1.55; }
+    .rc-test-badge {
+      width: 20px; height: 20px; border-radius: 50%; display: flex;
+      align-items: center; justify-content: center; font-size: 11px; font-weight: 800;
+      flex-shrink: 0; color: #fff;
+    }
+    .rc-test-row.clean .rc-test-badge { background: var(--gm-good); }
+    .rc-test-row.miss  .rc-test-badge { background: var(--gm-bad);  }
+    .rc-test-row.warn  .rc-test-badge { background: var(--gm-warn); color: #fff; }
+    .rc-test-name { flex: 1; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rc-test-res  { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; flex-shrink: 0; }
+    .rc-test-row.clean .rc-test-res { background: rgba(22,163,74,.1);  color: #0B7A2C; }
+    .rc-test-row.miss  .rc-test-res { background: rgba(220,38,38,.1);  color: #B01717; }
+    .rc-test-row.warn  .rc-test-res { background: rgba(245,158,11,.1); color: #92400E; }
+
+    /* ── MoM comparison ─────────────────────────────────────────── */
+    .rc-mom-hero {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .rc-mom-block {
+      flex: 1; min-width: 110px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 18px; text-align: center;
+    }
+    .rc-mom-block.current { border-color: var(--orange); background: var(--orange-dim); }
+    .rc-mom-ml { font-size: 9.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+    .rc-mom-mv { font-size: 38px; font-weight: 800; letter-spacing: -.03em; line-height: 1; margin: 8px 0 4px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .rc-mom-block.current .rc-mom-mv { color: var(--orange); }
+    .rc-mom-ms { font-size: 10.5px; color: var(--text-muted); }
+    .rc-mom-arrow {
+      font-size: 22px; font-weight: 700; line-height: 1; flex-shrink: 0;
+    }
+    .rc-mom-arrow.good { color: var(--gm-good); }
+    .rc-mom-arrow.bad  { color: var(--gm-bad);  }
+
+    .rc-cat-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .rc-cat-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 10px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; font-size: 11.5px;
+    }
+    .rc-cat-name  { font-weight: 700; width: 90px; flex-shrink: 0; }
+    .rc-cat-a, .rc-cat-b { width: 36px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    .rc-cat-arr   { color: var(--text-muted); flex-shrink: 0; }
+    .rc-cat-delta { font-size: 10.5px; font-weight: 700; flex-shrink: 0; }
+    .rc-cat-delta.good { color: var(--gm-good); }
+    .rc-cat-delta.bad  { color: var(--gm-bad);  }
+
+    .rc-analysis {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px 14px; margin-top: 12px;
+    }
+    .rc-analysis-line { font-size: 11.5px; color: var(--text-muted); line-height: 1.7; }
+
+    /* ══════════════════════════════════════════════════════════════
+       PRESENTATION OVERLAY  — redesigned for present-first UX
+       Design goals:
+         · Hero-scale typography for real projection viewing
+         · Full-bleed slide (no cramped 1000px card in the middle)
+         · Clear hierarchy: eyebrow → title → sub → content
+         · Inherits theme tokens (works on Glass/Enterprise/Console/Warm)
+    ══════════════════════════════════════════════════════════════ */
+    .rc-pres-overlay {
+      position: fixed; inset: 0; z-index: 9000;
+      background:
+        radial-gradient(1200px 600px at 15% -10%, color-mix(in srgb, var(--orange) 7%, transparent), transparent 60%),
+        radial-gradient(900px 500px at 110% 110%, color-mix(in srgb, var(--orange) 5%, transparent), transparent 55%),
+        var(--bg, #f7f7f7);
+      display: flex; flex-direction: column;
+    }
+
+    /* Top progress bar */
+    .rc-pres-progress {
+      position: absolute; top: 0; left: 0; height: 3px;
+      background: linear-gradient(90deg, var(--orange), color-mix(in srgb, var(--orange) 55%, transparent));
+      z-index: 5; transition: width .4s cubic-bezier(.77,0,.175,1);
+      box-shadow: 0 0 12px color-mix(in srgb, var(--orange) 50%, transparent);
+    }
+
+    /* Top bar — spacious, calm */
+    .rc-pres-bar {
+      height: 64px; flex-shrink: 0;
+      background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px; padding: 0 24px;
+    }
+    .rc-pres-title { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; }
+    .rc-pres-title::before {
+      content: ''; width: 4px; height: 26px; border-radius: 2px;
+      background: var(--orange); flex-shrink: 0;
+    }
+    .rc-pres-title-text { min-width: 0; }
+    .rc-pres-title h1 {
+      font-size: 13px; font-weight: 800; letter-spacing: -.01em;
+      margin: 0; color: var(--text); white-space: nowrap;
+    }
+    .rc-pres-title p {
+      font-size: 11px; color: var(--text-muted); margin: 1px 0 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .rc-pres-counter {
+      font-family: var(--font); font-size: 11px; font-weight: 700;
+      color: var(--text-muted); padding: 5px 12px; letter-spacing: .06em;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+    }
+    .rc-pres-kbd {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10px; color: var(--text-muted); padding: 0 6px 0 4px;
+    }
+    .rc-pres-kbd kbd {
+      font-family: var(--font); font-size: 9.5px; font-weight: 700;
+      padding: 2px 6px; min-width: 18px; text-align: center;
+      background: var(--bg); border: 1px solid var(--border);
+      border-bottom-width: 2px; border-radius: 5px; color: var(--text-muted);
+    }
+    .rc-pres-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-card); font-family: var(--font);
+      font-size: 11.5px; font-weight: 700;
+      cursor: pointer; color: var(--text); transition: all .15s;
+    }
+    .rc-pres-btn:hover:not(:disabled) {
+      background: var(--bg); border-color: color-mix(in srgb, var(--text) 25%, var(--border));
+      transform: translateY(-1px);
+    }
+    .rc-pres-btn:active:not(:disabled) { transform: translateY(0); }
+    .rc-pres-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .rc-pres-btn.primary {
+      background: var(--orange); color: #fff;
+      border-color: var(--orange);
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--orange) 30%, transparent);
+    }
+    .rc-pres-btn.primary:hover:not(:disabled) {
+      background: var(--orange-hover, color-mix(in srgb, var(--orange) 88%, #000));
+      border-color: var(--orange-hover, color-mix(in srgb, var(--orange) 88%, #000));
+    }
+    .rc-pres-btn.danger { color: var(--gm-bad); border-color: color-mix(in srgb, var(--gm-bad) 30%, var(--border)); }
+    .rc-pres-btn.danger:hover:not(:disabled) { background: color-mix(in srgb, var(--gm-bad) 8%, var(--bg-card)); }
+    .rc-pres-btn svg { width: 13px; height: 13px; }
+
+    /* Canvas — slides bleed to the edges */
+    .rc-pres-canvas {
+      flex: 1; display: flex; align-items: stretch; justify-content: center;
+      padding: 32px 48px 56px; position: relative; overflow: hidden;
+    }
+    .rc-pres-slides { width: 100%; height: 100%; position: relative; max-width: 1400px; }
+    .rc-pres-slide {
+      position: absolute; inset: 0;
+      display: none; align-items: stretch; justify-content: center;
+    }
+    .rc-pres-slide.active {
+      display: flex;
+      animation: rcSlideIn .38s cubic-bezier(.16,.84,.44,1) both;
+    }
+    @keyframes rcSlideIn {
+      from { opacity: 0; transform: translateX(24px) scale(.985); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* Slide card — bigger, cleaner, hero-first */
+    .rc-slide-card {
+      width: 100%; height: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow:
+        0 1px 0 color-mix(in srgb, var(--text) 4%, transparent) inset,
+        0 20px 60px -20px color-mix(in srgb, var(--text) 25%, transparent),
+        0 4px 16px -8px color-mix(in srgb, var(--text) 15%, transparent);
+      display: flex; flex-direction: column; overflow: hidden;
+      position: relative;
+    }
+    /* subtle top orange accent line */
+    .rc-slide-card::before {
+      content: ''; position: absolute; top: 0; left: 32px; right: 32px; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--orange), transparent);
+      opacity: .55;
+    }
+
+    .rc-slide-head {
+      padding: 32px 48px 24px;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      display: flex; align-items: center; gap: 20px; flex-shrink: 0;
+    }
+    .rc-slide-icon {
+      width: 64px; height: 64px; border-radius: 18px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 12px -6px color-mix(in srgb, currentColor 40%, transparent);
+    }
+    .rc-slide-icon svg { width: 30px; height: 30px; }
+    .rc-slide-head-text { flex: 1; min-width: 0; }
+    .rc-slide-head-text h1 {
+      font-size: 32px; font-weight: 800; letter-spacing: -.028em;
+      line-height: 1.15; margin: 0 0 6px; color: var(--text);
+    }
+    .rc-slide-head-text p {
+      font-size: 13.5px; color: var(--text-muted); margin: 0;
+      letter-spacing: .01em; line-height: 1.5;
+    }
+    .rc-slide-badge {
+      font-size: 11.5px; font-weight: 800; padding: 7px 16px; border-radius: 999px;
+      flex-shrink: 0; letter-spacing: .05em; text-transform: uppercase;
+      align-self: flex-start;
+    }
+
+    .rc-slide-body {
+      flex: 1; padding: 28px 48px 36px; overflow-y: auto;
+      scrollbar-width: thin;
+    }
+    .rc-slide-body::-webkit-scrollbar { width: 8px; }
+    .rc-slide-body::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--text) 15%, transparent);
+      border-radius: 999px;
+    }
+
+    /* Cloned content — scale everything UP for projection */
+    .rc-slide-clone { height: 100%; }
+    .rc-slide-clone .gm-kpi { padding: 24px 26px 22px; border-radius: 16px; }
+    .rc-slide-clone .gm-kpi .v { font-size: 52px; }
+    .rc-slide-clone .gm-kpi .l { font-size: 14px; margin-top: 10px; }
+    .rc-slide-clone .gm-kpi .s { font-size: 12px; margin-top: 4px; }
+    .rc-slide-clone .gm-section-head { font-size: 12px; margin: 22px 0 14px; }
+    .rc-slide-clone .rc-item-row {
+      font-size: 14px; padding: 11px 14px;
+      align-items: flex-start; flex-wrap: wrap; row-gap: 4px;
+    }
+    .rc-slide-clone .rc-iname {
+      white-space: normal; overflow: visible; text-overflow: clip;
+      line-height: 1.45; word-break: break-word;
+    }
+    .rc-slide-clone .rc-idesc {
+      font-size: 12.5px; max-width: none; flex: 1 1 100%;
+      white-space: normal; overflow: visible; text-overflow: clip;
+      line-height: 1.55; word-break: break-word;
+      color: var(--text-muted); padding-left: 15px;
+    }
+    .rc-slide-clone .rc-key { font-size: 12.5px; }
+    .rc-slide-clone .rc-owner { font-size: 12px; }
+    .rc-slide-clone .rc-tag-sm { font-size: 11px; padding: 2px 8px; }
+    .rc-slide-clone .rc-sev { font-size: 11px; padding: 3px 8px; }
+    .rc-slide-clone .rc-det { font-size: 11px; padding: 3px 9px; }
+    .rc-slide-clone .rc-test-row { font-size: 14px; padding: 10px 14px; }
+    .rc-slide-clone .rc-test-badge { width: 26px; height: 26px; font-size: 13px; }
+    .rc-slide-clone .rc-test-res { font-size: 12px; padding: 2px 10px; }
+    .rc-slide-clone .rc-dnote { font-size: 12px; }
+    .rc-slide-clone .rc-dtag { height: 22px; font-size: 11.5px; padding: 0 10px; }
+    .rc-slide-clone .gm-mcell { min-height: 132px; padding: 16px 12px 14px; }
+    .rc-slide-clone .gm-mcell .m { font-size: 14px; }
+    .rc-slide-clone .gm-mcell .badge { width: 42px; height: 42px; font-size: 16px; margin: 10px 0 8px; }
+    .rc-slide-clone .gm-mcell .sub { font-size: 12px; }
+    .rc-slide-clone .gm-mcell .cnt { font-size: 11px; margin-top: 4px; }
+    .rc-slide-clone .rc-prog-track { height: 9px; }
+    .rc-slide-clone .rc-prog-labels { font-size: 12.5px; }
+    .rc-slide-clone .rc-prog-pct { font-size: 16px; }
+    .rc-slide-clone .rc-mom-mv { font-size: 48px; }
+    .rc-slide-clone .rc-mom-ml { font-size: 11px; }
+    .rc-slide-clone .rc-mom-ms { font-size: 12.5px; }
+    .rc-slide-clone .rc-cat-row { font-size: 13px; padding: 9px 12px; }
+    .rc-slide-clone .rc-analysis-line { font-size: 13px; }
+    .rc-slide-clone .rc-empty { font-size: 14px; padding: 24px 0; }
+
+    /* ── Cover slide KPI hero (used by JS, was missing) ─────────── */
+    .rc-slide-kpi {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px 20px 20px;
+      text-align: center;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .rc-slide-kpi:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--text) 25%, transparent);
+    }
+    .rc-slide-kpi-label {
+      font-size: 11px; font-weight: 800; letter-spacing: .12em;
+      color: var(--text-muted); text-transform: uppercase;
+    }
+    .rc-slide-kpi-val {
+      font-size: 56px; font-weight: 800; letter-spacing: -.035em;
+      line-height: 1; margin: 12px 0 6px; color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .rc-slide-kpi-val.ok   { color: var(--gm-good); }
+    .rc-slide-kpi-val.warn { color: var(--gm-warn); }
+    .rc-slide-kpi-val.bad  { color: var(--gm-bad);  }
+    .rc-slide-kpi-sub {
+      font-size: 12px; color: var(--text-muted); font-weight: 500;
+    }
+
+    /* ── Monthly cover: mini stat row ───────────────────────────── */
+    .rc-slide-mini {
+      display: flex; flex-direction: column; align-items: flex-start;
+      gap: 3px; padding: 14px 18px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .rc-slide-mini-l {
+      font-size: 10px; font-weight: 800; letter-spacing: .1em;
+      color: var(--text-muted); text-transform: uppercase;
+    }
+    .rc-slide-mini-v {
+      font-size: 26px; font-weight: 800; letter-spacing: -.02em;
+      line-height: 1.05; color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .rc-slide-mini-v.warn { color: var(--gm-warn); }
+    .rc-slide-mini-v.bad  { color: var(--gm-bad);  }
+    .rc-slide-mini-s { font-size: 11px; color: var(--text-muted); }
+
+    /* ── Compact inline legend (Alert Summary slide only) ───────── */
+    .rc-inline-legend {
+      display: flex; flex-wrap: wrap; gap: 16px;
+      margin: 6px 0 -4px;
+    }
+    .rc-inline-legend span {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11.5px; color: var(--text-muted); font-weight: 500;
+    }
+    .rc-inline-legend i {
+      width: 10px; height: 10px; border-radius: 3px; display: inline-block;
+      border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+    }
+
+    /* ── Alert Summary slide: month grid sizing ─────────────────── */
+    .rc-slide-clone-alertSummary .gm-mcell { min-height: 178px; padding: 14px 10px 12px; }
+    .rc-slide-clone-alertSummary .gm-mcell .badge { width: 40px; height: 40px; font-size: 14px; margin: 8px 0 6px; }
+    .rc-slide-clone-alertSummary .gm-mcell .m { font-size: 13px; }
+    .rc-slide-clone-alertSummary .gm-mcell .sub { font-size: 11px; }
+    .rc-slide-clone-alertSummary .gm-mcell .gm-catr { font-size: 10.5px; }
+    .rc-slide-clone-alertSummary .gm-kpi .v { font-size: 42px; }
+
+    /* ── MoM slide: tighter hero ────────────────────────────────── */
+    .rc-slide-clone-alertMoM .rc-mom-mv { font-size: 42px; }
+    .rc-slide-clone-alertMoM .rc-mom-block { padding: 18px 20px; }
+    .rc-slide-clone-alertMoM .rc-cat-row { font-size: 12.5px; padding: 8px 12px; }
+
+    /* Dots — moved lower + wider spacing so it doesn't overlap card */
+    .rc-pres-dots {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px; align-items: center;
+      padding: 8px 14px; background: color-mix(in srgb, var(--bg-card) 80%, transparent);
+      border: 1px solid var(--border); border-radius: 999px;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    .rc-pres-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: color-mix(in srgb, var(--text) 20%, transparent);
+      cursor: pointer; transition: all .25s cubic-bezier(.77,0,.175,1);
+    }
+    .rc-pres-dot:hover { background: color-mix(in srgb, var(--text) 45%, transparent); transform: scale(1.2); }
+    .rc-pres-dot.active {
+      background: var(--orange); width: 26px; border-radius: 999px;
+      box-shadow: 0 0 10px color-mix(in srgb, var(--orange) 55%, transparent);
+    }
+
+    /* Responsive: tighten on smaller screens */
+    @media (max-width: 900px) {
+      .rc-pres-canvas { padding: 20px 20px 52px; }
+      .rc-slide-head { padding: 22px 26px 18px; gap: 14px; }
+      .rc-slide-icon { width: 52px; height: 52px; border-radius: 14px; }
+      .rc-slide-icon svg { width: 24px; height: 24px; }
+      .rc-slide-head-text h1 { font-size: 24px; }
+      .rc-slide-head-text p { font-size: 12px; }
+      .rc-slide-body { padding: 20px 26px 28px; }
+      .rc-slide-kpi-val { font-size: 42px; }
+      .rc-pres-title p { display: none; }
+      .rc-pres-kbd { display: none; }
+      .rc-pres-btn span.rc-pres-btn-lbl { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="presentation"></i> Report Center</div>
+        <div class="page-sub">Weekly &amp; Monthly Summary Presentation</div>
+      </div>
+    </header>
+
+    <div class="page-content" style="padding:18px 22px 40px">
+
+      <!-- ── Topbar controls ──────────────────────────────────── -->
+      <div class="rc-topbar">
+        <!-- Mode tabs -->
+        <div class="rc-mode-tabs">
+          <button class="rc-mode-tab active" data-mode="weekly">Weekly</button>
+          <button class="rc-mode-tab" data-mode="monthly">Monthly</button>
+        </div>
+
+        <!-- Week nav -->
+        <div class="rc-date-nav" id="rcWeekNav">
+          <button id="rcWeekPrev" title="Previous week">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div class="rc-date-label" id="rcWeekLabel">Loading…</div>
+          <button id="rcWeekNext" title="Next week">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+
+        <!-- Month nav -->
+        <div class="rc-date-nav rc-hidden" id="rcMonthNav">
+          <button id="rcMonthPrev" title="Previous month">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div class="rc-date-label" id="rcMonthLabel">—</div>
+          <button id="rcMonthNext" title="Next month">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+
+        <div class="rc-spacer"></div>
+
+        <button class="rc-present-btn" id="rcPresentBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+          Present
+        </button>
+      </div>
+
+      <!-- ── Body ──────────────────────────────────────────────── -->
+      <div class="rc-body">
+
+        <!-- ─── Sidebar ──────────────────────────────────────── -->
+        <aside class="rc-sidebar">
+          <div class="rc-sb-head">
+            <span class="rc-sb-title">Sections</span>
+            <button class="rc-sb-reset" id="rcResetSections">Reset</button>
+          </div>
+
+          <!-- Weekly sidebar -->
+          <div id="rcSidebarWeekly">
+            <div class="rc-sb-group">
+              <div class="rc-sb-group-label">MA Testing</div>
+              <label class="rc-sb-item">
+                <input type="checkbox" class="rc-sb-check" data-section-key="maTest" data-section-mode="weekly" checked>
+                <div class="rc-sb-info"><div class="rc-sb-name">MA Test Summary</div><div class="rc-sb-sub">monthly plan &amp; results</div></div>
+              </label>
+            </div>
+            <div class="rc-sb-group">
+              <div class="rc-sb-group-label">Incidents</div>
+              <label class="rc-sb-item">
+                <input type="checkbox" class="rc-sb-check" data-section-key="incidents" data-section-mode="weekly" checked>
+                <div class="rc-sb-info"><div class="rc-sb-name">Incidents</div><div class="rc-sb-sub">SM detection this week</div></div>
+              </label>
+              <label class="rc-sb-item">
+                <input type="checkbox" class="rc-sb-check" data-section-key="batchIssues" data-section-mode="weekly" checked>
+                <div class="rc-sb-info"><div class="rc-sb-name">Batch Issues</div><div class="rc-sb-sub">events &amp; pending</div></div>
+              </label>
+              <label class="rc-sb-item">
+                <input type="checkbox" class="rc-sb-check" data-section-key="ticketMon" data-section-mode="weekly" checked>
+                <div class="rc-sb-info"><div class="rc-sb-name">Ticket Monitor</div><div class="rc-sb-sub">alert close rate this week</div></div>
+              </label>
+            </div>
+            <div class="rc-sb-group">
+              <div class="rc-sb-group-label">Support</div>
+              <label class="rc-sb-item">
+                <input type="checkbox" class="rc-sb-check" data-section-key="supportMA" data-section-mode="weekly" checked>
+                <div class="rc-sb-info"><div class="rc-sb-name">Support MA</div><div class="rc-sb-sub">MA team assist log</div></div>
+              </label>
+              <label class="rc-sb-item">
+                <input type="checkbox" class="rc-sb-check" data-section-key="supportDev" data-section-mode="weekly" checked>
+                <div class="rc-sb-info"><div class="rc-sb-name">Support Dev</div><div class="rc-sb-sub">dev team assist log</div></div>
+              </label>
+              <label class="rc-sb-item">
+                <input type="checkbox" class="rc-sb-check" data-section-key="improvements" data-section-mode="weekly" checked>
+                <div class="rc-sb-info"><div class="rc-sb-name">Improvement / Project</div><div class="rc-sb-sub">improvements &amp; projects</div></div>
+              </label>
+              <label class="rc-sb-item">
+                <input type="checkbox" class="rc-sb-check" data-section-key="updates" data-section-mode="weekly">
+                <div class="rc-sb-info"><div class="rc-sb-name">Updates &amp; Alerts</div><div class="rc-sb-sub">handover / other</div></div>
+              </label>
+            </div>
+          </div><!-- /rcSidebarWeekly -->
+
+          <!-- Monthly sidebar -->
+          <div id="rcSidebarMonthly" class="rc-hidden">
+            <div class="rc-sb-group">
+              <div class="rc-sb-group-label">Alert Monitor</div>
+              <label class="rc-sb-item">
+                <input type="checkbox" class="rc-sb-check" data-section-key="alertSummary" data-section-mode="monthly" checked>
+                <div class="rc-sb-info"><div class="rc-sb-name">Alert Summary</div><div class="rc-sb-sub">monthly volume + tracker</div></div>
+              </label>
+              <label class="rc-sb-item">
+                <input type="checkbox" class="rc-sb-check" data-section-key="alertMoM" data-section-mode="monthly" checked>
+                <div class="rc-sb-info"><div class="rc-sb-name">MoM Comparison</div><div class="rc-sb-sub">vs previous month</div></div>
+              </label>
+            </div>
+            <div class="rc-sb-group">
+              <div class="rc-sb-group-label">MA Testing</div>
+              <label class="rc-sb-item">
+                <input type="checkbox" class="rc-sb-check" data-section-key="maMonthly" data-section-mode="monthly" checked>
+                <div class="rc-sb-info"><div class="rc-sb-name">MA Test Monthly</div><div class="rc-sb-sub">full month results</div></div>
+              </label>
+            </div>
+          </div><!-- /rcSidebarMonthly -->
+
+        </aside><!-- /rc-sidebar -->
+
+        <!-- ─── Content ───────────────────────────────────────── -->
+        <div class="rc-content">
+
+          <!-- ══ WEEKLY PANE ════════════════════════════════════ -->
+          <div id="weeklyPane">
+
+            <!-- MA Test -->
+            <div class="rc-card" id="rc-sec-maTest">
+              <div class="rc-card-head">
+                <div class="rc-card-icon" style="background:rgba(245,158,11,.12);color:#D97706">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                </div>
+                <div class="rc-card-title">MA Test Summary</div>
+                <div class="rc-card-sub">Monthly plan &amp; results</div>
+              </div>
+              <div class="rc-card-body">
+                <div id="rc-sec-maTest-loading" class="rc-loading"><div class="rc-spin"></div>Loading MA test data…</div>
+                <div id="rc-sec-maTest-error" class="rc-error-box rc-hidden">Failed to load MA test data</div>
+                <div id="rc-sec-maTest-content" class="rc-hidden"></div>
+              </div>
+            </div>
+
+            <!-- Incidents -->
+            <div class="rc-card" id="rc-sec-incidents">
+              <div class="rc-card-head">
+                <div class="rc-card-icon" style="background:rgba(220,38,38,.1);color:#B01717">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <div class="rc-card-title">Incidents This Week</div>
+                <div class="rc-card-sub">SM detection log</div>
+              </div>
+              <div class="rc-card-body">
+                <div id="rc-sec-incidents-loading" class="rc-loading"><div class="rc-spin"></div>Loading incident data…</div>
+                <div id="rc-sec-incidents-error" class="rc-error-box rc-hidden">Failed to load incident data</div>
+                <div id="rc-sec-incidents-content" class="rc-hidden"></div>
+              </div>
+            </div>
+
+            <!-- Batch Issues -->
+            <div class="rc-card" id="rc-sec-batchIssues">
+              <div class="rc-card-head">
+                <div class="rc-card-icon" style="background:rgba(59,130,246,.1);color:#1D4ED8">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/></svg>
+                </div>
+                <div class="rc-card-title">Batch Issues</div>
+                <div class="rc-card-sub">Events &amp; pending items</div>
+              </div>
+              <div class="rc-card-body">
+                <div id="rc-sec-batchIssues-loading" class="rc-loading"><div class="rc-spin"></div>Loading batch data…</div>
+                <div id="rc-sec-batchIssues-error" class="rc-error-box rc-hidden">Failed to load batch data</div>
+                <div id="rc-sec-batchIssues-content" class="rc-hidden"></div>
+              </div>
+            </div>
+
+            <!-- Ticket Monitor -->
+            <div class="rc-card" id="rc-sec-ticketMon">
+              <div class="rc-card-head">
+                <div class="rc-card-icon" style="background:rgba(245,158,11,.12);color:#D97706">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </div>
+                <div class="rc-card-title">Ticket Monitor</div>
+                <div class="rc-card-sub">Alert close rate &amp; detection source (this week)</div>
+              </div>
+              <div class="rc-card-body">
+                <div id="rc-sec-ticketMon-loading" class="rc-loading"><div class="rc-spin"></div>Loading monitoring tickets…</div>
+                <div id="rc-sec-ticketMon-error" class="rc-error-box rc-hidden">Failed to load monitoring data</div>
+                <div id="rc-sec-ticketMon-content" class="rc-hidden"></div>
+              </div>
+            </div>
+
+            <!-- Support MA -->
+            <div class="rc-card" id="rc-sec-supportMA">
+              <div class="rc-card-head">
+                <div class="rc-card-icon" style="background:var(--orange-dim);color:var(--orange)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                </div>
+                <div class="rc-card-title">Support MA</div>
+                <div class="rc-card-sub">MA team assist this week</div>
+              </div>
+              <div class="rc-card-body">
+                <div id="rc-sec-supportMA-loading" class="rc-loading"><div class="rc-spin"></div>Loading…</div>
+                <div id="rc-sec-supportMA-error" class="rc-error-box rc-hidden">Failed to load support data</div>
+                <div id="rc-sec-supportMA-content" class="rc-hidden"></div>
+              </div>
+            </div>
+
+            <!-- Support Dev -->
+            <div class="rc-card" id="rc-sec-supportDev">
+              <div class="rc-card-head">
+                <div class="rc-card-icon" style="background:rgba(22,163,74,.1);color:#0B7A2C">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                </div>
+                <div class="rc-card-title">Support Dev</div>
+                <div class="rc-card-sub">Dev team assist this week</div>
+              </div>
+              <div class="rc-card-body">
+                <div id="rc-sec-supportDev-loading" class="rc-loading"><div class="rc-spin"></div>Loading…</div>
+                <div id="rc-sec-supportDev-error" class="rc-error-box rc-hidden">Failed to load support data</div>
+                <div id="rc-sec-supportDev-content" class="rc-hidden"></div>
+              </div>
+            </div>
+
+            <!-- Improvement / Project -->
+            <div class="rc-card" id="rc-sec-improvements">
+              <div class="rc-card-head">
+                <div class="rc-card-icon" style="background:rgba(139,92,246,.12);color:#7C3AED">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/></svg>
+                </div>
+                <div class="rc-card-title">Improvement / Project</div>
+                <div class="rc-card-sub">Improvements &amp; project updates</div>
+              </div>
+              <div class="rc-card-body">
+                <div id="rc-sec-improvements-loading" class="rc-loading"><div class="rc-spin"></div>Loading…</div>
+                <div id="rc-sec-improvements-error" class="rc-error-box rc-hidden">Failed to load improvements</div>
+                <div id="rc-sec-improvements-content" class="rc-hidden"></div>
+              </div>
+            </div>
+
+            <!-- Updates -->
+            <div class="rc-card rc-hidden" id="rc-sec-updates">
+              <div class="rc-card-head">
+                <div class="rc-card-icon" style="background:var(--bg);color:var(--text-muted)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                </div>
+                <div class="rc-card-title">Updates &amp; Alerts</div>
+                <div class="rc-card-sub">Handover &amp; announcements</div>
+              </div>
+              <div class="rc-card-body">
+                <div id="rc-sec-updates-loading" class="rc-loading"><div class="rc-spin"></div>Loading…</div>
+                <div id="rc-sec-updates-error" class="rc-error-box rc-hidden">Failed to load updates</div>
+                <div id="rc-sec-updates-content" class="rc-hidden"></div>
+              </div>
+            </div>
+
+          </div><!-- /weeklyPane -->
+
+          <!-- ══ MONTHLY PANE ═══════════════════════════════════ -->
+          <div id="monthlyPane" class="rc-hidden">
+
+            <!-- Alert Summary -->
+            <div class="rc-card" id="rc-sec-alertSummary">
+              <div class="rc-card-head">
+                <div class="rc-card-icon" style="background:rgba(245,158,11,.12);color:#D97706">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </div>
+                <div class="rc-card-title">Alert Monthly Summary</div>
+                <div class="rc-card-sub">Total volume &amp; 12-month tracker</div>
+              </div>
+              <div class="rc-card-body">
+                <div id="rc-sec-alertSummary-loading" class="rc-loading"><div class="rc-spin"></div>Loading alert stats…</div>
+                <div id="rc-sec-alertSummary-error" class="rc-error-box rc-hidden">Failed to load alert data</div>
+                <div id="rc-sec-alertSummary-content" class="rc-hidden"></div>
+              </div>
+            </div>
+
+            <!-- MoM Comparison -->
+            <div class="rc-card" id="rc-sec-alertMoM">
+              <div class="rc-card-head">
+                <div class="rc-card-icon" style="background:rgba(22,163,74,.1);color:#0B7A2C">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                </div>
+                <div class="rc-card-title">Month-over-Month Comparison</div>
+                <div class="rc-card-sub">vs previous month &amp; category breakdown</div>
+              </div>
+              <div class="rc-card-body">
+                <div id="rc-sec-alertMoM-loading" class="rc-loading"><div class="rc-spin"></div>Loading comparison…</div>
+                <div id="rc-sec-alertMoM-error" class="rc-error-box rc-hidden">Failed to load comparison data</div>
+                <div id="rc-sec-alertMoM-content" class="rc-hidden"></div>
+              </div>
+            </div>
+
+            <!-- MA Test Monthly -->
+            <div class="rc-card" id="rc-sec-maMonthly">
+              <div class="rc-card-head">
+                <div class="rc-card-icon" style="background:rgba(245,158,11,.12);color:#D97706">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                </div>
+                <div class="rc-card-title">MA Test Monthly Overview</div>
+                <div class="rc-card-sub">Full month plan &amp; results</div>
+              </div>
+              <div class="rc-card-body">
+                <div id="rc-sec-maMonthly-loading" class="rc-loading"><div class="rc-spin"></div>Loading MA test data…</div>
+                <div id="rc-sec-maMonthly-error" class="rc-error-box rc-hidden">Failed to load MA test data</div>
+                <div id="rc-sec-maMonthly-content" class="rc-hidden"></div>
+              </div>
+            </div>
+
+          </div><!-- /monthlyPane -->
+
+        </div><!-- /rc-content -->
+      </div><!-- /rc-body -->
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     PRESENTATION OVERLAY
+══════════════════════════════════════════════════════════════ -->
+<div class="rc-pres-overlay rc-hidden" id="rcPresOverlay">
+  <div class="rc-pres-progress" id="rcPresProgress" style="width:0%"></div>
+  <div class="rc-pres-bar">
+    <div class="rc-pres-title">
+      <div class="rc-pres-title-text">
+        <h1>Report Center</h1>
+        <p id="rcPresSubtitle">SM Team Operations Summary</p>
+      </div>
+    </div>
+    <span class="rc-pres-kbd"><kbd>←</kbd><kbd>→</kbd> navigate · <kbd>Esc</kbd> close</span>
+    <span class="rc-pres-counter" id="rcPresCounter">1 / 1</span>
+    <button class="rc-pres-btn" id="rcPresPrev" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      <span class="rc-pres-btn-lbl">Prev</span>
+    </button>
+    <button class="rc-pres-btn primary" id="rcPresNext">
+      <span class="rc-pres-btn-lbl">Next</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+    <button class="rc-pres-btn danger" id="rcPresClose" title="Close (Esc)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      <span class="rc-pres-btn-lbl">Close</span>
+    </button>
+  </div>
+  <div class="rc-pres-canvas">
+    <div class="rc-pres-slides" id="rcPresSlides"></div>
+    <div class="rc-pres-dots" id="rcPresDots"></div>
+  </div>
+</div>
+
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/report-center.js?v=8"></script>
+<script>RC.init();</script>
+</body>
+</html>

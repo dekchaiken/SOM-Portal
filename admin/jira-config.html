@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jira Config — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/jira-config/jira-config.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="settings"></i> Jira Config</div>
+        <div class="page-sub">จัดการ Service Types, Categories, Issue Types, Custom Fields</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="../jira-templates.html" class="btn btn-ghost btn-sm">ไปที่ Jira Templates →</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="settings"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Jira Config</h1>
+          <p>จัดการ Service Types · Categories · Issue Types · Custom Fields ที่ใช้ใน Jira Templates</p>
+        </div>
+      </section>
+
+      <!-- ─── Section 1: Service Types ───────────────── -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <span class="card-title"><i data-icon="folder-open"></i> Service Types &amp; Sub Types</span>
+          <span class="badge badge-gray" style="font-size:10px">ต้นไม้ซ้ายมือใน Jira Templates</span>
+        </div>
+        <div class="card-body">
+          <p class="section-desc">
+            จัดหมวดหมู่ template เช่น <strong>Service Bank</strong> มีลูก GSB / KBANK / KTB<br>
+            SM Lead และ Admin เพิ่ม แก้ชื่อ ลบได้
+          </p>
+          <div id="st-list">
+            <div data-skel="list" data-rows="4"></div>
+          </div>
+          <div class="add-type-row">
+            <input type="text" class="form-control" id="new-type-name" placeholder="ชื่อ Service Type ใหม่ เช่น Service Payment">
+            <button class="btn btn-primary btn-sm" id="btn-add-type">＋ Add Service Type</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Section 2: Template Categories ─────────── -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <span class="card-title"><i data-icon="tag"></i> Template Categories</span>
+          <span class="badge badge-orange" style="font-size:10px">ไม่ส่งไป Jira — ใช้จัดหมวดใน app</span>
+        </div>
+        <div class="card-body">
+          <p class="section-desc">
+            ตัวเลือก dropdown <strong>Category</strong> ตอนสร้าง template เช่น Incident, Change, Problem, Request<br>
+            ใช้จัดกลุ่มภายใน — ไม่ถูกส่งไป Jira โดยตรง
+          </p>
+          <div class="config-items" id="cat-list"></div>
+          <div class="add-item-row">
+            <input type="text" class="form-control" id="new-cat-name" placeholder="เช่น Maintenance">
+            <button class="btn btn-primary btn-sm" data-add-kind="category">＋ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Section 3: Issue Types ──────────────────── -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <span class="card-title"><i data-icon="ticket"></i> Issue Types</span>
+          <span class="badge badge-blue" style="font-size:10px">ส่งไป Jira จริง — issuetype field</span>
+        </div>
+        <div class="card-body">
+          <p class="section-desc">
+            ตัวเลือก <strong>Issue Type</strong> ตอนสร้าง template ค่านี้จะถูกส่งไป Jira API ตรงๆ<br>
+            ต้องตรงกับ issue type จริงๆ ใน Jira project SMC เช่น Task, Bug, Story, Epic
+          </p>
+          <div class="config-items" id="it-list"></div>
+          <div class="add-item-row">
+            <input type="text" class="form-control" id="new-it-name" placeholder="เช่น Sub-task">
+            <button class="btn btn-primary btn-sm" data-add-kind="issue_type">＋ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Section 4: Custom Fields ───────────────── -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i data-icon="wrench"></i> Custom Fields</span>
+          <span class="badge badge-blue" style="font-size:10px">fields ที่แสดงใน form New Template</span>
+        </div>
+        <div class="card-body">
+          <p class="section-desc">
+            กำหนดได้ว่า form <strong>New Template</strong> จะมี field อะไรบ้าง เปิด/ปิด หรือเพิ่ม field ใหม่จาก Jira<br>
+            หา field ID ได้จาก Jira Console: เปิด Jira → F12 → Console → รัน:
+            <code style="display:block;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-top:8px;font-size:11px;color:var(--text);line-height:1.6;word-break:break-all">fetch('/rest/api/3/field').then(r=>r.json()).then(fields=>{const c=fields.filter(f=>f.custom);console.log(JSON.stringify(c.map(f=>({id:f.id,name:f.name})),null,2))})</code>
+          </p>
+
+          <div style="overflow-x:auto">
+            <table class="cf-table" id="cf-table">
+              <thead>
+                <tr>
+                  <th style="width:28px"></th>
+                  <th>Field ID (Jira)</th>
+                  <th>Label ใน Form</th>
+                  <th>Placeholder</th>
+                  <th>Type</th>
+                  <th style="width:80px">เปิด/ปิด</th>
+                  <th style="width:80px">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="cf-tbody">
+                <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted)">
+                  <div class="spinner" style="margin:0 auto 8px"></div> Loading...
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Add new custom field form -->
+          <div class="add-cf-form">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px">
+              ＋ Add Custom Field
+            </div>
+            <div class="add-cf-grid">
+              <div class="form-group" style="margin:0">
+                <label class="form-label" style="font-size:11px">Field ID <span style="color:var(--danger)">*</span></label>
+                <input type="text" class="form-control" id="cf-new-fieldid" placeholder="customfield_12345">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label" style="font-size:11px">Label ใน Form <span style="color:var(--danger)">*</span></label>
+                <input type="text" class="form-control" id="cf-new-label" placeholder="e.g. Priority Level">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label" style="font-size:11px">Placeholder</label>
+                <input type="text" class="form-control" id="cf-new-placeholder" placeholder="e.g. High">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label" style="font-size:11px">Type</label>
+                <select class="form-control" id="cf-new-type">
+                  <option value="text">Text</option>
+                  <option value="fault_start">Fault Start (datetime)</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <button class="btn btn-primary btn-sm" id="btn-add-cf">＋ Add Field</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Subtype modal (Add / Edit sub type) ── -->
+<div class="modal-overlay" id="subtype-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <span class="modal-title" id="sub-modal-title">เพิ่ม Sub Type</span>
+      <button class="btn-close" id="btn-close-subtype"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="sub-edit-id">
+      <input type="hidden" id="sub-edit-parent">
+      <div class="form-group">
+        <label class="form-label">ชื่อ Sub Type <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="sub-name" class="form-control" placeholder="เช่น GSB, KBANK, OTP">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-subtype">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-subtype">
+        <span id="sub-save-text">Save</span>
+        <span id="sub-save-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Service modal (Manage services inside a subtype) ── -->
+<div class="modal-overlay" id="service-modal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <div>
+        <span class="modal-title"><i data-icon="mail"></i> Services — </span><span id="svc-modal-subtype-name" style="color:var(--orange)"></span>
+      </div>
+      <button class="btn-close" id="btn-close-service"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" style="max-height:65vh;overflow-y:auto">
+      <input type="hidden" id="svc-parent-id">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
+        แต่ละ Service เก็บ <strong>Email To</strong> (ส่งถึงคู่ค้า) และ <strong>Email CC</strong> (ทีมภายใน) — ดึงไปใช้ใน Send Email อัตโนมัติ
+      </p>
+
+      <!-- Services list -->
+      <div id="svc-list"></div>
+
+      <!-- Inline add/edit form -->
+      <div id="svc-form" class="svc-inline-form" style="display:none">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px" id="svc-form-title">เพิ่ม Service</div>
+        <input type="hidden" id="svc-edit-id">
+        <div class="form-group">
+          <label class="form-label">ชื่อ Service <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="svc-name" class="form-control" placeholder="เช่น TopupMobile, TopupEwallet">
+        </div>
+        <div class="form-group">
+          <label class="form-label">
+            Email To <span style="color:var(--danger)">*</span>
+            <span style="font-weight:400;color:var(--text-muted)"> — Enter หรือ , เพื่อเพิ่ม</span>
+          </label>
+          <div class="sub-chip-field" id="svc-to-field" onclick="document.getElementById('svc-to-input').focus()">
+            <input type="text" id="svc-to-input" placeholder="to@partner.com" autocomplete="off">
+          </div>
+          <div class="form-hint">Email ที่จะถูกใส่ใน "ถึง" เมื่อส่งเมลจาก Send Email</div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">
+            Email CC
+            <span style="font-weight:400;color:var(--text-muted)"> — Enter หรือ , เพื่อเพิ่ม</span>
+          </label>
+          <div class="sub-chip-field" id="svc-cc-field" onclick="document.getElementById('svc-cc-input').focus()">
+            <input type="text" id="svc-cc-input" placeholder="cc@company.com" autocomplete="off">
+          </div>
+          <div class="form-hint">Email ที่จะถูกใส่ใน "CC" เมื่อส่งเมลจาก Send Email</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn btn-ghost btn-sm" id="btn-cancel-svc-form">Cancel</button>
+          <button class="btn btn-primary btn-sm" id="btn-save-svc">
+            <span id="svc-save-text">Save</span>
+            <span id="svc-save-spin" class="spinner hidden" style="width:11px;height:11px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-primary btn-sm" id="btn-add-service">＋ เพิ่ม Service</button>
+      <button class="btn btn-ghost" id="btn-close-service-footer">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit modal (category / issue_type / custom_field) ── -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <span class="modal-title" id="edit-modal-title">Edit</span>
+      <button class="btn-close" id="btn-close-edit"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id">
+      <input type="hidden" id="edit-kind">
+
+      <!-- Simple name field (category / issue_type / service type/subtype) -->
+      <div id="edit-simple-group" class="form-group">
+        <label class="form-label">Name <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="edit-name" class="form-control">
+      </div>
+
+      <!-- Custom field fields -->
+      <div id="edit-cf-group" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Field ID (Jira) <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="edit-cf-fieldid" class="form-control" readonly
+                 style="background:var(--bg);color:var(--text-muted)"
+                 title="Field ID ไม่สามารถเปลี่ยนได้ ต้องลบแล้วสร้างใหม่">
+          <div class="form-hint">Field ID ไม่สามารถแก้ไขได้ (ต้องลบแล้วเพิ่มใหม่)</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Label ใน Form <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="edit-cf-label" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Placeholder</label>
+          <input type="text" id="edit-cf-placeholder" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Field Type</label>
+          <select id="edit-cf-type" class="form-control">
+            <option value="text">Text input</option>
+            <option value="fault_start">Fault Start (auto/manual datetime)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-edit">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-edit">
+        <span id="edit-save-text">Save</span>
+        <span id="edit-save-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/jira-config/jira-config.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leave Approval — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+  /* ═══════════════════════════════════════════════════════
+     LEAVE APPROVAL — Modern Admin Panel
+  ═══════════════════════════════════════════════════════ */
+
+  .leave-page { display: flex; flex-direction: column; gap: 24px; }
+
+  /* Header with filters */
+  .la-header {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    padding: 16px 20px; border-radius: 13px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  }
+  .la-header-left { display: flex; flex-direction: column; gap: 3px; }
+  .la-title { font-size: 18px; font-weight: 800; color: var(--text); }
+  .la-sub { font-size: 11px; color: var(--text-muted); }
+  .la-header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  /* Filter buttons */
+  .la-filter {
+    background: var(--bg); border: 1.5px solid var(--border);
+    border-radius: 9px; padding: 7px 13px; font-size: 11px; font-weight: 700;
+    color: var(--text-muted); cursor: pointer; transition: all .16s;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .la-filter:hover { border-color: rgba(255,255,255,.15); }
+  .la-filter.active {
+    border-color: var(--orange); background: rgba(242,100,25,.12);
+    color: var(--orange);
+  }
+
+  /* Stats pills */
+  .la-stat {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 9px;
+    background: var(--bg); border: 1px solid var(--border);
+    font-size: 11px; font-weight: 600;
+  }
+  .la-stat strong { color: var(--text); }
+  .la-stat .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(245,158,11,.2); color: #fbbf24;
+    font-size: 9px; font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  /* Leave request card */
+  .lr-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; transition: all .16s;
+  }
+  .lr-card:hover { border-color: var(--orange); box-shadow: 0 4px 12px rgba(242,100,25,.08); }
+  .lr-card.urgent { border-color: #ef4444; background: linear-gradient(135deg, rgba(239,68,68,.03) 0%, transparent 100%); }
+
+  .lr-card-head {
+    display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;
+  }
+  .lr-card-ava {
+    width: 42px; height: 42px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 900; color: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,.15);
+    flex-shrink: 0;
+  }
+  .lr-card-info { flex: 1; min-width: 0; }
+  .lr-card-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .lr-card-meta {
+    font-size: 11px; color: var(--text-muted); display: flex; align-items: center;
+    gap: 6px; flex-wrap: wrap; line-height: 1.5;
+  }
+
+  .lr-card-status {
+    font-size: 9px; font-weight: 800; letter-spacing: .07em;
+    padding: 4px 11px; border-radius: 7px;
+    text-transform: uppercase;
+  }
+  .lr-status-pending {
+    background: rgba(245,158,11,.13); color: #fbbf24;
+    border: 1px solid rgba(245,158,11,.25);
+  }
+
+  /* Leave details */
+  .lr-details {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .lr-detail-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 11px;
+  }
+  .lr-detail-label { color: var(--text-muted); font-weight: 600; min-width: 70px; }
+  .lr-detail-val { color: var(--text); font-weight: 700; }
+
+  .lr-reason {
+    font-size: 11.5px; color: var(--text);
+    background: var(--bg); padding: 12px 14px;
+    border-radius: 9px; border: 1px solid var(--border);
+    font-style: italic; line-height: 1.6;
+    margin-bottom: 14px;
+  }
+  .lr-reason::before {
+    content: '💬 ';
+    font-style: normal;
+    margin-right: 4px;
+  }
+
+  /* Review section */
+  .lr-review { margin-bottom: 14px; }
+  .lr-review-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 7px; }
+  .lr-review-note {
+    width: 100%; background: var(--bg); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 11px 13px; font-size: 12px;
+    color: var(--text); font-family: var(--font); outline: none; resize: vertical;
+    min-height: 70px; transition: all .16s;
+  }
+  .lr-review-note:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(242,100,25,.1); }
+
+  /* Actions */
+  .lr-actions {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .btn-approval {
+    flex: 1; padding: 10px 16px; border-radius: 9px;
+    font-size: 11px; font-weight: 700; cursor: pointer;
+    border: 1.5px solid; font-family: var(--font);
+    transition: all .16s; text-transform: uppercase; letter-spacing: .04em;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-app-reject {
+    background: rgba(239,68,68,.12); color: #f87171;
+    border-color: rgba(239,68,68,.25);
+  }
+  .btn-app-reject:hover {
+    background: rgba(239,68,68,.2); border-color: rgba(239,68,68,.35);
+    box-shadow: 0 4px 12px rgba(239,68,68,.15);
+  }
+  .btn-app-approve {
+    background: rgba(34,197,94,.12); color: #86efac;
+    border-color: rgba(34,197,94,.25);
+  }
+  .btn-app-approve:hover {
+    background: rgba(34,197,94,.2); border-color: rgba(34,197,94,.35);
+    box-shadow: 0 4px 12px rgba(34,197,94,.15);
+  }
+
+  /* Leave cards grid */
+  .lr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 14px;
+  }
+
+  /* Duration badge */
+  .dur-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 9px; font-weight: 800; letter-spacing: .04em;
+    padding: 3px 9px; border-radius: 6px; text-transform: uppercase;
+  }
+  .dur-full { background: rgba(59,130,246,.12); color: #93c5fd; border: 1px solid rgba(59,130,246,.2); }
+  .dur-half { background: rgba(168,85,247,.12); color: #d8b4fe; border: 1px solid rgba(168,85,247,.2); }
+
+  /* Reviewer info */
+  .lr-reviewer {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; color: var(--text-muted); margin-top: 8px;
+    padding-top: 8px; border-top: 1px solid var(--border);
+  }
+  .lr-reviewer strong { color: var(--text); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .empty-state-sub { font-size: 12px; }
+
+  /* Force leave modal */
+  .fl-modal-bg {
+    position: fixed; inset: 0; z-index: 9000;
+    background: rgba(0,0,0,.45); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .22s;
+  }
+  .fl-modal-bg.open { opacity: 1; pointer-events: all; }
+  .fl-modal {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 16px; width: 520px; max-width: 96vw;
+    max-height: 90vh; display: flex; flex-direction: column;
+    box-shadow: 0 32px 80px rgba(0,0,0,.25);
+    animation: flSlideUp .26s cubic-bezier(0.34,1.56,0.64,1);
+    overflow: hidden;
+  }
+  @keyframes flSlideUp {
+    from { transform: translateY(18px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .fl-hd {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px; border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, rgba(242,100,25,.06) 0%, transparent 100%);
+    flex-shrink: 0;
+  }
+  .fl-hd-title { font-size: 15px; font-weight: 800; color: var(--text); }
+  .fl-hd-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .fl-close {
+    background: none; border: none; font-size: 18px; color: var(--text-muted);
+    cursor: pointer; padding: 4px; border-radius: 8px; transition: all .13s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fl-close:hover { color: var(--text); background: var(--bg); }
+  .fl-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+  .fl-foot {
+    padding: 14px 22px; border-top: 1px solid var(--border);
+    background: var(--bg); display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+    flex-shrink: 0;
+  }
+
+  /* Force-leave form elements */
+  .fl-label {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 6px; display: block;
+  }
+  .fl-select, .fl-input, .fl-ta {
+    width: 100%; background: var(--bg); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 10px 13px; font-size: 13px;
+    color: var(--text); font-family: var(--font); outline: none; transition: all .16s;
+  }
+  .fl-select:focus, .fl-input:focus, .fl-ta:focus {
+    border-color: var(--orange); box-shadow: 0 0 0 3px rgba(242,100,25,.1);
+  }
+  .fl-ta { resize: vertical; min-height: 64px; }
+  .fl-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .fl-type-row { display: flex; gap: 10px; }
+  .fl-type-btn {
+    flex: 1; padding: 12px; border-radius: 10px; cursor: pointer;
+    border: 1.5px solid var(--border); background: var(--bg);
+    font-family: var(--font); font-size: 12px; font-weight: 700;
+    color: var(--text-muted); transition: all .16s; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .fl-type-btn .fl-icon { font-size: 22px; }
+  .fl-type-btn.active {
+    border-color: var(--orange); background: rgba(242,100,25,.08); color: var(--orange);
+    box-shadow: 0 4px 12px rgba(242,100,25,.15);
+  }
+  .fl-dur-row { display: flex; gap: 8px; }
+  .fl-dur-btn {
+    flex: 1; padding: 9px 12px; border-radius: 9px; cursor: pointer;
+    border: 1.5px solid var(--border); background: var(--bg);
+    font-family: var(--font); font-size: 11px; font-weight: 700;
+    color: var(--text-muted); transition: all .16s; text-align: center;
+  }
+  .fl-dur-btn.active { border-color: #8b5cf6; background: rgba(139,92,246,.1); color: #c4b5fd; }
+  .fl-period-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    padding: 12px; background: rgba(139,92,246,.05);
+    border: 1px solid rgba(139,92,246,.15); border-radius: 10px;
+  }
+  .fl-period-btn {
+    padding: 8px; border-radius: 8px; cursor: pointer;
+    border: 1.5px solid var(--border); background: var(--bg);
+    font-family: var(--font); font-size: 11px; font-weight: 600;
+    color: var(--text-muted); transition: all .16s; text-align: center;
+  }
+  .fl-period-btn.active { border-color: #8b5cf6; background: rgba(139,92,246,.12); color: #c4b5fd; }
+
+  /* Loading skeleton */
+  @keyframes skeleton-loading {
+    0% { background-position: -468px 0; }
+    100% { background-position: 468px 0; }
+  }
+  .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,.05), rgba(255,255,255,.1), rgba(255,255,255,.05));
+    background-size: 200% 100%;
+    background-position: 0 0;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 8px;
+  }
+
+  /* Edit/Cancel buttons */
+  .lr-admin-actions {
+    display: flex; gap: 8px; margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-edit, .btn-cancel-leave {
+    flex: 1; padding: 8px 14px; border-radius: 9px;
+    font-size: 10px; font-weight: 700; cursor: pointer;
+    border: 1.5px solid; font-family: var(--font);
+    transition: all .16s; text-transform: uppercase; letter-spacing: .04em;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-edit {
+    background: rgba(59,130,246,.12); color: #93c5fd;
+    border-color: rgba(59,130,246,.25);
+  }
+  .btn-edit:hover {
+    background: rgba(59,130,246,.2); border-color: rgba(59,130,246,.35);
+    box-shadow: 0 4px 12px rgba(59,130,246,.15);
+  }
+  .btn-cancel-leave {
+    background: rgba(239,68,68,.12); color: #f87171;
+    border-color: rgba(239,68,68,.25);
+  }
+  .btn-cancel-leave:hover {
+    background: rgba(239,68,68,.2); border-color: rgba(239,68,68,.35);
+    box-shadow: 0 4px 12px rgba(239,68,68,.15);
+  }
+
+  /* Edited badge */
+  .edited-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 8px; font-weight: 800; letter-spacing: .06em;
+    padding: 3px 8px; border-radius: 6px; text-transform: uppercase;
+    background: rgba(59,130,246,.12); color: #93c5fd;
+    border: 1px solid rgba(59,130,246,.2);
+    cursor: help;
+  }
+
+  /* Quota impact display */
+  .quota-impact {
+    background: rgba(242,100,25,.08); border: 1.5px solid rgba(242,100,25,.15);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
+    font-size: 11px; color: var(--text);
+  }
+  .quota-impact-label { font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+  .quota-impact-row { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+  .quota-impact-val { font-weight: 800; color: var(--orange); }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="clipboard"></i> Leave Approval</div>
+        <div class="page-sub">จัดการและอนุมัติคำขอลา</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary btn-sm" onclick="openForceLeave()" style="font-size:11px;gap:6px">+ สร้างการลา</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadAll()" style="font-size:11px">↺</button>
+      </div>
+    </header>
+    <nav id="admin-nav-mount"></nav>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="clipboard"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Leave Approval</h1>
+          <p>จัดการและอนุมัติคำขอลา · ดูปฏิทินทีม · sync กับ holiday plans และ schedule</p>
+        </div>
+      </section>
+
+      <div class="leave-page">
+
+        <!-- Tab and filters -->
+        <div class="la-header">
+          <div class="la-header-left">
+            <div class="la-title"><i data-icon="clipboard"></i> Leave Requests</div>
+            <div class="la-sub">รอการอนุมัติและการจัดการ</div>
+          </div>
+          <div class="la-header-right">
+            <div class="la-stat">
+              <span class="badge" id="pending-count">0</span>
+              <span>รอพิจารณา</span>
+            </div>
+            <button class="la-filter active" onclick="filterLeaves('pending')">รอพิจารณา</button>
+            <button class="la-filter" onclick="filterLeaves('approved')">อนุมัติแล้ว</button>
+            <button class="la-filter" onclick="filterLeaves('rejected')">ปฏิเสธ</button>
+            <button class="la-filter" onclick="filterLeaves('all')">ทั้งหมด</button>
+          </div>
+        </div>
+
+        <!-- Leave list -->
+        <div id="leave-list"></div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ── Force Leave Modal ─────────────────────────────────────────────────── -->
+<div class="fl-modal-bg" id="fl-modal">
+  <div class="fl-modal">
+    <div class="fl-hd">
+      <div>
+        <div class="fl-hd-title">+ สร้างการลา (Admin)</div>
+        <div class="fl-hd-sub">บังคับใช้วันลาให้สมาชิก — อนุมัติทันที</div>
+      </div>
+      <button class="fl-close" onclick="closeForceLeave()"><i data-icon="x"></i></button>
+    </div>
+    <div class="fl-body">
+
+      <!-- User -->
+      <div>
+        <label class="fl-label">สมาชิก <span style="color:#ef4444">*</span></label>
+        <select class="fl-select" id="fl-user">
+          <option value="">— เลือกสมาชิก —</option>
+        </select>
+      </div>
+
+      <!-- Leave type -->
+      <div>
+        <label class="fl-label">ประเภทการลา</label>
+        <div class="fl-type-row">
+          <button class="fl-type-btn active" id="fl-t-vacation" onclick="setFlType('vacation')">
+            <span class="fl-icon"><i data-icon="umbrella-beach"></i></span>Vacation / พักร้อน
+          </button>
+          <button class="fl-type-btn" id="fl-t-sick" onclick="setFlType('sick')">
+            <span class="fl-icon"><i data-icon="thermometer"></i></span>Sick Leave / ลาป่วย
+          </button>
+        </div>
+      </div>
+
+      <!-- Dates -->
+      <div class="fl-grid2">
+        <div>
+          <label class="fl-label">วันที่เริ่ม <span style="color:#ef4444">*</span></label>
+          <input class="fl-input" type="date" id="fl-start">
+        </div>
+        <div>
+          <label class="fl-label">วันที่สิ้นสุด <span style="color:#ef4444">*</span></label>
+          <input class="fl-input" type="date" id="fl-end">
+        </div>
+      </div>
+
+      <!-- Duration -->
+      <div>
+        <label class="fl-label">จำนวนวัน</label>
+        <div class="fl-dur-row">
+          <button class="fl-dur-btn active" id="fl-d-full" onclick="setFlDur('full')">เต็มวัน</button>
+          <button class="fl-dur-btn" id="fl-d-half" onclick="setFlDur('half')">ครึ่งวัน</button>
+        </div>
+      </div>
+
+      <!-- Period (half-day only) -->
+      <div id="fl-period-wrap" style="display:none">
+        <label class="fl-label">ช่วงเวลา</label>
+        <div class="fl-period-row">
+          <button class="fl-period-btn active" id="fl-p-morning" onclick="setFlPeriod('morning')"><i data-icon="sunrise"></i> เช้า (08:00–12:00)</button>
+          <button class="fl-period-btn" id="fl-p-afternoon" onclick="setFlPeriod('afternoon')"><i data-icon="sunrise"></i> บ่าย (13:00–17:00)</button>
+        </div>
+      </div>
+
+      <!-- Reason -->
+      <div>
+        <label class="fl-label">เหตุผล</label>
+        <textarea class="fl-ta" id="fl-reason" placeholder="เหตุผลประกอบ (optional)..."></textarea>
+      </div>
+
+    </div>
+    <div class="fl-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeForceLeave()" style="font-size:11px">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" onclick="submitForceLeave()" id="fl-submit" style="font-size:11px;font-weight:700"><i data-icon="check"></i> อนุมัติและสร้าง</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Leave Modal ──────────────────────────────────────────────────── -->
+<div class="fl-modal-bg" id="edit-modal">
+  <div class="fl-modal">
+    <div class="fl-hd">
+      <div>
+        <div class="fl-hd-title"><i data-icon="pencil"></i> แก้ไขการลา</div>
+        <div class="fl-hd-sub" id="edit-modal-sub">แก้ไขข้อมูลการลาที่อนุมัติแล้ว</div>
+      </div>
+      <button class="fl-close" onclick="closeEditModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="fl-body">
+
+      <!-- Quota impact (shown for vacation type) -->
+      <div id="edit-quota-impact" style="display:none" class="quota-impact">
+        <div class="quota-impact-label">ผลกระทบต่อวันลาพักร้อน</div>
+        <div class="quota-impact-row">
+          <span>วันลาเดิม:</span>
+          <span id="edit-old-days" class="quota-impact-val">—</span>
+        </div>
+        <div class="quota-impact-row">
+          <span>วันลาใหม่:</span>
+          <span id="edit-new-days" class="quota-impact-val">—</span>
+        </div>
+        <div class="quota-impact-row" style="border-top:1px solid rgba(242,100,25,.2);margin-top:8px;padding-top:8px">
+          <span style="font-weight:800">การเปลี่ยนแปลง:</span>
+          <span id="edit-quota-change" class="quota-impact-val">—</span>
+        </div>
+      </div>
+
+      <!-- Leave type -->
+      <div>
+        <label class="fl-label">ประเภทการลา</label>
+        <div class="fl-type-row">
+          <button class="fl-type-btn" id="edit-t-vacation" onclick="setEditType('vacation')">
+            <span class="fl-icon"><i data-icon="umbrella-beach"></i></span>Vacation / พักร้อน
+          </button>
+          <button class="fl-type-btn" id="edit-t-sick" onclick="setEditType('sick')">
+            <span class="fl-icon"><i data-icon="thermometer"></i></span>Sick Leave / ลาป่วย
+          </button>
+        </div>
+      </div>
+
+      <!-- Dates -->
+      <div class="fl-grid2">
+        <div>
+          <label class="fl-label">วันที่เริ่ม <span style="color:#ef4444">*</span></label>
+          <input class="fl-input" type="date" id="edit-start" onchange="updateEditQuotaImpact()">
+        </div>
+        <div>
+          <label class="fl-label">วันที่สิ้นสุด <span style="color:#ef4444">*</span></label>
+          <input class="fl-input" type="date" id="edit-end" onchange="updateEditQuotaImpact()">
+        </div>
+      </div>
+
+      <!-- Duration -->
+      <div>
+        <label class="fl-label">จำนวนวัน</label>
+        <div class="fl-dur-row">
+          <button class="fl-dur-btn" id="edit-d-full" onclick="setEditDur('full')">เต็มวัน</button>
+          <button class="fl-dur-btn" id="edit-d-half" onclick="setEditDur('half')">ครึ่งวัน</button>
+        </div>
+      </div>
+
+      <!-- Period (half-day only) -->
+      <div id="edit-period-wrap" style="display:none">
+        <label class="fl-label">ช่วงเวลา</label>
+        <div class="fl-period-row">
+          <button class="fl-period-btn" id="edit-p-morning" onclick="setEditPeriod('morning')"><i data-icon="sunrise"></i> เช้า (08:00–12:00)</button>
+          <button class="fl-period-btn" id="edit-p-afternoon" onclick="setEditPeriod('afternoon')"><i data-icon="sunrise"></i> บ่าย (13:00–17:00)</button>
+        </div>
+      </div>
+
+      <!-- Reason -->
+      <div>
+        <label class="fl-label">เหตุผล</label>
+        <textarea class="fl-ta" id="edit-reason" placeholder="เหตุผลการลา..."></textarea>
+      </div>
+
+      <!-- Edit reason -->
+      <div>
+        <label class="fl-label">เหตุผลในการแก้ไข <span style="color:#ef4444">*</span></label>
+        <textarea class="fl-ta" id="edit-edit-reason" placeholder="ระบุเหตุผลที่ต้องแก้ไขการลา..."></textarea>
+      </div>
+
+    </div>
+    <div class="fl-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeEditModal()" style="font-size:11px">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" onclick="submitEditLeave()" id="edit-submit" style="font-size:11px;font-weight:700"><i data-icon="save"></i> บันทึกการแก้ไข</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Cancel Leave Modal ────────────────────────────────────────────────── -->
+<div class="fl-modal-bg" id="cancel-modal">
+  <div class="fl-modal" style="width:480px">
+    <div class="fl-hd">
+      <div>
+        <div class="fl-hd-title"><i data-icon="alert-triangle"></i> ยกเลิกการลา</div>
+        <div class="fl-hd-sub">การดำเนินการนี้ไม่สามารถย้อนกลับได้</div>
+      </div>
+      <button class="fl-close" onclick="closeCancelModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="fl-body">
+
+      <!-- Leave summary -->
+      <div class="lr-details">
+        <div class="lr-detail-row">
+          <span class="lr-detail-label">พนักงาน:</span>
+          <span class="lr-detail-val" id="cancel-user-name">—</span>
+        </div>
+        <div class="lr-detail-row">
+          <span class="lr-detail-label">ประเภท:</span>
+          <span class="lr-detail-val" id="cancel-type">—</span>
+        </div>
+        <div class="lr-detail-row">
+          <span class="lr-detail-label">วันที่:</span>
+          <span class="lr-detail-val" id="cancel-dates">—</span>
+        </div>
+        <div class="lr-detail-row">
+          <span class="lr-detail-label">จำนวน:</span>
+          <span class="lr-detail-val" id="cancel-days">—</span>
+        </div>
+      </div>
+
+      <!-- Quota restoration info -->
+      <div id="cancel-quota-info" style="display:none" class="quota-impact">
+        <div class="quota-impact-label"><i data-icon="wallet"></i> การคืนวันลาพักร้อน</div>
+        <div class="quota-impact-row">
+          <span>จะคืนให้พนักงาน:</span>
+          <span id="cancel-quota-restore" class="quota-impact-val">—</span>
+        </div>
+      </div>
+
+      <!-- Cancel reason -->
+      <div>
+        <label class="fl-label">เหตุผลในการยกเลิก <span style="color:#ef4444">*</span></label>
+        <textarea class="fl-ta" id="cancel-reason" placeholder="ระบุเหตุผลที่ต้องยกเลิกการลา..."></textarea>
+      </div>
+
+      <!-- Warning -->
+      <div style="background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.15);border-radius:10px;padding:12px 14px;font-size:11px;color:#f87171;display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px"><i data-icon="alert-triangle"></i></span>
+        <span>การยกเลิกจะลบข้อมูลออกจากตารางเวรและไม่สามารถกู้คืนได้</span>
+      </div>
+
+    </div>
+    <div class="fl-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeCancelModal()" style="font-size:11px">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" onclick="submitCancelLeave()" id="cancel-submit" style="font-size:11px;font-weight:700;background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.35);color:#f87171"><i data-icon="trash"></i> ยืนยันการยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) { window.location.href = '../'; }
+
+Layout.render('admin-leave-approval');
+
+const MONTH_TH = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function fmtDateInner(ds) {
+  if (!ds) return '—';
+  const [y, m, d] = ds.split('-');
+  return `${parseInt(d)} ${MONTH_TH[parseInt(m)]} ${parseInt(y)+543}`;
+}
+
+let leaves = [];
+let currentFilter = 'pending';
+let colors = [
+  '#f26419','#3b82f6','#22c55e','#f59e0b','#8b5cf6',
+  '#ec4899','#14b8a6','#ef4444','#06b6d4','#a855f7',
+];
+let userAvatarMap = {}; // { userId: avatar_url }
+
+// Load avatars from users
+async function loadAvatars() {
+  try {
+    const res = await API.users.avatars();
+    if (res?.ok) {
+      const users = res.data.data || [];
+      users.forEach(u => {
+        userAvatarMap[u.id] = u.avatar_url || '';
+      });
+    }
+  } catch (e) {
+    console.warn('Failed to load avatars:', e);
+  }
+}
+
+// Load all
+async function loadAll() {
+  await loadAvatars(); // Load avatars first
+  const res = await API.leave.list({ admin: true });
+  leaves = res?.ok ? (res.data.data || []) : [];
+  renderLeaves();
+  updateStats();
+}
+
+function updateStats() {
+  const pending = leaves.filter(l => l.status === 'pending').length;
+  document.getElementById('pending-count').textContent = pending;
+}
+
+function filterLeaves(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.la-filter').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  renderLeaves();
+}
+
+function renderLeaves() {
+  const el = document.getElementById('leave-list');
+  let filtered = leaves;
+
+  if (currentFilter !== 'all') {
+    filtered = leaves.filter(l => l.status === currentFilter);
+  }
+
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-state-icon">${currentFilter === 'pending' ? '✓' : '📋'}</div>
+      <div class="empty-state-title">ไม่มีรายการ</div>
+      <div class="empty-state-sub">
+        ${currentFilter === 'pending' ? 'ไม่มีคำขอที่รอพิจารณา' : 'ไม่มีรายการในหมวดนี้'}
+      </div>
+    </div>`;
+    return;
+  }
+
+  function fmtDate(ds) {
+    if (!ds) return '—';
+    const [y, m, d] = ds.split('-');
+    return `${parseInt(d)} ${MONTH_TH[parseInt(m)]} ${parseInt(y)+543}`;
+  }
+  function timeAgo(ts) {
+    if (!ts) return '';
+    const hours = Math.floor((Date.now() - new Date(ts)) / 3600000);
+    if (hours < 1) return 'เมื่อสักครู่';
+    if (hours < 24) return `${hours} ชั่วโมงที่แล้ว`;
+    return `${Math.floor(hours/24)} วันที่แล้ว`;
+  }
+
+  el.innerHTML = `<div class="lr-grid">${filtered.map(req => {
+    const typeLabel = req.type === 'vacation' ? 'Vacation / พักร้อน' : 'Sick Leave / ลาป่วย';
+    const typeIcon  = req.type === 'vacation' ? '🏖' : '🤒';
+    const totalDays = leaveDayCount(req);
+    const userIdx = (req.user_id || '').charCodeAt(0) % colors.length;
+    const bgColor = colors[userIdx];
+
+    const durLabel = req.duration === 'half'
+      ? (req.period === 'afternoon' ? 'ครึ่งวันบ่าย' : 'ครึ่งวันเช้า')
+      : 'เต็มวัน';
+    const durClass = req.duration === 'half' ? 'dur-half' : 'dur-full';
+
+    let statusHtml = '';
+    if (req.status === 'pending') {
+      statusHtml = `<span class="lr-card-status lr-status-pending">⏳ รอพิจารณา</span>`;
+    } else if (req.status === 'approved') {
+      statusHtml = `<span class="lr-card-status" style="background:rgba(34,197,94,.13);color:#86efac;border:1px solid rgba(34,197,94,.25)">✓ อนุมัติแล้ว</span>`;
+    } else {
+      statusHtml = `<span class="lr-card-status" style="background:rgba(239,68,68,.13);color:#f87171;border:1px solid rgba(239,68,68,.25)">✕ ปฏิเสธ</span>`;
+    }
+
+    const reviewerHtml = req.status !== 'pending' && req.reviewed_by ? `
+      <div class="lr-reviewer">
+        <span>พิจารณาโดย</span>
+        <strong>${req.reviewed_by}</strong>
+        ${req.reviewed_at ? `<span>· ${timeAgo(req.reviewed_at)}</span>` : ''}
+      </div>` : '';
+
+    const urgent = req.status === 'pending' ? 'urgent' : '';
+    
+    // Check if edited
+    const hasAuditLog = req.audit_log && req.audit_log.length > 0;
+    const editedBadge = hasAuditLog ? `<span class="edited-badge" title="แก้ไขแล้ว ${req.audit_log.length} ครั้ง">✏️ แก้ไขแล้ว</span>` : '';
+    
+    // Get avatar from map (for old requests) or from request data (for new requests)
+    const avatarUrl = req.avatar_url || userAvatarMap[req.user_id] || '';
+    
+    return `<div class="lr-card ${urgent}">
+      <div class="lr-card-head">
+        <div class="lr-card-ava" style="background:${bgColor}">
+          ${avatarUrl
+            ? `<img src="${avatarUrl}" alt="${req.user_name}" style="width:100%;height:100%;object-fit:cover;border-radius:11px" onerror="this.style.display='none';this.parentElement.textContent='${(req.user_name || '?').charAt(0).toUpperCase()}'">`
+            : (req.user_name || '?').charAt(0).toUpperCase()
+          }
+        </div>
+        <div class="lr-card-info">
+          <div class="lr-card-name">${req.user_name || 'Unknown'} ${editedBadge}</div>
+          <div class="lr-card-meta">
+            <span>${typeIcon} ${typeLabel}</span>
+            <span>•</span>
+            <span>${timeAgo(req.requested_at)}</span>
+          </div>
+        </div>
+        ${statusHtml}
+      </div>
+
+      <div class="lr-details">
+        <div class="lr-detail-row">
+          <span class="lr-detail-label">วันที่:</span>
+          <span class="lr-detail-val">${fmtLeaveDates(req)}${isNonConsecutive(req) ? ' <span style="font-size:9px;padding:2px 7px;border-radius:4px;background:rgba(99,102,241,.1);color:#6366f1;font-weight:700;vertical-align:middle">สลับวัน</span>' : ''}</span>
+        </div>
+        <div class="lr-detail-row">
+          <span class="lr-detail-label">จำนวน:</span>
+          <span class="lr-detail-val" style="display:flex;align-items:center;gap:8px">
+            <strong>${totalDays} วัน</strong>
+            <span class="dur-badge ${durClass}">${durLabel}</span>
+          </span>
+        </div>
+      </div>
+
+      ${req.reason ? `<div class="lr-reason">"${req.reason}"</div>` : ''}
+
+      ${req.status === 'pending' ? `
+        <div class="lr-review">
+          <div class="lr-review-label">หมายเหตุประกอบการพิจารณา</div>
+          <textarea class="lr-review-note" id="note-${req.id}" placeholder="เหตุผลในการอนุมัติ/ปฏิเสธ..."></textarea>
+        </div>
+        <div class="lr-actions">
+          <button class="btn-approval btn-app-reject" onclick="doReview('${req.id}', 'rejected')">✕ ปฏิเสธ</button>
+          <button class="btn-approval btn-app-approve" onclick="doReview('${req.id}', 'approved')">✓ อนุมัติ</button>
+        </div>
+      ` : req.status === 'approved' ? `
+        ${req.review_note ? `
+          <div class="lr-review" style="margin-bottom:0">
+            <div class="lr-review-label">หมายเหตุ</div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 13px;font-size:11px;color:var(--text-muted);line-height:1.6">${req.review_note}</div>
+          </div>
+        ` : ''}
+        ${reviewerHtml}
+        <div class="lr-admin-actions">
+          <button class="btn-edit" onclick="openEditModal('${req.id}')">✏️ แก้ไข</button>
+          <button class="btn-cancel-leave" onclick="openCancelModal('${req.id}')">🗑️ ยกเลิก</button>
+        </div>
+      ` : `
+        ${req.review_note ? `
+          <div class="lr-review" style="margin-bottom:0">
+            <div class="lr-review-label">หมายเหตุ</div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 13px;font-size:11px;color:var(--text-muted);line-height:1.6">${req.review_note}</div>
+          </div>
+        ` : ''}
+        ${reviewerHtml}
+      `}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+async function doReview(id, status) {
+  const note = document.getElementById(`note-${id}`)?.value || '';
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = status === 'approved' ? '⏳ กำลังอนุมัติ...' : '⏳ กำลังปฏิเสธ...';
+
+  const res = await API.leave.review(id, { status, review_note: note });
+  btn.disabled = false;
+  btn.innerHTML = status === 'approved' ? '<i data-icon="check"></i> อนุมัติ' : '<i data-icon="x"></i> ปฏิเสธ';
+
+  if (!res?.ok) {
+    Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด');
+    return;
+  }
+
+  Toast.success(status === 'approved' ? 'อนุมัติแล้ว' : 'ปฏิเสธแล้ว');
+  loadAll();
+}
+
+// ── Force leave ──────────────────────────────────────────────────────────────
+let allUsers = [];
+let flType   = 'vacation';
+let flDur    = 'full';
+let flPeriod = 'morning';
+
+async function loadUsers() {
+  const res = await API.users.list();
+  allUsers = res?.ok ? (res.data.data || []) : [];
+  const sel = document.getElementById('fl-user');
+  sel.innerHTML = '<option value="">— เลือกสมาชิก —</option>' +
+    allUsers.map(u => `<option value="${u.id}">${u.name}${u.nickname ? ' (' + u.nickname + ')' : ''}</option>`).join('');
+}
+
+function openForceLeave() {
+  document.getElementById('fl-user').value   = '';
+  document.getElementById('fl-start').value  = '';
+  document.getElementById('fl-end').value    = '';
+  document.getElementById('fl-reason').value = '';
+  setFlType('vacation');
+  setFlDur('full');
+  setFlPeriod('morning');
+  document.getElementById('fl-modal').classList.add('open');
+}
+function closeForceLeave() {
+  document.getElementById('fl-modal').classList.remove('open');
+}
+document.getElementById('fl-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('fl-modal')) closeForceLeave();
+});
+
+function setFlType(t) {
+  flType = t;
+  document.getElementById('fl-t-vacation').classList.toggle('active', t === 'vacation');
+  document.getElementById('fl-t-sick').classList.toggle('active', t === 'sick');
+}
+function setFlDur(d) {
+  flDur = d;
+  document.getElementById('fl-d-full').classList.toggle('active', d === 'full');
+  document.getElementById('fl-d-half').classList.toggle('active', d === 'half');
+  document.getElementById('fl-period-wrap').style.display = d === 'half' ? '' : 'none';
+}
+function setFlPeriod(p) {
+  flPeriod = p;
+  document.getElementById('fl-p-morning').classList.toggle('active', p === 'morning');
+  document.getElementById('fl-p-afternoon').classList.toggle('active', p === 'afternoon');
+}
+
+async function submitForceLeave() {
+  const userId    = document.getElementById('fl-user').value;
+  const startDate = document.getElementById('fl-start').value;
+  const endDate   = document.getElementById('fl-end').value;
+  const reason    = document.getElementById('fl-reason').value.trim();
+
+  if (!userId)              { Toast.warning('กรุณาเลือกสมาชิก'); return; }
+  if (!startDate)           { Toast.warning('กรุณาระบุวันที่เริ่ม'); return; }
+  if (!endDate)             { Toast.warning('กรุณาระบุวันที่สิ้นสุด'); return; }
+  if (startDate > endDate)  { Toast.warning('วันที่เริ่มต้องไม่เกินวันสิ้นสุด'); return; }
+
+  const btn = document.getElementById('fl-submit');
+  btn.disabled    = true;
+  btn.textContent = '⏳ กำลังสร้าง...';
+
+  const res = await API.leave.submit({
+    for_user_id: userId,
+    type:        flType,
+    start_date:  startDate,
+    end_date:    endDate,
+    duration:    flDur,
+    period:      flDur === 'half' ? flPeriod : null,
+    reason,
+  });
+
+  btn.disabled    = false;
+  btn.innerHTML = '<i data-icon="check"></i> อนุมัติและสร้าง';
+
+  if (!res?.ok) { Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด'); return; }
+
+  Toast.success('สร้างการลาและอนุมัติแล้ว <i data-icon="check"></i>');
+  closeForceLeave();
+  loadAll();
+}
+
+loadAll();
+loadUsers();
+
+// ── Edit Leave ───────────────────────────────────────────────────────────────
+let editingLeave = null;
+let editType = 'vacation';
+let editDur = 'full';
+let editPeriod = 'morning';
+
+function openEditModal(leaveId) {
+  const leave = leaves.find(l => l.id === leaveId);
+  if (!leave) return;
+  
+  editingLeave = leave;
+  editType = leave.type;
+  editDur = leave.duration || 'full';
+  editPeriod = leave.period || 'morning';
+  
+  document.getElementById('edit-modal-sub').textContent = `แก้ไขการลาของ ${leave.user_name}`;
+  document.getElementById('edit-start').value = leave.start_date;
+  document.getElementById('edit-end').value = leave.end_date;
+  document.getElementById('edit-reason').value = leave.reason || '';
+  document.getElementById('edit-edit-reason').value = '';
+  
+  setEditType(editType);
+  setEditDur(editDur);
+  setEditPeriod(editPeriod);
+  updateEditQuotaImpact();
+  
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+  editingLeave = null;
+}
+
+document.getElementById('edit-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('edit-modal')) closeEditModal();
+});
+
+function setEditType(t) {
+  editType = t;
+  document.getElementById('edit-t-vacation').classList.toggle('active', t === 'vacation');
+  document.getElementById('edit-t-sick').classList.toggle('active', t === 'sick');
+  updateEditQuotaImpact();
+}
+
+function setEditDur(d) {
+  editDur = d;
+  document.getElementById('edit-d-full').classList.toggle('active', d === 'full');
+  document.getElementById('edit-d-half').classList.toggle('active', d === 'half');
+  document.getElementById('edit-period-wrap').style.display = d === 'half' ? '' : 'none';
+  updateEditQuotaImpact();
+}
+
+function setEditPeriod(p) {
+  editPeriod = p;
+  document.getElementById('edit-p-morning').classList.toggle('active', p === 'morning');
+  document.getElementById('edit-p-afternoon').classList.toggle('active', p === 'afternoon');
+}
+
+function calculateDays(startDate, endDate, duration) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const days = Math.round((end - start) / 86400000) + 1;
+  return duration === 'half' ? days * 0.5 : days;
+}
+
+// Supports dates[] (new) and legacy start_date/end_date
+function leaveDayCount(req, overrideDuration) {
+  const dur = overrideDuration ?? (req.duration || 'full');
+  const cnt = req.dates?.length || Math.max(1, Math.round((new Date(req.end_date) - new Date(req.start_date)) / 86400000) + 1);
+  return dur === 'half' ? cnt * 0.5 : cnt;
+}
+function fmtLeaveDates(req) {
+  if (req.dates && req.dates.length > 0) {
+    const sorted = [...req.dates].sort();
+    if (sorted.length === 1) return fmtDateInner(sorted[0]);
+    const isConsec = sorted.every((d, i) => i === 0 || (new Date(d) - new Date(sorted[i-1])) === 86400000);
+    if (isConsec) return `${fmtDateInner(sorted[0])} — ${fmtDateInner(sorted[sorted.length-1])}`;
+    return sorted.map(fmtDateInner).join(' · ');
+  }
+  if (!req.start_date) return '—';
+  return req.start_date === req.end_date ? fmtDateInner(req.start_date) : `${fmtDateInner(req.start_date)} — ${fmtDateInner(req.end_date)}`;
+}
+function isNonConsecutive(req) {
+  if (!req.dates || req.dates.length <= 1) return false;
+  const s = [...req.dates].sort();
+  return !s.every((d, i) => i === 0 || (new Date(d) - new Date(s[i-1])) === 86400000);
+}
+
+function updateEditQuotaImpact() {
+  if (!editingLeave) return;
+  
+  const oldDays = leaveDayCount(editingLeave);
+  const newStart = document.getElementById('edit-start').value;
+  const newEnd = document.getElementById('edit-end').value;
+  
+  if (!newStart || !newEnd) return;
+  
+  const newDays = calculateDays(newStart, newEnd, editDur);
+  
+  const oldType = editingLeave.type;
+  const newType = editType;
+  
+  let quotaChange = 0;
+  if (oldType === 'vacation' && newType === 'vacation') {
+    quotaChange = oldDays - newDays;
+  } else if (oldType === 'vacation' && newType === 'sick') {
+    quotaChange = oldDays;
+  } else if (oldType === 'sick' && newType === 'vacation') {
+    quotaChange = -newDays;
+  }
+  
+  const impactEl = document.getElementById('edit-quota-impact');
+  if (oldType === 'vacation' || newType === 'vacation') {
+    impactEl.style.display = '';
+    document.getElementById('edit-old-days').textContent = oldType === 'vacation' ? `${oldDays} วัน` : '0 วัน';
+    document.getElementById('edit-new-days').textContent = newType === 'vacation' ? `${newDays} วัน` : '0 วัน';
+    
+    const changeEl = document.getElementById('edit-quota-change');
+    if (quotaChange > 0) {
+      changeEl.textContent = `+${quotaChange} วัน (คืนโควต้า)`;
+      changeEl.style.color = '#86efac';
+    } else if (quotaChange < 0) {
+      changeEl.textContent = `${quotaChange} วัน (ใช้โควต้า)`;
+      changeEl.style.color = '#f87171';
+    } else {
+      changeEl.textContent = 'ไม่เปลี่ยนแปลง';
+      changeEl.style.color = '#93c5fd';
+    }
+  } else {
+    impactEl.style.display = 'none';
+  }
+}
+
+async function submitEditLeave() {
+  if (!editingLeave) return;
+  
+  const startDate = document.getElementById('edit-start').value;
+  const endDate = document.getElementById('edit-end').value;
+  const reason = document.getElementById('edit-reason').value.trim();
+  const editReason = document.getElementById('edit-edit-reason').value.trim();
+  
+  if (!startDate || !endDate) {
+    Toast.warning('กรุณาระบุวันที่เริ่มและวันที่สิ้นสุด');
+    return;
+  }
+  
+  if (startDate > endDate) {
+    Toast.warning('วันที่เริ่มต้องไม่เกินวันสิ้นสุด');
+    return;
+  }
+  
+  if (!editReason) {
+    Toast.warning('กรุณาระบุเหตุผลในการแก้ไข');
+    return;
+  }
+  
+  const btn = document.getElementById('edit-submit');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังบันทึก...';
+  
+  const res = await API.leave.edit(editingLeave.id, {
+    start_date: startDate,
+    end_date: endDate,
+    type: editType,
+    duration: editDur,
+    period: editDur === 'half' ? editPeriod : null,
+    reason,
+    edit_reason: editReason
+  });
+  
+  btn.disabled = false;
+  btn.innerHTML = '<i data-icon="save"></i> บันทึกการแก้ไข';
+  
+  if (!res?.ok) {
+    Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด');
+    return;
+  }
+  
+  Toast.success('แก้ไขการลาสำเร็จ <i data-icon="check"></i>');
+  closeEditModal();
+  loadAll();
+}
+
+// ── Cancel Leave ─────────────────────────────────────────────────────────────
+let cancellingLeave = null;
+
+function openCancelModal(leaveId) {
+  const leave = leaves.find(l => l.id === leaveId);
+  if (!leave) return;
+  
+  cancellingLeave = leave;
+  
+  const typeLabel = leave.type === 'vacation' ? '<i data-icon="umbrella-beach"></i> Vacation / พักร้อน' : '<i data-icon="thermometer"></i> Sick Leave / ลาป่วย';
+  const days = leaveDayCount(leave);
+  const durLabel = leave.duration === 'half'
+    ? (leave.period === 'afternoon' ? 'ครึ่งวันบ่าย' : 'ครึ่งวันเช้า')
+    : 'เต็มวัน';
+
+  document.getElementById('cancel-user-name').textContent = leave.user_name;
+  document.getElementById('cancel-type').textContent = typeLabel;
+  document.getElementById('cancel-dates').textContent = fmtLeaveDates(leave);
+  document.getElementById('cancel-days').textContent = `${days} วัน (${durLabel})`;
+  
+  const quotaInfo = document.getElementById('cancel-quota-info');
+  if (leave.type === 'vacation') {
+    quotaInfo.style.display = '';
+    document.getElementById('cancel-quota-restore').textContent = `${days} วัน`;
+  } else {
+    quotaInfo.style.display = 'none';
+  }
+  
+  document.getElementById('cancel-reason').value = '';
+  document.getElementById('cancel-modal').classList.add('open');
+}
+
+function closeCancelModal() {
+  document.getElementById('cancel-modal').classList.remove('open');
+  cancellingLeave = null;
+}
+
+document.getElementById('cancel-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('cancel-modal')) closeCancelModal();
+});
+
+async function submitCancelLeave() {
+  if (!cancellingLeave) return;
+  
+  const cancelReason = document.getElementById('cancel-reason').value.trim();
+  
+  if (!cancelReason) {
+    Toast.warning('กรุณาระบุเหตุผลในการยกเลิก');
+    return;
+  }
+  
+  const btn = document.getElementById('cancel-submit');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังยกเลิก...';
+  
+  const res = await API.leave.cancel(cancellingLeave.id, {
+    cancel_reason: cancelReason
+  });
+  
+  btn.disabled = false;
+  btn.innerHTML = '<i data-icon="trash"></i> ยืนยันการยกเลิก';
+  
+  if (!res?.ok) {
+    Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด');
+    return;
+  }
+  
+  Toast.success('ยกเลิกการลาสำเร็จ <i data-icon="check"></i>');
+  closeCancelModal();
+  loadAll();
+}
+</script>
+</body>
+</html>

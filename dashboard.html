@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/dev-badge.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/dashboard/dashboard.css" data-page-css>
+</head>
+<body>
+
+<!-- ══ POST-LOGIN INTRO OVERLAY (only after fresh login) ══
+     Styling comes from assets/css/ui-themes.css (theme-aware) -->
+<script>
+(function() {
+  // Only show if a fresh login flag is present (set in login flow)
+  if (sessionStorage.getItem('som_login_intro') !== '1') return;
+  sessionStorage.removeItem('som_login_intro');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'intro-overlay';
+  overlay.innerHTML = `
+    <div class="intro-stack">
+      <div class="intro-mark">
+        <div class="ring"></div>
+        <div class="ring slow"></div>
+        <div class="core"></div>
+      </div>
+      <div>
+        <div class="intro-name">SOM<span>-Portal</span></div>
+      </div>
+      <div class="intro-tag">Service Management Hub</div>
+      <div class="intro-bar"><div class="intro-bar-fill"></div></div>
+      <div class="intro-status">Preparing your workspace<span class="dots"></span></div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  // Dismiss when dashboard is ready (whichever happens last: min display time + window load)
+  const startTs   = Date.now();
+  const MIN_SHOW  = 1700;  // minimum visible ms — feels intentional, not a flash
+  const MAX_WAIT  = 5000;  // safety cap
+
+  function dismiss() {
+    const elapsed = Date.now() - startTs;
+    const wait = Math.max(0, MIN_SHOW - elapsed);
+    setTimeout(() => {
+      overlay.classList.add('exit');
+      setTimeout(() => overlay.remove(), 1000);
+    }, wait);
+  }
+
+  if (document.readyState === 'complete') {
+    dismiss();
+  } else {
+    window.addEventListener('load', dismiss, { once: true });
+  }
+  // Safety: never block forever
+  setTimeout(dismiss, MAX_WAIT);
+})();
+</script>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title" id="page-title-text">Dashboard</div>
+        <div class="page-sub" id="date-display"></div>
+      </div>
+      <div class="topbar-actions">
+        <!-- Requests button — all users can submit; admins see pending badge -->
+        <button id="tb-requests-btn" onclick="openRequestsFromTopbar()" title="เปิด Ticket ใหม่" style="
+          display:inline-flex;align-items:center;gap:0;position:relative;
+          height:34px;padding:0;border-radius:9px;overflow:hidden;
+          border:1.5px solid rgba(242,100,25,.45);background:transparent;
+          font-family:var(--font);cursor:pointer;flex-shrink:0;
+          transition:border-color .15s,box-shadow .15s;
+        " onmouseenter="this.style.borderColor='var(--orange)';this.style.boxShadow='0 0 0 3px rgba(242,100,25,.12)'"
+           onmouseleave="this.style.borderColor='rgba(242,100,25,.45)';this.style.boxShadow='none'">
+          <!-- icon zone -->
+          <span style="
+            display:inline-flex;align-items:center;justify-content:center;
+            width:32px;height:100%;background:rgba(242,100,25,.12);
+            color:var(--orange,#f26419);font-size:14px;border-right:1px solid rgba(242,100,25,.25);
+            flex-shrink:0;vertical-align:top;
+          "><i data-icon="ticket"></i></span>
+          <!-- label + next ticket number -->
+          <span style="display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;align-self:stretch;padding:0 10px;gap:1px;vertical-align:top">
+            <span style="font-size:11px;font-weight:700;color:var(--text);line-height:1.1">Open Ticket</span>
+            <span id="tb-next-ticket" style="font-size:9px;font-weight:800;font-family:monospace;color:var(--orange,#f26419);line-height:1;letter-spacing:.02em">SMHUB-…</span>
+          </span>
+          <!-- pending badge -->
+          <span id="tb-requests-badge" style="
+            display:none;position:absolute;top:3px;right:3px;
+            min-width:15px;height:15px;padding:0 3px;border-radius:8px;
+            background:#ef4444;color:#fff;font-size:8px;font-weight:800;
+            line-height:15px;text-align:center;
+          "></span>
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content" id="page-content">
+
+      <!-- ─── DASHBOARD VIEW — COMMAND CENTER ─── -->
+      <div id="view-dash">
+
+        <!-- ANALYTICS OVERVIEW (compact premium strip → analytics.html) -->
+        <a class="dash-anl" id="dash-anl" href="./analytics.html" hidden>
+          <span class="danl-badge"><i data-icon="trending-up"></i></span>
+          <div class="danl-lead">
+            <div class="danl-lead-k">Analytics</div>
+            <div class="danl-lead-sub" id="dash-anl-sub">ภาพรวมปีนี้</div>
+          </div>
+          <div class="danl-hero">
+            <div class="danl-hero-v"><span id="danl-all">—</span><span class="u">%</span></div>
+            <div class="danl-hero-k">SM Detection <span class="danl-delta" id="danl-all-delta"></span></div>
+          </div>
+          <div class="danl-track" id="danl-spark" aria-hidden="true"></div>
+          <div class="danl-chips">
+            <div class="danl-chip"><span class="k">Total</span><span class="v" id="danl-total">—</span></div>
+            <div class="danl-chip"><span class="k">Internal</span><span class="v" id="danl-int">—</span></div>
+            <div class="danl-chip"><span class="k">External</span><span class="v" id="danl-ext">—</span></div>
+          </div>
+          <span class="danl-go">ดูทั้งหมด <span class="arr">→</span></span>
+        </a>
+
+        <!-- PROMO CAROUSEL — learning hero + feature promos, auto-rotating -->
+        <div class="promo" id="promo" hidden>
+        <div class="promo-viewport"><div class="promo-track" id="promo-track">
+        <div class="promo-slide" data-slide="learn">
+        <div class="learn-hero" id="learn-hero" hidden>
+          <div class="lh-side">
+            <span class="lh-tag" id="lh-tag">Sprint · Learning</span>
+            <div class="lh-title" id="lh-title">กำลังโหลด…</div>
+            <div class="lh-msg" id="lh-msg"></div>
+            <div class="lh-pctwrap">
+              <span class="n" id="lh-pct-n">0</span><span class="u">%</span><span class="k" id="lh-pct-label">this sprint</span>
+            </div>
+          </div>
+          <div class="lh-cols">
+            <div class="lh-col todo">
+              <div class="lh-colhd"><span class="dot"></span>To Learn<span class="n" id="lh-col-todo-n">0</span></div>
+              <div class="lh-col-body" id="lh-col-todo"></div>
+            </div>
+            <div class="lh-col wip">
+              <div class="lh-colhd"><span class="dot"></span>In Progress<span class="n" id="lh-col-wip-n">0</span></div>
+              <div class="lh-col-body" id="lh-col-wip"></div>
+            </div>
+            <div class="lh-col done">
+              <div class="lh-colhd"><span class="dot"></span>Done<span class="n" id="lh-col-done-n">0</span></div>
+              <div class="lh-col-body" id="lh-col-done"></div>
+            </div>
+          </div>
+          <a class="lh-cta" id="lh-cta" href="#">
+            <span id="lh-cta-label">เริ่มเลย</span>
+            <i class="lh-cta-arr" data-icon="arrow-right"></i>
+          </a>
+        </div>
+        </div><!-- /slide learn -->
+        </div></div><!-- /track /viewport -->
+        <button class="promo-nav prev" id="promo-prev" type="button" aria-label="ก่อนหน้า">‹</button>
+        <button class="promo-nav next" id="promo-next" type="button" aria-label="ถัดไป">›</button>
+        <div class="promo-dots" id="promo-dots"></div>
+        </div><!-- /promo -->
+
+        <!-- TODAY'S ROSTER & EXTERNAL ON-CALL (COMBINED) -->
+        <div class="today-sched" id="combined-roster">
+          <div class="ts-header">
+            <span class="ts-lbl"><i data-icon="calendar"></i> Today's Schedule</span>
+            <span class="ts-date" id="combined-date"></span>
+          </div>
+          
+          <!-- Internal Roster Section -->
+          <div class="ts-section">
+            <div class="ts-section-label"><i data-icon="users"></i> <span id="team-roster-label">SM</span> Team Roster</div>
+            <div class="ts-body" id="ts-slots">
+              <span class="ts-empty">กำลังโหลด...</span>
+            </div>
+          </div>
+          
+          <!-- External On-Call Section -->
+          <div class="ts-section" style="margin-top: 12px">
+            <div class="ts-section-label"><i data-icon="globe"></i> External On-Call (Other Teams)</div>
+            <div class="ts-body" id="ext-oc-slots">
+              <span class="ts-empty">กำลังโหลด...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- COMMAND CENTER BODY -->
+        <div class="cc-body">
+
+          <!-- LEFT (60%): TEAM INBOX WIDGET -->
+          <div class="ib-widget">
+            <div class="ib-hd">
+              <span class="title"><i data-icon="inbox"></i> Team Inbox</span>
+              <span class="pill" id="ib-unread-pill" style="display:none">0 NEW</span>
+              <span class="live">LIVE</span>
+              <a href="./inbox.html" class="open-full">Inbox เต็มจอ →</a>
+            </div>
+            <div class="ib-toolbar">
+              <button class="ib-filter active" data-filter="all"     onclick="setInboxFilter('all',this)">All</button>
+              <button class="ib-filter"        data-filter="unread"  onclick="setInboxFilter('unread',this)">Unread</button>
+              <button class="ib-filter"        data-filter="starred" onclick="setInboxFilter('starred',this)"><i data-icon="star"></i></button>
+              <input class="ib-search" id="ib-search" type="text" placeholder="🔍 ค้นหา…">
+              <button class="ib-refresh" onclick="loadInbox()" title="Refresh">↻</button>
+            </div>
+            <div class="ib-list" id="ib-list">
+              <!-- skeleton จะถูก inject โดย _ibSkeletonHTML() ตอน loadInbox() -->
+            </div>
+          </div>
+
+          <!-- RIGHT: Activity Feed + Online Now -->
+          <div class="feed-column">
+
+            <!-- Activity Feed (mixed) -->
+            <div class="panel-card" style="flex:1;min-height:0">
+              <div class="panel-hdr">
+                <span class="panel-title">◫ Activity</span>
+                <span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#22c55e;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:5px;padding:1px 7px">
+                  <span style="width:5px;height:5px;border-radius:50%;background:#22c55e;animation:ccPulse 2s ease infinite"></span>LIVE
+                </span>
+                <span id="feed-refreshed" style="font-size:9.5px;color:var(--text-muted);margin-left:4px"></span>
+                <button class="btn btn-ghost btn-sm" onclick="openRequestModal()" title="ส่งคำขอ / รายงานปัญหา" style="margin-left:auto;padding:3px 8px"><i data-icon="edit"></i></button>
+                <a href="./board.html" class="btn btn-ghost btn-sm" style="padding:3px 8px">Board →</a>
+              </div>
+              <div class="panel-body" id="recent-feed">
+                <div data-skel="feed" data-rows="7"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ── SLIDE-OUT EMAIL READER (overlays from right) ── -->
+          <div class="ib-reader" id="ib-reader" data-mode="read">
+            <div class="ib-reader-hd">
+              <button class="close-btn" onclick="closeReader()" title="ปิด (Esc)"><i data-icon="x"></i></button>
+              <div class="ib-reader-subj" id="ib-reader-subj">—</div>
+            </div>
+
+            <!-- READ MODE -->
+            <div class="ib-mode-read" id="ib-mode-read">
+              <dl class="ib-reader-meta" id="ib-reader-meta">
+                <dt>From</dt><dd id="ib-reader-from">—</dd>
+                <dt>Date</dt><dd id="ib-reader-date">—</dd>
+                <dt>To</dt>  <dd id="ib-reader-to">—</dd>
+              </dl>
+              <div class="ib-reader-body" id="ib-reader-body">
+                <div style="text-align:center;color:var(--text-muted);padding:40px">⏳ กำลังโหลด…</div>
+              </div>
+              <div class="ib-reader-actions">
+                <button class="rh-btn primary" onclick="startCompose('reply')" title="Reply (R)">↩ Reply</button>
+                <button class="rh-btn" onclick="startCompose('replyAll')" title="Reply All">↩↩ Reply All</button>
+                <button class="rh-btn" onclick="startCompose('forward')" title="Forward (F)">↪ Forward</button>
+                <button class="rh-btn smc" onclick="smcBridgePlaceholder()" title="สร้าง Jira SMC ticket"><i data-icon="ticket"></i> สร้าง SMC</button>
+                <span style="flex:1"></span>
+                <button class="rh-btn" onclick="closeReader()">ปิด</button>
+              </div>
+            </div>
+
+            <!-- COMPOSE MODE (Mode A: replaces reader body) -->
+            <div class="ib-mode-compose" id="ib-mode-compose" hidden>
+              <div class="cx-fields">
+                <div class="cf-row"><label>To</label><input type="text" id="cx-to" placeholder="ผู้รับ, คั่นด้วย ,"></div>
+                <div class="cf-row"><label>Cc</label><input type="text" id="cx-cc" placeholder="สำเนา (optional)"></div>
+                <div class="cf-row"><label>Subject</label><input type="text" id="cx-subject"></div>
+              </div>
+              <div class="cx-toolbar">
+                <select class="cx-select" onchange="cxExec('fontName', this.value); this.selectedIndex=0" title="Font">
+                  <option value="">Font</option>
+                  <option value="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">Sans</option>
+                  <option value="Georgia,serif">Serif</option>
+                  <option value="'SF Mono',Menlo,monospace">Mono</option>
+                </select>
+                <select class="cx-select" onchange="cxExec('fontSize', this.value); this.selectedIndex=0" title="ขนาดตัวอักษร">
+                  <option value="">Size</option>
+                  <option value="1">Small</option>
+                  <option value="3">Normal</option>
+                  <option value="5">Large</option>
+                  <option value="6">XL</option>
+                  <option value="7">XXL</option>
+                </select>
+                <select class="cx-select" onchange="cxExec('formatBlock', this.value); this.selectedIndex=0" title="Paragraph style">
+                  <option value="">Style</option>
+                  <option value="p">Paragraph</option>
+                  <option value="h2">Heading</option>
+                  <option value="blockquote">Quote</option>
+                  <option value="pre">Code</option>
+                </select>
+                <span class="cx-sep"></span>
+                <button class="cx-tbn" type="button" onclick="cxExec('bold')" title="Bold (⌘B)"><b>B</b></button>
+                <button class="cx-tbn" type="button" onclick="cxExec('italic')" title="Italic (⌘I)"><i>I</i></button>
+                <button class="cx-tbn" type="button" onclick="cxExec('underline')" title="Underline (⌘U)"><u>U</u></button>
+                <button class="cx-tbn" type="button" onclick="cxExec('strikeThrough')" title="Strike"><s>S</s></button>
+                <span class="cx-sep"></span>
+                <label class="cx-color-btn" title="สีตัวอักษร">
+                  A<span class="cx-color-swatch" id="cx-fc-swatch" style="background:#f26419"></span>
+                  <input type="color" value="#f26419" id="cx-fc-input" style="display:none"
+                         onchange="document.getElementById('cx-fc-swatch').style.background=this.value; cxExec('foreColor', this.value)">
+                </label>
+                <button class="cx-tbn" type="button" onclick="document.getElementById('cx-fc-input').click()" title="เลือกสี"><i data-icon="palette"></i></button>
+                <label class="cx-color-btn" title="ไฮไลต์">
+                  <i data-icon="pencil"></i><span class="cx-color-swatch" id="cx-bg-swatch" style="background:#fde047"></span>
+                  <input type="color" value="#fde047" id="cx-bg-input" style="display:none"
+                         onchange="document.getElementById('cx-bg-swatch').style.background=this.value; cxExec('hiliteColor', this.value)">
+                </label>
+                <span class="cx-sep"></span>
+                <button class="cx-tbn" type="button" onclick="cxExec('insertUnorderedList')" title="Bullet list"><i data-icon="circle"></i></button>
+                <button class="cx-tbn" type="button" onclick="cxExec('insertOrderedList')" title="Numbered list">1.</button>
+                <button class="cx-tbn" type="button" onclick="cxExec('justifyLeft')" title="Left"><i data-icon="arrow-left"></i></button>
+                <button class="cx-tbn" type="button" onclick="cxExec('justifyCenter')" title="Center">⬌</button>
+                <span class="cx-sep"></span>
+                <button class="cx-tbn" type="button" onclick="cxInsertLink()" title="แทรก link"><i data-icon="link"></i></button>
+                <button class="cx-tbn" type="button" onclick="document.getElementById('cx-img-input').click()" title="แนบรูป"><i data-icon="image"></i></button>
+                <button class="cx-tbn" type="button" onclick="cxExec('insertHorizontalRule')" title="เส้นคั่น">―</button>
+                <button class="cx-tbn" type="button" onclick="cxExec('removeFormat')" title="ล้าง format"><i data-icon="x"></i></button>
+                <span class="cx-sep"></span>
+                <button class="cx-tbn" type="button" onclick="cxExec('undo')" title="Undo (⌘Z)">↶</button>
+                <button class="cx-tbn" type="button" onclick="cxExec('redo')" title="Redo">↷</button>
+                <input type="file" id="cx-img-input" accept="image/*" style="display:none"
+                       onchange="cxInsertImageFile(this.files[0]); this.value=''">
+              </div>
+              <div class="cx-body" id="cx-body" contenteditable="true"
+                   data-placeholder="พิมพ์ข้อความ… วางรูป (Cmd/Ctrl+V) หรือดร็อปไฟล์ก็ได้"
+                   data-empty="true"></div>
+              <div class="cx-foot">
+                <button class="cx-send" id="cx-send-btn" onclick="sendCompose()"><i data-icon="upload"></i> ส่ง</button>
+                <button class="cx-discard" onclick="cancelCompose()">ยกเลิก</button>
+                <span class="cx-status" id="cx-status"></span>
+                <span class="cx-hint"><i data-icon="lightbulb"></i> Cmd/Ctrl+V วางรูป · คลิกรูปปรับขนาด · Cmd/Ctrl+B/I/U</span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /cc-body -->
+
+      </div><!-- /view-dash -->
+
+    </main>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SMC Bridge Modal — create Jira SMC ticket from email
+   ══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="smc-modal">
+  <div class="modal" style="max-width:640px;width:92vw;padding:0;border-radius:14px;overflow:hidden">
+    <div class="smc-hd">
+      <span><i data-icon="ticket"></i> สร้าง SMC ticket จาก email</span>
+      <button class="close-btn" onclick="closeSmcModal()" title="ปิด (Esc)"><i data-icon="x"></i></button>
+    </div>
+    <div class="smc-body" id="smc-body">
+      <div class="smc-row">
+        <label>Summary <span class="req">*</span></label>
+        <input type="text" id="smc-summary" maxlength="200">
+      </div>
+      <div class="smc-row">
+        <label>Description / Action</label>
+        <textarea id="smc-description" rows="5" placeholder="รายละเอียด + action ที่ทำ…"></textarea>
+      </div>
+      <div class="smc-grid">
+        <div class="smc-row">
+          <label>Issue Type</label>
+          <select id="smc-issuetype"><option value="Task">Task</option></select>
+        </div>
+        <div class="smc-row">
+          <label>Detected by <span class="req">*</span></label>
+          <select id="smc-detected"><option value="">— กำลังโหลด… —</option></select>
+        </div>
+        <div class="smc-row">
+          <label>Business Unit Impacted <span class="req">*</span></label>
+          <select id="smc-bu"><option value="">— กำลังโหลด… —</option></select>
+        </div>
+        <div class="smc-row">
+          <label>TH Service Impacted <span class="req">*</span></label>
+          <select id="smc-svc"><option value="">— กำลังโหลด… —</option></select>
+        </div>
+        <div class="smc-row">
+          <label>TH Channel / Component <span class="req">*</span></label>
+          <select id="smc-chn"><option value="">— กำลังโหลด… —</option></select>
+        </div>
+        <div class="smc-row">
+          <label>Caused by 3rd Party</label>
+          <select id="smc-thirdp"><option value="">— ไม่ระบุ —</option></select>
+        </div>
+      </div>
+      <div class="smc-note">
+        <i data-icon="lightbulb"></i> Fault Start ใช้เวลาปัจจุบันอัตโนมัติ · ถ้าต้องการหลาย value ต่อ field หรือกำหนด Fault Start เอง ใช้
+        <a href="./send-email.html">SMC Ticket เต็ม →</a>
+      </div>
+    </div>
+    <div class="smc-foot">
+      <span class="smc-status" id="smc-status"></span>
+      <button class="btn btn-ghost btn-sm" onclick="closeSmcModal()">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" id="smc-submit" onclick="submitSmcTicket()"><i data-icon="rocket"></i> สร้าง Ticket</button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/skeletons.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/analytics.js"></script>
+<script src="./assets/js/analytics-features.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script src="./assets/js/announcements.js"></script>
+<script src="./assets/pages/dashboard/dashboard.js"></script>
+
+<!-- ══════════════════════════════════════════════════
+     REQUEST MODAL (WITH TABS)
+     ══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="request-modal">
+  <div class="modal" style="max-width:640px;max-height:90vh">
+    <div class="modal-header">
+      <span class="modal-title" style="display:flex;align-items:center;gap:8px">
+        <i data-icon="ticket"></i>
+        <span>Tickets</span>
+      </span>
+      <button class="btn-close" onclick="closeRequestModal()"><i data-icon="x"></i></button>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display:flex;border-bottom:1.5px solid var(--border);padding:0 20px">
+      <button class="modal-tab active" id="tab-new" onclick="switchRequestTab('new')">
+        <i data-icon="plus-circle"></i> Open New Ticket
+      </button>
+      <button class="modal-tab" id="tab-history" onclick="switchRequestTab('history')">
+        <i data-icon="clock"></i> My Tickets
+      </button>
+    </div>
+
+    <!-- Tab: New Ticket -->
+    <div class="modal-body" id="tab-content-new" style="padding-top:16px">
+
+      <!-- Ticket number banner -->
+      <div id="req-ticket-banner" style="
+        display:flex;align-items:center;gap:12px;
+        padding:12px 16px;margin-bottom:18px;
+        background:rgba(242,100,25,.06);
+        border:1.5px solid rgba(242,100,25,.25);
+        border-radius:10px;
+      ">
+        <div style="
+          width:38px;height:38px;border-radius:8px;flex-shrink:0;
+          background:rgba(242,100,25,.12);
+          display:flex;align-items:center;justify-content:center;
+          color:var(--orange,#f26419);font-size:18px;
+        "><i data-icon="ticket"></i></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Ticket ที่จะเปิด</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="req-next-ticket-num" style="
+              font-size:18px;font-weight:900;font-family:monospace;
+              color:var(--orange,#f26419);letter-spacing:.03em;
+            ">SMHUB-…</span>
+            <span style="
+              padding:2px 7px;border-radius:5px;font-size:9px;font-weight:700;
+              background:rgba(245,158,11,.12);color:#f59e0b;
+              border:1px solid rgba(245,158,11,.3);
+            ">DRAFT</span>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">Reporter</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text)" id="req-reporter-name">—</div>
+        </div>
+      </div>
+
+      <form id="request-form">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">ประเภท <span style="color:var(--danger)">*</span></label>
+            <select id="req-type" class="form-control" required onchange="updateTicketBannerType(this.value)">
+              <option value="">-- เลือกประเภท --</option>
+              <option value="feature">Feature Request</option>
+              <option value="bug">Bug Report</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">ความสำคัญ</label>
+            <select id="req-priority" class="form-control">
+              <option value="low">Low — ไม่เร่งด่วน</option>
+              <option value="medium" selected>Medium — ปานกลาง</option>
+              <option value="high">High — เร่งด่วน</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:14px">
+          <label class="form-label">หัวข้อ <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="req-title" class="form-control" placeholder="สรุปสั้นๆ ว่าต้องการอะไร" required maxlength="200">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">รายละเอียด <span style="color:var(--danger)">*</span></label>
+          <textarea id="req-description" class="form-control" rows="5" placeholder="อธิบายให้ชัดเจนว่าต้องการอะไร หรือพบปัญหาอะไร — steps to reproduce, expected vs actual behavior..." required></textarea>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tab: History -->
+    <div class="modal-body" id="tab-content-history" style="display:none;max-height:480px;overflow-y:auto">
+      <div id="my-requests-list">
+        <div style="text-align:center;padding:40px;color:var(--text-muted)">กำลังโหลด...</div>
+      </div>
+    </div>
+
+    <div class="modal-footer" id="req-modal-footer">
+      <button class="btn btn-ghost" onclick="closeRequestModal()">ยกเลิก</button>
+      <button class="btn btn-primary" id="submit-request-btn" onclick="submitRequest()" style="gap:8px">
+        <span id="req-submit-icon"><i data-icon="ticket"></i></span>
+        <span id="req-submit-text">Open Ticket</span>
+        <span id="req-submit-ticket" style="
+          padding:1px 6px;border-radius:4px;font-size:9px;font-weight:800;font-family:monospace;
+          background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);
+        ">SMHUB-…</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+</body>
+</html>

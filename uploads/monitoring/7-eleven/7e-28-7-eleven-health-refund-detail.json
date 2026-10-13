@@ -1,0 +1,233 @@
+{
+  "title": "7-Eleven · Health Refund Detail",
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน message ที่รอประมวลผลใน Refund Queue ของ RabbitMQ\n\nดูยังไง: ready messages ควรใกล้ 0 ถ้าสะสมขึ้นเรื่อยๆ = Consumer ประมวลผลไม่ทัน\n\ndead-letter = message ที่ fail หลาย retry แล้ว ต้อง manual intervention\n\nthreshold สีแดง = 500 messages",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 8,
+            "lineWidth": 2
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 500
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 578
+      },
+      "id": 9031,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "rabbitmq_queue_messages{queue=~\"acquiring-transaction-refund-event\"}",
+          "legendFormat": "ready messages",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "rabbitmq_queue_messages{queue=~\"acquiring-transaction-refund-event-dl\"}",
+          "legendFormat": "dead-letter (stuck)",
+          "refId": "B"
+        }
+      ],
+      "title": "Refund Queue Depth  — acquiring-transaction-refund-event",
+      "type": "timeseries"
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "เปรียบเทียบ 2 error reason ที่สำคัญใน Acquiring\n\nดูยังไง:\n- invalid_payment_id spike = 7-11 ส่ง payment_id ผิดหรือ duplicate (Case #3)\n- failed_timeout spike = upstream SoF ช้า ดู P99 Section C ประกอบ\n\nถ้าทั้งคู่ขึ้นพร้อมกันให้แยก root cause ก่อนว่าเป็นคนละสาเหตุ",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 578
+      },
+      "id": 9032,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(acquiring_service_total_transaction_total{status_code!=\"200\",status_code_reason=\"invalid_payment_id\",app_name=\"acquiring-service\"}[1m]))",
+          "legendFormat": "invalid_payment_id",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(acquiring_service_total_transaction_total{status_code!=\"200\",status_code_reason=\"failed_timeout\",app_name=\"acquiring-service\"}[1m]))",
+          "legendFormat": "failed_timeout",
+          "refId": "B"
+        }
+      ],
+      "title": "Acquiring — invalid_payment_id  vs  failed_timeout  (Case #3)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน Cancel fail แยกตาม HTTP status_code\n\nดูยังไง: ถ้า Cancel fail สูงระหว่างที่ Cancel/Charge ratio พุ่ง อาจเป็น false cancel ที่ระบบ TMN ปฏิเสธถูกต้องแล้ว (ไม่ใช่ bug)",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 586
+      },
+      "id": 9033,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CANCEL\",status_code!=\"200 OK\"}[1m])) by (status_code)",
+          "legendFormat": "{{status_code}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Cancel — Fail by Status Code  (แยก error type)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "เปรียบเทียบ volume Charge และ Refund ของ 7-Delivery ISV\n\nดูยังไง: Refund ปกติน้อยกว่า Charge มาก ถ้าใกล้เคียงกันหมายความว่ามีปัญหา payment ที่ต้อง refund กลับผิดปกติ",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 586
+      },
+      "id": 9034,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(B2B_IN_GATEWAY_transaction_total{service=\"payments-pay\",status_code=\"200 OK\",isv=\"010000000000292912477\"}[1m]))",
+          "legendFormat": "Pay OK",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(B2B_IN_GATEWAY_transaction_total{service=\"payments-refund\",status_code=\"200 OK\",isv=\"010000000000292912477\"}[1m]))",
+          "legendFormat": "Refund OK",
+          "refId": "B"
+        }
+      ],
+      "title": "B2B — Refund  vs  Charge  Ratio  (7-Delivery)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    }
+  ]
+}

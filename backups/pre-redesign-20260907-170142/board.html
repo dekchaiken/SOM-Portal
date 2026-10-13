@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Board — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/dev-badge.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+
+  <div class="main-content" style="display:flex;flex-direction:column;overflow:hidden">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Web Board</div>
+        <div class="page-sub">Team updates &amp; announcements</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input type="text" id="search-input" class="form-control" placeholder="Search posts..." style="width:220px">
+        </div>
+        <button class="btn btn-primary" data-action="add" onclick="openCreateModal()">+ New Post</button>
+      </div>
+    </header>
+
+    <!-- Board Type Tabs -->
+    <div class="board-tabs" id="board-tabs">
+      <div class="board-tab active" data-type="" onclick="switchTab(this, '')">All</div>
+      <!-- Populated by loadConfig() -->
+    </div>
+
+    <!-- New posts banner (real-time poll) -->
+    <div id="new-posts-banner" style="display:none;background:var(--orange);color:#fff;padding:8px 16px;font-size:12px;font-weight:600;display:none;align-items:center;gap:10px;cursor:pointer" onclick="reloadAndDismissBanner()">
+      <span><i data-icon="bell"></i></span>
+      <span id="new-posts-text">มีโพสต์ใหม่</span>
+      <span style="margin-left:auto;opacity:.7;font-size:11px">คลิกเพื่อโหลด</span>
+      <button onclick="dismissBanner(event)" style="background:none;border:none;color:#fff;font-size:14px;cursor:pointer;padding:0 4px;opacity:.8"><i data-icon="x"></i></button>
+    </div>
+
+    <main class="page-content" style="flex:1;overflow:hidden;padding:0">
+      <div id="board-container" class="kanban-wrap">
+        <!-- Pin strip -->
+        <div id="pin-strip" class="pin-strip" style="display:none">
+          <div class="pin-strip-label"><i data-icon="map-pin"></i> Pinned <span id="pin-strip-count">0</span></div>
+          <div id="pin-strip-scroll" class="pin-strip-scroll"></div>
+        </div>
+
+        <!-- Kanban columns -->
+        <div id="kanban-cols" class="kanban-cols">
+          <div class="kanban-col" data-status="open"
+               ondragover="onColDragOver(event,'open')"
+               ondragleave="onColDragLeave(event)"
+               ondrop="onColDrop(event,'open')">
+            <div class="kanban-col-head">
+              <span class="kanban-col-dot"></span>
+              <span class="kanban-col-name">Open</span>
+              <span class="kanban-col-count" id="col-count-open">0</span>
+            </div>
+            <div class="kanban-col-body" id="col-body-open"></div>
+          </div>
+
+          <div class="kanban-col" data-status="in_progress"
+               ondragover="onColDragOver(event,'in_progress')"
+               ondragleave="onColDragLeave(event)"
+               ondrop="onColDrop(event,'in_progress')">
+            <div class="kanban-col-head">
+              <span class="kanban-col-dot"></span>
+              <span class="kanban-col-name">In Progress</span>
+              <span class="kanban-col-count" id="col-count-in_progress">0</span>
+            </div>
+            <div class="kanban-col-body" id="col-body-in_progress"></div>
+          </div>
+
+          <div class="kanban-col" data-status="resolved"
+               ondragover="onColDragOver(event,'resolved')"
+               ondragleave="onColDragLeave(event)"
+               ondrop="onColDrop(event,'resolved')">
+            <div class="kanban-col-head">
+              <span class="kanban-col-dot"></span>
+              <span class="kanban-col-name">Resolved</span>
+              <span class="kanban-col-count" id="col-count-resolved">0</span>
+            </div>
+            <div class="kanban-col-body" id="col-body-resolved"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ── Detail Modal ──────────────────────────────────────── -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal board-detail-modal" style="max-width:680px;display:flex;flex-direction:column;max-height:90vh">
+    <div class="modal-header" style="flex-shrink:0">
+      <span class="modal-title" id="detail-modal-title">Post</span>
+      <button class="btn-close" onclick="Modal.close('detail-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;min-height:0">
+      <img id="detail-img" class="detail-img" src="" alt="" style="display:none;flex-shrink:0">
+      <div class="detail-body" style="flex-shrink:0">
+        <div id="detail-badges" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+        <div class="detail-title" id="detail-title"></div>
+        <div class="detail-content" id="detail-content"></div>
+      </div>
+      <div class="detail-footer" style="flex-shrink:0">
+        <div class="board-card-meta" id="detail-meta"></div>
+        <div style="display:flex;gap:6px" id="detail-actions"></div>
+      </div>
+
+      <!-- ── Edit History Section ──────────────────────── -->
+      <div id="detail-history-section" style="display:none;flex-shrink:0;border-top:1px solid var(--border);padding:10px 20px 2px">
+        <div class="hist-toggle" id="hist-toggle" onclick="toggleHistoryPanel()">
+          <span id="history-toggle-icon"><i data-icon="play"></i></span>
+          Edit History
+          <span id="history-count-badge" style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:1px 7px;font-size:9.5px">0</span>
+        </div>
+        <div id="history-panel" style="display:none;padding-top:6px;padding-bottom:10px;display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto"></div>
+      </div>
+
+      <!-- ── Comments Section ─────────────────────────── -->
+      <div id="comments-section" style="border-top:1.5px solid var(--border);flex:1;display:flex;flex-direction:column">
+        <!-- Comments list -->
+        <div id="comments-list" style="flex:1;padding:14px 20px 0;display:flex;flex-direction:column;gap:10px;min-height:60px">
+          <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:12px 0">Loading comments...</div>
+        </div>
+
+        <!-- Comment input -->
+        <div data-action="write" style="padding:12px 18px 16px;border-top:1px solid #f0f0f0;display:flex;gap:10px;align-items:flex-start;flex-shrink:0">
+          <div id="cmt-my-avatar" style="width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff"></div>
+          <div style="flex:1;position:relative">
+            <textarea id="cmt-input" placeholder="Write a comment... use @ to mention, paste/attach image" rows="2"
+              style="width:100%;resize:none;border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;font-family:var(--font);font-size:12px;color:var(--text);outline:none;transition:border-color .15s;background:var(--bg);line-height:1.5"
+              onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+            <!-- @mention dropdown -->
+            <div id="cmt-mention-dd" style="display:none;position:absolute;bottom:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200;overflow:hidden;max-height:200px;overflow-y:auto"></div>
+            <div id="cmt-img-uploading" style="display:none;font-size:10px;color:var(--text-muted);margin-top:2px">⏳ กำลังอัปโหลดรูป...</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">
+            <label title="แนบรูป" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);transition:all .15s"
+              onmouseover="this.style.borderColor='var(--orange)'" onmouseout="this.style.borderColor='var(--border)'">
+              <i data-icon="paperclip"></i>
+              <input type="file" accept="image/*" style="display:none" multiple onchange="handleContentImageFiles(this.files,'cmt-input')">
+            </label>
+            <button id="cmt-send-btn" onclick="submitComment()" style="height:30px;padding:0 14px;font-size:11.5px" class="btn btn-primary btn-sm">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ── Inline images in post content & comments ──────── */
+  .detail-content img, .cmt-text img {
+    max-width: 100%; max-height: 480px;
+    border-radius: 8px; margin: 6px 0;
+    display: block; cursor: zoom-in;
+    border: 1px solid var(--border);
+    object-fit: contain;
+    transition: opacity .15s, transform .15s;
+  }
+  .detail-content img:hover, .cmt-text img:hover {
+    opacity: .88; transform: scale(1.01);
+  }
+
+  /* ── Image Lightbox ─────────────────────────────────── */
+  #img-lightbox {
+    position: fixed; inset: 0; z-index: 99999;
+    background: rgba(0,0,0,.88); backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s;
+  }
+  #img-lightbox.open { opacity: 1; pointer-events: all; }
+  #img-lightbox img {
+    max-width: 92vw; max-height: 90vh;
+    border-radius: 10px; object-fit: contain;
+    box-shadow: 0 24px 80px rgba(0,0,0,.6);
+    transform: scale(.96);
+    transition: transform .22s cubic-bezier(.34,1.56,.64,1);
+    cursor: zoom-out;
+  }
+  #img-lightbox.open img { transform: scale(1); }
+  #img-lightbox-close {
+    position: fixed; top: 18px; right: 22px;
+    width: 38px; height: 38px; border-radius: 50%;
+    background: rgba(255,255,255,.15); border: none;
+    color: #fff; font-size: 20px; line-height: 38px; text-align: center;
+    cursor: pointer; transition: background .15s;
+  }
+  #img-lightbox-close:hover { background: rgba(255,255,255,.28); }
+
+  /* ── Comments ──────────────────────────────────────── */
+  .cmt-item {
+    display:flex;gap:9px;animation:cmtIn .2s ease both;
+  }
+  @keyframes cmtIn {
+    from { opacity:0;transform:translateY(6px); }
+    to   { opacity:1;transform:translateY(0); }
+  }
+  .cmt-avatar {
+    width:28px;height:28px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:700;color:#fff;overflow:hidden;
+  }
+  .cmt-avatar img { width:100%;height:100%;object-fit:cover; }
+  .cmt-bubble {
+    flex:1;background:var(--bg);border:1px solid var(--border);
+    border-radius:4px 12px 12px 12px;padding:8px 12px;min-width:0;
+    position:relative;
+  }
+  .cmt-bubble-head { display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:3px; }
+  .cmt-author { font-size:11px;font-weight:700;color:var(--text); }
+  .cmt-time   { font-size:10px;color:var(--text-muted); }
+  .cmt-text   { font-size:12px;color:var(--text);line-height:1.55;word-break:break-word; }
+  .cmt-actions {
+    position:absolute;top:6px;right:8px;display:flex;gap:2px;
+    opacity:0;transition:opacity .15s;
+  }
+  .cmt-bubble:hover .cmt-actions { opacity:1; }
+  .cmt-del-btn, .cmt-edit-btn {
+    background:none;border:none;cursor:pointer;
+    color:var(--text-muted);font-size:11px;padding:2px 5px;
+    border-radius:4px;transition:color .15s,background .15s;font-family:var(--font);
+  }
+  .cmt-edit-btn:hover { color:var(--orange);background:var(--orange-dim); }
+  .cmt-del-btn:hover  { color:var(--danger);background:rgba(239,68,68,.08); }
+  .cmt-edit-area {
+    width:100%;box-sizing:border-box;padding:7px 10px;
+    border:1.5px solid var(--orange);border-radius:8px;
+    font:inherit;font-size:12px;resize:vertical;min-height:60px;
+    outline:none;background:#fff;color:var(--text);
+  }
+  .cmt-edit-btns { display:flex;gap:6px;margin-top:5px; }
+  .mention-tag {
+    display:inline;color:var(--orange);font-weight:700;
+    background:var(--orange-dim);border-radius:3px;padding:0 3px;
+  }
+  .mention-tag.all {
+    color:#7c3aed;background:rgba(124,58,237,.1);
+  }
+  /* mention dropdown items */
+  .mention-opt {
+    display:flex;align-items:center;gap:9px;padding:9px 14px;cursor:pointer;
+    transition:background .1s;
+  }
+  .mention-opt:hover,.mention-opt.sel { background:var(--orange-dim); }
+  .mention-opt-av {
+    width:26px;height:26px;border-radius:50%;flex-shrink:0;background:var(--orange);
+    display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;
+    overflow:hidden;
+  }
+  .mention-opt-av img { width:100%;height:100%;object-fit:cover; }
+  .mention-opt-name { font-size:12px;font-weight:700;color:var(--text); }
+  .mention-opt-user { font-size:10.5px;color:var(--text-muted);margin-left:auto;flex-shrink:0; }
+  /* comments header */
+  .cmt-section-hd {
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 20px 0;flex-shrink:0;
+  }
+  .cmt-section-title { font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase; }
+  .cmt-count-badge {
+    font-size:10px;font-weight:700;background:var(--orange-dim);color:var(--orange);
+    border-radius:6px;padding:2px 8px;
+  }
+  /* comment count on card */
+  .cmt-count-chip {
+    display:inline-flex;align-items:center;gap:3px;font-size:10px;
+    color:var(--text-muted);background:var(--bg);border:1px solid var(--border);
+    border-radius:5px;padding:1px 7px;cursor:pointer;transition:color .12s,border-color .12s;
+  }
+  .cmt-count-chip:hover { color:var(--orange);border-color:rgba(242,100,25,.3); }
+  /* Status badges */
+  .status-badge { font-size:9.5px;font-weight:700;border-radius:5px;padding:2px 7px;text-transform:uppercase;letter-spacing:.04em;display:inline-block; }
+  .status-open        { background:#f1f5f9;color:#64748b; }
+  .status-in_progress { background:#fff7ed;color:#c2410c; }
+  .status-resolved    { background:#f0fdf4;color:#166534; }
+  /* Edit history */
+  .hist-item { font-size:10.5px;background:var(--bg);border-radius:7px;padding:7px 10px;border:1px solid var(--border); }
+  .hist-toggle { cursor:pointer;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:flex;align-items:center;gap:6px;padding:4px 0;user-select:none; }
+  .hist-toggle:hover { color:var(--text); }
+
+  /* ═════════ Kanban Board ═════════════════════════════════ */
+  .kanban-wrap {
+    display: flex; flex-direction: column; gap: 12px;
+    padding: 14px 20px 20px; height: 100%; min-height: 0;
+  }
+
+  /* ── Pin strip ─────────────────────────────────────────── */
+  .pin-strip {
+    display: flex; align-items: stretch; gap: 8px;
+    padding: 8px 12px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 10px;
+    flex-shrink: 0;
+  }
+  .pin-strip-label {
+    font-size: 10px; font-weight: 800; color: var(--orange);
+    letter-spacing: .08em; text-transform: uppercase;
+    align-self: center; flex-shrink: 0;
+    padding: 0 12px 0 4px; border-right: 1px solid var(--border);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .pin-strip-scroll {
+    display: flex; gap: 8px; overflow-x: auto; flex: 1;
+    padding: 2px 2px; scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+  }
+  .pin-strip-scroll::-webkit-scrollbar { height: 6px; }
+  .pin-strip-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .pin-strip-empty {
+    font-size: 11px; color: var(--text-muted); font-style: italic;
+    align-self: center; padding-left: 14px;
+  }
+  .pin-chip {
+    min-width: 200px; max-width: 260px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 10px 8px;
+    cursor: pointer; scroll-snap-align: start;
+    transition: border-color .15s, transform .15s, box-shadow .15s;
+    display: flex; flex-direction: column; gap: 3px; flex-shrink: 0;
+    position: relative;
+  }
+  .pin-chip:hover {
+    border-color: var(--orange);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0,0,0,.06);
+  }
+  .pin-chip-title {
+    font-size: 12px; font-weight: 700; color: var(--text);
+    line-height: 1.3; display: -webkit-box;
+    -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .pin-chip-meta {
+    font-size: 10px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ── Kanban columns ────────────────────────────────────── */
+  .kanban-cols {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px; flex: 1; min-height: 0;
+  }
+  /* Each column exposes its status color via 3 custom props so all
+     child rules (top bar, tint, count badge, name, dot) stay in sync. */
+  .kanban-col {
+    --col-c:      var(--border);    /* solid status color        */
+    --col-c-soft: var(--bg);        /* tint for header background */
+    --col-c-border: var(--border);  /* subtle border tint         */
+    background: var(--bg-card);
+    border: 1.5px solid var(--col-c-border);
+    border-radius: 12px; display: flex; flex-direction: column;
+    min-height: 0; overflow: hidden;
+    transition: background .15s, border-color .15s, box-shadow .15s;
+    position: relative;
+  }
+  /* Colored top strip — the primary status indicator */
+  .kanban-col::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 4px; background: var(--col-c);
+    z-index: 1;
+  }
+  .kanban-col.drop-over {
+    background: var(--orange-dim);
+    border-color: var(--orange);
+    border-style: dashed;
+    box-shadow: 0 0 0 4px rgba(242,100,25,.08);
+  }
+  .kanban-col-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 14px 10px;   /* +2px top to account for the strip */
+    border-bottom: 1px solid var(--col-c-border);
+    background: var(--col-c-soft);
+    flex-shrink: 0;
+  }
+  .kanban-col-dot {
+    width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0;
+    background: var(--col-c);
+    box-shadow: 0 0 0 3px var(--col-c-soft);
+  }
+  .kanban-col-name {
+    font-size: 12px; font-weight: 800;
+    color: var(--col-c);
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+  .kanban-col-count {
+    margin-left: auto; font-size: 11px; font-weight: 800;
+    color: var(--col-c);
+    background: var(--bg-card);
+    border: 1.5px solid var(--col-c);
+    border-radius: 10px;
+    padding: 1px 9px; min-width: 24px; text-align: center;
+  }
+  .kanban-col-body {
+    flex: 1; overflow-y: auto; padding: 10px;
+    display: flex; flex-direction: column; gap: 8px;
+    scrollbar-width: thin;
+  }
+  .kanban-col-body::-webkit-scrollbar { width: 6px; }
+  .kanban-col-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .kanban-col-empty {
+    font-size: 11px; color: var(--text-muted); text-align: center;
+    padding: 30px 10px; opacity: .55; line-height: 1.5;
+  }
+
+  /* Per-status color palette */
+  .kanban-col[data-status="open"] {
+    --col-c:      #3b82f6;
+    --col-c-soft: rgba(59,130,246,.08);
+    --col-c-border: rgba(59,130,246,.28);
+  }
+  .kanban-col[data-status="in_progress"] {
+    --col-c:      #f59e0b;
+    --col-c-soft: rgba(245,158,11,.09);
+    --col-c-border: rgba(245,158,11,.32);
+  }
+  .kanban-col[data-status="resolved"] {
+    --col-c:      #10b981;
+    --col-c-soft: rgba(16,185,129,.08);
+    --col-c-border: rgba(16,185,129,.30);
+  }
+
+  /* ── Kanban card (compact) ─────────────────────────────── */
+  .k-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px 9px;
+    cursor: pointer; position: relative;
+    display: flex; flex-direction: column; gap: 6px;
+    transition: border-color .12s, box-shadow .12s, transform .12s, opacity .12s;
+  }
+  .k-card:hover {
+    border-color: var(--orange);
+    box-shadow: 0 3px 10px rgba(0,0,0,.06);
+    transform: translateY(-1px);
+  }
+  .k-card.dragging {
+    opacity: .35; transform: rotate(1.5deg);
+    cursor: grabbing;
+  }
+  .k-card.can-drag { cursor: grab; }
+  .k-card.can-drag:active { cursor: grabbing; }
+  .k-card-thumb {
+    width: 100%; height: 88px; object-fit: cover;
+    border-radius: 6px; margin: -2px 0 2px;
+    border: 1px solid var(--border);
+  }
+  .k-card-tags {
+    display: flex; flex-wrap: wrap; gap: 4px;
+  }
+  .k-card-title {
+    font-size: 12.5px; font-weight: 700; color: var(--text);
+    line-height: 1.4; word-break: break-word;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .k-card-excerpt {
+    font-size: 11px; color: var(--text-muted);
+    line-height: 1.5; word-break: break-word;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .k-card-foot {
+    display: flex; align-items: center; gap: 6px;
+    padding-top: 7px; margin-top: 1px;
+    border-top: 1px solid var(--border);
+    font-size: 10px; color: var(--text-muted);
+  }
+  .k-avatar {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: #fff;
+    overflow: hidden; flex-shrink: 0;
+  }
+  .k-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .k-card-cmt {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 10px; color: var(--text-muted); cursor: pointer;
+    padding: 1px 6px; border-radius: 5px;
+    background: var(--bg); border: 1px solid var(--border);
+    transition: color .12s, border-color .12s;
+  }
+  .k-card-cmt:hover { color: var(--orange); border-color: rgba(242,100,25,.3); }
+  .k-card-actions {
+    margin-left: auto; display: flex; gap: 2px;
+    opacity: 0; transition: opacity .12s;
+  }
+  .k-card:hover .k-card-actions { opacity: 1; }
+
+  /* Responsive */
+  @media (max-width: 960px) {
+    .kanban-cols { grid-template-columns: 1fr; }
+    .kanban-col { min-height: 280px; }
+    .kanban-wrap { padding: 10px 12px; }
+  }
+
+  /* ── Load more (per-column) ────────────────────────────── */
+  .k-load-more {
+    text-align: center; padding: 6px 0; font-size: 10.5px;
+    color: var(--text-muted); cursor: pointer;
+    border-radius: 6px; margin-top: 2px;
+    transition: color .12s, background .12s;
+  }
+  .k-load-more:hover { color: var(--orange); background: var(--orange-dim); }
+</style>
+
+<!-- ── Create / Edit Modal ────────────────────────────────── -->
+<div class="modal-overlay" id="post-modal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">New Post</span>
+      <button class="btn-close" onclick="Modal.close('post-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:0">
+      <input type="hidden" id="edit-post-id">
+
+      <!-- Board Type -->
+      <div class="form-group">
+        <label class="form-label">Board <span style="color:var(--danger)">*</span></label>
+        <select id="post-board-type" class="form-control">
+          <option value="">— Select Board —</option>
+        </select>
+      </div>
+
+      <!-- Service Type + Subtype (2 cols) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Service Type</label>
+          <select id="post-service-type" class="form-control" onchange="onServiceTypeChange()">
+            <option value="">— Select —</option>
+          </select>
+          <div id="new-st-row" style="display:none;margin-top:6px">
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="new-st-name" class="form-control" placeholder="ชื่อ Service Type ใหม่" style="flex:1;font-size:12px;height:32px;padding:4px 10px"
+                onkeydown="if(event.key==='Enter')saveNewServiceType();else if(event.key==='Escape')cancelNewServiceType()">
+              <button onclick="saveNewServiceType()" class="btn btn-primary" style="height:32px;padding:0 12px;font-size:12px;white-space:nowrap">เพิ่ม</button>
+              <button onclick="cancelNewServiceType()" class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:12px"><i data-icon="x"></i></button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Sub Type</label>
+          <select id="post-service-subtype" class="form-control" onchange="onSubtypeChange()">
+            <option value="">— Select —</option>
+          </select>
+          <div id="new-sst-row" style="display:none;margin-top:6px">
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="new-sst-name" class="form-control" placeholder="ชื่อ Sub Type ใหม่" style="flex:1;font-size:12px;height:32px;padding:4px 10px"
+                onkeydown="if(event.key==='Enter')saveNewSubtype();else if(event.key==='Escape')cancelNewSubtype()">
+              <button onclick="saveNewSubtype()" class="btn btn-primary" style="height:32px;padding:0 12px;font-size:12px;white-space:nowrap">เพิ่ม</button>
+              <button onclick="cancelNewSubtype()" class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:12px"><i data-icon="x"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" id="status-field-row" style="margin-top:14px;display:none">
+        <label class="form-label">Status</label>
+        <select id="post-status" class="form-control">
+          <option value="open">Open</option>
+          <option value="in_progress">In Progress</option>
+          <option value="resolved">Resolved</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">Title <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="post-title" class="form-control" placeholder="Post title" maxlength="200">
+      </div>
+      <div class="form-group" style="position:relative">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <label class="form-label" style="margin-bottom:0">Content</label>
+          <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;font-weight:600;color:var(--text-muted);padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);transition:all .15s"
+            onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">
+            <i data-icon="paperclip"></i> แนบรูป
+            <input type="file" id="img-file" accept="image/*" style="display:none" multiple onchange="handleContentImageFiles(this.files,'post-content')">
+          </label>
+        </div>
+        <textarea id="post-content" class="form-control" placeholder="Write your update... (@ to mention, paste image to upload)" rows="6"></textarea>
+        <div id="post-mention-dd" style="display:none;position:absolute;bottom:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:300;overflow:hidden;max-height:200px;overflow-y:auto"></div>
+        <div id="post-img-uploading" style="display:none;font-size:10px;color:var(--text-muted);margin-top:4px">⏳ กำลังอัปโหลดรูป...</div>
+      </div>
+      <input type="hidden" id="post-image-url">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('post-modal')">Cancel</button>
+      <button class="btn btn-primary" id="save-post-btn" onclick="savePost()">
+        <span id="save-post-text">Create Post</span>
+        <span id="save-post-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/skeletons.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/analytics.js"></script>
+<script src="./assets/js/analytics-features.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script>
+  if (!Auth.requireAuth()) {}
+  Layout.render('board');
+
+  const currentUser = Auth.getUser();
+  let allPosts = [];
+  let uploadedImageUrl = null;
+  let boardConfig = { categories: [], service_types: [] };
+  let activeTab = '';  // board_type id, '' = all
+  let userAvatarMap = {};  // { userId: avatar_url }
+  let allUsers = [];        // [{id,name,username,avatar_url}]
+  let postMentions = [];    // [{id,name}] for current post create/edit form
+  let cmtMentions  = [];    // [{id,name}] for current comment form
+  let cmtCurrentPostId = null;
+  let commentCountMap = {}; // { postId: count }
+  // Pagination
+  let boardOffset = 0;
+  let boardTotal  = 0;
+  let historyPanelOpen = false;
+  const BOARD_PAGE_SIZE = 100;   // Kanban shows all posts across columns
+
+  const STATUS_LABELS = { open: 'Open', in_progress: 'In Progress', resolved: 'Resolved' };
+  const STATUS_ORDER  = ['open', 'in_progress', 'resolved'];
+
+  // Drag state
+  let _dragPostId = null;
+  let _dragFromStatus = null;
+
+  // ── Starred tab ─────────────────────────────────────────
+  let isStarredTab = false;
+
+  // ── Real-time poll ──────────────────────────────────────
+  let _lastLoadTs  = new Date().toISOString();
+  let _pollTimer   = null;
+  const POLL_MS    = 30000; // 30 seconds
+
+  // ── Markdown renderer (marked.js + DOMPurify) ───────────
+  if (typeof marked !== 'undefined') {
+    marked.setOptions({ breaks: true, gfm: true });
+    DOMPurify.addHook('afterSanitizeAttributes', node => {
+      if (node.tagName === 'A') { node.setAttribute('target', '_blank'); node.setAttribute('rel', 'noopener noreferrer'); }
+    });
+  }
+  function renderMd(text) {
+    if (!text) return '';
+    if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') return escHtml(text);
+    const raw = marked.parse(String(text));
+    return DOMPurify.sanitize(raw, {
+      ALLOWED_TAGS: ['p','br','strong','em','code','pre','ul','ol','li','blockquote',
+                     'a','h1','h2','h3','h4','h5','h6','hr','table','thead','tbody','tr','th','td','del','s',
+                     'img'],
+      ALLOWED_ATTR: ['href','target','rel','class','src','alt','title','width','height'],
+      FORCE_BODY:   true,
+    });
+  }
+  // Plain-text excerpt (for card preview — no HTML)
+  function mdExcerpt(text, maxLen = 120) {
+    if (!text) return '';
+    const stripped = text.replace(/[#*_`~>\[\]!]/g, '').replace(/\n+/g, ' ').trim();
+    return stripped.length > maxLen ? stripped.slice(0, maxLen) + '…' : stripped;
+  }
+
+  // Extract first inline image URL from markdown content
+  function extractFirstImageUrl(content) {
+    if (!content) return null;
+    const m = content.match(/!\[.*?\]\((.*?)\)/);
+    return m ? m[1] : null;
+  }
+
+  // Load user avatars + user list for @mention
+  API.users.avatars().then(res => {
+    if (res?.ok) {
+      const users = res.data.data || [];
+      users.forEach(u => { userAvatarMap[u.id] = u.avatar_url || ''; });
+      allUsers = users.map(u => ({ id: u.id, name: u.name || '', username: u.username || '', avatar_url: u.avatar_url || '' }));
+      // Set my avatar in comment box
+      const me = users.find(u => u.id === currentUser.id);
+      const myAvEl = document.getElementById('cmt-my-avatar');
+      if (myAvEl) {
+        myAvEl.style.background = _authorColor(currentUser.id);
+        if (me?.avatar_url) {
+          myAvEl.innerHTML = `<img src="${escHtml(me.avatar_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+        } else {
+          myAvEl.textContent = getInitials(currentUser.name || '?');
+        }
+      }
+      // Re-render visible cards to update avatars
+      document.querySelectorAll('[data-author-id]').forEach(el => {
+        const uid = el.dataset.authorId;
+        const name = el.dataset.authorName || '';
+        el.innerHTML = _avatarHtml(uid, name);
+      });
+    }
+  });
+
+  // ── @Mention picker ──────────────────────────────────────
+  function initMentionPicker(textarea, dropdownEl, getMentions, setMentions) {
+    let matchStart = -1;
+    let _lastQ = null;
+    textarea.addEventListener('input', () => {
+      const text   = textarea.value;
+      const cursor = textarea.selectionStart;
+      const before = text.slice(0, cursor);
+      const match  = before.match(/@(\w*)$/);
+      if (!match) { dropdownEl.style.display = 'none'; return; }
+      matchStart = cursor - match[0].length;
+      const q = match[1].toLowerCase();
+      if (q === _lastQ) return; // skip rebuild if query unchanged
+      _lastQ = q;
+
+      // Build list: @allsm first (if query matches), then individual users
+      const showAll = 'allsm'.startsWith(q) || q === '';
+      const hits = allUsers.filter(u =>
+        u.name.toLowerCase().startsWith(q) || u.username.toLowerCase().startsWith(q)
+      ).slice(0, showAll ? 6 : 7);
+      if (!showAll && !hits.length) { dropdownEl.style.display = 'none'; return; }
+
+      const allsmItem = showAll
+        ? `<div class="mention-opt sel" data-idx="0" data-id="__all__" data-name="allsm" style="border-bottom:1px solid var(--border)">
+            <div class="mention-opt-av" style="background:#7c3aed;font-size:13px">👥</div>
+            <div>
+              <span class="mention-opt-name" style="color:#7c3aed">All SM Team</span>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:1px">Notify everyone in the team</div>
+            </div>
+            <span class="mention-opt-user">@allsm</span>
+          </div>`
+        : '';
+      const offset = showAll ? 1 : 0;
+
+      dropdownEl.style.display = 'block';
+      dropdownEl.innerHTML = allsmItem + hits.map((u, i) =>
+        `<div class="mention-opt${!showAll && i===0?' sel':''}" data-idx="${i+offset}" data-id="${escHtml(u.id)}" data-name="${escHtml(u.name)}">
+          <div class="mention-opt-av" style="background:${_authorColor(u.id)}">${u.avatar_url ? `<img src="${escHtml(u.avatar_url)}">` : escHtml(getInitials(u.name))}</div>
+          <span class="mention-opt-name">${escHtml(u.name)}</span>
+          <span class="mention-opt-user">@${escHtml(u.username)}</span>
+        </div>`).join('');
+      dropdownEl.dataset.sel = '0';
+      dropdownEl.querySelectorAll('.mention-opt').forEach(opt => {
+        opt.addEventListener('mousedown', e => {
+          e.preventDefault();
+          insertMention(textarea, dropdownEl, matchStart, getMentions, setMentions, opt.dataset.id, opt.dataset.name);
+        });
+      });
+    });
+    textarea.addEventListener('keydown', e => {
+      if (dropdownEl.style.display === 'none') return;
+      const opts = dropdownEl.querySelectorAll('.mention-opt');
+      let sel = parseInt(dropdownEl.dataset.sel || '0');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        opts[sel]?.classList.remove('sel');
+        sel = (sel + 1) % opts.length;
+        opts[sel]?.classList.add('sel');
+        dropdownEl.dataset.sel = sel;
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        opts[sel]?.classList.remove('sel');
+        sel = (sel - 1 + opts.length) % opts.length;
+        opts[sel]?.classList.add('sel');
+        dropdownEl.dataset.sel = sel;
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        const chosen = opts[sel];
+        if (chosen) { e.preventDefault(); insertMention(textarea, dropdownEl, matchStart, getMentions, setMentions, chosen.dataset.id, chosen.dataset.name); }
+      } else if (e.key === 'Escape') {
+        dropdownEl.style.display = 'none'; _lastQ = null;
+      }
+    });
+    document.addEventListener('click', e => {
+      if (!dropdownEl.contains(e.target) && e.target !== textarea) {
+        dropdownEl.style.display = 'none'; _lastQ = null;
+      }
+    });
+  }
+
+  function insertMention(textarea, dropdown, start, getMentions, setMentions, uid, uname) {
+    const text     = textarea.value;
+    const cursor   = textarea.selectionStart;
+    const before   = text.slice(0, start);
+    const after    = text.slice(cursor);
+    const tag      = `@${uname} `;
+    textarea.value = before + tag + after;
+    const pos      = (before + tag).length;
+    textarea.setSelectionRange(pos, pos);
+    const cur = getMentions();
+    if (!cur.find(m => m.id === uid)) setMentions([...cur, { id: uid, name: uname }]);
+    dropdown.style.display = 'none';
+    textarea.focus();
+  }
+
+  // Init mention picker on post-content textarea
+  initMentionPicker(
+    document.getElementById('post-content'),
+    document.getElementById('post-mention-dd'),
+    () => postMentions,
+    v => postMentions = v
+  );
+  // Init mention picker on comment textarea
+  initMentionPicker(
+    document.getElementById('cmt-input'),
+    document.getElementById('cmt-mention-dd'),
+    () => cmtMentions,
+    v => cmtMentions = v
+  );
+
+  // ── Load config (tabs + service types) ─────────────────
+  async function loadConfig() {
+    const res = await API.boardConfig.get();
+    if (res?.ok) {
+      boardConfig = res.data.data || { categories: [], service_types: [] };
+      renderTabs();
+      populateBoardTypeSelect();
+      populateServiceTypeSelect();
+    }
+  }
+
+  function renderTabs() {
+    const container = document.getElementById('board-tabs');
+    const tabsHtml = boardConfig.categories
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map(c => `<div class="board-tab" data-type="${escHtml(c.id)}" onclick="switchTab(this,'${c.id}')">${escHtml(c.name)}</div>`)
+      .join('');
+    container.innerHTML = `<div class="board-tab active" data-type="" onclick="switchTab(this,'')">All</div>${tabsHtml}<div class="board-tab" data-type="__starred__" onclick="switchStarred(this)" style="margin-left:auto">★ Starred</div>`;
+  }
+
+  function switchTab(el, typeId) {
+    document.querySelectorAll('.board-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    activeTab    = typeId;
+    isStarredTab = false;
+    boardOffset  = 0;
+    loadPosts();
+  }
+
+  function switchStarred(el) {
+    document.querySelectorAll('.board-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    isStarredTab = true;
+    activeTab    = '';
+    boardOffset  = 0;
+    loadPosts();
+  }
+
+  function populateBoardTypeSelect() {
+    const sel = document.getElementById('post-board-type');
+    const opts = boardConfig.categories
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map(c => `<option value="${escHtml(c.id)}">${escHtml(c.name)}</option>`)
+      .join('');
+    sel.innerHTML = `<option value="">— Select Board —</option>${opts}`;
+  }
+
+  function populateServiceTypeSelect() {
+    const sel = document.getElementById('post-service-type');
+    const opts = boardConfig.service_types
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map(st => `<option value="${escHtml(st.id)}" data-name="${escHtml(st.name)}">${escHtml(st.name)}</option>`)
+      .join('');
+    sel.innerHTML = `<option value="">— Select —</option>${opts}<option value="__new_st__" style="color:var(--orange);font-weight:600">+ เพิ่ม Service Type ใหม่...</option>`;
+    document.getElementById('post-service-subtype').innerHTML = '<option value="">— Select —</option>';
+    document.getElementById('new-st-row').style.display = 'none';
+    document.getElementById('new-sst-row').style.display = 'none';
+  }
+
+  function onServiceTypeChange() {
+    const stId = document.getElementById('post-service-type').value;
+
+    if (stId === '__new_st__') {
+      document.getElementById('post-service-type').value = '';
+      document.getElementById('new-st-row').style.display = 'block';
+      document.getElementById('new-st-name').focus();
+      return;
+    }
+
+    document.getElementById('new-st-row').style.display = 'none';
+    document.getElementById('new-sst-row').style.display = 'none';
+
+    const st = boardConfig.service_types.find(s => s.id === stId);
+    const sel = document.getElementById('post-service-subtype');
+
+    if (!stId) {
+      sel.innerHTML = '<option value="">— Select —</option>';
+      return;
+    }
+    if (!st || !st.subtypes?.length) {
+      sel.innerHTML = `<option value="">— None —</option><option value="__new_sst__" style="color:var(--orange);font-weight:600">+ เพิ่ม Sub Type ใหม่...</option>`;
+      return;
+    }
+    const opts = st.subtypes
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map(s => `<option value="${escHtml(s.id)}" data-name="${escHtml(s.name)}">${escHtml(s.name)}</option>`)
+      .join('');
+    sel.innerHTML = `<option value="">— Select —</option>${opts}<option value="__new_sst__" style="color:var(--orange);font-weight:600">+ เพิ่ม Sub Type ใหม่...</option>`;
+  }
+
+  function onSubtypeChange() {
+    const sstId = document.getElementById('post-service-subtype').value;
+    if (sstId === '__new_sst__') {
+      document.getElementById('post-service-subtype').value = '';
+      document.getElementById('new-sst-row').style.display = 'block';
+      document.getElementById('new-sst-name').focus();
+    }
+  }
+
+  async function saveNewServiceType() {
+    const input = document.getElementById('new-st-name');
+    const name = input.value.trim();
+    if (!name) return;
+    const res = await API.boardConfig.addServiceType({ name });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'เพิ่มไม่สำเร็จ'); return; }
+    const cfgRes = await API.boardConfig.get();
+    if (cfgRes?.ok) boardConfig = cfgRes.data.data || boardConfig;
+    populateServiceTypeSelect();
+    const newSt = boardConfig.service_types.find(s => s.name === name);
+    if (newSt) {
+      document.getElementById('post-service-type').value = newSt.id;
+      onServiceTypeChange();
+    }
+    input.value = '';
+    Toast.success(`เพิ่ม Service Type "${name}" แล้ว`);
+  }
+
+  function cancelNewServiceType() {
+    document.getElementById('new-st-row').style.display = 'none';
+    document.getElementById('new-st-name').value = '';
+  }
+
+  async function saveNewSubtype() {
+    const stId = document.getElementById('post-service-type').value;
+    if (!stId) { Toast.error('กรุณาเลือก Service Type ก่อน'); return; }
+    const input = document.getElementById('new-sst-name');
+    const name = input.value.trim();
+    if (!name) return;
+    const res = await API.boardConfig.addSubtype(stId, { name });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'เพิ่มไม่สำเร็จ'); return; }
+    const cfgRes = await API.boardConfig.get();
+    if (cfgRes?.ok) boardConfig = cfgRes.data.data || boardConfig;
+    onServiceTypeChange();
+    const st = boardConfig.service_types.find(s => s.id === stId);
+    const newSst = st?.subtypes?.find(s => s.name === name);
+    if (newSst) document.getElementById('post-service-subtype').value = newSst.id;
+    input.value = '';
+    document.getElementById('new-sst-row').style.display = 'none';
+    Toast.success(`เพิ่ม Sub Type "${name}" แล้ว`);
+  }
+
+  function cancelNewSubtype() {
+    document.getElementById('new-sst-row').style.display = 'none';
+    document.getElementById('new-sst-name').value = '';
+  }
+
+  // ── Load posts (Kanban shows all in one page) ───────────
+  async function loadPosts(append = false) {
+    if (!append) { boardOffset = 0; allPosts = []; }
+    const search = document.getElementById('search-input').value.trim();
+    const res = await API.board.list(search, activeTab, '', BOARD_PAGE_SIZE, boardOffset, isStarredTab);
+    if (!res?.ok) { Toast.error('Failed to load posts'); return; }
+    const { items = [], total = 0 } = res.data.data || {};
+    boardTotal = total;
+    allPosts   = append ? allPosts.concat(items) : items;
+    boardOffset = allPosts.length;
+    renderKanban(allPosts, boardOffset < boardTotal);
+
+    // Update poll baseline after each full load
+    if (!append) {
+      _lastLoadTs = new Date().toISOString();
+      hideBanner();
+    }
+  }
+
+  // ── Real-time poll ──────────────────────────────────────
+  function startBoardPoller() {
+    if (_pollTimer) return;
+    _pollTimer = setInterval(async () => {
+      if (document.hidden || isStarredTab) return;
+      try {
+        const r = await API.board.poll(_lastLoadTs);
+        if (!r?.ok) return;
+        const { count = 0 } = r.data.data || {};
+        if (count > 0) showBanner(count);
+      } catch {}
+    }, POLL_MS);
+  }
+
+  function showBanner(count) {
+    const b = document.getElementById('new-posts-banner');
+    document.getElementById('new-posts-text').textContent =
+      count === 1 ? 'มี 1 โพสต์ใหม่' : `มี ${count} โพสต์ใหม่`;
+    b.style.display = 'flex';
+  }
+  function hideBanner() {
+    document.getElementById('new-posts-banner').style.display = 'none';
+  }
+  function reloadAndDismissBanner() { hideBanner(); loadPosts(); }
+  function dismissBanner(e) { if (e) e.stopPropagation(); hideBanner(); }
+
+  // Render a mention-highlighted text (plain text with @Name → styled span)
+  function renderMentionText(text, mentions) {
+    let out = escHtml(text);
+    (mentions || []).forEach(m => {
+      const isAll   = m.id === '__all__';
+      const escaped = escHtml(m.name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const cls     = isAll ? 'mention-tag all' : 'mention-tag';
+      out = out.replace(new RegExp('@' + escaped, 'g'), `<span class="${cls}">@${escHtml(m.name)}</span>`);
+    });
+    return out;
+  }
+
+  // ── Render Kanban board ──────────────────────────────────
+  function renderKanban(posts, hasMore = false) {
+    // Split into pinned + status buckets
+    const pinned = posts.filter(p => p.pinned);
+    const buckets = { open: [], in_progress: [], resolved: [] };
+    posts.forEach(p => {
+      const st = STATUS_ORDER.includes(p.status) ? p.status : 'open';
+      buckets[st].push(p);
+    });
+
+    // Pin strip
+    const pinStrip = document.getElementById('pin-strip');
+    const pinScroll = document.getElementById('pin-strip-scroll');
+    const pinCount = document.getElementById('pin-strip-count');
+    if (pinned.length) {
+      pinStrip.style.display = 'flex';
+      pinCount.textContent = pinned.length;
+      pinScroll.innerHTML = pinned.map(p => buildPinChip(p)).join('');
+    } else {
+      pinStrip.style.display = 'none';
+    }
+
+    // Columns
+    STATUS_ORDER.forEach(st => {
+      const body = document.getElementById('col-body-' + st);
+      const cnt  = document.getElementById('col-count-' + st);
+      cnt.textContent = buckets[st].length;
+      if (buckets[st].length === 0) {
+        body.innerHTML = `<div class="kanban-col-empty">No ${STATUS_LABELS[st].toLowerCase()} posts.<br>Drop a card here to move it.</div>`;
+      } else {
+        body.innerHTML = buckets[st].map(p => buildKanbanCard(p)).join('');
+      }
+    });
+
+    // Load more (rare — only if >100 posts)
+    if (hasMore) {
+      const wrap = document.getElementById('board-container');
+      let btn = document.getElementById('kanban-load-more');
+      if (!btn) {
+        btn = document.createElement('div');
+        btn.id = 'kanban-load-more';
+        btn.style.cssText = 'text-align:center;padding:8px 0;flex-shrink:0';
+        btn.innerHTML = `<button class="btn btn-ghost" onclick="loadPosts(true)" style="font-size:12px;padding:6px 24px">Load more · ${boardTotal - boardOffset} more</button>`;
+        wrap.appendChild(btn);
+      } else {
+        btn.querySelector('button').textContent = `Load more · ${boardTotal - boardOffset} more`;
+      }
+    } else {
+      document.getElementById('kanban-load-more')?.remove();
+    }
+
+    // Refresh comment counts
+    posts.forEach(p => {
+      const el = document.getElementById('cmt-n-' + p.id);
+      if (el) el.textContent = commentCountMap[p.id] !== undefined ? commentCountMap[p.id] : '—';
+    });
+    loadAllCommentCounts(posts.map(p => p.id));
+  }
+
+  async function loadAllCommentCounts(ids) {
+    if (!ids.length) return;
+    try {
+      const r = await API.comments.counts(ids);
+      if (!r?.ok) return;
+      const map = r.data.data || {};
+      Object.entries(map).forEach(([pid, cnt]) => {
+        commentCountMap[pid] = cnt;
+        const el = document.getElementById('cmt-n-' + pid);
+        if (el) el.textContent = cnt;
+      });
+    } catch {}
+  }
+
+  // Generate consistent color from user id
+  function _authorColor(id) {
+    const palette = ['#7c3aed','#2563eb','#059669','#d97706','#dc2626','#0891b2','#be185d'];
+    let h = 0;
+    for (let i = 0; i < (id || '').length; i++) h = (id.charCodeAt(i) + ((h << 5) - h)) | 0;
+    return palette[Math.abs(h) % palette.length];
+  }
+
+  function _avatarHtml(authorId, authorName) {
+    const url = userAvatarMap[authorId];
+    if (url) return `<img src="${escHtml(url)}" alt="${escHtml(authorName)}" onerror="this.parentElement.style.background='${_authorColor(authorId)}';this.remove();this.parentElement.textContent='${escHtml(getInitials(authorName))}'">`;
+    return escHtml(getInitials(authorName));
+  }
+
+  // ── Build one Kanban card (compact) ─────────────────────
+  function buildKanbanCard(p) {
+    const canEdit   = p.author_id === currentUser.id || Roles.canManage(currentUser.role);
+    const canDrag   = canEdit;  // same permission as status edit (server enforces)
+    const canPin    = Roles.canManage(currentUser.role);
+    const canDelete = canEdit;
+
+    // Thumbnail (only if inline image detected)
+    const imgUrl  = p.image_url || extractFirstImageUrl(p.content);
+    const imgHtml = imgUrl
+      ? `<img class="k-card-thumb" src="${escHtml(imgUrl)}" alt="" onerror="this.style.display='none'">`
+      : '';
+
+    // Tags (skip status — column already conveys it)
+    const tags = [];
+    if (p.board_type_name)   tags.push(`<span class="badge badge-blue" style="font-size:9.5px;padding:1px 6px">${escHtml(p.board_type_name)}</span>`);
+    if (p.service_type_name) {
+      const label = p.service_subtype_name
+        ? `${escHtml(p.service_type_name)} · ${escHtml(p.service_subtype_name)}`
+        : escHtml(p.service_type_name);
+      tags.push(`<span class="badge badge-gray" style="font-size:9.5px;padding:1px 6px">${label}</span>`);
+    }
+    const tagsHtml = tags.length ? `<div class="k-card-tags">${tags.join('')}</div>` : '';
+
+    const excerpt = mdExcerpt(p.content || '', 90);
+    const starIcon  = p.starred ? '<i data-icon="star"></i>' : '<i data-icon="star"></i>';
+    const starStyle = p.starred ? 'color:#f59e0b' : 'color:var(--text-muted)';
+
+    return `
+      <div class="k-card${canDrag ? ' can-drag' : ''}" id="card-${p.id}"
+           ${canDrag ? `draggable="true" ondragstart="onCardDragStart(event,'${p.id}','${p.status || 'open'}')" ondragend="onCardDragEnd(event)"` : ''}
+           onclick="openDetail('${p.id}')">
+        ${imgHtml}
+        ${tagsHtml}
+        <div class="k-card-title">${escHtml(p.title)}</div>
+        ${excerpt ? `<div class="k-card-excerpt">${escHtml(excerpt)}</div>` : ''}
+        <div class="k-card-foot">
+          <div class="k-avatar"
+               data-author-id="${escHtml(p.author_id)}"
+               data-author-name="${escHtml(p.author_name)}"
+               style="background:${_authorColor(p.author_id)}"
+               title="${escHtml(p.author_name)}">${_avatarHtml(p.author_id, p.author_name)}</div>
+          <span title="${DateTime.format(p.created_at)}">${DateTime.timeAgo(p.created_at)}</span>
+          <span class="k-card-cmt" onclick="openDetail('${p.id}');event.stopPropagation()">💬 <span id="cmt-n-${p.id}">—</span></span>
+          <div class="k-card-actions">
+            <button class="btn btn-ghost btn-icon btn-sm" id="star-btn-${p.id}" data-tip="${p.starred ? 'Unstar' : 'Star'}" style="${starStyle}" onclick="toggleStar('${p.id}',event)">${starIcon}</button>
+            ${canPin    ? `<button class="btn btn-ghost btn-icon btn-sm" data-tip="${p.pinned ? 'Unpin' : 'Pin'}" onclick="togglePin('${p.id}',event)">${p.pinned ? '📌' : '⊙'}</button>` : ''}
+            ${canEdit   ? `<button class="btn btn-ghost btn-icon btn-sm" data-tip="Edit" onclick="editPost('${p.id}',event)"><i data-icon="pencil"></i></button>` : ''}
+            ${canDelete ? `<button class="btn btn-ghost btn-icon btn-sm" data-tip="Delete" style="color:var(--danger)" onclick="deletePost('${p.id}',event)"><i data-icon="x"></i></button>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ── Build one pinned chip (top strip) ───────────────────
+  function buildPinChip(p) {
+    const st = p.status || 'open';
+    return `
+      <div class="pin-chip" onclick="openDetail('${p.id}')">
+        <div class="pin-chip-title">${escHtml(p.title)}</div>
+        <div class="pin-chip-meta">
+          <span class="status-badge status-${st}" style="padding:1px 6px;font-size:9px">${STATUS_LABELS[st] || st}</span>
+          <span>·</span>
+          <span>${escHtml(p.author_name)}</span>
+          <span>·</span>
+          <span>${DateTime.timeAgo(p.created_at)}</span>
+        </div>
+      </div>`;
+  }
+
+  // ── Drag & Drop ──────────────────────────────────────────
+  function onCardDragStart(ev, postId, fromStatus) {
+    ev.stopPropagation();
+    _dragPostId     = postId;
+    _dragFromStatus = fromStatus;
+    ev.dataTransfer.effectAllowed = 'move';
+    try { ev.dataTransfer.setData('text/plain', postId); } catch(e) {}
+    const el = document.getElementById('card-' + postId);
+    if (el) el.classList.add('dragging');
+  }
+
+  function onCardDragEnd(ev) {
+    const el = ev.currentTarget;
+    if (el) el.classList.remove('dragging');
+    document.querySelectorAll('.kanban-col.drop-over').forEach(c => c.classList.remove('drop-over'));
+    _dragPostId = null;
+    _dragFromStatus = null;
+  }
+
+  function onColDragOver(ev, status) {
+    if (!_dragPostId) return;
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = 'move';
+    ev.currentTarget.classList.add('drop-over');
+  }
+
+  function onColDragLeave(ev) {
+    // Only remove if we're truly leaving the column (not entering a child)
+    if (ev.currentTarget.contains(ev.relatedTarget)) return;
+    ev.currentTarget.classList.remove('drop-over');
+  }
+
+  async function onColDrop(ev, newStatus) {
+    ev.preventDefault();
+    ev.currentTarget.classList.remove('drop-over');
+    const postId = _dragPostId;
+    const oldStatus = _dragFromStatus;
+    _dragPostId = null;
+    _dragFromStatus = null;
+    if (!postId || !newStatus || newStatus === oldStatus) return;
+
+    const post = allPosts.find(p => p.id === postId);
+    if (!post) return;
+
+    // Optimistic update
+    post.status = newStatus;
+    renderKanban(allPosts, boardOffset < boardTotal);
+
+    const res = await API.board.update(postId, { status: newStatus });
+    if (res?.ok) {
+      Toast.success(`Moved to ${STATUS_LABELS[newStatus]}`);
+    } else {
+      // Rollback
+      post.status = oldStatus;
+      renderKanban(allPosts, boardOffset < boardTotal);
+      Toast.error(res?.data?.message || 'Failed to update status');
+    }
+  }
+
+  // ── Detail modal ─────────────────────────────────────────
+  function openDetail(id) {
+    const p = allPosts.find(x => x.id === id);
+    if (!p) return;
+
+    const canEdit   = p.author_id === currentUser.id || Roles.canManage(currentUser.role);
+    const canPin    = Roles.canManage(currentUser.role);
+    const canDelete = canEdit;
+
+    // Image
+    const img = document.getElementById('detail-img');
+    if (p.image_url) { img.src = p.image_url; img.style.display = 'block'; }
+    else             { img.src = ''; img.style.display = 'none'; }
+
+    // Title
+    document.getElementById('detail-modal-title').textContent = p.title;
+    document.getElementById('detail-title').textContent = p.title;
+
+    // Content (render as Markdown)
+    document.getElementById('detail-content').innerHTML = renderMd(p.content || '');
+
+    // Badges
+    const pSt = p.status || 'open';
+    const badges = [`<span class="status-badge status-${pSt}">${STATUS_LABELS[pSt] || pSt}</span>`];
+    if (p.pinned) badges.push('<span class="badge badge-orange"><i data-icon="pin"></i> Pinned</span>');
+    if (p.board_type_name) badges.push(`<span class="badge badge-blue" style="font-size:10px">${escHtml(p.board_type_name)}</span>`);
+    if (p.service_type_name) {
+      const label = p.service_subtype_name
+        ? `${escHtml(p.service_type_name)} · ${escHtml(p.service_subtype_name)}`
+        : escHtml(p.service_type_name);
+      badges.push(`<span class="badge badge-gray" style="font-size:10px">${label}</span>`);
+    }
+    document.getElementById('detail-badges').innerHTML = badges.join('');
+
+    // Edit history
+    historyPanelOpen = false;
+    const histSection = document.getElementById('detail-history-section');
+    const history = p.edit_history || [];
+    if (history.length) {
+      histSection.style.display = '';
+      document.getElementById('history-count-badge').textContent = history.length;
+      document.getElementById('history-toggle-icon').innerHTML = '<i data-icon="play"></i>';
+      document.getElementById('history-panel').style.display = 'none';
+      document.getElementById('history-panel').innerHTML = history.map(h => `
+        <div class="hist-item">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <span style="font-weight:700;color:var(--text)">${escHtml(h.editor_name)}</span>
+            <span style="color:var(--text-muted);font-size:10px">${DateTime.timeAgo(h.edited_at)}</span>
+            <span class="status-badge status-${escHtml(h.old_status || 'open')}" style="margin-left:auto">${STATUS_LABELS[h.old_status] || h.old_status || 'open'}</span>
+          </div>
+          ${h.old_title !== p.title ? `<div style="color:var(--text-muted);font-size:10px">Was: "${escHtml(h.old_title)}"</div>` : ''}
+        </div>`).join('');
+    } else {
+      histSection.style.display = 'none';
+    }
+
+    // Meta
+    const avatarColor = _authorColor(p.author_id);
+    document.getElementById('detail-meta').innerHTML = `
+      <div class="board-author-avatar-wrap" style="background:${avatarColor};cursor:pointer"
+           onclick="window.location.href='./profile.html?user=${escHtml(p.author_id)}'"
+           title="Click to view profile">${_avatarHtml(p.author_id, p.author_name)}</div>
+      <span>${makeUserClickable(p.author_id, p.author_name)}</span>
+      <span>·</span>
+      <span>${DateTime.format(p.created_at)}</span>`;
+
+    // Actions
+    const isStarred = p.starred ?? false;
+    let actionsHtml = `<button class="btn btn-ghost btn-sm" id="detail-star-btn" style="${isStarred ? 'color:#f59e0b' : ''}" onclick="toggleStar('${p.id}',event)">${isStarred ? '<i data-icon="star"></i> Starred' : '<i data-icon="star"></i> Star'}</button>`;
+    if (canPin)    actionsHtml += `<button class="btn btn-ghost btn-sm" onclick="togglePin('${p.id}',event)">${p.pinned ? '<i data-icon="pin"></i> Unpin' : '⊙ Pin'}</button>`;
+    if (canEdit)   actionsHtml += `<button class="btn btn-ghost btn-sm" onclick="editPost('${p.id}',event);Modal.close('detail-modal')">✎ Edit</button>`;
+    if (canDelete) actionsHtml += `<button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deletePost('${p.id}',event);Modal.close('detail-modal')">✕ Delete</button>`;
+    document.getElementById('detail-actions').innerHTML = actionsHtml;
+
+    Modal.open('detail-modal');
+    // Load comments
+    cmtCurrentPostId   = id;
+    cmtMentions = [];
+    document.getElementById('cmt-input').value = '';
+    loadComments(id);
+  }
+
+  // ── Comments ─────────────────────────────────────────────
+  async function loadComments(postId) {
+    const list = document.getElementById('comments-list');
+    if (!list) return;
+    list.innerHTML = `<div style="font-size:11px;color:var(--text-muted);text-align:center;padding:12px 0">Loading...</div>`;
+    const res = await API.comments.list(postId);
+    if (!res?.ok) { list.innerHTML = `<div style="font-size:11px;color:var(--text-muted);text-align:center;padding:12px 0">Failed to load comments</div>`; return; }
+    const comments = res.data.data || [];
+
+    // Update count
+    commentCountMap[postId] = comments.length;
+    const el = document.getElementById('cmt-n-' + postId);
+    if (el) el.textContent = comments.length;
+
+    // Section header
+    const sectionHd = document.getElementById('comments-section');
+    // Add/update header
+    const existingHd = document.getElementById('cmt-section-hd');
+    if (!existingHd) {
+      const hd = document.createElement('div');
+      hd.id = 'cmt-section-hd';
+      hd.className = 'cmt-section-hd';
+      hd.innerHTML = `<span class="cmt-section-title">Comments</span><span class="cmt-count-badge" id="cmt-count-badge">${comments.length}</span>`;
+      sectionHd.insertBefore(hd, sectionHd.firstChild);
+    } else {
+      document.getElementById('cmt-count-badge').textContent = comments.length;
+    }
+
+    if (!comments.length) {
+      list.innerHTML = `<div style="font-size:11px;color:var(--text-muted);text-align:center;padding:20px 0;opacity:.6">No comments yet — be the first!</div>`;
+      return;
+    }
+    list.innerHTML = comments.map(c => buildComment(c)).join('');
+  }
+
+  function buildComment(c) {
+    const canDel  = c.author_id === currentUser.id || Roles.canManage(currentUser.role);
+    const canEdit = c.author_id === currentUser.id;
+    const av = userAvatarMap[c.author_id];
+    const avHtml = av
+      ? `<img src="${escHtml(av)}" onerror="this.parentElement.style.background='${_authorColor(c.author_id)}';this.parentElement.textContent='${escHtml(getInitials(c.author_name))}';this.remove()">`
+      : escHtml(getInitials(c.author_name));
+    return `
+      <div class="cmt-item" id="cmt-${escHtml(c.id)}">
+        <div class="cmt-avatar" style="background:${_authorColor(c.author_id)};cursor:pointer"
+             onclick="window.location.href='./profile.html?user=${escHtml(c.author_id)}'"
+             title="Click to view profile">${avHtml}</div>
+        <div class="cmt-bubble">
+          <div class="cmt-bubble-head">
+            <span class="cmt-author">${makeUserClickable(c.author_id, c.author_name)}</span>
+            <span class="cmt-time">${DateTime.timeAgo(c.created_at)}</span>
+          </div>
+          <div class="cmt-text" id="cmt-text-${escHtml(c.id)}" data-raw="${escHtml(c.content)}">${renderMd(c.content)}</div>
+          ${(canEdit || canDel) ? `
+          <div class="cmt-actions">
+            ${canEdit ? `<button class="cmt-edit-btn" onclick="startEditComment('${escHtml(c.id)}')">✎</button>` : ''}
+            ${canDel  ? `<button class="cmt-del-btn"  onclick="deleteComment('${escHtml(c.id)}')">✕</button>`  : ''}
+          </div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  async function submitComment() {
+    const input   = document.getElementById('cmt-input');
+    const content = input.value.trim();
+    if (!content) { input.focus(); return; }
+    if (!cmtCurrentPostId) return;
+
+    const btn = document.getElementById('cmt-send-btn');
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    const res = await API.comments.create({
+      post_id:  cmtCurrentPostId,
+      content,
+      mentions: cmtMentions
+    });
+
+    btn.disabled = false;
+    btn.textContent = 'Send';
+
+    if (res?.ok) {
+      trackBoardComment();
+      const newComment = res.data.data;
+      input.value = '';
+      cmtMentions = [];
+
+      // Optimistic insert — append immediately without full re-fetch
+      const list = document.getElementById('comments-list');
+      const empty = list?.querySelector('[style*="No comments"]');
+      if (empty) list.innerHTML = '';
+      if (list && newComment) {
+        const div = document.createElement('div');
+        div.innerHTML = buildComment(newComment);
+        list.appendChild(div.firstElementChild);
+        div.firstElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      // Update count
+      const newCount = (commentCountMap[cmtCurrentPostId] || 0) + 1;
+      commentCountMap[cmtCurrentPostId] = newCount;
+      const chip = document.getElementById('cmt-n-' + cmtCurrentPostId);
+      if (chip) chip.textContent = newCount;
+      const badge = document.getElementById('cmt-count-badge');
+      if (badge) badge.textContent = newCount;
+    } else {
+      Toast.error(res?.data?.message || 'Failed to post comment');
+    }
+  }
+
+  // Send comment on Ctrl+Enter
+  document.getElementById('cmt-input').addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      submitComment();
+    }
+  });
+
+  function startEditComment(id) {
+    const textEl = document.getElementById('cmt-text-' + id);
+    if (!textEl || textEl.querySelector('textarea')) return; // already editing
+
+    // Grab raw markdown stored in data attribute, or strip HTML as fallback
+    const raw = textEl.dataset.raw || textEl.innerText;
+    textEl.dataset.raw = raw; // store for cancel
+
+    textEl.innerHTML = `
+      <textarea class="cmt-edit-area" id="cmt-edit-ta-${id}">${escHtml(raw)}</textarea>
+      <div class="cmt-edit-btns">
+        <button class="btn btn-primary btn-sm" onclick="saveEditComment('${id}')">บันทึก</button>
+        <button class="btn btn-ghost btn-sm" onclick="cancelEditComment('${id}')">ยกเลิก</button>
+      </div>`;
+    document.getElementById('cmt-edit-ta-' + id)?.focus();
+  }
+
+  function cancelEditComment(id) {
+    const textEl = document.getElementById('cmt-text-' + id);
+    if (!textEl) return;
+    const raw = textEl.dataset.raw || '';
+    textEl.innerHTML = renderMd(raw);
+  }
+
+  async function saveEditComment(id) {
+    const ta = document.getElementById('cmt-edit-ta-' + id);
+    if (!ta) return;
+    const content = ta.value.trim();
+    if (!content) return;
+
+    const res = await API.comments.update(id, { content });
+    if (res?.ok) {
+      const textEl = document.getElementById('cmt-text-' + id);
+      if (textEl) {
+        textEl.dataset.raw = content;
+        textEl.innerHTML = renderMd(content);
+      }
+    } else {
+      Toast.error(res?.data?.message || 'แก้ไขไม่สำเร็จ');
+    }
+  }
+
+  async function deleteComment(id) {
+    const confirmed = await confirmDialog('Delete this comment?', 'Delete Comment');
+    if (!confirmed) return;
+    const res = await API.comments.delete(id);
+    if (res?.ok) {
+      document.getElementById('cmt-' + id)?.remove();
+      // Update count
+      if (cmtCurrentPostId) {
+        const cnt = (commentCountMap[cmtCurrentPostId] || 1) - 1;
+        commentCountMap[cmtCurrentPostId] = cnt;
+        const el = document.getElementById('cmt-n-' + cmtCurrentPostId);
+        if (el) el.textContent = cnt;
+        const badge = document.getElementById('cmt-count-badge');
+        if (badge) badge.textContent = cnt;
+      }
+    } else {
+      Toast.error(res?.data?.message || 'Failed to delete');
+    }
+  }
+
+  // Reset mentions when post modal is opened
+  function resetPostMentions() { postMentions = []; }
+
+  function toggleHistoryPanel() {
+    historyPanelOpen = !historyPanelOpen;
+    document.getElementById('history-panel').style.display = historyPanelOpen ? 'flex' : 'none';
+    document.getElementById('history-toggle-icon').innerHTML = historyPanelOpen ? '▼' : '<i data-icon="play"></i>';
+  }
+
+  // ── Create/Edit modal ────────────────────────────────────
+  function openCreateModal() {
+    document.getElementById('modal-title').textContent = 'New Post';
+    document.getElementById('save-post-text').textContent = 'Create Post';
+    document.getElementById('edit-post-id').value = '';
+    document.getElementById('post-title').value = '';
+    document.getElementById('post-content').value = '';
+    document.getElementById('post-image-url').value = '';
+    uploadedImageUrl = null;
+    postMentions = [];
+    document.getElementById('status-field-row').style.display = 'none'; // hidden on create
+
+    // Pre-select active tab if not "All"
+    if (activeTab) {
+      document.getElementById('post-board-type').value = activeTab;
+    } else {
+      document.getElementById('post-board-type').value = '';
+    }
+    populateServiceTypeSelect();
+    Modal.open('post-modal');
+  }
+
+  function editPost(id, event) {
+    if (event) event.stopPropagation();
+    const p = allPosts.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('modal-title').textContent = 'Edit Post';
+    document.getElementById('save-post-text').textContent = 'Save Changes';
+    document.getElementById('edit-post-id').value = p.id;
+    document.getElementById('post-board-type').value = p.board_type || '';
+    document.getElementById('post-title').value = p.title;
+    document.getElementById('post-content').value = p.content || '';
+
+    // Status (show only when editing)
+    document.getElementById('status-field-row').style.display = '';
+    document.getElementById('post-status').value = p.status || 'open';
+
+    // Service type
+    populateServiceTypeSelect();
+    document.getElementById('post-service-type').value = p.service_type_id || '';
+    onServiceTypeChange();
+    // Need micro-delay for subtype options to render
+    setTimeout(() => {
+      document.getElementById('post-service-subtype').value = p.service_subtype_id || '';
+    }, 50);
+
+    if (p.image_url) {
+      document.getElementById('post-image-url').value = p.image_url;
+      uploadedImageUrl = p.image_url;
+    } else {
+      document.getElementById('post-image-url').value = '';
+      uploadedImageUrl = null;
+    }
+    Modal.open('post-modal');
+  }
+
+  // ── Save post ────────────────────────────────────────────
+  async function savePost() {
+    const btn  = document.getElementById('save-post-btn');
+    const text = document.getElementById('save-post-text');
+    const spin = document.getElementById('save-post-spin');
+    const id   = document.getElementById('edit-post-id').value; // keep for the API call below
+    const title = document.getElementById('post-title').value.trim();
+    const content = document.getElementById('post-content').value;
+
+    if (!title) { Toast.warning('Title is required'); return; }
+
+    // Collect board type
+    const boardTypeSel = document.getElementById('post-board-type');
+    const boardTypeId   = boardTypeSel.value;
+    const boardTypeName = boardTypeSel.options[boardTypeSel.selectedIndex]?.text || '';
+
+    // Collect service type
+    const stSel  = document.getElementById('post-service-type');
+    const stId   = stSel.value;
+    const stName = stId ? (stSel.options[stSel.selectedIndex]?.dataset?.name || stSel.options[stSel.selectedIndex]?.text || '') : '';
+
+    // Collect subtype
+    const sstSel  = document.getElementById('post-service-subtype');
+    const sstId   = sstSel.value;
+    const sstName = sstId ? (sstSel.options[sstSel.selectedIndex]?.dataset?.name || sstSel.options[sstSel.selectedIndex]?.text || '') : '';
+
+    btn.disabled = true;
+    spin.classList.remove('hidden');
+
+    const editingId = document.getElementById('edit-post-id').value;
+    const payload = {
+      title,
+      content,
+      image_url:            uploadedImageUrl || null,
+      board_type:           boardTypeId,
+      board_type_name:      boardTypeId ? boardTypeName : '',
+      service_type_id:      stId,
+      service_type_name:    stName,
+      service_subtype_id:   sstId,
+      service_subtype_name: sstName,
+      mentions:             postMentions,
+      ...(editingId ? { status: document.getElementById('post-status').value } : {})
+    };
+
+    const res = id
+      ? await API.board.update(id, payload)
+      : await API.board.create({ ...payload, status: 'open' });
+
+    btn.disabled = false;
+    spin.classList.add('hidden');
+
+    if (res?.ok) {
+      if (!id) trackBoardPostCreate(boardTypeId || 'general');
+      Toast.success(id ? 'Post updated!' : 'Post created!');
+      Modal.close('post-modal');
+      loadPosts();
+    } else {
+      Toast.error(res?.data?.message || 'Failed to save post');
+    }
+  }
+
+  // ── Toggle star (personal bookmark) ──────────────────────
+  async function toggleStar(id, event) {
+    if (event) event.stopPropagation();
+    const post = allPosts.find(p => p.id === id);
+    if (!post) return;
+    const wasStarred = post.starred ?? false;
+    const res = wasStarred ? await API.stars.unstar(id) : await API.stars.star(id);
+    if (!res?.ok) { Toast.error(res?.data?.message || 'Failed to update star'); return; }
+    // Update local state
+    post.starred = !wasStarred;
+    // Update card star button
+    const cardBtn = document.getElementById('star-btn-' + id);
+    if (cardBtn) {
+      cardBtn.innerHTML = post.starred ? '<i data-icon="star"></i>' : '<i data-icon="star"></i>';
+      cardBtn.style.color = post.starred ? '#f59e0b' : '';
+    }
+    // Update detail modal star button if open
+    const detailBtn = document.getElementById('detail-star-btn');
+    if (detailBtn) {
+      detailBtn.innerHTML = post.starred ? '<i data-icon="star"></i> Starred' : '<i data-icon="star"></i> Star';
+      detailBtn.style.color = post.starred ? '#f59e0b' : '';
+    }
+    Toast.success(post.starred ? 'Added to Starred' : 'Removed from Starred');
+    if (isStarredTab && !post.starred) loadPosts(); // refresh starred tab if unstarred
+  }
+
+  // ── Toggle pin ────────────────────────────────────────────
+  async function togglePin(id, event) {
+    if (event) event.stopPropagation();
+    const res = await API.board.pin(id);
+    if (res?.ok) { Toast.success('Pin status updated'); loadPosts(); }
+    else Toast.error(res?.data?.message || 'Failed to pin');
+  }
+
+  // ── Delete post ───────────────────────────────────────────
+  async function deletePost(id, event) {
+    if (event) event.stopPropagation();
+    const confirmed = await confirmDialog('ลบโพสต์นี้? จะถูกเก็บใน Trash 30 วัน จากนั้นลบถาวร', 'Delete Post');
+    if (!confirmed) return;
+    const res = await API.board.delete(id);
+    if (res?.ok) { Toast.success('โพสต์ถูกย้ายไป Trash'); loadPosts(); }
+    else Toast.error(res?.data?.message || 'Failed to delete');
+  }
+
+  // ── Inline image upload (paste / attach) ─────────────────
+  async function uploadSingleImage(file) {
+    if (!file || !file.type.startsWith('image/')) return null;
+    const fd = new FormData();
+    fd.append('image', file);
+    const res = await API.board.upload(fd);
+    return res?.ok ? res.data.data.url : null;
+  }
+
+  function insertTextAtCursor(textarea, text) {
+    const start = textarea.selectionStart;
+    const end   = textarea.selectionEnd;
+    const before = textarea.value.slice(0, start);
+    const after  = textarea.value.slice(end);
+    textarea.value = before + text + after;
+    const pos = start + text.length;
+    textarea.selectionStart = textarea.selectionEnd = pos;
+    textarea.dispatchEvent(new Event('input'));
+  }
+
+  async function handleContentImageFiles(files, targetId) {
+    const textarea = document.getElementById(targetId);
+    if (!textarea || !files || !files.length) return;
+    const indicatorId = targetId === 'cmt-input' ? 'cmt-img-uploading' : 'post-img-uploading';
+    const indicator = document.getElementById(indicatorId);
+    if (indicator) indicator.style.display = '';
+    for (const file of Array.from(files)) {
+      const url = await uploadSingleImage(file);
+      if (url) {
+        const md = `\n![image](${url})\n`;
+        insertTextAtCursor(textarea, md);
+        Toast.success('อัปโหลดรูปสำเร็จ <i data-icon="check"></i>');
+      } else {
+        Toast.error('อัปโหลดรูปไม่สำเร็จ');
+      }
+    }
+    if (indicator) indicator.style.display = 'none';
+    // Reset file input
+    const fileInputs = document.querySelectorAll(`label input[type="file"]`);
+    fileInputs.forEach(i => { try { i.value = ''; } catch(e) {} });
+  }
+
+  // Paste image handler (works for both post content and comment)
+  function setupPasteImageUpload(textareaId) {
+    const ta = document.getElementById(textareaId);
+    if (!ta) return;
+    ta.addEventListener('paste', async (e) => {
+      const items = Array.from(e.clipboardData?.items || []);
+      const imageItems = items.filter(i => i.type.startsWith('image/'));
+      if (!imageItems.length) return;
+      e.preventDefault();
+      // Ensure each file has a proper extension (clipboard files often have no name)
+      const files = imageItems.map(i => {
+        const raw = i.getAsFile();
+        const ext = (i.type.split('/')[1] || 'png').replace('jpeg','jpg');
+        const named = new File([raw], `clipboard-image.${ext}`, { type: i.type });
+        return named;
+      });
+      await handleContentImageFiles(files, textareaId);
+    });
+    // Drag and drop directly onto textarea
+    ta.addEventListener('dragover', e => e.preventDefault());
+    ta.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+      if (files.length) await handleContentImageFiles(files, textareaId);
+    });
+  }
+
+  setupPasteImageUpload('post-content');
+  setupPasteImageUpload('cmt-input');
+
+  // ── Search ────────────────────────────────────────────────
+  const doSearch = debounce(() => { boardOffset = 0; loadPosts(); }, 350);
+  document.getElementById('search-input').addEventListener('input', doSearch);
+
+  // ── Init ──────────────────────────────────────────────────
+  loadConfig().then(() => loadPosts().then(() => startBoardPoller()));
+
+  // Resume poll when tab regains focus
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      API.board.poll(_lastLoadTs).then(r => {
+        if (r?.ok) { const { count = 0 } = r.data.data || {}; if (count > 0) showBanner(count); }
+      }).catch(() => {});
+    }
+  });
+
+  // ── Image Lightbox ───────────────────────────────────────────────────────
+  (function () {
+    // Build DOM elements programmatically so order doesn't matter
+    const lb = document.createElement('div');
+    lb.id = 'img-lightbox';
+
+    const btn = document.createElement('button');
+    btn.id = 'img-lightbox-close';
+    btn.innerHTML = '<i data-icon="x"></i>';
+
+    const img = document.createElement('img');
+    img.id = 'img-lightbox-img';
+    img.alt = '';
+
+    lb.appendChild(btn);
+    lb.appendChild(img);
+    document.body.appendChild(lb);
+
+    function open(src) {
+      img.src = src;
+      lb.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function close() {
+      lb.classList.remove('open');
+      document.body.style.overflow = '';
+      setTimeout(() => { img.src = ''; }, 220);
+    }
+
+    document.addEventListener('click', e => {
+      const el = e.target.closest('.detail-content img, .cmt-text img');
+      if (el) open(el.src);
+    });
+
+    btn.addEventListener('click', close);
+    lb.addEventListener('click', e => { if (e.target === lb || e.target === img) close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  })();
+</script>
+
+</body>
+</html>

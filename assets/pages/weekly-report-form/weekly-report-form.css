@@ -1,0 +1,424 @@
+/* ── Week Switcher (topbar) ── */
+    .week-select {
+      min-width: 130px;
+      max-width: 175px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-input);
+      color: var(--text);
+      font-family: var(--font);
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* ── Form Layout ── */
+    .form-wrapper {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 16px;
+      height: calc(100vh - 120px);
+    }
+
+    /* ── Side Navigation ──
+       blocks.so: flat card, 1px border, calm shadow-sm, generous radius. */
+    .side-nav {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 8px;
+      overflow-y: auto;
+      box-shadow: var(--shadow-sm);
+    }
+    .side-nav ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .side-nav li {
+      margin-bottom: 4px;
+    }
+    .side-nav button {
+      width: 100%;
+      padding: 9px 11px;
+      background: transparent;
+      border: none;
+      border-radius: var(--radius);
+      text-align: left;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      font-family: var(--font);
+    }
+    .side-nav button:hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+    /* blocks.so active: soft tint fill + accent text (not a solid brand block) */
+    .side-nav button.active {
+      background: var(--orange-dim);
+      color: var(--orange);
+      font-weight: 700;
+    }
+    .week-info {
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .week-status {
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 9px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .status-indicator.current {
+      background: rgba(34,197,94,.1);
+      color: #16a34a;
+    }
+    .status-indicator.past {
+      background: rgba(59,130,246,.1);
+      color: #2563eb;
+    }
+    .status-indicator.future {
+      background: rgba(245,158,11,.1);
+      color: #d97706;
+    }
+
+    /* ── Forms Container ── */
+    .forms {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      overflow-y: auto;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ── Panel (Form) ── */
+    .panel {
+      display: none;
+    }
+    .panel.active {
+      display: block;
+    }
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-head h2 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -.01em;
+      color: var(--text);
+      margin: 0;
+    }
+    .panel-tools {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* ── Segmented tabs — blocks.so / shadcn style ──
+       Muted inset track; the active segment is a raised "pill" (card bg +
+       soft shadow) with foreground text, instead of a solid brand fill. */
+    .tabs-mini {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 18px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 4px;
+      border-radius: var(--radius);
+    }
+    .tabs-mini button {
+      flex: 1;
+      padding: 8px 16px;
+      background: transparent;
+      border: none;
+      border-radius: calc(var(--radius) - 3px);
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background .15s, color .15s, box-shadow .15s;
+      font-family: var(--font);
+    }
+    .tabs-mini button:hover:not(.active) {
+      color: var(--text);
+    }
+    .tabs-mini button.active {
+      background: var(--bg-card);
+      color: var(--text);
+      font-weight: 700;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ── Field Grid ── */
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px 16px;
+      margin-bottom: 18px;
+    }
+    .field-grid label {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .field-grid input,
+    .field-grid select,
+    .field-grid textarea {
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-input);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 12.5px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .field-grid input::placeholder,
+    .field-grid textarea::placeholder { color: var(--text-muted); opacity: .7; }
+    .field-grid input:focus,
+    .field-grid select:focus,
+    .field-grid textarea:focus {
+      outline: none;
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px var(--orange-dim);
+    }
+    .field-grid textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    /* ── Form Actions ── */
+    .form-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    /* ── List (Items Display) ── */
+    .list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .list.editable li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 13px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      font-size: 11.5px;
+      transition: border-color .15s, background .15s, box-shadow .15s;
+    }
+
+    /* ── Skeleton Loading ── */
+    @keyframes sk-shimmer {
+      0%   { background-position:-200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .sk-bar {
+      display:inline-block;
+      background:linear-gradient(90deg, var(--bg) 25%, var(--border) 50%, var(--bg) 75%);
+      background-size:200% 100%;
+      animation:sk-shimmer 1.5s ease-in-out infinite;
+      border-radius:4px;
+      height:13px;
+      flex-shrink:0;
+    }
+    .sk-li {
+      display:flex !important;
+      align-items:center !important;
+      gap:10px !important;
+      pointer-events:none;
+    }
+    .list.editable li:hover {
+      border-color: var(--text-muted);
+      box-shadow: var(--shadow-sm);
+    }
+    .item-content {
+      flex: 1;
+      min-width: 0;
+    }
+    .item-text {
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .item-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .item-actions button {
+      width: 26px;
+      height: 26px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font);
+    }
+    .item-actions button.edit:hover {
+      background: rgba(59,130,246,.1);
+      color: #2563eb;
+    }
+    .item-actions button.remove:hover {
+      background: rgba(239,68,68,.1);
+      color: #dc2626;
+    }
+    .empty-state {
+      padding: 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-style: italic;
+    }
+
+    /* ── Section Header ── */
+    .section-header {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    /* ── Split Layout ── */
+    .split {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .split.tri {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    /* ── Badge — blocks.so: soft tinted pill, not a solid fill ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 9.5px;
+      font-weight: 700;
+      background: var(--orange-dim);
+      color: var(--orange);
+      border: 1px solid transparent;
+    }
+    .badge.info {
+      background: rgba(59,130,246,.1);
+      color: #2563eb;
+    }
+
+    /* ── Tag (in list items) ── */
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .tag.sev1 {
+      background: rgba(239,68,68,.1);
+      color: #dc2626;
+    }
+    .tag.sev2 {
+      background: rgba(245,158,11,.1);
+      color: #d97706;
+    }
+    .tag.sev3 {
+      background: rgba(59,130,246,.1);
+      color: #2563eb;
+    }
+    .tag.detected-yes {
+      background: rgba(34,197,94,.1);
+      color: #16a34a;
+    }
+    .tag.detected-no {
+      background: rgba(239,68,68,.1);
+      color: #dc2626;
+    }
+    .tag.status-inprogress {
+      background: rgba(245,158,11,.1);
+      color: #d97706;
+    }
+    .tag.status-done {
+      background: rgba(34,197,94,.1);
+      color: #16a34a;
+    }
+
+    /* ── Ticket Link ── */
+    .ticket-link {
+      color: var(--orange);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .ticket-link:hover {
+      text-decoration: underline;
+    }
+
+    /* ── Help Text ── */
+    .help-text {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    /* ── Announcement Editor ── */
+    .announcement-editor {
+      padding: 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .announcement-list-container {
+      margin-top: 16px;
+    }
+
+    @media (max-width: 1200px) {
+      .form-wrapper {
+        grid-template-columns: 1fr;
+      }
+      .side-nav {
+        display: none;
+      }
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+      .split {
+        grid-template-columns: 1fr;
+      }
+    }

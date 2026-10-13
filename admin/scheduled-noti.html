@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scheduled Notifications — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/scheduled-noti/scheduled-noti.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="bell"></i> Scheduled Notifications</div>
+        <div class="page-sub">ตั้งเวลา popup แจ้งเตือนอัตโนมัติแก่ทุก user ที่ใช้เว็บอยู่</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="./index.html" class="btn btn-ghost" style="font-size:11px">← Admin Panel</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="bell"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Scheduled Notifications</h1>
+          <p>ตั้งเวลา popup แจ้งเตือนอัตโนมัติแก่ทุก user ที่ใช้เว็บอยู่ — ตรวจทุก 30 วิ ไม่ซ้ำในวันเดียวกัน</p>
+        </div>
+      </section>
+
+      <div class="info-box">
+        <i data-icon="lightbulb"></i> <strong>วิธีทำงาน:</strong> ทุก user ที่เปิดหน้าเว็บ Centralize อยู่จะเห็น popup ขึ้นกลางจออัตโนมัติเมื่อถึงเวลาที่กำหนด
+        ระบบตรวจสอบทุก 30 วินาที · ไม่แสดงซ้ำในวันเดียวกัน · config อัปเดตถึง user ภายใน ~5 นาทีหลังบันทึก
+      </div>
+
+      <div class="cfg-card">
+        <div class="cfg-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon"><i data-icon="bell"></i></div>
+            <div>
+              <div class="cfg-card-title">Schedule ทั้งหมด</div>
+              <div class="cfg-card-sub" id="sch-count">กำลังโหลด…</div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btn-add" style="font-size:11px">+ เพิ่ม Schedule</button>
+        </div>
+
+        <!-- table -->
+        <div style="overflow-x:auto" id="sch-table-wrap">
+          <table class="sch-tbl">
+            <thead>
+              <tr>
+                <th class="col-time">เวลา</th>
+                <th class="col-days">วัน</th>
+                <th class="col-msg">ข้อความ</th>
+                <th class="col-action">Action</th>
+                <th class="col-status">สถานะ</th>
+                <th class="col-btns"></th>
+              </tr>
+            </thead>
+            <tbody id="sch-tbody">
+              <tr><td colspan="6" style="padding:32px;text-align:center;color:var(--text-muted)">
+                <div class="spinner" style="display:inline-block;margin-right:8px"></div>กำลังโหลด…
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- empty state (shown outside table) -->
+        <div class="sch-empty" id="sch-empty" style="display:none">
+          <div class="sch-empty-icon"><i data-icon="bell"></i></div>
+          <div>ยังไม่มี Schedule</div>
+          <div class="sch-empty-desc">กดปุ่ม "+ เพิ่ม Schedule" เพื่อเริ่มต้นตั้งเวลาแจ้งเตือน</div>
+        </div>
+      </div>
+
+      <!-- ── ระบบแจ้งเตือนอัตโนมัติจาก cron (Pod Restart · Batch Monitor) ── -->
+      <div class="cfg-card" id="auto-noti-card">
+        <div class="cfg-card-hd">
+          <div class="cfg-card-hd-left">
+            <div class="cfg-card-icon" style="background:rgba(99,102,241,.12);color:#6366f1"><i data-icon="settings"></i></div>
+            <div>
+              <div class="cfg-card-title">ระบบแจ้งเตือนอัตโนมัติ (จาก cron)</div>
+              <div class="cfg-card-sub">เปิด/ปิด noti จากระบบภายในที่รันเอง</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pod Restart Monitor -->
+        <div class="auto-sec">
+          <div class="auto-sec-hd">
+            <div>
+              <div class="auto-sec-title"><i data-icon="siren"></i> Pod Restart Monitor</div>
+              <div class="auto-sec-sub">รายวัน 09:00 ICT · Google Chat · cron/restart-monitor-run-all.php</div>
+            </div>
+            <a href="./service-severity.html" class="auto-sec-link" title="แก้ webhook URL ต่อ runway">แก้ webhook URL ↗</a>
+          </div>
+          <div class="auto-list" id="auto-restart-list">
+            <div class="auto-loading">กำลังโหลด…</div>
+          </div>
+        </div>
+
+        <!-- Batch Monitor Noti -->
+        <div class="auto-sec">
+          <div class="auto-sec-hd">
+            <div>
+              <div class="auto-sec-title"><i data-icon="bar-chart"></i> Batch Monitor Noti</div>
+              <div class="auto-sec-sub">Realtime · Google Chat · ต่อ Jenkins server</div>
+            </div>
+            <a href="./batch-monitor-noti.html" class="auto-sec-link" title="แก้ config เต็ม">แก้ config เต็ม ↗</a>
+          </div>
+          <div class="auto-list" id="auto-batch-list">
+            <div class="auto-loading">กำลังโหลด…</div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ══ Add / Edit Modal ══ -->
+<div class="snoti-modal-wrap" id="modal-wrap">
+  <div class="snoti-modal-box" id="modal-box">
+
+    <div class="md-title">
+      <span id="md-icon"><i data-icon="bell"></i></span>
+      <span id="md-title">เพิ่ม Schedule ใหม่</span>
+    </div>
+
+    <input type="hidden" id="edit-id">
+
+    <!-- Type tabs -->
+    <div class="type-tabs" id="type-tabs">
+      <button class="type-tab active" data-type="general" type="button">
+        <span class="type-tab-icon"><i data-icon="bell"></i></span>แจ้งเตือนทั่วไป
+      </button>
+      <button class="type-tab" data-type="shift_summary" type="button">
+        <span class="type-tab-icon"><i data-icon="calendar"></i></span>Shift Summary
+      </button>
+      <button class="type-tab" data-type="grafana_paused" type="button">
+        <span class="type-tab-icon"><i data-icon="pause"></i></span>Paused Alerts
+      </button>
+    </div>
+    <input type="hidden" id="f-type" value="general">
+
+    <!-- Time -->
+    <div class="f-row">
+      <div class="f-label">เวลาแจ้งเตือน (HH:MM) <span style="color:#ef4444">*</span></div>
+      <input type="time" id="f-time" class="f-input" style="width:150px">
+    </div>
+
+    <!-- Days -->
+    <div class="f-row">
+      <div class="f-label">วันที่แจ้งเตือน <span style="color:#ef4444">*</span></div>
+      <div class="daymode-tabs" id="daymode-tabs">
+        <button class="daymode-tab active" data-mode="weekly"  type="button"><i data-icon="calendar"></i> รายสัปดาห์</button>
+        <button class="daymode-tab"        data-mode="monthly" type="button"><i data-icon="calendar"></i> รายเดือน</button>
+      </div>
+      <input type="hidden" id="f-day-mode" value="weekly">
+
+      <div class="day-sel" id="day-sel">
+        <span class="day-pill sel-all" data-v="all">ทุกวัน</span>
+        <span class="day-pill" data-v="mon">จ</span>
+        <span class="day-pill" data-v="tue">อ</span>
+        <span class="day-pill" data-v="wed">พ</span>
+        <span class="day-pill" data-v="thu">พฤ</span>
+        <span class="day-pill" data-v="fri">ศ</span>
+        <span class="day-pill" data-v="sat">ส</span>
+        <span class="day-pill" data-v="sun">อา</span>
+      </div>
+
+      <div id="date-sel" style="display:none">
+        <div class="date-grid" id="date-grid"></div>
+        <div class="date-hint">เลือกวันที่ต้องการในเดือนได้หลายวัน · วันที่ 29-31 จะข้ามไปในเดือนที่ไม่มีวันนั้น</div>
+      </div>
+
+      <div id="exclude-sel" style="display:none;margin-top:14px">
+        <div class="f-label" style="margin-bottom:6px;color:#ef4444"><i data-icon="calendar-x"></i> ยกเว้นวันที่ (ไม่บังคับ)</div>
+        <div class="date-grid" id="exclude-grid"></div>
+        <div class="date-hint">เลือกวันที่ที่ <b>ไม่ต้องการ</b> ให้แจ้งเตือน · ใช้ได้เฉพาะโหมด "ทุกวัน" ของสัปดาห์</div>
+      </div>
+    </div>
+
+    <!-- ── GENERAL fields ── -->
+    <div id="section-general">
+      <!-- Message -->
+      <div class="f-row">
+        <div class="f-label">ข้อความแจ้งเตือน <span style="color:#ef4444">*</span></div>
+        <textarea id="f-message" class="f-input"
+          placeholder="เช่น รบกวนทีมงาน ใส่ข้อมูล Batch File ที่ Fail ด้วยครับ&#10;TMN · NANO · WEALTH"></textarea>
+        <div class="preview-box" id="preview-box">
+          <div class="preview-hint"><i data-icon="bell"></i> ตัวอย่าง popup ที่ user จะเห็น:</div>
+          <div class="preview-msg" id="preview-msg"></div>
+        </div>
+      </div>
+
+      <!-- Action button (optional) -->
+      <div class="f-row">
+        <div class="f-label">ปุ่ม Action (ไม่บังคับ)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" id="f-action-label" class="f-input" placeholder="ข้อความบนปุ่ม เช่น ไป Batch Report" style="flex:1;min-width:160px">
+          <input type="text" id="f-action-url"   class="f-input" placeholder="URL เช่น batch-monitor.html" style="flex:1;min-width:160px">
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:5px">
+          URL เป็น path จาก root ของเว็บ เช่น <code>batch-monitor.html</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SHIFT SUMMARY fields ── -->
+    <div id="section-shift" style="display:none">
+      <!-- Shifts today -->
+      <div class="f-row">
+        <div class="f-label"><i data-icon="moon"></i> Shift วันนี้ (กะที่ทำงานอยู่คืนนี้)</div>
+        <div class="shift-grid" id="shifts-today-grid">
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_today" value="shift2_wah">
+            <span class="shift-check-label">SHIFT#2 · W@H Team</span>
+            <span class="shift-check-badge">กะดึก 22:00–07:30</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_today" value="shift2_oncall">
+            <span class="shift-check-label">SHIFT#2 · Oncall Support</span>
+            <span class="shift-check-badge">กะดึก</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_today" value="shift1_tdpk">
+            <span class="shift-check-label">SHIFT#1 · TDPK Team</span>
+            <span class="shift-check-badge">กะเช้า 07:30–17:00</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_today" value="shift1_wah">
+            <span class="shift-check-label">SHIFT#1 · W@H Team</span>
+            <span class="shift-check-badge">กะเช้า 07:30–17:00</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_today" value="shift1_oncall">
+            <span class="shift-check-label">SHIFT#1 · Oncall Support</span>
+            <span class="shift-check-badge">กะเช้า</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_today" value="vacation">
+            <span class="shift-check-label">Vacation</span>
+            <span class="shift-check-badge" style="background:rgba(99,102,241,.1);color:#6366f1">ลาพัก</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_today" value="sick">
+            <span class="shift-check-label">Sick Leave</span>
+            <span class="shift-check-badge" style="background:rgba(239,68,68,.1);color:#ef4444">ลาป่วย</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Shifts tomorrow -->
+      <div class="f-row">
+        <div class="f-label"><i data-icon="sunrise"></i> Shift พรุ่งนี้ (กะที่จะมาทำงาน)</div>
+        <div class="shift-grid" id="shifts-tomorrow-grid">
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_tomorrow" value="shift1_tdpk">
+            <span class="shift-check-label">SHIFT#1 · TDPK Team</span>
+            <span class="shift-check-badge">กะเช้า 07:30–17:00</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_tomorrow" value="shift1_wah">
+            <span class="shift-check-label">SHIFT#1 · W@H Team</span>
+            <span class="shift-check-badge">กะเช้า 07:30–17:00</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_tomorrow" value="shift1_oncall">
+            <span class="shift-check-label">SHIFT#1 · Oncall Support</span>
+            <span class="shift-check-badge">กะเช้า</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_tomorrow" value="shift2_wah">
+            <span class="shift-check-label">SHIFT#2 · W@H Team</span>
+            <span class="shift-check-badge">กะดึก 22:00–07:30</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_tomorrow" value="shift2_oncall">
+            <span class="shift-check-label">SHIFT#2 · Oncall Support</span>
+            <span class="shift-check-badge">กะดึก</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_tomorrow" value="vacation">
+            <span class="shift-check-label">Vacation</span>
+            <span class="shift-check-badge" style="background:rgba(99,102,241,.1);color:#6366f1">ลาพัก</span>
+          </label>
+          <label class="shift-check-row">
+            <input type="checkbox" name="shifts_tomorrow" value="sick">
+            <span class="shift-check-label">Sick Leave</span>
+            <span class="shift-check-badge" style="background:rgba(239,68,68,.1);color:#ef4444">ลาป่วย</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── GRAFANA PAUSED-ALERTS fields ── -->
+    <div id="section-grafana" style="display:none">
+      <div class="f-row">
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;background:var(--bg);border:1px dashed var(--border);border-radius:8px;padding:12px 14px">
+          <b style="color:var(--text)"><i data-icon="pause"></i> Grafana Paused Alerts digest</b><br>
+          ระบบจะ<b>ดึงสถานะ paused สดจาก Grafana ทุก org</b> ตอนถึงเวลา แล้วสรุปเป็นการ์ดยิงเข้า Google Chat
+          (การ์ดสรุป + thread แตกรายชื่อ alert ต่อ source) — ไม่ต้องกรอกข้อความเอง<br>
+          <span style="opacity:.8">รายการ source แก้ไขได้ที่ <code>data/sm/grafana-alert-sources.json</code> · ดูสดได้ที่หน้า <code>grafana-alerts.html</code></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Google Chat Webhooks (multi) -->
+    <div class="f-row">
+      <div class="f-label" id="webhook-label">Google Chat Webhook URL (ไม่บังคับ)</div>
+      <div id="webhooks-list"></div>
+      <button type="button" class="btn-add-webhook" onclick="addWebhookRow()">+ เพิ่ม Webhook Room</button>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:8px" id="webhook-hint">
+        เพิ่มได้หลาย room — ระบบจะยิงไปทุก webhook พร้อมกัน (dedup: ส่งครั้งเดียวต่อวันต่อ schedule)
+      </div>
+    </div>
+
+    <!-- Enabled -->
+    <div class="f-row">
+      <div class="f-label">สถานะ</div>
+      <div class="enabled-row">
+        <label class="tog">
+          <input type="checkbox" id="f-enabled" checked>
+          <span class="tog-slider"></span>
+        </label>
+        <span class="enabled-label" id="f-enabled-lbl">เปิดใช้งาน</span>
+      </div>
+    </div>
+
+    <div class="md-footer">
+      <button class="btn-md-cancel" id="btn-cancel">ยกเลิก</button>
+      <button class="btn-md-save"   id="btn-save"><i data-icon="save"></i> บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Custom Confirm Dialog ══ -->
+<div class="confirm-wrap" id="confirm-wrap">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon"><i data-icon="trash"></i></div>
+    <div class="confirm-title" id="confirm-title">ยืนยันการลบ</div>
+    <div class="confirm-desc"  id="confirm-desc"></div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" id="confirm-cancel-btn">ยกเลิก</button>
+      <button class="confirm-ok"     id="confirm-ok-btn">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/scheduled-noti/scheduled-noti.js"></script>
+</body>
+</html>

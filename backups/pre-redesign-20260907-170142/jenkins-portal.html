@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jenkins Portal — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <style>
+    .jp-wrap { max-width: 980px; margin: 0 auto; width: 100%; padding: 4px 0 40px; }
+
+    /* ── Status cards ─────────────────────────────────── */
+    .jp-status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+    @media (max-width: 700px) { .jp-status-grid { grid-template-columns: 1fr; } }
+    .jp-status-card {
+      background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 14px;
+      padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+    }
+    .jp-status-icon {
+      width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
+      background: rgba(242,100,25,.12); color: var(--orange);
+      display: flex; align-items: center; justify-content: center; font-size: 17px;
+    }
+    .jp-status-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+    .jp-status-value { font-size: 12.5px; font-weight: 800; color: var(--text); margin-top: 2px; }
+    .jp-status-value.ok { color: #22c55e; }
+    .jp-status-value.bad { color: #ef4444; }
+
+    /* ── Landing — choice cards (wealth style) ────────── */
+    .jp-checker-home { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 18px; }
+    @media (max-width: 700px) { .jp-checker-home { grid-template-columns: 1fr; } }
+    .jp-ch-card {
+      background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 16px;
+      padding: 24px 20px; cursor: pointer; text-align: left; font-family: inherit;
+      transition: border-color .15s, transform .12s, box-shadow .15s;
+      display: flex; flex-direction: column; gap: 6px; color: var(--text);
+    }
+    .jp-ch-card:hover { border-color: var(--orange); transform: translateY(-2px); box-shadow: 0 6px 22px rgba(0,0,0,.12); }
+    .jp-ch-card:active { transform: scale(.985); }
+    .jp-ch-icon { font-size: 24px; }
+    .jp-ch-title { font-size: 14px; font-weight: 800; }
+    .jp-ch-sub { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+    .jp-ch-count {
+      align-self: flex-start; font-size: 10.5px; font-weight: 800; color: var(--orange);
+      background: rgba(242,100,25,.12); border: 1px solid rgba(242,100,25,.3);
+      border-radius: 999px; padding: 3px 12px; margin-top: 8px;
+    }
+    .jp-ch-count.zero { color: var(--text-muted); background: var(--bg); border-color: var(--border); }
+
+    /* ── Panel slide-in (wealth style) ────────────────── */
+    @keyframes jpSlideIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+    .jp-panel-enter { animation: jpSlideIn .22s ease-out both; }
+    .jp-panel-back {
+      display: inline-flex; align-items: center; gap: 5px; margin-bottom: 12px;
+      background: none; border: none; color: var(--text-muted); font-family: inherit;
+      font-size: 12px; font-weight: 700; cursor: pointer; padding: 4px 6px; border-radius: 8px;
+    }
+    .jp-panel-back:hover { color: var(--text); background: var(--bg); }
+    .jp-checker-panels { display: none; }
+    .jp-checker-panels.visible { display: block; }
+
+    .jp-card {
+      background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 14px;
+      padding: 20px 22px; margin-bottom: 18px;
+    }
+    .jp-card-title { font-size: 13.5px; font-weight: 800; color: var(--text); margin-bottom: 4px; display:flex; align-items:center; gap:8px; justify-content:space-between; }
+    .jp-card-sub  { font-size: 11px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.55; }
+    .jp-card-title .jp-count {
+      font-size: 10px; font-weight: 700; color: var(--text-muted); background: var(--bg);
+      border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px;
+    }
+    .jp-banner { border:1px dashed rgba(139,92,246,.45); background:rgba(139,92,246,.07); color:var(--text); border-radius:10px; padding:10px 14px; font-size:12.5px; margin-bottom:14px; }
+    .jp-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+    .jp-refresh-btn {
+      margin-left: auto; background: var(--bg-card); border: 1.5px solid var(--border);
+      border-radius: 9px; padding: 8px 12px; font-family: inherit; font-size: 11.5px;
+      font-weight: 700; color: var(--text-muted); cursor: pointer; transition: all .15s;
+    }
+    .jp-refresh-btn:hover { color: var(--text); border-color: var(--text-muted); }
+    .jp-refresh-btn:active { transform: scale(.97); }
+
+    /* ── Form fields ───────────────────────────────────── */
+    .jp-field { margin-bottom: 14px; }
+    .jp-field label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
+    .jp-field input, .jp-field select {
+      width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: 9px;
+      padding: 9px 12px; font-family: inherit; font-size: 13px; color: var(--text); outline: none;
+      transition: border-color .15s; appearance: auto;
+    }
+    .jp-field input:focus, .jp-field select:focus { border-color: var(--orange); }
+    .jp-field input.jp-invalid, .jp-field select.jp-invalid { border-color: #ef4444; }
+    .jp-hint { font-size: 10.5px; color: var(--text-muted); opacity: .85; margin-top: 5px; }
+    .jp-field .jp-err { display: none; font-size: 10.5px; color: #ef4444; margin-top: 5px; font-weight: 600; }
+    .jp-field.jp-has-err .jp-err { display: block; }
+    .jp-readonly { background: var(--bg-card) !important; cursor: not-allowed; opacity: .75; }
+    .jp-server-pill {
+      font-size: 10.5px; font-weight: 700; color: var(--text-muted);
+      background: var(--bg); border: 1px solid var(--border); border-radius: 999px;
+      padding: 4px 10px; letter-spacing: .02em;
+    }
+
+    .jp-submit {
+      width: 100%; border: none; border-radius: 10px; background: var(--orange, #f26419); color: #fff;
+      font-family: inherit; font-size: 13px; font-weight: 800; padding: 11px 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px; transition: filter .15s, transform .1s;
+    }
+    .jp-submit:hover:not(:disabled) { filter: brightness(1.07); }
+    .jp-submit:active:not(:disabled) { transform: scale(.98); }
+    .jp-submit:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── Tables (history / logs / sessions) ───────────── */
+    .jp-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+    .jp-table th {
+      text-align: left; font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: .05em; padding: 8px 10px; border-bottom: 1.5px solid var(--border); white-space: nowrap;
+    }
+    .jp-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+    .jp-table tr:last-child td { border-bottom: none; }
+    .jp-table .jp-params-cell { color: var(--text-muted); font-size: 10.5px; max-width: 260px; }
+    .jp-table .jp-meta-cell { color: var(--text-muted); font-size: 10px; white-space: nowrap; }
+    .jp-table .jp-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; color: var(--text-muted); }
+
+    /* ── Status badge ──────────────────────────────────── */
+    .jp-badge {
+      display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800;
+      border-radius: 999px; padding: 3px 9px; white-space: nowrap; text-transform: uppercase; letter-spacing: .03em;
+    }
+    .jp-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .jp-b-success { background: rgba(34,197,94,.13); color: #22c55e; }
+    .jp-b-failure { background: rgba(239,68,68,.13); color: #ef4444; }
+    .jp-b-aborted { background: rgba(148,163,184,.15); color: #94a3b8; }
+    .jp-b-running { background: rgba(59,130,246,.13); color: #3b82f6; }
+    .jp-b-running::before { animation: jp-pulse 1.1s ease infinite; }
+    @keyframes jp-pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+    .jp-b-unknown { background: rgba(148,163,184,.12); color: #94a3b8; }
+
+    /* ── Logs toolbar ──────────────────────────────────── */
+    .jp-toolbar-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+    .jp-toolbar-row select, .jp-toolbar-row input {
+      background: var(--bg); border: 1.5px solid var(--border); border-radius: 9px;
+      padding: 8px 12px; font-family: inherit; font-size: 12px; color: var(--text); outline: none;
+    }
+    .jp-toolbar-row input { flex: 1; min-width: 160px; }
+    .jp-btn {
+      border-radius: 8px; padding: 8px 14px; font-family: inherit; font-size: 11px; font-weight: 800;
+      cursor: pointer; border: 1.5px solid var(--border); background: var(--bg); color: var(--text);
+      transition: filter .15s, transform .1s;
+    }
+    .jp-btn:hover { filter: brightness(1.08); }
+    .jp-btn:active { transform: scale(.97); }
+    .jp-btn-danger { color: #ef4444; border-color: rgba(239,68,68,.35); }
+    .jp-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Admin tabs + forms ────────────────────────────── */
+    .jpa-tabs { display: flex; gap: 6px; border-bottom: 1.5px solid var(--border); margin-bottom: 16px; flex-wrap: wrap; }
+    .jpa-tab {
+      background: none; border: none; padding: 9px 14px; font-family: inherit;
+      font-size: 12px; font-weight: 800; color: var(--text-muted); cursor: pointer;
+      border-bottom: 2.5px solid transparent; margin-bottom: -1.5px;
+    }
+    .jpa-tab:hover { color: var(--text); }
+    .jpa-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+    .jpa-panel { display: none; }
+    .jpa-panel.active { display: block; }
+    .jpa-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .jpa-field label { display: block; font-size: 10.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
+    .jpa-field input, .jpa-field select {
+      width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: 9px;
+      padding: 8px 11px; font-family: inherit; font-size: 12.5px; color: var(--text); outline: none;
+    }
+    .jpa-field input:focus, .jpa-field select:focus { border-color: var(--orange); }
+    .jpa-actions { display: flex; gap: 6px; }
+    .jpa-kv { display: flex; flex-direction: column; gap: 8px; font-size: 12px; }
+    .jpa-kv-row { display: flex; gap: 10px; align-items: baseline; }
+    .jpa-kv-row b { min-width: 130px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+    .jpa-kv-row span { color: var(--text); word-break: break-all; }
+    .jpa-note { font-size: 10.5px; color: var(--text-muted); line-height: 1.6; margin-top: 12px; }
+
+    .jp-empty { text-align: center; color: var(--text-muted); font-size: 11.5px; padding: 26px 0; opacity: .8; }
+    .jp-loading { text-align: center; padding: 60px 0; color: var(--text-muted); font-size: 12px; }
+
+    /* ── Progress modal ────────────────────────────────── */
+    .jp-modal-overlay {
+      position: fixed; inset: 0; z-index: 1200; display: none; align-items: center; justify-content: center;
+      background: rgba(10,12,16,.6); backdrop-filter: blur(3px);
+    }
+    .jp-modal {
+      background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 16px;
+      padding: 26px 28px; width: min(420px, 92vw);
+    }
+    .jp-modal h3 { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+    .jp-modal .jp-modal-sub { font-size: 11.5px; color: var(--text-muted); margin-bottom: 18px; }
+    .jp-progress-track { height: 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; margin-bottom: 8px; }
+    .jp-progress-bar { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, #f26419, #fbbf24); transition: width .4s ease; }
+    .jp-progress-pct { font-size: 11px; font-weight: 800; color: var(--text-muted); margin-bottom: 16px; }
+    .jp-modal-result {
+      display: none; border-radius: 10px; padding: 12px 14px; font-size: 12px; font-weight: 800; margin-bottom: 16px;
+    }
+    .jp-modal-result.ok   { background: rgba(34,197,94,.13); color: #22c55e; }
+    .jp-modal-result.bad  { background: rgba(239,68,68,.13); color: #ef4444; }
+    .jp-modal-result.mid  { background: rgba(148,163,184,.13); color: #94a3b8; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content" style="display:flex;flex-direction:column">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">🔓 Jenkins Portal</div>
+        <div class="page-sub" id="jp-page-sub">Trigger Jenkins Unbind Build (TMN ID + Ticket + Application)</div>
+      </div>
+    </header>
+
+    <div class="jp-wrap" id="jp-wrap">
+      <div class="jp-loading" id="jp-loading">กำลังโหลด...</div>
+
+      <div id="jp-body" style="display:none">
+        <!-- Admin banner -->
+        <div class="jp-banner" id="jp-admin-banner" style="display:none">
+          👑 คุณเป็น <b>Admin</b> — จัดการ Applications / ผู้ใช้ / Sessions ได้จากเมนู "Jenkins Admin"
+        </div>
+
+        <!-- ── Status cards ──────────────────────────── -->
+        <div class="jp-status-grid">
+          <div class="jp-status-card">
+            <div class="jp-status-icon">🖥️</div>
+            <div>
+              <div class="jp-status-label">Jenkins Status</div>
+              <div class="jp-status-value" id="jp-jenkins-status">Checking...</div>
+            </div>
+          </div>
+          <div class="jp-status-card">
+            <div class="jp-status-icon">🔢</div>
+            <div>
+              <div class="jp-status-label">Last Build</div>
+              <div class="jp-status-value" id="jp-last-build">—</div>
+            </div>
+          </div>
+          <div class="jp-status-card">
+            <div class="jp-status-icon">📈</div>
+            <div>
+              <div class="jp-status-label">Success Rate (50 ล่าสุด)</div>
+              <div class="jp-status-value" id="jp-success-rate">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Actions toolbar (History always visible, Admin admin-only) ─── -->
+        <div class="jp-toolbar">
+          <span class="jp-server-pill" id="jp-toolbar-server"></span>
+          <button class="jp-refresh-btn" id="jp-btn-history" style="margin-left:auto">📜 History</button>
+          <button class="jp-refresh-btn" id="jp-btn-admin" style="display:none;margin-left:0">🛠 Admin</button>
+          <button class="jp-refresh-btn" id="jp-refresh-btn" style="margin-left:0">↻ Refresh</button>
+        </div>
+
+        <!-- ── Trigger form (always visible unless a panel is open) ─── -->
+        <div id="jp-panel-trigger">
+          <div class="jp-card">
+            <div class="jp-card-title">⚡ Trigger Jenkins Build</div>
+            <div class="jp-card-sub" id="jp-form-desc"></div>
+            <form id="jp-form" autocomplete="off"></form>
+          </div>
+        </div>
+
+        <!-- ── Slide-in panels (History / Admin) ────────── -->
+        <div class="jp-checker-panels" id="jp-panels">
+          <!-- History (merged Build History + Build Logs) -->
+          <div id="jp-panel-history" style="display:none">
+            <button class="jp-panel-back" onclick="backToTrigger()">← กลับหน้า Trigger</button>
+            <div class="jp-card">
+              <div class="jp-card-title">📜 Build History <span class="jp-count" id="jp-history-count">0</span></div>
+              <div class="jp-card-sub">ประวัติการ Build ทั้งหมด — สถานะ update อัตโนมัติ (refresh ทุก 30 วิ)</div>
+              <div class="jp-toolbar-row">
+                <select id="jp-hist-filter">
+                  <option value="all">ทั้งหมด</option>
+                  <option value="success">สำเร็จ</option>
+                  <option value="failed">ล้มเหลว</option>
+                  <option value="today">วันนี้</option>
+                </select>
+                <input type="text" id="jp-hist-search" placeholder="ค้นหา (TMN ID / Ticket / App / User)...">
+                <button class="jp-btn jp-btn-danger" id="jp-hist-clear" style="display:none">🗑 ล้าง</button>
+                <button class="jp-btn" id="jp-hist-export" style="display:none">⬇ Export</button>
+              </div>
+              <div style="overflow-x:auto">
+                <table class="jp-table">
+                  <thead>
+                    <tr><th>Time</th><th>Status</th><th>User</th><th>TMN ID</th><th>Ticket</th><th>App</th><th>Build</th></tr>
+                  </thead>
+                  <tbody id="jp-history-body">
+                    <tr><td colspan="7" class="jp-empty">ยังไม่มีประวัติ</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin -->
+          <div id="jp-panel-admin" style="display:none">
+            <button class="jp-panel-back" onclick="backToTrigger()">← กลับหน้า Trigger</button>
+            <div class="jp-card">
+              <div class="jp-card-title">🛠 Jenkins Admin</div>
+              <div class="jp-card-sub">จัดการ Jenkins Portal — เฉพาะ Admin</div>
+              <div class="jpa-tabs">
+                <button class="jpa-tab active" data-tab="apps">📱 Applications</button>
+                <button class="jpa-tab" data-tab="users">👥 ผู้ใช้</button>
+                <button class="jpa-tab" data-tab="settings">⚙️ Settings</button>
+              </div>
+
+              <div class="jpa-panel active" id="jpa-panel-apps">
+                <div class="jpa-grid">
+                  <div class="jpa-field">
+                    <label>ชื่อ Application</label>
+                    <input type="text" id="jpa-app-name" placeholder="e.g. Google">
+                  </div>
+                  <div class="jpa-field">
+                    <label>สถานะ</label>
+                    <select id="jpa-app-enabled">
+                      <option value="1">เปิดใช้งาน</option>
+                      <option value="0">ปิดใช้งาน</option>
+                    </select>
+                  </div>
+                  <div class="jpa-field" style="display:flex;align-items:flex-end">
+                    <button class="jp-btn" id="jpa-app-add" style="width:100%;background:var(--orange, #f26419);color:#fff;border-color:transparent">＋ เพิ่ม Application</button>
+                  </div>
+                </div>
+                <div style="overflow-x:auto">
+                  <table class="jp-table">
+                    <thead><tr><th>Name</th><th>Status</th><th>Created</th><th>By</th><th>Actions</th></tr></thead>
+                    <tbody id="jpa-app-body"><tr><td colspan="5" class="jp-empty">ยังไม่มี Application</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="jpa-panel" id="jpa-panel-users">
+                <div class="jpa-grid">
+                  <div class="jpa-field">
+                    <label>Username</label>
+                    <input type="text" id="jpa-user-username" placeholder="e.g. somchai.jai">
+                  </div>
+                  <div class="jpa-field">
+                    <label>Email</label>
+                    <input type="text" id="jpa-user-email" placeholder="name@ascendcorp.com">
+                  </div>
+                  <div class="jpa-field">
+                    <label>Role</label>
+                    <select id="jpa-user-role">
+                      <option value="user">user</option>
+                      <option value="admin">admin</option>
+                    </select>
+                  </div>
+                  <div class="jpa-field" style="display:flex;align-items:flex-end">
+                    <button class="jp-btn" id="jpa-user-add" style="width:100%;background:var(--orange, #f26419);color:#fff;border-color:transparent">＋ สร้างผู้ใช้</button>
+                  </div>
+                </div>
+                <div style="overflow-x:auto">
+                  <table class="jp-table">
+                    <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="jpa-user-body"><tr><td colspan="5" class="jp-empty">ยังไม่มีผู้ใช้</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="jpa-panel" id="jpa-panel-settings">
+                <div class="jpa-kv" id="jpa-me-kv" style="margin-bottom:16px"></div>
+                <div class="jpa-note">💡 เปลี่ยนรหัสผ่านได้ที่เมนู <b>เปลี่ยนรหัสผ่าน</b> (ด้านล่างซ้ายของ sidebar)</div>
+                <hr style="border:none;border-top:1px solid var(--border);margin:18px 0">
+                <div style="font-size:12.5px;font-weight:800;color:var(--text);margin-bottom:12px">🔗 Jenkins Server &amp; Job</div>
+                <div class="jpa-kv" id="jpa-server-kv"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress modal -->
+<div class="jp-modal-overlay" id="jp-progress-modal">
+  <div class="jp-modal">
+    <h3 id="jp-modal-title">Executing Pipeline</h3>
+    <div class="jp-modal-sub" id="jp-modal-status">Waiting in Jenkins queue...</div>
+    <div class="jp-progress-track"><div class="jp-progress-bar" id="jp-progress-bar"></div></div>
+    <div class="jp-progress-pct" id="jp-progress-pct">0%</div>
+    <div class="jp-modal-result" id="jp-modal-result"></div>
+    <button class="jp-submit" id="jp-modal-close" style="display:none">ปิด</button>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script>
+  if (!Auth.requireAuth()) {}
+  Layout.render('jenkins-portal');
+
+  const state = {
+    tools: [], servers: {}, apps: [], canAdmin: false,
+    history: [], sessions: [], users: [],
+    toolId: null, panel: null,
+    histFilter: 'all', histSearch: '',
+  };
+
+  const $ = id => document.getElementById(id);
+
+  // ── Panel navigation ───────────────────────────────────────────────────────
+  // Default view is the Trigger form (always visible). History/Admin slide in
+  // as panels that temporarily replace the form; back button restores it.
+  function backToTrigger() {
+    $('jp-panels').classList.remove('visible');
+    document.querySelectorAll('#jp-panels > div').forEach(p => { p.style.display = 'none'; });
+    $('jp-panel-trigger').style.display = '';
+    state.panel = null;
+  }
+
+  function openPanel(name) {
+    const target = $('jp-panel-' + name);
+    if (!target) { backToTrigger(); return; }
+    $('jp-panel-trigger').style.display = 'none';
+    document.querySelectorAll('#jp-panels > div').forEach(p => { p.style.display = 'none'; });
+    target.style.display = '';
+    target.classList.remove('jp-panel-enter');
+    void target.offsetWidth; // restart animation
+    target.classList.add('jp-panel-enter');
+    $('jp-panels').classList.add('visible');
+    state.panel = name;
+    if (name === 'history') renderHistory();
+    if (name === 'admin')   renderAdmin();
+  }
+
+  // ── Loaders ────────────────────────────────────────────────────────────────
+  async function loadConfig() {
+    const res = await API.get('/jenkins-portal/');
+    if (!res?.ok) throw new Error(res?.data?.message || 'โหลดไม่สำเร็จ');
+    const d = res.data.data;
+    state.tools    = d.tools   || [];
+    state.servers  = d.servers || {};
+    state.apps     = d.apps    || [];
+    state.canAdmin = !!d.can_admin;
+
+    $('jp-admin-banner').style.display = state.canAdmin ? '' : 'none';
+    $('jp-btn-admin').style.display    = state.canAdmin ? '' : 'none';
+    $('jp-hist-clear').style.display   = state.canAdmin ? '' : 'none';
+    $('jp-hist-export').style.display  = state.canAdmin ? '' : 'none';
+    if (state.canAdmin) $('jp-page-sub').textContent = 'Admin — จัดการได้ที่ปุ่ม "Admin" มุมขวาบน';
+
+    if (!state.tools.length) {
+      $('jp-loading').textContent = 'ทีมของคุณยังไม่มี Jenkins tool ที่เปิดใช้งาน — ติดต่อ Admin';
+      $('jp-loading').style.display = '';
+      return;
+    }
+    if (!state.toolId || !state.tools.find(t => t.id === state.toolId)) {
+      state.toolId = state.tools[0].id;
+    }
+    renderStats(d.stats || {});
+    renderForm();
+    renderServerPill();
+    if (state.panel === 'admin') renderAdmin();
+  }
+
+  async function loadStatus() {
+    try {
+      const res = await API.get('/jenkins-portal/?status=1');
+      const el = $('jp-jenkins-status');
+      if (!res?.ok) { el.textContent = 'ไม่สามารถเช็คได้'; el.className = 'jp-status-value bad'; return; }
+      const d = res.data.data || {};
+      if (d.reachable) {
+        el.textContent = 'Connected' + (d.last_build ? ' · #' + d.last_build.number : '');
+        el.className = 'jp-status-value ok';
+      } else {
+        el.textContent = 'Offline / Unreachable';
+        el.className = 'jp-status-value bad';
+      }
+    } catch (e) {
+      $('jp-jenkins-status').textContent = '—';
+    }
+  }
+
+  function renderStats(stats) {
+    $('jp-last-build').textContent = stats.last_build ? '#' + stats.last_build : '—';
+    $('jp-success-rate').textContent = stats.success_rate !== null && stats.success_rate !== undefined
+      ? stats.success_rate + '%' : '—';
+  }
+
+  async function loadHistory() {
+    const res = await API.get('/jenkins-portal/?history=1');
+    if (!res?.ok) return;
+    state.history = res.data.data || [];
+    renderHistory();
+    // Refresh stats locally after history syncs
+    const recent = state.history.slice(0, 50);
+    const succ = recent.filter(h => String(h.status).toLowerCase() === 'success').length;
+    const last = state.history.find(h => h.build_id);
+    $('jp-last-build').textContent = last && last.build_id ? '#' + last.build_id : '—';
+    $('jp-success-rate').textContent = recent.length ? Math.round(succ / recent.length * 100) + '%' : '—';
+  }
+
+  // ── Trigger form ────────────────────────────────────────────────────────────
+  function renderServerPill() {
+    const tool = state.tools.find(t => t.id === state.toolId);
+    const srv  = tool ? state.servers[tool.server_id] : null;
+    $('jp-toolbar-server').textContent = srv ? '🔗 ' + (srv.display || srv.base_url) : '🔗 server not configured';
+  }
+
+  function renderForm() {
+    const tool = state.tools.find(t => t.id === state.toolId);
+    const form = $('jp-form');
+    if (!tool) { form.innerHTML = '<div class="jp-empty">ไม่พบ tool</div>'; return; }
+
+    $('jp-form-desc').textContent = tool.description || '';
+    renderServerPill();
+
+    form.innerHTML = (tool.params || []).map(p => {
+      const label = escHtml(p.label || p.key) + (p.required ? ' <span style="color:#ef4444">*</span>' : '');
+      const hint = p.hint ? `<div class="jp-hint">${escHtml(p.hint)}</div>` : '';
+      const err  = '<div class="jp-err">รูปแบบไม่ถูกต้อง</div>';
+      if (p.type === 'options' && p.source === 'apps') {
+        const opts = '<option value="">— เลือก Application —</option>' + state.apps
+          .filter(a => !('enabled' in a) || a.enabled)
+          .map(a => `<option value="${escHtml(a.name)}">${escHtml(a.name)}</option>`).join('');
+        return `<div class="jp-field" data-key="${escHtml(p.key)}">
+          <label>${label}</label>
+          <select data-key="${escHtml(p.key)}" data-required="${p.required ? 1 : 0}">${opts}</select>
+          ${hint}${err}</div>`;
+      }
+      const readonly = (tool.auto_params || {})[p.key] ? ' readonly class="jp-readonly"' : '';
+      return `<div class="jp-field" data-key="${escHtml(p.key)}">
+        <label>${label}</label>
+        <input type="text" data-key="${escHtml(p.key)}" placeholder="${escHtml(p.placeholder || '')}"
+               data-pattern="${escHtml(p.pattern || '')}" data-required="${p.required ? 1 : 0}"
+               ${p.required ? 'required' : ''}${readonly}>
+        ${hint}${err}</div>`;
+    }).join('') + `
+      <button type="submit" class="jp-submit" id="jp-submit-btn">
+        <span>⚡</span> Trigger Build
+      </button>`;
+
+    const me = Auth.getUser();
+    form.querySelectorAll('input[readonly]').forEach(inp => {
+      const key = inp.dataset.key;
+      const tool2 = state.tools.find(t => t.id === state.toolId);
+      if ((tool2.auto_params || {})[key] === 'username') inp.value = me?.username || '';
+    });
+
+    form.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('input', () => validateField(el));
+      el.addEventListener('change', () => { validateField(el); updateSubmitState(); });
+      el.addEventListener('input', updateSubmitState);
+    });
+    updateSubmitState();
+  }
+
+  function validateField(el) {
+    const field = el.closest('.jp-field');
+    const pattern = el.dataset.pattern;
+    const val = el.value.trim();
+    let ok = true;
+    if (el.dataset.required === '1' && val === '') ok = false;
+    else if (val && pattern) { try { ok = new RegExp('^(?:' + pattern + ')$').test(val); } catch { ok = true; } }
+    el.classList.toggle('jp-invalid', !ok);
+    field.classList.toggle('jp-has-err', !ok && val !== '');
+    return ok;
+  }
+
+  function updateSubmitState() {
+    const btn = $('jp-submit-btn');
+    if (!btn) return;
+    const els = [...$('jp-form').querySelectorAll('input, select')];
+    btn.disabled = !els.every(validateField) || els.some(i => i.dataset.required === '1' && !i.value.trim());
+  }
+
+  const _jpForm = document.getElementById('jp-form');
+  if (_jpForm) {
+    _jpForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const tool = state.tools.find(t => t.id === state.toolId);
+      if (!tool) return;
+
+      const params = {};
+      $('jp-form').querySelectorAll('input, select').forEach(el => { params[el.dataset.key] = el.value.trim(); });
+
+      const res = await API.post('/jenkins-portal/', { action: 'trigger', tool_id: state.toolId, params });
+      if (!res?.ok) { Toast.error(res?.data?.message || 'Trigger ล้มเหลว'); return; }
+
+      const d = res.data.data;
+      Toast.success('Build ถูก queue แล้ว');
+      $('jp-form').reset();
+      const me = Auth.getUser();
+      $('jp-form').querySelectorAll('input[readonly]').forEach(inp => { inp.value = me?.username || ''; });
+      updateSubmitState();
+      if (d.queue_id) openProgress(d.queue_id);
+      await loadHistory();
+    });
+  }
+
+  // ── History ────────────────────────────────────────────────────────────────
+  function statusBadge(status) {
+    const s = String(status || '').toLowerCase();
+    const map = {
+      success: ['jp-b-success', 'Success'], failure: ['jp-b-failure', 'Failure'],
+      aborted: ['jp-b-aborted', 'Aborted'],
+      queued: ['jp-b-running', 'Queued'], 'in queue': ['jp-b-running', 'In Queue'],
+      building: ['jp-b-running', 'Building'],
+    };
+    const [cls, label] = map[s] || ['jp-b-unknown', status || 'Unknown'];
+    return `<span class="jp-badge ${cls}">${escHtml(label)}</span>`;
+  }
+
+  function renderHistory() {
+    const failedSet = new Set(['failed', 'failure', 'error', 'aborted']);
+    const rows = state.history.filter(h => {
+      const s = String(h.status || '').toLowerCase();
+      if (state.histFilter === 'success' && s !== 'success') return false;
+      if (state.histFilter === 'failed'  && !failedSet.has(s)) return false;
+      if (state.histFilter === 'today') {
+        const d = new Date(h.ts || h.timestamp);
+        if (!isNaN(d) && d.toDateString() !== new Date().toDateString()) return false;
+      }
+      if (state.histSearch) {
+        const q = state.histSearch.toLowerCase();
+        const p = h.params || {};
+        const hay = [p.tmnId, p.ticket, p.app, h.user_name, h.user, h.user_id].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    $('jp-history-count').textContent = rows.length;
+    const body = $('jp-history-body');
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="7" class="jp-empty">' +
+        (state.history.length ? 'ไม่มีรายการตรงเงื่อนไข' : 'ยังไม่มีประวัติ') + '</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map(h => {
+      const p = h.params || {};
+      return `<tr>
+        <td class="jp-meta-cell jp-mono">${escHtml(fmtTime(h.ts || h.timestamp))}</td>
+        <td>${statusBadge(h.status)}</td>
+        <td class="jp-meta-cell">${escHtml(h.user_name || h.user || '')}</td>
+        <td class="jp-mono">${escHtml(p.tmnId || '')}</td>
+        <td>${escHtml(p.ticket || '')}</td>
+        <td>${escHtml(p.app || '')}</td>
+        <td class="jp-mono">${h.build_id ? '#' + escHtml(String(h.build_id)) : ''}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Admin panel ────────────────────────────────────────────────────────────
+  document.querySelectorAll('.jpa-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.jpa-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.jpa-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      $('jpa-panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  function renderAdmin() {
+    renderApps();
+    renderUsers();
+    renderSettings();
+  }
+
+  function renderApps() {
+    const body = $('jpa-app-body');
+    if (!state.apps.length) {
+      body.innerHTML = '<tr><td colspan="5" class="jp-empty">ยังไม่มี Application</td></tr>';
+      return;
+    }
+    body.innerHTML = state.apps.map(a => `<tr>
+      <td style="font-weight:700">${escHtml(a.name)}</td>
+      <td>${a.enabled === false
+        ? '<span class="jp-badge jp-b-aborted">ปิด</span>'
+        : '<span class="jp-badge jp-b-success">เปิด</span>'}</td>
+      <td class="jp-meta-cell">${escHtml(a.created_at || '')}</td>
+      <td class="jp-meta-cell">${escHtml(a.created_by || '')}</td>
+      <td><div class="jpa-actions">
+        <button class="jp-btn" onclick="toggleApp('${escHtml(String(a.id))}')">${a.enabled === false ? 'เปิด' : 'ปิด'}</button>
+        <button class="jp-btn jp-btn-danger" onclick="deleteApp('${escHtml(String(a.id))}')">ลบ</button>
+      </div></td>
+    </tr>`).join('');
+  }
+
+  function renderUsers() {
+    const body = $('jpa-user-body');
+    if (!state.users.length) {
+      body.innerHTML = '<tr><td colspan="5" class="jp-empty">ยังไม่มีผู้ใช้</td></tr>';
+      return;
+    }
+    body.innerHTML = state.users.map(u => `<tr>
+      <td style="font-weight:700">${escHtml(u.username)}</td>
+      <td class="jp-meta-cell">${escHtml(u.email || '')}</td>
+      <td>${u.jp_role === 'admin'
+        ? '<span class="jp-badge" style="background:rgba(242,100,25,.14);color:var(--orange)">Admin</span>'
+        : '<span class="jp-badge" style="background:rgba(59,130,246,.13);color:#3b82f6">User</span>'}</td>
+      <td>${u.status === 'locked'
+        ? '<span class="jp-badge" style="background:rgba(239,68,68,.13);color:#ef4444">Locked</span>'
+        : '<span class="jp-badge jp-b-success">Active</span>'}</td>
+      <td><div class="jpa-actions">
+        <button class="jp-btn" onclick="promoteUser('${escHtml(u.id)}')">${u.jp_role === 'admin' ? '→ user' : '→ admin'}</button>
+        <button class="jp-btn" onclick="resetPw('${escHtml(u.id)}')">รีเซ็ตรหัส</button>
+        ${u.status === 'locked' ? `<button class="jp-btn" onclick="unlockUser('${escHtml(u.id)}')">ปลดล็อค</button>` : ''}
+        <button class="jp-btn jp-btn-danger" onclick="deleteUser('${escHtml(u.id)}')">ลบ</button>
+      </div></td>
+    </tr>`).join('');
+  }
+
+  function renderSettings() {
+    const me = Auth.getUser();
+    $('jpa-me-kv').innerHTML = `
+      <div class="jpa-kv-row"><b>Username</b><span>${escHtml(me?.username || '')}</span></div>
+      <div class="jpa-kv-row"><b>Name</b><span>${escHtml(me?.name || '')}</span></div>
+      <div class="jpa-kv-row"><b>Role</b><span>${escHtml(me?.role || '')} (${escHtml(me?.permissions?.join(', ') || '')})</span></div>
+      <div class="jpa-kv-row"><b>Team</b><span>${escHtml(me?.team || '')}</span></div>`;
+
+    const srvRows = Object.entries(state.servers).map(([id, s]) => `
+      <div class="jpa-kv-row"><b>${escHtml(id)}</b><span class="jp-mono">${escHtml(s.display || '')} — ${escHtml(s.base_url || '')}</span></div>`).join('');
+    const tool = state.tools[0];
+    const toolRows = tool ? `
+      <div class="jpa-kv-row"><b>Job Name</b><span class="jp-mono">${escHtml(tool.name || tool.id)}</span></div>
+      <div class="jpa-kv-row"><b>Job Path</b><span class="jp-mono">${escHtml(tool.job_path || '')}</span></div>
+      <div class="jpa-kv-row"><b>Params</b><span>${escHtml((tool.params || []).map(p => p.label || p.key).join(' · '))}</span></div>` : '';
+    $('jpa-server-kv').innerHTML = srvRows + toolRows || '<div class="jp-empty">ไม่พบ config</div>';
+  }
+
+  // ── Admin actions ──────────────────────────────────────────────────────────
+  $('jpa-app-add').addEventListener('click', async () => {
+    const name = $('jpa-app-name').value.trim();
+    if (!name) { Toast.error('กรุณากรอกชื่อ Application'); return; }
+    const res = await API.post('/jenkins-portal/', {
+      action: 'add_app', name, enabled: $('jpa-app-enabled').value === '1',
+    });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'เพิ่มไม่สำเร็จ'); return; }
+    Toast.success('เพิ่ม Application เรียบร้อย');
+    $('jpa-app-name').value = '';
+    await reloadAll();
+  });
+
+  async function toggleApp(id) {
+    const app = state.apps.find(a => String(a.id) === id);
+    if (!app) return;
+    const res = await API.post('/jenkins-portal/', { action: 'update_app', id: Number(id), enabled: !(app.enabled === false) ? false : true });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'อัปเดตไม่สำเร็จ'); return; }
+    Toast.success('อัปเดตเรียบร้อย');
+    await reloadAll();
+  }
+
+  async function deleteApp(id) {
+    const app = state.apps.find(a => String(a.id) === id);
+    if (!await confirmDialog('Application: ' + (app?.name || id), 'ลบ Application?',
+      { confirmText: 'ลบ', cancelText: 'ยกเลิก' })) return;
+    const res = await API.post('/jenkins-portal/', { action: 'delete_app', id: Number(id) });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'ลบไม่สำเร็จ'); return; }
+    Toast.success('ลบเรียบร้อย');
+    await reloadAll();
+  }
+
+  $('jpa-user-add').addEventListener('click', async () => {
+    const username = $('jpa-user-username').value.trim();
+    const email = $('jpa-user-email').value.trim();
+    if (!username || !email) { Toast.error('กรุณากรอก username และ email'); return; }
+    const res = await API.post('/jenkins-portal/', {
+      action: 'create_user', username, email, jp_role: $('jpa-user-role').value,
+    });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'สร้างไม่สำเร็จ'); return; }
+    Toast.success(`สร้างผู้ใช้สำเร็จ — รหัสผ่านชั่วคราว: ${res.data.data.temp_password}`);
+    $('jpa-user-username').value = '';
+    $('jpa-user-email').value = '';
+    await reloadAll();
+  });
+
+  async function promoteUser(id) {
+    const u = state.users.find(x => x.id === id);
+    if (!u) return;
+    const res = await API.post('/jenkins-portal/', { action: 'update_user', user_id: id, jp_role: u.jp_role === 'admin' ? 'user' : 'admin' });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'อัปเดตไม่สำเร็จ'); return; }
+    Toast.success('เปลี่ยน Role เรียบร้อย');
+    await reloadAll();
+  }
+
+  async function resetPw(id) {
+    if (!await confirmDialog('ผู้ใช้จะต้องใช้รหัสผ่านชั่วคราวในการ login ครั้งต่อไป', 'รีเซ็ตรหัสผ่าน?',
+      { variant: 'primary', confirmText: 'รีเซ็ต', cancelText: 'ยกเลิก' })) return;
+    const res = await API.post('/jenkins-portal/', { action: 'reset_password', user_id: id });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'รีเซ็ตไม่สำเร็จ'); return; }
+    Toast.success(`รหัสผ่านชั่วคราวใหม่: ${res.data.data.temp_password}`);
+    await reloadAll();
+  }
+
+  async function unlockUser(id) {
+    const res = await API.post('/jenkins-portal/', { action: 'unlock_user', user_id: id });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'ปลดล็อคไม่สำเร็จ'); return; }
+    Toast.success('ปลดล็อคเรียบร้อย');
+    await reloadAll();
+  }
+
+  async function deleteUser(id) {
+    if (!await confirmDialog('ผู้ใช้จะถูกลบออกจาก Jenkins Portal อย่างถาวร', 'ลบผู้ใช้?',
+      { confirmText: 'ลบ', cancelText: 'ยกเลิก' })) return;
+    const res = await API.post('/jenkins-portal/', { action: 'delete_user', user_id: id });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'ลบไม่สำเร็จ'); return; }
+    Toast.success('ลบผู้ใช้เรียบร้อย');
+    await reloadAll();
+  }
+
+  // ── History controls (merged from old Logs panel) ──────────────────────────
+  $('jp-hist-filter').addEventListener('change', e => { state.histFilter = e.target.value; renderHistory(); });
+  $('jp-hist-search').addEventListener('input',  e => { state.histSearch = e.target.value; renderHistory(); });
+  $('jp-hist-clear').addEventListener('click', async () => {
+    if (!await confirmDialog('ประวัติทั้งหมดจะถูกลบถาวร ไม่สามารถกู้คืนได้', 'ล้างประวัติทั้งหมด?',
+      { confirmText: 'ล้าง', cancelText: 'ยกเลิก' })) return;
+    const res = await API.post('/jenkins-portal/', { action: 'clear_history' });
+    if (!res?.ok) { Toast.error(res?.data?.message || 'ล้างไม่สำเร็จ'); return; }
+    Toast.success('ล้างประวัติเรียบร้อย');
+    await loadHistory();
+  });
+  $('jp-hist-export').addEventListener('click', () => {
+    const rows = state.history.map(h => {
+      const p = h.params || {};
+      return [h.ts || h.timestamp || '', h.status || '', h.user_name || h.user || '',
+              p.tmnId || '', p.ticket || '', p.app || '', h.build_id || ''];
+    });
+    const csv = '\uFEFF' + ['Time,Status,User,TMN ID,Ticket,App,Build', ...rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','))].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'jenkins-build-history.csv';
+    a.click();
+  });
+
+  // ── Header buttons ─────────────────────────────────────────────────────────
+  $('jp-btn-history').addEventListener('click', () => openPanel('history'));
+  $('jp-btn-admin').addEventListener('click',   () => openPanel('admin'));
+
+  $('jp-refresh-btn').addEventListener('click', async () => {
+    await Promise.all([loadHistory(), loadStatus()]);
+    Toast.success('อัปเดตแล้ว');
+  });
+
+  // ── Progress modal ─────────────────────────────────────────────────────────
+  function openProgress(queueId) {
+    const tool = state.tools.find(t => t.id === state.toolId);
+    if (!tool) return;
+    const modal = $('jp-progress-modal');
+    $('jp-modal-title').textContent = 'Executing Pipeline';
+    $('jp-modal-status').textContent = 'Waiting in Jenkins queue...';
+    $('jp-progress-bar').style.width = '0%';
+    $('jp-progress-pct').textContent = '0%';
+    $('jp-modal-result').style.display = 'none';
+    $('jp-modal-close').style.display = 'none';
+    modal.style.display = 'flex';
+
+    let tries = 0;
+    const poll = async () => {
+      tries++;
+      const res = await API.get(`/jenkins-portal/?action=status&tool_id=${encodeURIComponent(tool.id)}&queue_id=${encodeURIComponent(queueId)}`);
+      if (!res?.ok) { $('jp-modal-status').textContent = 'Error polling status'; return; }
+      const st = res.data.data || {};
+      $('jp-progress-bar').style.width = (st.progress || 0) + '%';
+      $('jp-progress-pct').textContent = (st.progress || 0) + '%';
+      if (st.status === 'Finished') {
+        $('jp-modal-status').textContent = 'Build completed.';
+        $('jp-modal-title').textContent = 'Pipeline Finished';
+        const result = (st.result || 'UNKNOWN').toUpperCase();
+        const el = $('jp-modal-result');
+        el.textContent = 'STATUS: ' + result;
+        el.className = 'jp-modal-result ' + (result === 'SUCCESS' ? 'ok' : result === 'FAILURE' ? 'bad' : 'mid');
+        el.style.display = 'block';
+        $('jp-progress-bar').style.width = '100%';
+        $('jp-progress-pct').textContent = '100%';
+        $('jp-modal-close').style.display = '';
+        await loadHistory();
+        return;
+      }
+      if (st.status === 'Building') $('jp-modal-status').textContent = 'Processing pipeline steps...';
+      if (st.status === 'In Queue') $('jp-modal-status').textContent = 'Waiting in Jenkins queue...';
+      if (st.status === 'Unknown' && tries > 40) {
+        $('jp-modal-status').textContent = 'ไม่สามารถติดตามสถานะได้ (Jenkins queue หมดอายุ) — ตรวจใน History';
+        $('jp-modal-close').style.display = '';
+        return;
+      }
+      setTimeout(poll, 1500);
+    };
+    poll();
+  }
+
+  $('jp-modal-close').addEventListener('click', () => { $('jp-progress-modal').style.display = 'none'; });
+
+  // ── Misc ───────────────────────────────────────────────────────────────────
+  function fmtTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  async function reloadAll() {
+    await Promise.all([loadConfig(), loadHistory()]);
+    if (state.canAdmin) {
+      const uRes = await API.get('/jenkins-portal/?users=1');
+      if (uRes?.ok) state.users = (uRes.data.data || {}).users || [];
+      if (state.panel === 'admin') renderUsers();
+    }
+  }
+
+  (async function init() {
+    try {
+      await reloadAll();
+      $('jp-loading').style.display = 'none';
+      $('jp-body').style.display = '';
+      // Default view = Trigger form (already visible); panels hidden.
+      backToTrigger();
+      // Non-blocking Jenkins reachability check (upstream may take ~30s to time out).
+      loadStatus();
+    } catch (e) {
+      $('jp-loading').textContent = e.message;
+    }
+    setInterval(loadHistory, 30_000);
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Noti — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/email-noti/email-noti.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="megaphone"></i> Email Notification</div>
+        <div class="page-sub">ส่งเมลแจ้งข่าวสารคอร์สใหม่ / ข้อสอบใหม่ / ประกาศทั่วไป ให้ทีม</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="./mail-logs.html" class="btn btn-ghost" style="font-size:11px"><i data-icon="clipboard"></i> Mail Logs</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="megaphone"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Email Notification</h1>
+          <p>ส่งเมลแจ้งข่าวสาร — คอร์สใหม่ · ข้อสอบใหม่ · ประกาศทั่วไป ให้ทีม SM</p>
+        </div>
+      </section>
+
+      <div class="grid-2">
+        <!-- ─────────── LEFT: Compose ─────────── -->
+        <div>
+          <!-- Mode picker -->
+          <div class="en-card">
+            <div class="en-card-hd">
+              <div class="en-card-icon"><i data-icon="upload"></i></div>
+              <div>
+                <div class="en-card-title">1. เลือกประเภทการแจ้งเตือน</div>
+                <div class="en-card-sub">เลือกว่าจะส่งเรื่องอะไร — template จะถูกเตรียมให้อัตโนมัติ</div>
+              </div>
+            </div>
+            <div class="en-body">
+              <div class="mode-grid">
+                <div class="mode-card active" data-mode="course" onclick="setMode('course')">
+                  <div class="mode-icon"><i data-icon="book-open"></i></div>
+                  <div class="mode-title">New Course</div>
+                  <div class="mode-sub">แจ้งคอร์สเรียนใหม่</div>
+                </div>
+                <div class="mode-card" data-mode="exam" onclick="setMode('exam')">
+                  <div class="mode-icon"><i data-icon="edit"></i></div>
+                  <div class="mode-title">New Exam</div>
+                  <div class="mode-sub">แจ้งข้อสอบใหม่</div>
+                </div>
+                <div class="mode-card" data-mode="course_exam" onclick="setMode('course_exam')">
+                  <div class="mode-icon"><i data-icon="book-open"></i><i data-icon="edit"></i></div>
+                  <div class="mode-title">Course + Exam</div>
+                  <div class="mode-sub">คอร์ส + ข้อสอบจบคอร์ส</div>
+                </div>
+                <div class="mode-card" data-mode="custom" onclick="setMode('custom')">
+                  <div class="mode-icon"><i data-icon="megaphone"></i></div>
+                  <div class="mode-title">Custom</div>
+                  <div class="mode-sub">ประกาศเขียนเอง</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div class="en-card">
+            <div class="en-card-hd">
+              <div class="en-card-icon"><i data-icon="pencil"></i></div>
+              <div>
+                <div class="en-card-title">2. กรอกเนื้อหา</div>
+                <div class="en-card-sub" id="content-sub">เลือกคอร์สและเขียนข้อความเพิ่มเติม (ถ้าต้องการ)</div>
+              </div>
+            </div>
+            <div class="en-body">
+
+              <!-- Always-visible subject field — auto-fills based on mode + selection -->
+              <div class="f-row">
+                <div class="f-label">หัวข้ออีเมล <span style="color:#ef4444">*</span></div>
+                <input type="text" id="email-subject" class="f-input" maxlength="200"
+                       placeholder="🚀 [SM - Action Required] Mandatory Training: ..."
+                       oninput="onSubjectEdit()">
+                <div class="f-hint" id="subject-hint">
+                  ระบบเติม default ให้เมื่อเลือกคอร์ส/ข้อสอบ — แก้ได้ตามต้องการ
+                  <a href="javascript:void(0)" onclick="resetSubjectToDefault()" style="color:var(--orange);margin-left:6px">↻ คืนค่า default</a>
+                </div>
+              </div>
+
+              <!-- Course mode -->
+              <div id="mode-course" class="mode-pane">
+                <div class="f-row">
+                  <div class="f-label">เลือกคอร์ส <span style="color:#ef4444">*</span></div>
+                  <select id="course-select" class="f-input" onchange="onContentChange()">
+                    <option value="">— เลือกคอร์ส —</option>
+                  </select>
+                  <div class="f-hint">แสดงเฉพาะคอร์สที่ published แล้ว — สามารถจัดการได้ที่ <a href="./courses.html">Courses</a></div>
+                </div>
+                <div class="f-row">
+                  <div class="f-label">ข้อความเพิ่มเติม (ไม่บังคับ)</div>
+                  <textarea id="course-extra" class="f-input" placeholder="เช่น คอร์สนี้เป็นคอร์สบังคับ — กรุณาเรียนให้จบภายในวันที่ 30 มิ.ย."
+                            oninput="updatePreview()"></textarea>
+                </div>
+              </div>
+
+              <!-- Exam mode -->
+              <div id="mode-exam" class="mode-pane" style="display:none">
+                <div class="f-row">
+                  <div class="f-label">เลือกข้อสอบ <span style="color:#ef4444">*</span></div>
+                  <select id="exam-select" class="f-input" onchange="onContentChange()">
+                    <option value="">— เลือกข้อสอบ —</option>
+                  </select>
+                  <div class="f-hint">จัดการได้ที่ <a href="./exams.html">Exams</a></div>
+                </div>
+                <div class="f-row">
+                  <div class="f-label">ข้อความเพิ่มเติม (ไม่บังคับ)</div>
+                  <textarea id="exam-extra" class="f-input" placeholder="เช่น ข้อสอบประจำปี — กรุณาทำให้เสร็จภายในสัปดาห์นี้"
+                            oninput="updatePreview()"></textarea>
+                </div>
+              </div>
+
+              <!-- Course + Exam mode (combined announcement) -->
+              <div id="mode-course_exam" class="mode-pane" style="display:none">
+                <div class="f-row">
+                  <div class="f-label">เลือกคอร์ส <span style="color:#ef4444">*</span></div>
+                  <select id="ce-course-select" class="f-input" onchange="onContentChange()">
+                    <option value="">— เลือกคอร์ส —</option>
+                  </select>
+                  <div class="f-hint">แสดงเฉพาะคอร์สที่ published แล้ว</div>
+                </div>
+                <div class="f-row">
+                  <div class="f-label">เลือกข้อสอบ (จบคอร์ส) <span style="color:#ef4444">*</span></div>
+                  <select id="ce-exam-select" class="f-input" onchange="onContentChange()">
+                    <option value="">— เลือกข้อสอบ —</option>
+                  </select>
+                  <div class="f-hint" id="ce-exam-hint">
+                    เลือกข้อสอบที่ผู้เรียนจะทำหลังจบคอร์ส — ระบบจะแนะนำอัตโนมัติหากข้อสอบมี prerequisite ตรงกับคอร์สที่เลือก
+                  </div>
+                </div>
+                <div class="f-row">
+                  <div class="f-label">ข้อความเพิ่มเติม (ไม่บังคับ)</div>
+                  <textarea id="ce-extra" class="f-input" placeholder="เช่น กรุณาเรียนคอร์สให้จบทุก lesson ก่อนเข้าทำข้อสอบ — ทำได้ครั้งเดียวเท่านั้น"
+                            oninput="updatePreview()"></textarea>
+                </div>
+              </div>
+
+              <!-- Custom mode -->
+              <div id="mode-custom" class="mode-pane" style="display:none">
+                <div class="f-row">
+                  <div class="f-label">เนื้อหา <span style="color:#ef4444">*</span></div>
+                  <textarea id="custom-body" class="f-input" style="min-height:200px"
+                            placeholder="พิมพ์เนื้อหาที่ต้องการส่งให้ทีม..."
+                            oninput="updatePreview()"></textarea>
+                  <div class="f-hint">รองรับการขึ้นบรรทัดใหม่ — ระบบจะห่อด้วย email template สวยๆ ให้อัตโนมัติ</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Google Chat (optional) -->
+          <div class="en-card">
+            <div class="en-card-hd">
+              <div class="en-card-icon" style="background:rgba(66,133,244,.12);color:#4285F4"><i data-icon="message-circle"></i></div>
+              <div style="flex:1">
+                <div class="en-card-title">3. Google Chat (Optional)</div>
+                <div class="en-card-sub">ยิงการ์ดแจ้งเตือนเข้า Google Chat ควบคู่กับการส่งเมล</div>
+              </div>
+              <label style="display:flex;gap:6px;align-items:center;cursor:pointer;font-size:12px;font-weight:600">
+                <input type="checkbox" id="chat-toggle" onchange="onChatToggle()" style="accent-color:#4285F4;width:16px;height:16px">
+                <span>เปิดใช้</span>
+              </label>
+            </div>
+            <div class="en-body" id="chat-body" style="display:none">
+              <div class="f-row">
+                <div class="f-label">Webhook URL(s) <span style="color:var(--text-muted);font-weight:400">— 1 URL ต่อบรรทัด</span></div>
+                <textarea id="chat-webhooks" class="f-input" rows="3"
+                          placeholder="https://chat.googleapis.com/v1/spaces/.../messages?key=...&token=..."
+                          style="font-family:monospace;font-size:11px;line-height:1.6"></textarea>
+                <div class="f-hint" id="chat-webhook-hint">
+                  ถ้าเว้นว่างจะใช้ค่า default จาก
+                  <a href="./system-settings.html" style="color:var(--orange)">System Settings</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recipients -->
+          <div class="en-card">
+            <div class="en-card-hd">
+              <div class="en-card-icon"><i data-icon="users"></i></div>
+              <div>
+                <div class="en-card-title">4. เลือกผู้รับ</div>
+                <div class="en-card-sub">ติ๊กเฉพาะคนที่ต้องการส่ง — ผู้ใช้ที่ไม่มีอีเมลจะไม่แสดงในรายการ</div>
+              </div>
+            </div>
+            <div class="en-body">
+              <div class="rcpt-toolbar">
+                <label style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--text);cursor:pointer">
+                  <input type="checkbox" id="rcpt-all" onchange="toggleAll(this.checked)" checked>
+                  เลือกทั้งหมด
+                </label>
+                <input type="text" id="rcpt-search" class="rcpt-search" placeholder="🔍 ค้นหา name / username / email"
+                       oninput="renderRecipients()">
+                <div class="rcpt-counter">เลือก <strong id="rcpt-sel-count">0</strong> / <span id="rcpt-total-count">0</span></div>
+              </div>
+              <div id="rcpt-list" class="rcpt-list">
+                <div class="skel"></div><div class="skel"></div><div class="skel"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─────────── RIGHT: Preview ─────────── -->
+        <div>
+          <div class="en-card" style="position:sticky;top:16px">
+            <div class="en-card-hd">
+              <div class="en-card-icon"><i data-icon="eye"></i></div>
+              <div>
+                <div class="en-card-title">Preview ก่อนส่ง</div>
+                <div class="en-card-sub">ตรวจสอบรายละเอียดก่อนกด Send</div>
+              </div>
+            </div>
+            <div class="en-body">
+              <div class="preview-box">
+                <div class="preview-label">ประเภท</div>
+                <div class="preview-value" id="prev-type"><i data-icon="book-open"></i> New Course</div>
+
+                <div class="preview-label">หัวข้ออีเมล</div>
+                <div class="preview-value empty" id="prev-subject">(ยังไม่ได้เลือก)</div>
+
+                <div class="preview-label">เนื้อหา / ข้อความ</div>
+                <div class="preview-body" id="prev-body">—</div>
+
+                <div class="preview-label" style="margin-top:12px">ผู้รับ</div>
+                <div class="preview-value" id="prev-recipients">0 คน</div>
+
+                <div class="preview-label">ผู้ที่ถูก<strong>ติ๊กออก</strong></div>
+                <div class="preview-value empty" id="prev-excluded">(ส่งให้ทุกคน)</div>
+
+                <div class="preview-label" style="margin-top:12px">Google Chat</div>
+                <div class="preview-value empty" id="prev-chat">ปิด — ส่งเฉพาะเมล</div>
+              </div>
+
+              <button id="send-btn" class="btn btn-primary" style="width:100%;margin-top:14px;font-size:13px;padding:11px"
+                      onclick="confirmSend()">
+                <span id="send-btn-text"><i data-icon="upload"></i> ส่งอีเมลเลย</span>
+              </button>
+
+              <div id="send-result" class="send-result"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Send-confirmation modal ── -->
+<div class="pv-overlay" id="pv-overlay">
+  <div class="pv-modal">
+    <div class="pv-hd">
+      <div class="pv-hd-icon"><i data-icon="upload"></i></div>
+      <div>
+        <div class="pv-hd-title">ตรวจสอบก่อนส่ง</div>
+        <div class="pv-hd-sub">นี่คือหน้าตาจริงของอีเมลที่จะส่งไปยังผู้รับทั้งหมด</div>
+      </div>
+    </div>
+    <div class="pv-body">
+      <div class="pv-meta-row" id="pv-meta"></div>
+      <div class="pv-subject-box">
+        <div class="pv-subject-lbl">หัวข้ออีเมล</div>
+        <div class="pv-subject-text" id="pv-subject">—</div>
+      </div>
+      <iframe class="pv-iframe" id="pv-iframe" srcdoc="" title="Email preview" sandbox="allow-same-origin"></iframe>
+      <div class="pv-loading" id="pv-loading" style="display:none">กำลังเรนเดอร์ตัวอย่างอีเมล...</div>
+    </div>
+    <div class="pv-ft">
+      <button type="button" class="pv-btn-cancel" onclick="closePreview()">Cancel</button>
+      <button type="button" class="pv-btn-send" id="pv-btn-send" onclick="doSend()"><i data-icon="upload"></i> ยืนยันส่งอีเมล</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/email-noti/email-noti.js"></script>
+
+</body>
+</html>

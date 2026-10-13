@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Holiday Plans — Team SM</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <script src="assets/js/theme.js"></script>
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <style>
+  .main-content { min-width: 0; overflow-x: hidden; }
+  .page-content { min-width: 0; overflow-x: hidden; }
+  .hp-wrap { display: flex; flex-direction: column; gap: 18px; }
+
+  /* ── Month / Year nav ───────────────────────────────── */
+  .hp-nav {
+    display: flex; align-items: center; gap: 0;
+    background: white; border: 1.5px solid #e8e8e8;
+    border-radius: 14px; padding: 12px 18px;
+    justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .hp-nav-center { display: flex; align-items: center; gap: 8px; }
+  .hp-nav-btn {
+    background: none; border: 1.5px solid #e8e8e8; border-radius: 8px;
+    width: 32px; height: 32px; cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s; color: var(--text);
+  }
+  .hp-nav-btn:hover { background: #f5f5f5; border-color: #ccc; }
+  .hp-nav-title {
+    font-size: 15px; font-weight: 800; color: var(--text);
+    min-width: 160px; text-align: center;
+  }
+  .hp-nav-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .hp-chip {
+    padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    background: rgba(242,100,25,.08); color: var(--orange);
+    border: 1px solid rgba(242,100,25,.2);
+  }
+
+  /* ── Note card ──────────────────────────────────────── */
+  .hp-note {
+    background: linear-gradient(135deg, #fff8f0 0%, #fffdf9 100%);
+    border: 1.5px solid rgba(242,100,25,.2); border-radius: 14px;
+    padding: 14px 18px; font-size: 12px; color: #555; line-height: 1.7;
+  }
+  .hp-note strong { color: var(--orange); }
+  .hp-note-title { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+
+  /* ── Calendar table wrapper ─────────────────────────── */
+  .hp-table-card {
+    background: white; border: 1.5px solid #e8e8e8;
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  }
+  .hp-table-scroll { overflow-x: auto; }
+  .hp-table {
+    border-collapse: collapse; font-size: 11px;
+    background: white; min-width: max-content; width: 100%;
+  }
+
+  /* Header rows */
+  .hp-table thead th {
+    padding: 0; border-bottom: 1.5px solid #e8e8e8;
+  }
+  .hp-th-name {
+    position: sticky; left: 0; z-index: 10;
+    background: #2d5a27; color: white;
+    padding: 10px 16px; font-size: 11px; font-weight: 700;
+    min-width: 170px; text-align: center;
+    border-right: 2px solid rgba(255,255,255,.2);
+  }
+  .hp-th-day {
+    min-width: 30px; width: 30px; text-align: center;
+    font-size: 9px; font-weight: 700; padding: 4px 2px;
+    color: #444; background: #f5f5f5;
+    border-right: 1px solid #eee;
+    vertical-align: bottom;
+  }
+  .hp-th-day.is-weekend { background: #ffe8e8; color: #ef4444; }
+  .hp-th-day.is-holiday { background: #fde68a; color: #b45309; }
+  .hp-th-day.is-today   { background: #ff6200; color: white; border-radius: 4px; }
+  .hp-th-vac { min-width: 70px; background: #2d5a27; color: white; text-align: center; padding: 10px 8px; font-size: 10px; font-weight: 700; border-left: 2px solid rgba(255,255,255,.2); }
+
+  /* Sub-header row */
+  .hp-subhd th { background: #3d7a35; }
+  .hp-subhd .hp-th-label { color: white; font-size: 10px; font-weight: 700; text-align: center; padding: 3px 2px; border-right: 1px solid rgba(255,255,255,.15); }
+
+  /* Body rows */
+  .hp-table tbody tr { border-bottom: 1px solid #f0f0f0; }
+  .hp-table tbody tr:last-child { border-bottom: none; }
+  .hp-table tbody tr:hover .hp-td-name { background: #f0fdf4; }
+  .hp-td-name {
+    position: sticky; left: 0; z-index: 5;
+    background: white; padding: 8px 12px;
+    border-right: 2px solid #e8e8e8;
+    white-space: nowrap;
+    display: flex; align-items: center; gap: 8px;
+    min-width: 170px;
+  }
+  .hp-td-name.is-me { background: #f0fdf4; }
+  .hp-quota-badge {
+    font-size: 11px; font-weight: 800; color: white;
+    background: #2d5a27; border-radius: 6px;
+    padding: 2px 7px; min-width: 28px; text-align: center; flex-shrink: 0;
+  }
+  .hp-td-day {
+    min-width: 30px; width: 30px; height: 32px;
+    text-align: center; vertical-align: middle;
+    border-right: 1px solid #eee; padding: 0; cursor: default;
+    position: relative;
+  }
+  .hp-td-day.is-weekend { background: #fafafa; }
+  .hp-td-day.is-holiday { background: #fef9c3; }
+  .hp-td-day.is-planned {
+    background: #fbbf24;
+    cursor: pointer;
+  }
+  .hp-td-day.is-planned.is-me {
+    background: #22c55e; cursor: pointer;
+  }
+  .hp-td-day.is-me-editable:not(.is-planned) {
+    cursor: pointer;
+  }
+  .hp-td-day.is-me-editable:not(.is-planned):hover {
+    background: rgba(34,197,94,.15);
+  }
+  .hp-td-day.is-out { background: #f5f5f5; }
+  .hp-td-vac {
+    text-align: center; font-weight: 800; font-size: 12px;
+    color: var(--text); padding: 0 8px;
+    border-left: 2px solid #e8e8e8; min-width: 70px;
+  }
+
+  /* Legend */
+  .hp-legend {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    font-size: 11px; color: #666;
+  }
+  .hp-legend-item { display: flex; align-items: center; gap: 5px; }
+  .hp-legend-dot { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+
+  /* ── Plan modal ─────────────────────────────────────── */
+  #plan-modal {
+    position: fixed; inset: 0; z-index: 9000;
+    background: rgba(0,0,0,.45); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .22s;
+  }
+  #plan-modal.open { opacity: 1; pointer-events: all; }
+  #plan-modal-box {
+    background: white; border-radius: 20px; width: 560px; max-width: 96vw;
+    max-height: 90vh; display: flex; flex-direction: column;
+    box-shadow: 0 32px 80px rgba(0,0,0,.18);
+    overflow: hidden; animation: slideUp .26s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(28px) scale(.97); }
+    to   { opacity: 1; transform: none; }
+  }
+  .pm-hd {
+    padding: 18px 22px 14px; border-bottom: 1.5px solid #f0f0f0;
+    display: flex; align-items: flex-start; justify-content: space-between;
+  }
+  .pm-hd-t { font-size: 15px; font-weight: 800; color: var(--text); }
+  .pm-hd-sub { font-size: 11px; color: #888; margin-top: 2px; }
+  .pm-close {
+    background: none; border: none; font-size: 18px; cursor: pointer;
+    color: #999; padding: 2px 6px; border-radius: 6px; line-height: 1;
+  }
+  .pm-close:hover { background: #f5f5f5; color: #333; }
+  .pm-body { padding: 20px 22px; overflow-y: auto; flex: 1; }
+
+  /* mini calendar in modal */
+  .pm-cal-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .pm-cal-title { font-size: 13px; font-weight: 800; color: var(--text); }
+  .pm-cal-btn {
+    background: none; border: 1.5px solid #e8e8e8; border-radius: 8px;
+    width: 28px; height: 28px; cursor: pointer; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .pm-cal-btn:hover { background: #f5f5f5; }
+  .pm-cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;
+    margin-bottom: 16px;
+  }
+  .pm-cal-day-hd {
+    text-align: center; font-size: 9px; font-weight: 700;
+    color: #aaa; padding: 4px 0; text-transform: uppercase;
+  }
+  .pm-cal-day {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; border-radius: 8px;
+    cursor: pointer; transition: all .12s; color: var(--text);
+    position: relative;
+  }
+  .pm-cal-day:hover:not(.out):not(.weekend) { background: rgba(34,197,94,.15); }
+  .pm-cal-day.weekend { color: #ef4444; cursor: default; opacity: .5; }
+  .pm-cal-day.holiday { background: #fef9c3; color: #b45309; }
+  .pm-cal-day.holiday.selected { background: #22c55e; color: white; }
+  .pm-cal-day.selected { background: #22c55e; color: white; }
+  .pm-cal-day.out { visibility: hidden; }
+  .pm-cal-day.today { box-shadow: 0 0 0 2px var(--orange); }
+
+  /* selected list */
+  .pm-selected-wrap {
+    background: #f9fafb; border-radius: 12px; padding: 12px 14px;
+    margin-bottom: 16px; min-height: 48px;
+  }
+  .pm-selected-title { font-size: 10px; font-weight: 700; color: #888; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
+  .pm-selected-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pm-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(34,197,94,.12); color: #16a34a;
+    border: 1px solid rgba(34,197,94,.3); border-radius: 20px;
+    padding: 3px 10px 3px 10px; font-size: 11px; font-weight: 700;
+  }
+  .pm-pill-x {
+    background: none; border: none; cursor: pointer; color: #16a34a;
+    font-size: 12px; padding: 0; line-height: 1; opacity: .6;
+  }
+  .pm-pill-x:hover { opacity: 1; }
+  .pm-empty { font-size: 11px; color: #bbb; }
+
+  /* footer actions */
+  .pm-foot {
+    padding: 14px 22px; border-top: 1.5px solid #f0f0f0;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .pm-count { font-size: 12px; color: #888; font-weight: 600; }
+  .pm-count strong { color: var(--text); }
+  .pm-actions { display: flex; gap: 8px; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="topbar-title-left">
+          <div class="page-title"><i data-icon="calendar"></i> Advance Holiday Plans</div>
+          <div class="page-sub">วางแผนวันหยุดล่วงหน้า Team SM</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary btn-sm" onclick="openPlanModal()" style="font-size:11px;font-weight:700">
+          <i data-icon="pencil"></i> วางแผนของฉัน
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="loadAll()" style="font-size:11px">↺</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="hp-wrap">
+
+        <!-- Month / Year nav -->
+        <div class="hp-nav">
+          <div class="hp-nav-center">
+            <button class="hp-nav-btn" onclick="changeYear(-1)">«</button>
+            <button class="hp-nav-btn" onclick="changeMonth(-1)">‹</button>
+            <div class="hp-nav-title" id="hp-nav-title">Loading...</div>
+            <button class="hp-nav-btn" onclick="changeMonth(1)">›</button>
+            <button class="hp-nav-btn" onclick="changeYear(1)">»</button>
+            <button class="btn btn-ghost btn-sm" onclick="goToday()" style="font-size:10px;margin-left:4px">วันนี้</button>
+          </div>
+          <div class="hp-nav-chips">
+            <div class="hp-chip" id="hp-stat-chip">—</div>
+          </div>
+        </div>
+
+        <!-- Note -->
+        <div class="hp-note">
+          <div class="hp-note-title"><i data-icon="map-pin"></i> หมายเหตุ</div>
+          เริ่มทำแผนวันหยุดของทีม ให้จับจองกันล่วงหน้า <strong>ใส่วันที่ต้องการหยุดด้านล่าง</strong>ด้วยครับ
+          ทางหัวหน้าเขาอยากเห็นภาพว่าวันลาเหลือกันเยอะมั้ย จะได้ไม่มาลากระจุกกันเดือนสุดท้ายครับ
+          และ<strong>ขอเพิ่ม ตั้งกฎ</strong> ในทีม เช่น คนเดิมๆ ไม่ควรลาช่วงวันหยุดยาวเดิมๆ ทุกปี ต้องแบ่งเพื่อนในทีมบ้าง สลับๆ กัน
+        </div>
+
+        <!-- Calendar table -->
+        <div class="hp-table-card">
+          <div class="hp-table-scroll">
+            <table class="hp-table" id="hp-table">
+              <thead id="hp-thead"></thead>
+              <tbody id="hp-tbody">
+                <tr><td colspan="40" style="text-align:center;padding:40px;color:#aaa;font-size:12px">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Legend -->
+          <div style="padding:12px 16px; border-top:1px solid #f0f0f0;">
+            <div class="hp-legend">
+              <div class="hp-legend-item"><div class="hp-legend-dot" style="background:#22c55e"></div><span>แผนของฉัน</span></div>
+              <div class="hp-legend-item"><div class="hp-legend-dot" style="background:#fbbf24"></div><span>แผนของเพื่อน</span></div>
+              <div class="hp-legend-item"><div class="hp-legend-dot" style="background:#fef9c3;border:1px solid #e8e8e8"></div><span>วันหยุดนักขัตฤกษ์</span></div>
+              <div class="hp-legend-item"><div class="hp-legend-dot" style="background:#fafafa;border:1px solid #e8e8e8"></div><span>เสาร์-อาทิตย์</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Plan Modal -->
+<div id="plan-modal">
+  <div id="plan-modal-box">
+    <div class="pm-hd">
+      <div>
+        <div class="pm-hd-t"><i data-icon="pencil"></i> วางแผนวันหยุดของฉัน</div>
+        <div class="pm-hd-sub" id="pm-hd-sub">เลือกวันที่ต้องการหยุดในเดือนนี้</div>
+      </div>
+      <button class="pm-close" onclick="closePlanModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="pm-body">
+      <!-- mini month nav in modal -->
+      <div class="pm-cal-nav">
+        <button class="pm-cal-btn" onclick="modalPrevMonth()">‹</button>
+        <div class="pm-cal-title" id="pm-cal-title"></div>
+        <button class="pm-cal-btn" onclick="modalNextMonth()">›</button>
+      </div>
+      <!-- calendar grid -->
+      <div class="pm-cal-grid" id="pm-cal-grid"></div>
+      <!-- selected pills -->
+      <div class="pm-selected-wrap">
+        <div class="pm-selected-title">วันที่เลือก</div>
+        <div class="pm-selected-pills" id="pm-pills"><span class="pm-empty">ยังไม่ได้เลือกวัน</span></div>
+      </div>
+    </div>
+    <div class="pm-foot">
+      <div class="pm-count">เลือกแล้ว <strong id="pm-count">0</strong> วัน</div>
+      <div class="pm-actions">
+        <button class="btn btn-ghost btn-sm" onclick="clearModalMonth()" style="font-size:11px"><i data-icon="trash"></i> ล้างเดือนนี้</button>
+        <button class="btn btn-primary btn-sm" onclick="savePlan()" id="pm-save-btn" style="font-size:11px;font-weight:700"><i data-icon="save"></i> บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script>
+Auth.requireAuth();
+Layout.init('holiday-plans');
+
+/* ══════════════════════════════════════
+   State
+══════════════════════════════════════ */
+const today   = new Date();
+let curYear   = today.getFullYear();
+let curMonth  = today.getMonth() + 1;
+let plansData = {};   // {user_id: [dates]}
+let usersData = [];
+let quotaData = {};
+let leaveData = [];
+let holidayData = [];
+let currentUser = null;
+
+// modal state
+let modalYear  = curYear;
+let modalMonth = curMonth;
+let modalSel   = {};  // {YYYY-MM: Set<date>}
+
+const MONTH_TH = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                  'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const DAY_TH   = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function pad(n) { return String(n).padStart(2,'0'); }
+function dateStr(y,m,d) { return `${y}-${pad(m)}-${pad(d)}`; }
+function isWeekend(y,m,d) { const dw = new Date(y,m-1,d).getDay(); return dw===0||dw===6; }
+function isHoliday(ds) { return holidayMap.has(ds); }
+
+let holidayMap = new Map();
+
+/* ══════════════════════════════════════
+   Navigation
+══════════════════════════════════════ */
+function changeMonth(d) {
+  curMonth += d;
+  if (curMonth > 12) { curMonth = 1; curYear++; }
+  if (curMonth < 1)  { curMonth = 12; curYear--; }
+  loadMonthData();
+}
+function changeYear(d) {
+  curYear += d;
+  loadAll();
+}
+function goToday() {
+  curYear  = today.getFullYear();
+  curMonth = today.getMonth() + 1;
+  loadMonthData();
+}
+
+/* ══════════════════════════════════════
+   Data loading
+══════════════════════════════════════ */
+async function loadAll() {
+  currentUser = Auth.getUser();
+  const [uRes, qRes, lRes, hRes] = await Promise.all([
+    API.users.list(),
+    API.vacation.getQuotas(),
+    API.leave.list(),
+    API.holidays.list(),
+  ]);
+  usersData   = uRes?.ok  ? (uRes.data.data   || []) : [];
+  quotaData   = qRes?.ok  ? (qRes.data.data   || {}) : {};
+  leaveData   = lRes?.ok  ? (lRes.data.data   || []) : [];
+  holidayData = hRes?.ok  ? (hRes.data.data   || []) : [];
+  holidayMap  = new Map(holidayData.map(h => [h.date, h.name]));
+  await loadMonthData();
+}
+
+async function loadMonthData() {
+  const res = await API.holidayPlans.get(curYear, curMonth);
+  plansData  = res?.ok ? (res.data.plans || {}) : {};
+  renderAll();
+}
+
+/* ══════════════════════════════════════
+   Remaining vacation helper (same logic as schedule.html)
+══════════════════════════════════════ */
+function getRemaining(userId) {
+  const quota = parseFloat(quotaData[userId]) || 0;
+  if (!quota) return null;
+
+  const coveredDates = new Set();
+  const usedFromLeaves = leaveData
+    .filter(l => l.user_id === userId && l.status === 'approved' && l.type === 'vacation')
+    .reduce((sum, l) => {
+      const dates = l.dates && Array.isArray(l.dates) ? l.dates : [];
+      dates.forEach(d => coveredDates.add(d));
+      if (!dates.length && l.start_date && l.end_date) {
+        for (let d = new Date(l.start_date); d <= new Date(l.end_date); d.setDate(d.getDate()+1)) {
+          coveredDates.add(d.toISOString().slice(0,10));
+        }
+      }
+      const cnt = dates.length || (l.start_date && l.end_date
+        ? Math.max(1, Math.round((new Date(l.end_date)-new Date(l.start_date))/86400000)+1)
+        : 0);
+      return sum + (l.duration === 'half' ? cnt * 0.5 : cnt);
+    }, 0);
+  const remaining = quota - usedFromLeaves;
+  return remaining % 1 === 0 ? remaining : parseFloat(remaining.toFixed(1));
+}
+
+/* ══════════════════════════════════════
+   Render calendar
+══════════════════════════════════════ */
+function renderAll() {
+  const daysInMonth = new Date(curYear, curMonth, 0).getDate();
+  const todayStr    = dateStr(today.getFullYear(), today.getMonth()+1, today.getDate());
+  const myId        = currentUser?.id;
+
+  // Update nav label
+  document.getElementById('hp-nav-title').textContent = `${MONTH_TH[curMonth]} ${curYear + 543}`;
+
+  // Stat chip
+  const planners = Object.keys(plansData).filter(uid => (plansData[uid] || []).length > 0);
+  document.getElementById('hp-stat-chip').textContent = `${planners.length}/${usersData.length} คนกรอกแล้ว`;
+
+  // ── Build header ──────────────────────────────────────
+  const thead = document.getElementById('hp-thead');
+  let hdHtml = '<tr>';
+  hdHtml += `<th class="hp-th-name">Name</th>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds  = dateStr(curYear, curMonth, d);
+    const dw  = new Date(curYear, curMonth-1, d).getDay();
+    const wkd = dw===0||dw===6;
+    const hol = holidayMap.has(ds);
+    const tod = ds === todayStr;
+    let cls = 'hp-th-day';
+    if (tod) cls += ' is-today';
+    else if (hol) cls += ' is-holiday';
+    else if (wkd) cls += ' is-weekend';
+    const dowLabel = DAY_TH[dw];
+    hdHtml += `<th class="${cls}"><div>${pad(d)}</div><div style="font-size:8px;opacity:.7">${dowLabel}</div></th>`;
+  }
+  hdHtml += `<th class="hp-th-vac">วันแผน</th></tr>`;
+  thead.innerHTML = hdHtml;
+
+  // ── Build body ────────────────────────────────────────
+  const tbody = document.getElementById('hp-tbody');
+
+  if (!usersData.length) {
+    tbody.innerHTML = '<tr><td colspan="40" style="text-align:center;padding:32px;color:#aaa;font-size:12px">ยังไม่มีสมาชิก</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = usersData.map(u => {
+    const isMe   = u.id === myId;
+    const rem    = getRemaining(u.id);
+    const remDisp = rem !== null ? rem : '—';
+    const remColor = rem === null ? '#aaa' : rem < 0 ? '#ef4444' : rem <= 3 ? '#f97316' : 'white';
+    const myPlans = new Set(plansData[u.id] || []);
+    const planCount = myPlans.size;
+
+    let cells = '';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds  = dateStr(curYear, curMonth, d);
+      const dw  = new Date(curYear, curMonth-1, d).getDay();
+      const wkd = dw===0||dw===6;
+      const hol = holidayMap.has(ds);
+      let cls = 'hp-td-day';
+      if (myPlans.has(ds)) cls += isMe ? ' is-planned is-me' : ' is-planned';
+      else if (hol) cls += ' is-holiday';
+      else if (wkd) cls += ' is-weekend';
+      if (isMe && !wkd) cls += ' is-me-editable';
+      const onclick = isMe && !wkd ? `onclick="quickToggle('${ds}')"` : '';
+      cells += `<td class="${cls}" data-date="${ds}" ${onclick}></td>`;
+    }
+
+    return `<tr>
+      <td class="hp-td-name${isMe?' is-me':''}">
+        <span class="hp-quota-badge" style="color:${remColor}">${remDisp}</span>
+        <div>
+          <div style="font-weight:700;font-size:12px;color:var(--text)">${esc(u.nickname||u.name.split(' ')[0]||u.name)}</div>
+          ${u.nickname ? `<div style="font-size:9px;color:#aaa">${esc(u.name)}</div>` : ''}
+        </div>
+        ${isMe ? `<span style="margin-left:auto;font-size:9px;background:rgba(34,197,94,.15);color:#16a34a;border-radius:4px;padding:1px 5px;font-weight:700">ฉัน</span>` : ''}
+      </td>
+      ${cells}
+      <td class="hp-td-vac">
+        ${planCount > 0
+          ? `<span style="font-weight:800;font-size:13px;color:${isMe?'#16a34a':'#b45309'}">${planCount}</span>`
+          : `<span style="color:#ddd">—</span>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════
+   Quick toggle (click cell in own row)
+══════════════════════════════════════ */
+async function quickToggle(ds) {
+  const myId = currentUser?.id;
+  const [y, m] = ds.split('-').map(Number);
+  const monthKey = `${y}-${pad(m)}`;
+
+  // Sync current plansData into modalSel for this month
+  if (!modalSel[monthKey]) {
+    modalSel[monthKey] = new Set(plansData[myId] || []);
+  }
+  const sel = modalSel[monthKey];
+
+  if (sel.has(ds)) sel.delete(ds);
+  else             sel.add(ds);
+
+  // Save immediately
+  await saveMonthPlan(y, m);
+}
+
+/* ══════════════════════════════════════
+   Plan Modal
+══════════════════════════════════════ */
+function openPlanModal() {
+  const myId = currentUser?.id;
+  modalYear  = curYear;
+  modalMonth = curMonth;
+
+  // Load current month's plan into modalSel
+  const mk = `${modalYear}-${pad(modalMonth)}`;
+  if (!modalSel[mk]) {
+    modalSel[mk] = new Set(plansData[myId] || []);
+  }
+
+  renderModalCal();
+  document.getElementById('plan-modal').classList.add('open');
+}
+
+function closePlanModal() {
+  document.getElementById('plan-modal').classList.remove('open');
+}
+
+function modalPrevMonth() {
+  modalMonth--;
+  if (modalMonth < 1) { modalMonth = 12; modalYear--; }
+  loadModalMonthData();
+}
+function modalNextMonth() {
+  modalMonth++;
+  if (modalMonth > 12) { modalMonth = 1; modalYear++; }
+  loadModalMonthData();
+}
+
+async function loadModalMonthData() {
+  const myId  = currentUser?.id;
+  const mk    = `${modalYear}-${pad(modalMonth)}`;
+  if (!modalSel[mk]) {
+    // Load from server for this month
+    const res = await API.holidayPlans.get(modalYear, modalMonth);
+    const plans = res?.ok ? (res.data.plans || {}) : {};
+    modalSel[mk] = new Set(plans[myId] || []);
+  }
+  renderModalCal();
+}
+
+function renderModalCal() {
+  document.getElementById('pm-hd-sub').textContent =
+    `เลือกวันที่ต้องการหยุด — ${MONTH_TH[modalMonth]} ${modalYear + 543}`;
+  document.getElementById('pm-cal-title').textContent =
+    `${MONTH_TH[modalMonth]} ${modalYear + 543}`;
+
+  const mk  = `${modalYear}-${pad(modalMonth)}`;
+  const sel = modalSel[mk] || new Set();
+  const todayStr = dateStr(today.getFullYear(), today.getMonth()+1, today.getDate());
+  const daysInMonth = new Date(modalYear, modalMonth, 0).getDate();
+  const firstDow    = new Date(modalYear, modalMonth-1, 1).getDay();
+
+  let html = DAY_TH.map(d => `<div class="pm-cal-day-hd">${d}</div>`).join('');
+  // blank cells before first day
+  for (let i = 0; i < firstDow; i++) html += `<div class="pm-cal-day out"></div>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds  = dateStr(modalYear, modalMonth, d);
+    const dw  = new Date(modalYear, modalMonth-1, d).getDay();
+    const wkd = dw===0||dw===6;
+    const hol = holidayMap.has(ds);
+    const tod = ds === todayStr;
+    let cls = 'pm-cal-day';
+    if (wkd) cls += ' weekend';
+    else {
+      if (hol) cls += ' holiday';
+      if (sel.has(ds)) cls += ' selected';
+      if (tod) cls += ' today';
+    }
+    const onclick = !wkd ? `onclick="toggleModalDay('${ds}')"` : '';
+    const title = hol ? `title="${esc(holidayMap.get(ds))}"` : '';
+    html += `<div class="${cls}" ${onclick} ${title}>${d}</div>`;
+  }
+  document.getElementById('pm-cal-grid').innerHTML = html;
+  renderModalPills();
+}
+
+function toggleModalDay(ds) {
+  const mk  = `${modalYear}-${pad(modalMonth)}`;
+  if (!modalSel[mk]) modalSel[mk] = new Set();
+  const sel = modalSel[mk];
+  if (sel.has(ds)) sel.delete(ds);
+  else             sel.add(ds);
+  renderModalCal();
+}
+
+function renderModalPills() {
+  // Collect all selected across all modal months
+  const allDates = [];
+  Object.entries(modalSel).forEach(([mk, sel]) => {
+    sel.forEach(d => allDates.push(d));
+  });
+  allDates.sort();
+  document.getElementById('pm-count').textContent = allDates.length;
+
+  if (!allDates.length) {
+    document.getElementById('pm-pills').innerHTML = '<span class="pm-empty">ยังไม่ได้เลือกวัน</span>';
+    return;
+  }
+  document.getElementById('pm-pills').innerHTML = allDates.map(d =>
+    `<span class="pm-pill">${d}<button class="pm-pill-x" onclick="removePill('${d}')">×</button></span>`
+  ).join('');
+}
+
+function removePill(ds) {
+  const [y, m] = ds.split('-').map(Number);
+  const mk = `${y}-${pad(m)}`;
+  modalSel[mk]?.delete(ds);
+  renderModalCal();
+}
+
+async function clearModalMonth() {
+  const mk = `${modalYear}-${pad(modalMonth)}`;
+  modalSel[mk] = new Set();
+  renderModalCal();
+  // Also persist to server
+  await API.holidayPlans.clear(modalYear, modalMonth);
+  if (modalYear === curYear && modalMonth === curMonth) await loadMonthData();
+  Toast.success('ล้างแผนเดือนนี้แล้ว');
+}
+
+async function savePlan() {
+  const btn = document.getElementById('pm-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึก...';
+
+  // Save each modified month
+  const months = Object.keys(modalSel);
+  for (const mk of months) {
+    const [y, m] = mk.split('-').map(Number);
+    await saveMonthPlan(y, m);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i data-icon=\"save\"></i> บันทึก';
+  closePlanModal();
+  if (Object.keys(modalSel).some(mk => {
+    const [y,m] = mk.split('-').map(Number);
+    return y === curYear && m === curMonth;
+  })) await loadMonthData();
+  Toast.success('บันทึกแผนเรียบร้อยแล้ว <i data-icon=\"check\"></i>');
+}
+
+async function saveMonthPlan(year, month) {
+  const mk   = `${year}-${pad(month)}`;
+  const sel  = modalSel[mk] || new Set();
+  const dates = [...sel].sort();
+  const res  = await API.holidayPlans.save({ year, month, dates });
+  if (!res?.ok) { Toast.error('บันทึกไม่สำเร็จ'); return; }
+  // Update local plansData
+  const myId = currentUser?.id;
+  if (year === curYear && month === curMonth) {
+    plansData[myId] = dates;
+    renderAll();
+  }
+}
+
+/* ══════════════════════════════════════
+   Init
+══════════════════════════════════════ */
+loadAll();
+</script>
+</body>
+</html>

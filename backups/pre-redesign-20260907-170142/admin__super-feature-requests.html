@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feature Requests — Super Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    .fr-page { --fr-radius: 12px; --fr-radius-lg: 16px; }
+
+    /* ── Section header ─────────────────────────────────────────────────── */
+    .fr-section { margin-bottom: 24px; }
+    .fr-section-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      margin-bottom: 14px; gap: 12px; flex-wrap: wrap;
+    }
+    .fr-section-title {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 10.5px; font-weight: 800; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .09em;
+    }
+    .fr-section-title .cnt {
+      font-family: var(--font, 'JetBrains Mono', monospace);
+      font-size: 10px; color: var(--text-muted); font-weight: 700;
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 1px 7px; border-radius: 999px; letter-spacing: 0;
+    }
+
+    /* ── Filter tabs ────────────────────────────────────────────────────── */
+    .req-tabs {
+      display: inline-flex; gap: 2px; padding: 2px;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 999px;
+    }
+    .req-tab {
+      appearance: none; border: none; background: transparent;
+      font-family: var(--font); font-size: 10.5px; font-weight: 700;
+      color: var(--text-muted); padding: 4px 12px; border-radius: 999px;
+      cursor: pointer; letter-spacing: .04em; text-transform: uppercase;
+      transition: color .12s, background .12s;
+    }
+    .req-tab:hover:not(.active) { color: var(--text); }
+    .req-tab.active {
+      color: var(--orange);
+      background: color-mix(in srgb, var(--orange, #F26419) 12%, transparent);
+    }
+
+    /* ── Request rows ───────────────────────────────────────────────────── */
+    .req-list { display: flex; flex-direction: column; gap: 10px; }
+    .req-row {
+      display: grid; grid-template-columns: 34px 1fr auto; gap: 14px; align-items: center;
+      padding: 14px 16px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-left: 3px solid var(--orange);
+      border-radius: var(--fr-radius);
+    }
+    .req-row.approved { border-left-color: #10b981; }
+    .req-row.denied   { border-left-color: #ef4444; }
+    .req-icon {
+      width: 34px; height: 34px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 17px;
+      background: color-mix(in srgb, var(--orange, #F26419) 10%, transparent);
+    }
+    .req-body { min-width: 0; }
+    .req-title { font-size: 12.5px; font-weight: 700; color: var(--text); }
+    .req-team-chip {
+      display: inline-block; margin-left: 6px; padding: 1px 7px;
+      border-radius: 999px; font-family: var(--font);
+      font-size: 9.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+      background: var(--bg); border: 1px solid var(--border); color: var(--text-muted);
+    }
+    .req-reason { font-size: 11px; color: var(--text-muted); margin-top: 3px; font-style: italic; }
+    .req-meta { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+
+    .req-actions { display: flex; gap: 6px; }
+    .req-btn {
+      padding: 5px 10px; border-radius: 8px; border: 1px solid var(--border);
+      background: transparent; font-family: var(--font); font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all .12s;
+    }
+    .req-btn.approve {
+      background: rgba(16,185,129,.08); color: #10b981; border-color: rgba(16,185,129,.25);
+    }
+    .req-btn.approve:hover { background: rgba(16,185,129,.14); }
+    .req-btn.deny {
+      background: rgba(239,68,68,.05); color: #ef4444; border-color: rgba(239,68,68,.2);
+    }
+    .req-btn.deny:hover { background: rgba(239,68,68,.09); }
+
+    .req-resolved-info {
+      font-size: 10.5px; color: var(--text-muted); margin-top: 4px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .req-resolved-badge {
+      font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 999px; flex-shrink: 0;
+    }
+    .req-resolved-badge.approved { background: rgba(16,185,129,.12); color: #10b981; }
+    .req-resolved-badge.denied   { background: rgba(239,68,68,.1);  color: #ef4444; }
+
+    .fr-empty {
+      padding: 40px 20px; text-align: center;
+      color: var(--text-muted); font-size: 12px;
+      border: 1px dashed var(--border); border-radius: var(--fr-radius);
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="bell"></i> Feature Requests</div>
+        <div class="page-sub">คำขอเปิด feature จาก team admin — approve / deny · super-admin only</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm" onclick="loadFeatureRequests()"><i data-icon="refresh-cw"></i> Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content fr-page">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="bell"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Super Admin</div>
+          <h1>Feature Request Queue</h1>
+          <p>คำขอ feature ทั้งหมดจากทุกทีม — filter ตามสถานะได้ · เก็บ history ของ approved/denied</p>
+        </div>
+      </section>
+
+      <div class="fr-section">
+        <div class="fr-section-head">
+          <div class="fr-section-title">
+            Requests
+            <span class="cnt" id="requests-count-badge">—</span>
+          </div>
+          <div class="req-tabs" role="tablist">
+            <button class="req-tab active" data-status="pending"  onclick="switchReqTab('pending')">Pending</button>
+            <button class="req-tab"        data-status="approved" onclick="switchReqTab('approved')">Approved</button>
+            <button class="req-tab"        data-status="denied"   onclick="switchReqTab('denied')">Denied</button>
+            <button class="req-tab"        data-status=""         onclick="switchReqTab('')">All</button>
+          </div>
+        </div>
+        <div class="req-list" id="requests-list">
+          <div class="fr-empty">Loading…</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+
+<script>
+if (!Auth.requireAdmin()) {}
+if (Auth.getUser()?.role !== 'super_admin') window.location.href = './index.html';
+Layout.render('super-feature-requests');
+Auth.initUserUI();
+
+let _reqStatus = 'pending'; // pending | approved | denied | '' (all)
+
+document.addEventListener('DOMContentLoaded', () => loadFeatureRequests());
+
+function switchReqTab(status) {
+  _reqStatus = status;
+  document.querySelectorAll('.req-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.status === status);
+  });
+  loadFeatureRequests();
+}
+
+async function loadFeatureRequests() {
+  const res = await API.featureRequests.list(_reqStatus || null);
+  const list  = document.getElementById('requests-list');
+  const badge = document.getElementById('requests-count-badge');
+  if (!res?.ok) { list.innerHTML = '<div class="fr-empty">Failed to load requests</div>'; return; }
+  const requests = res.data?.data?.requests || res.data?.requests || [];
+  badge.textContent = requests.length;
+
+  if (!requests.length) {
+    const emptyMsg = _reqStatus ? `No ${_reqStatus} requests` : 'No requests yet';
+    list.innerHTML = `<div class="fr-empty">${emptyMsg}</div>`;
+    return;
+  }
+
+  list.innerHTML = requests.map(r => {
+    const meta   = r.feature_meta || {};
+    const when   = new Date(r.requested_at).toLocaleString('th-TH', { dateStyle:'short', timeStyle:'short' });
+    const status = r.status || 'pending';
+    const isPending = status === 'pending';
+
+    const rightBlock = isPending
+      ? `<div class="req-actions">
+           <button class="req-btn approve"
+                   onclick='resolveRequest("${r.id}","approve","${r.feature_key}",${JSON.stringify(r.feature_meta||{})})'>Approve</button>
+           <button class="req-btn deny"
+                   onclick='resolveRequest("${r.id}","deny","${r.feature_key}",${JSON.stringify(r.feature_meta||{})})'>Deny</button>
+         </div>`
+      : `<span class="req-resolved-badge ${status}">${status === 'approved' ? '✓ Approved' : '✗ Denied'}</span>`;
+
+    let resolvedLine = '';
+    if (!isPending) {
+      const reviewedWhen = r.reviewed_at
+        ? new Date(r.reviewed_at).toLocaleString('th-TH', { dateStyle:'short', timeStyle:'short' })
+        : '—';
+      resolvedLine = `
+        <div class="req-resolved-info">
+          By ${escHtml(r.reviewer_name || '?')} · ${reviewedWhen}
+          ${r.review_note ? ` · <em>"${escHtml(r.review_note)}"</em>` : ''}
+        </div>`;
+    }
+
+    return `
+      <div class="req-row ${status}" id="req-${r.id}">
+        <div class="req-icon">${meta.icon || '⚡'}</div>
+        <div class="req-body">
+          <div class="req-title">
+            ${escHtml(meta.label || r.feature_key)}
+            <span class="req-team-chip">${escHtml(r.team_slug)}</span>
+          </div>
+          ${r.reason ? `<div class="req-reason">"${escHtml(r.reason)}"</div>` : ''}
+          <div class="req-meta">By ${escHtml(r.requester_name)} · ${when}</div>
+          ${resolvedLine}
+        </div>
+        ${rightBlock}
+      </div>`;
+  }).join('');
+}
+
+async function resolveRequest(id, action, featureKey, featureMeta) {
+  if (action === 'deny') {
+    const note = window.prompt(`Reason for denying "${featureMeta?.label || featureKey}" (optional):`);
+    if (note === null) return;
+    const res = await API.featureRequests.resolve(id, 'deny', note || '');
+    if (res?.ok) { Toast.success('<i data-icon="x-circle"></i> Denied.'); await loadFeatureRequests(); }
+    else Toast.error(res?.data?.message || 'Failed');
+    return;
+  }
+
+  // ── Approve: show page-selection modal ──────────────────────────────────
+  const userPages  = featureMeta?.user_pages  || [];
+  const adminPages = featureMeta?.admin_pages || [];
+  const allPages   = [...userPages.map(p => ({id:p, type:'user'})),
+                      ...adminPages.map(p => ({id:p, type:'admin'}))];
+
+  const listHtml = allPages.length === 0
+    ? '<p style="font-size:12px;color:var(--text-muted);">No specific pages for this feature.</p>'
+    : `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
+        ${allPages.map(p => `
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+            <input type="checkbox" class="pg-cb" data-id="${p.id}" data-type="${p.type}" checked
+              style="accent-color:var(--orange);width:14px;height:14px;">
+            <span>${p.type === 'admin' ? '⚙ admin/' : '📄 '}${p.id}.html</span>
+            <span style="font-size:10px;color:var(--text-muted);">${p.type === 'admin' ? 'Config' : 'Page'}</span>
+          </label>`).join('')}
+       </div>`;
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:var(--bg-card);border-radius:16px;padding:28px;width:90%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+      <h3 style="font-size:16px;font-weight:800;margin-bottom:6px;">
+        <i data-icon="check-circle"></i> Approve: ${featureMeta?.icon||'⚡'} ${featureMeta?.label||featureKey}
+      </h3>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:16px;">
+        เลือกหน้าที่ทีมนี้จะเข้าถึงได้ — uncheck หน้าที่ยังไม่ต้องการให้
+      </p>
+      ${listHtml}
+      <div class="form-group" style="margin-bottom:20px;">
+        <label class="form-label" style="font-size:11px;">Note (optional)</label>
+        <input type="text" id="approve-note" class="form-control" placeholder="ข้อความถึง team admin..." style="font-size:12px;">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-ghost btn-sm" onclick="this.closest('[style*=fixed]').remove()">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="confirm-approve-btn"><i data-icon="check-circle"></i> Confirm Approve</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+  document.getElementById('confirm-approve-btn').onclick = async () => {
+    const note   = document.getElementById('approve-note').value.trim();
+    const cbs    = modal.querySelectorAll('.pg-cb');
+    const uPages = [], aPages = [];
+    cbs.forEach(cb => {
+      if (cb.checked) {
+        if (cb.dataset.type === 'user')  uPages.push(cb.dataset.id);
+        else                             aPages.push(cb.dataset.id);
+      }
+    });
+    const grantedPages = allPages.length > 0
+      ? { user_pages: uPages, admin_pages: aPages }
+      : null;
+
+    modal.remove();
+    const res = await API.featureRequests.resolve(id, 'approve', note, grantedPages);
+    if (res?.ok) { Toast.success('<i data-icon="check-circle"></i> Approved! Feature provisioned.'); await loadFeatureRequests(); }
+    else Toast.error(res?.data?.message || 'Failed');
+  };
+}
+
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                       .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

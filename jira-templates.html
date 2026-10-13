@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jira Templates — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/jira-templates/jira-templates.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="zap"></i> Jira Management</div>
+        <div class="page-sub">Templates & Incidents</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="https://truemoney.atlassian.net/jira/software/c/projects/SMC/boards/1591"
+           target="_blank" rel="noopener" class="btn btn-ghost btn-sm">View Jira Board ↗</a>
+        <!-- Hidden by default; revealed when canManage (see the currentUser
+             block near the top of the page's inline script). -->
+        <button class="btn btn-primary" id="btn-new-tpl" style="display:none">+ New Template</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Templates Panel -->
+      <div id="tab-templates">
+        <div class="tpl-layout">
+
+          <!-- ── Left Tree Panel ─────────────────────── -->
+          <div class="tpl-tree-panel">
+            <div class="tree-header">
+              <span class="tree-title">Categories</span>
+              <button class="tree-action-btn" id="btn-add-type" title="Add Category" style="display:none">＋</button>
+            </div>
+            <div class="tree-body" id="tree-body">
+              <div data-skel="list" data-rows="5"></div>
+            </div>
+          </div>
+
+          <!-- ── Right Detail Panel ──────────────────── -->
+          <div class="tpl-detail-panel" id="detail-panel">
+            <div class="detail-empty">
+              <div class="detail-empty-icon"><i data-icon="zap"></i></div>
+              <div class="detail-empty-text">Select a category or template from the left</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     Create / Edit Template Modal
+     ══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="tpl-modal">
+  <div class="modal" style="max-width:800px">
+    <div class="modal-header">
+      <span class="modal-title" id="tpl-modal-title">New Template</span>
+      <button class="btn-close" id="btn-close-tpl-modal"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <input type="hidden" id="tpl-edit-id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Template Name <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="tpl-name" class="form-control" placeholder="e.g. Reversal จาก Paymentology ผิดปกติ">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Service Type</label>
+          <select id="tpl-service-type" class="form-control">
+            <option value="">— Not assigned —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sub Type</label>
+          <select id="tpl-service-subtype" class="form-control">
+            <option value="">— Select type first —</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Case Summary / Ticket Title <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="tpl-summary" class="form-control" placeholder="Summary ที่จะใช้เป็น Jira ticket title">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select id="tpl-cat" class="form-control">
+            <!-- populated dynamically from jira_config.json -->
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">Work Type <span style="color:#ef4444">*</span></label>
+        <select id="tpl-worktype" class="form-control">
+          <option value="">— เลือก Work Type —</option>
+        </select>
+        <div class="form-hint">Issue type ใน Jira (Monitoring, Batchfile, etc.)</div>
+      </div>
+
+      <hr class="divider">
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">
+        Jira Custom Fields
+      </div>
+      <!-- Dynamically populated by renderDynamicFields() -->
+      <div id="dynamic-cf-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-tpl-modal">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-tpl">
+        <span id="tpl-save-text">Save Template</span>
+        <span id="tpl-save-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     Add Category / Subtype Modal
+     ══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="cat-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title" id="cat-modal-title">Add Category</span>
+      <button class="btn-close" id="btn-close-cat-modal"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cat-parent-id">
+      <div class="form-group">
+        <label class="form-label" id="cat-name-label">Category Name <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="cat-name" class="form-control" placeholder="e.g. Service Bank">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-cat-modal">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-cat">
+        <span id="cat-save-text">Add</span>
+        <span id="cat-save-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     Create Ticket Confirm Modal
+     ══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="ticket-modal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <span class="modal-title"><i data-icon="zap"></i> Create Jira Ticket</span>
+      <button class="btn-close" id="btn-close-ticket-modal"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info" style="margin-bottom:16px">
+        Review the ticket details below before creating.
+      </div>
+      <div id="ticket-preview"></div>
+      <div id="ticket-fault-row" class="form-group" style="display:none;margin-top:12px">
+        <label class="form-label">Fault Start Date &amp; Time (manual)</label>
+        <input type="datetime-local" id="ticket-fault-input" class="form-control">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-ticket-modal">Cancel</button>
+      <button class="btn btn-primary" id="create-ticket-btn">
+        <span id="ticket-btn-text"><i data-icon="zap"></i> Create Ticket</span>
+        <span id="ticket-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     Success Modal
+     ══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="success-modal">
+  <div class="modal" style="max-width:420px;text-align:center">
+    <div class="modal-body" style="padding:32px 24px">
+      <div style="font-size:48px;margin-bottom:12px"><i data-icon="check-circle"></i></div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:8px">Ticket Created!</div>
+      <div id="ticket-key-display" style="font-size:13px;color:var(--text-muted);margin-bottom:20px"></div>
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+        <div style="display:flex;gap:10px">
+          <a id="ticket-jira-link" href="#" target="_blank" class="btn btn-primary">Open in Jira ↗</a>
+          <button class="btn btn-ghost" id="btn-close-success-modal">Close</button>
+        </div>
+        <button class="btn" id="btn-open-email-draft"
+          style="background:rgba(59,130,246,.1);color:#3b82f6;border:1px solid rgba(59,130,246,.3);font-size:12px;display:none">
+          <i data-icon="mail"></i> ส่ง Email แจ้ง
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Email Draft Modal ══ -->
+<div class="modal-overlay" id="email-draft-modal">
+  <div class="modal" style="max-width:1080px;height:calc(100vh - 120px)">
+    <div class="modal-header">
+      <span class="modal-title"><i data-icon="mail"></i> ส่ง Email</span>
+      <button class="btn-close" id="btn-close-email-draft"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;height:100%;overflow:hidden;padding:14px">
+
+      <!-- To -->
+      <div>
+        <label class="form-label">ถึง <span style="color:var(--danger)">*</span>
+          <span style="font-weight:400;color:var(--text-muted)"> — Enter หรือ , เพื่อเพิ่ม</span></label>
+        <div class="em-chip-field" id="draft-to-field" onclick="document.getElementById('draft-to-input').focus()">
+          <input type="text" id="draft-to-input" placeholder="email@company.com" autocomplete="off">
+        </div>
+      </div>
+
+      <!-- CC -->
+      <div>
+        <label class="form-label">cc
+          <span style="font-weight:400;color:var(--text-muted)"> — Enter หรือ , เพื่อเพิ่ม</span></label>
+        <div class="em-chip-field" id="draft-cc-field" onclick="document.getElementById('draft-cc-input').focus()">
+          <input type="text" id="draft-cc-input" placeholder="cc@company.com" autocomplete="off">
+        </div>
+      </div>
+
+      <!-- Subject -->
+      <div>
+        <label class="form-label">หัวเรื่อง <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="draft-subject" class="form-control" placeholder="เรื่อง...">
+      </div>
+
+      <!-- Body with Rich Editor -->
+      <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+        <label class="form-label">เนื้อหา <span style="font-weight:400;color:var(--text-muted)"> — สามารถจัดรูป</span></label>
+        <div class="rich-editor-container">
+          <div class="rich-editor-toolbar">
+            <!-- Text Formatting -->
+            <div class="rich-editor-toolbar-group">
+              <button class="editor-btn" id="btn-bold" title="ตัวหนา (Ctrl+B)">
+                <strong style="font-size:14px">B</strong>
+              </button>
+              <button class="editor-btn" id="btn-italic" title="ตัวเอียง (Ctrl+I)">
+                <em style="font-size:14px">I</em>
+              </button>
+              <button class="editor-btn" id="btn-underline" title="ขีดเส้น (Ctrl+U)">
+                <u style="font-size:14px">U</u>
+              </button>
+              <button class="editor-btn" id="btn-strikethrough" title="ขีดทะลุ">
+                <s style="font-size:14px">S</s>
+              </button>
+            </div>
+
+            <!-- Lists -->
+            <div class="rich-editor-toolbar-group">
+              <button class="editor-btn" id="btn-unordered-list" title="ลิสต์แบบ bullet">
+                <span style="font-size:12px"><i data-icon="circle"></i> <i data-icon="circle"></i></span>
+              </button>
+              <button class="editor-btn" id="btn-ordered-list" title="ลิสต์ตัวเลข">
+                <span style="font-size:12px">1.</span>
+              </button>
+            </div>
+
+            <!-- Colors -->
+            <div class="rich-editor-toolbar-group">
+              <input type="color" id="text-color-picker" title="สีตัวอักษร" style="width:32px;height:32px;border:1px solid var(--border);border-radius:5px;cursor:pointer;padding:2px" value="#000000">
+              <input type="color" id="bg-color-picker" title="สีพื้นหลัง" style="width:32px;height:32px;border:1px solid var(--border);border-radius:5px;cursor:pointer;padding:2px" value="#FFFF00">
+            </div>
+
+            <!-- Links & Images -->
+            <div class="rich-editor-toolbar-group">
+              <button class="editor-btn" id="btn-link" title="เพิ่มลิงก์">
+                <i data-icon="link"></i>
+              </button>
+              <button class="editor-btn" id="btn-image" title="เพิ่มรูปภาพ">
+                <i data-icon="image"></i>
+              </button>
+              <input type="file" id="image-input" accept="image/*" style="display:none">
+            </div>
+
+            <!-- Headings -->
+            <div class="rich-editor-toolbar-group">
+              <select id="heading-select" class="editor-select" title="ประเภทหัวข้อ">
+                <option value="">ธรรมดา</option>
+                <option value="h1">H1 - ใหญ่</option>
+                <option value="h2">H2 - กลาง</option>
+                <option value="h3">H3 - เล็ก</option>
+              </select>
+            </div>
+
+            <!-- Clear -->
+            <div class="rich-editor-toolbar-group">
+              <button class="editor-btn" id="btn-clear-format" title="ล้างการจัดรูป">
+                <i data-icon="trash"></i>
+              </button>
+            </div>
+          </div>
+          <div class="rich-editor-content" id="draft-body" contenteditable="true" spellcheck="true"></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-email-draft">ยกเลิก</button>
+      <button class="btn btn-primary" id="btn-send-email">
+        <span id="send-email-text"><i data-icon="mail"></i> ส่ง Email</span>
+        <span id="send-email-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/skeletons.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/analytics.js"></script>
+<script src="./assets/js/analytics-features.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script src="./assets/pages/jira-templates/jira-templates.js"></script>
+
+</body>
+</html>

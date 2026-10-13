@@ -1,0 +1,504 @@
+{
+  "title": "7-Eleven · eKYC Flow",
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 389
+      },
+      "id": 2079,
+      "options": {
+        "composites": [],
+        "content": "%%{init: {\"flowchart\": {\"useMaxWidth\": true, \"htmlLabels\": true}, \"theme\": \"dark\"}}%%\ngraph TD\n  APP[\"7App / SDK\"]\n\n  subgraph EKYC_G[\"eKYC Service\n(acm-b2b-authorizer)\"]\n    ekyc_ok([\"OK\"])\n    ekyc_fail([\"Fail\"])\n  end\n\n  subgraph BC_G[\"Barcode / Dip-Chip\n(preregister-service)\"]\n    bc_gen([\"Generate: OK\"])\n    bc_fail([\"Generate: Fail\"])\n    bc_verify([\"Verify: OK\"])\n  end\n\n  APP -->|/v1/decrypt| EKYC_G\n  APP -->|/v2/dip-chip-users| BC_G\n  classDef svc    fill:#242930,stroke:#5794c7,stroke-width:2px,color:#fff\n  classDef ok     fill:#1c2c22,stroke:#47a468,stroke-width:2px,color:#fff\n  classDef fail   fill:#2c1e1e,stroke:#cc3333,stroke-width:2px,color:#fff\n  classDef client fill:#2c2020,stroke:#e05252,stroke-width:3px,color:#e05252,font-weight:bold\n  classDef net    fill:#2c251e,stroke:#ff8c42,stroke-width:2px,color:#fff",
+        "links": [],
+        "style": "width:100%;",
+        "useBackground": false,
+        "valueName": "current"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(http_server_requests_seconds_count{app_name=\"acm-b2b-authorizer-service\",method=\"POST\",status=\"200\",uri=\"/v1/decrypt\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "ekyc_ok",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(http_server_requests_seconds_count{status!=\"200\",uri=\"/api/ekyc/put-image\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "ekyc_fail",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(http_server_requests_seconds_count{app_name=\"user-profile-composite\",status=\"200\",uri=\"/user-profile-composite/v2/kyc/enrollment/barcode\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "bc_gen",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(http_server_requests_seconds_count{app_name=\"preregister-service\",uri=\"/preregister/internal/v2/dip-chip-users/generate-barcode\",method=\"POST\",status!~\"200\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "bc_fail",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"preregister-verifyBarcode\",status_code=\"200 OK\"}[5m]))",
+          "instant": true,
+          "interval": "1m",
+          "legendFormat": "bc_verify",
+          "refId": "E"
+        }
+      ],
+      "title": "eKYC and Barcode - Flow (5m window)",
+      "type": "jdbranham-diagram-panel"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน eKYC verification สำเร็จ (POST /v1/decrypt จาก acm-b2b-authorizer)\n\nดูยังไง: ถ้า drop อาจทำให้ลูกค้า dip-chip ไม่ผ่าน ส่งผลต่อการสร้าง barcode",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 401
+      },
+      "hiddenSeries": false,
+      "id": 2080,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "exemplar": true,
+          "expr": "sum by (method, uri,status) (increase(http_server_requests_seconds_count{app_name=\"acm-b2b-authorizer-service\",method=\"POST\",status=\"200\",uri=\"/v1/decrypt\"}[3m]))",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{method}} {{uri}} - {{status}}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "lt",
+          "value": 1,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "7-Eleven EKYC Success",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:285",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:286",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน eKYC fail แยกตาม HTTP status\n\nดูยังไง: 4xx = data ผิด (ลูกค้าข้อมูลไม่ตรง), 5xx = service ล่ม ให้แก้ต่างกัน",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 401
+      },
+      "hiddenSeries": false,
+      "id": 2081,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "exemplar": true,
+          "expr": "sum by (method, uri,status) (increase(http_server_requests_seconds_count{status!=\"200\",uri=\"/api/ekyc/put-image\"}[1m]))",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{method}} {{uri}} - {{status}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 10,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "7-11 EKYC Fail 4xx 5xx",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:285",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:286",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน barcode generation fail จาก preregister-service\n\nดูยังไง: เทียบ success vs fail ถ้า fail สูงให้ตรวจสอบ preregister-service pod status",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 409
+      },
+      "hiddenSeries": false,
+      "id": 2082,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "exemplar": true,
+          "expr": "sum by(app_name,method,status,uri) (increase(http_server_requests_seconds_count{app_name=\"preregister-service\",uri=\"/preregister/internal/v2/dip-chip-users/generate-barcode\",method=\"POST\",status!~\"200\"}[1m]))",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{service_name}} {{uri}} {{method}} {{status}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "exemplar": true,
+          "expr": "sum by(app_name,method,status,uri) (increase(http_server_requests_seconds_count{app_name=\"preregister-service\",uri=\"/preregister/internal/v2/dip-chip-users/generate-barcode\"}[1m]))",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{service_name}} {{uri}} {{method}} {{status}}",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum by(app_name,method,status,uri) (increase(http_server_requests_seconds_count{app_name=\"preregister-service\",uri=\"/preregister/internal/v2/dip-chip-users/generate-barcode\",method=\"POST\",status=\"200\"}[1m]))",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "{{service_name}} {{uri}} {{method}} {{status}}",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": false,
+          "line": false,
+          "op": "gt",
+          "value": 20,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "Gen Barcode 7-11 dipchip fail",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:71",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:72",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน barcode generation สำเร็จจาก user-profile-composite\n\nดูยังไง: ถ้า drop พร้อมกับ eKYC fail แสดงว่าปัญหาอยู่ที่ authorizer service",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 409
+      },
+      "hiddenSeries": false,
+      "id": 2083,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "percentage": false,
+      "pluginVersion": "9.5.21",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "exemplar": true,
+          "expr": "sum(increase(http_server_requests_seconds_count{app_name=\"user-profile-composite\",status=\"200\",uri=\"/user-profile-composite/v2/kyc/enrollment/barcode\"}[1m])) by(status)",
+          "interval": "",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "lt",
+          "value": 1,
+          "visible": true
+        }
+      ],
+      "timeRegions": [],
+      "title": "Generate dip-chip barcode",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:79",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:80",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>My Team — Design B: Duty-first Roster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#F26419; --orange-bg:#FFF4EE;
+  --bg:#F7F7F7; --bg-card:#FFFFFF; --bg-input:#F9F9F9;
+  --text:#1C1C1E; --text-muted:#767676;
+  --border:#E5E5E5;
+  --accent:#F26419; --accent-soft:rgba(242,100,25,.10); --accent-line:rgba(242,100,25,.35); --accent-glow:rgba(242,100,25,.20);
+  --on-clr:#15803D; --on-bg:rgba(34,197,94,.12);
+  --up-clr:#A16207; --up-bg:rgba(234,179,8,.14);
+  --off-clr:#525252; --off-bg:rgba(115,115,115,.10);
+  --font:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--font); font-size:12px; padding:24px 32px 80px}
+
+.page-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap}
+.page-title{font-size:18px; font-weight:800; margin:0}
+.badge-tag{display:inline-block; margin-left:8px; font-size:8.5px; font-weight:800; letter-spacing:.15em; padding:3px 8px; border-radius:4px; background:var(--accent-soft); color:var(--accent); vertical-align:middle}
+.page-sub{color:var(--text-muted); font-size:11px; margin-top:4px}
+
+/* Today banner */
+.today{
+  background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:12px 16px; margin-bottom:20px;
+  display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+}
+.today .date{font-size:20px; font-weight:800; letter-spacing:.02em; color:var(--accent)}
+.today .date .d{font-size:10px; color:var(--text-muted); font-weight:600; margin-left:6px; letter-spacing:.05em}
+.today .divider{width:1px; height:32px; background:var(--border)}
+.today .shifts{display:flex; gap:16px; flex-wrap:wrap; flex:1}
+.shift-mini{display:flex; align-items:center; gap:8px}
+.shift-mini .lbl{font-size:8.5px; font-weight:800; letter-spacing:.1em; color:var(--text-muted); text-transform:uppercase}
+.shift-mini .who{display:flex; gap:-6px}
+.mini-av{
+  width:28px; height:28px; border-radius:50%; border:2px solid var(--bg-card); margin-left:-6px;
+  display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.1);
+}
+.mini-av:first-child{margin-left:0}
+
+.toolbar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px}
+.search{flex:1; min-width:240px; display:flex; align-items:center; gap:8px; background:var(--bg-card); border:1.5px solid var(--border); border-radius:8px; padding:8px 12px}
+.search input{flex:1; border:0; outline:0; background:transparent; font-family:var(--font); font-size:11.5px}
+.chip{padding:7px 12px; border-radius:999px; border:1.5px solid var(--border); background:var(--bg-card); font-size:10.5px; font-weight:700; color:var(--text-muted); cursor:pointer}
+.chip.on{background:var(--accent); color:#fff; border-color:var(--accent)}
+
+.section{margin-bottom:24px}
+.sec-head{display:flex; align-items:center; gap:10px; margin-bottom:12px}
+.sec-dot{width:10px; height:10px; border-radius:50%}
+.sec-title{font-size:12.5px; font-weight:800; letter-spacing:.03em}
+.sec-count{font-size:10px; font-weight:800; padding:2px 7px; border-radius:4px}
+.sec-desc{font-size:10px; color:var(--text-muted)}
+
+.on-clr{color:var(--on-clr)} .on-bg{background:var(--on-bg)} .on-dot{background:var(--on-clr)}
+.up-clr{color:var(--up-clr)} .up-bg{background:var(--up-bg)} .up-dot{background:var(--up-clr)}
+.off-clr{color:var(--off-clr)} .off-bg{background:var(--off-bg)} .off-dot{background:var(--off-clr)}
+
+.mini-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:12px}
+
+.mini-card{
+  position:relative; background:var(--bg-card); border:1px solid var(--border); border-radius:10px;
+  padding:14px 14px 14px 18px; display:flex; gap:12px; align-items:flex-start; transition:all .15s;
+  border-left:4px solid transparent;
+}
+.mini-card:hover{transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.05); border-color:var(--accent-line)}
+.mini-card.on{border-left-color:var(--on-clr)}
+.mini-card.up{border-left-color:var(--up-clr)}
+.mini-card.off{border-left-color:var(--off-clr); opacity:.88}
+
+.mc-av{
+  width:44px; height:44px; border-radius:50%; flex-shrink:0; position:relative;
+  display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:#fff;
+}
+.mc-av .p{position:absolute; bottom:-1px; right:-1px; width:11px; height:11px; border-radius:50%; background:#22c55e; border:2.5px solid var(--bg-card)}
+
+.mc-body{flex:1; min-width:0}
+.mc-name{font-size:12px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.mc-nick{font-size:10px; color:var(--text-muted); margin-top:1px}
+.mc-nick .p{color:var(--accent); font-weight:700}
+.mc-tags{margin-top:6px; display:flex; gap:5px; flex-wrap:wrap}
+.tag{font-size:8px; font-weight:800; padding:2px 6px; border-radius:3px; letter-spacing:.08em; text-transform:uppercase}
+.rb-admin{background:rgba(220,38,38,.12); color:#b91c1c}
+.rb-lead{background:rgba(147,51,234,.12); color:#7e22ce}
+.rb-user{background:var(--orange-bg); color:var(--orange)}
+.rb-dev{background:rgba(6,182,212,.12); color:#0891b2}
+
+.mc-contact{
+  margin-top:9px; padding-top:9px; border-top:1px dashed var(--border);
+  display:grid; grid-template-columns:1fr 1fr; gap:5px 10px; font-size:9.5px; color:var(--text-muted);
+}
+.mc-contact .kv{display:flex; align-items:center; gap:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.mc-contact .kv .ic{color:var(--text-muted); width:10px; text-align:center}
+.mc-contact .kv.miss{color:#c2410c; font-style:italic; opacity:.7}
+
+.mc-me{position:absolute; top:8px; right:10px; font-size:7.5px; font-weight:800; letter-spacing:.15em; padding:2px 6px; border-radius:3px; background:var(--accent); color:#fff; text-transform:uppercase}
+.mc-edit{position:absolute; bottom:10px; right:10px; font-size:9px; color:var(--accent); font-weight:800; text-decoration:none; cursor:pointer; opacity:0; transition:opacity .15s}
+.mini-card:hover .mc-edit{opacity:1}
+
+.hint{margin-top:20px; padding:10px 14px; border-radius:10px; background:var(--bg-card); border:1px dashed var(--border); font-size:10.5px; color:var(--text-muted); display:flex; gap:14px; flex-wrap:wrap}
+.hint b{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:16px">
+  <h1 class="page-title">My Team <span class="badge-tag">Design B · Duty-first</span></h1>
+  <div class="page-sub">จัดกลุ่มตาม <b>ตารางเวรวันนี้</b> → On Duty / Upcoming / Off · เอาข้อมูล SM 15 คน + ผูกกับ schedule.json</div>
+</div>
+
+<div class="today">
+  <div class="date">พุธ · 29 ก.ค. 2026<span class="d">Today</span></div>
+  <div class="divider"></div>
+  <div class="shifts">
+    <div class="shift-mini">
+      <span class="lbl">Shift 1 · TDPK</span>
+      <div class="who">
+        <span class="mini-av" style="background:#F26419">ชุม</span>
+        <span class="mini-av" style="background:#6366F1">อาร์</span>
+      </div>
+    </div>
+    <div class="shift-mini">
+      <span class="lbl">Shift 1 · WAH</span>
+      <div class="who">
+        <span class="mini-av" style="background:#0891B2">ออย</span>
+        <span class="mini-av" style="background:#7E22CE">แนน</span>
+      </div>
+    </div>
+    <div class="shift-mini">
+      <span class="lbl">Shift 2 · OnCall</span>
+      <div class="who"><span class="mini-av" style="background:#B91C1C">กิต</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="search"><span style="color:var(--text-muted)">⌕</span><input placeholder="ค้นหา..."/></div>
+  <div class="chip on">ทั้งหมด</div>
+  <div class="chip">มีเบอร์</div>
+  <div class="chip">มี TMN.ID</div>
+  <div class="chip">Missing contact info</div>
+</div>
+
+<div class="section">
+  <div class="sec-head">
+    <span class="sec-dot on-dot"></span>
+    <span class="sec-title on-clr">On Duty วันนี้</span>
+    <span class="sec-count on-bg on-clr">5</span>
+    <span class="sec-desc">— มีชื่ออยู่ในกะเวรวันนี้</span>
+  </div>
+  <div class="mini-grid" data-group="on"></div>
+</div>
+
+<div class="section">
+  <div class="sec-head">
+    <span class="sec-dot up-dot"></span>
+    <span class="sec-title up-clr">Upcoming Shift</span>
+    <span class="sec-count up-bg up-clr">2</span>
+    <span class="sec-desc">— มีเวรใน 3 วันถัดไป</span>
+  </div>
+  <div class="mini-grid" data-group="up"></div>
+</div>
+
+<div class="section">
+  <div class="sec-head">
+    <span class="sec-dot off-dot"></span>
+    <span class="sec-title off-clr">Off</span>
+    <span class="sec-count off-bg off-clr">8</span>
+    <span class="sec-desc">— ยังไม่มีเวรถัดไป</span>
+  </div>
+  <div class="mini-grid" data-group="off"></div>
+</div>
+
+<div class="hint">
+  <b>UX note:</b>
+  <span>· เห็นทีมกำลังเวรก่อนเสมอ → เหมาะกับหน้าที่ SM เข้ามาช่วง on-call</span>
+  <span>· <b>ตัวหนังสือแดง italic</b> = ยังไม่ได้กรอกข้อมูล (nudge ให้ user มาแก้)</span>
+  <span>· hover card → ปุ่ม <b>Edit</b> จะโผล่ (ปุ่มโผล่แค่ record ตัวเอง / ถ้าเป็น admin จะโผล่ทุก card)</span>
+</div>
+
+<script>
+const TEAM = [
+  {n:'Chumpon Khongmanee', nick:'ชุม',  role:'admin',  email:'chumpon.kho@ascendcorp.com',  phone:'081-234-5678', tmn:'0812345678', neth:'AIS Fiber 500',     netm:'AIS 5G',  grp:'on'},
+  {n:'Watchara Suksri',    nick:'อาร์', role:'admin',  email:'watchara.suk@ascendcorp.com', phone:'081-987-6543', tmn:'0819876543', neth:'True Gigabit',      netm:'True 5G', grp:'on'},
+  {n:'Sakonwan Thoongkam', nick:'ออย',  role:'user',   email:'sakonwan.tho@ascendcorp.com', phone:'080-345-6789', tmn:'0803456789', neth:'3BB 300/300',       netm:'AIS',     grp:'on'},
+  {n:'Thanaporn Boonprom', nick:'แนน',  role:'user',   email:'thanaporn.boo@ascendcorp.com', phone:'088-999-1122', tmn:'0889991122', neth:'3BB 500/500',      netm:'DTAC',    grp:'on'},
+  {n:'Kittipong Manee',    nick:'กิต',  role:'user',   email:'kittipong.man@ascendcorp.com', phone:'083-121-3434', tmn:'0831213434', neth:'3BB 300/300',      netm:'True',    grp:'on'},
+
+  {n:'Kanokwan Sri',       nick:'มิ้น', role:'lead',   email:'kanokwan.sri@ascendcorp.com',  phone:'095-555-6677', tmn:'0955556677', neth:'AIS Fiber 1000',    netm:'AIS 5G',  grp:'up'},
+  {n:'Preecha Wattana',    nick:'ปรี',  role:'user',   email:'preecha.wat@ascendcorp.com',   phone:'090-444-5566', tmn:'0904445566', neth:'True Gigabit',      netm:'True 5G', grp:'up'},
+
+  {n:'Warapon Leadlum',    nick:'เคน',  role:'dev',    email:'warapon.lea@ascendcorp.com',   phone:'089-111-2233', tmn:'0891112233', neth:'True Gigabit',      netm:'True 5G', grp:'off', me:true},
+  {n:'Pichaya Wongsakul',  nick:'ปุ๋ย', role:'user',   email:'pichaya.won@ascendcorp.com',   phone:'',              tmn:'0821112222', neth:'',                  netm:'True',    grp:'off'},
+  {n:'Surachai Choochart', nick:'ต้น',  role:'user',   email:'surachai.cho@ascendcorp.com',  phone:'092-333-4455', tmn:'',            neth:'True Gigabit',      netm:'True',    grp:'off'},
+  {n:'Nattapong Rakwong',  nick:'ปอนด์',role:'user',   email:'nattapong.rak@ascendcorp.com', phone:'084-777-8899', tmn:'0847778899', neth:'AIS Fiber',         netm:'AIS',     grp:'off'},
+  {n:'Nithinan Petch',     nick:'นก',   role:'user',   email:'nithinan.pet@ascendcorp.com',  phone:'086-222-3344', tmn:'0862223344', neth:'',                  netm:'',        grp:'off'},
+  {n:'Somchai Piyathong',  nick:'สม',   role:'user',   email:'somchai.piy@ascendcorp.com',   phone:'081-888-2211', tmn:'0818882211', neth:'AIS Fiber',         netm:'AIS',     grp:'off'},
+  {n:'Wanida Kongkaew',    nick:'หวัน', role:'user',   email:'wanida.kon@ascendcorp.com',    phone:'',              tmn:'',            neth:'',                  netm:'',        grp:'off'},
+  {n:'Rungrudee Chomchai', nick:'รุ่ง', role:'user',   email:'rungrudee.cho@ascendcorp.com', phone:'087-565-7878', tmn:'0875657878', neth:'AIS Fiber 500',     netm:'AIS',     grp:'off'},
+];
+
+const roleMap = {admin:['rb-admin','SM Admin'], lead:['rb-lead','SM Lead'], user:['rb-user','SM User'], dev:['rb-dev','Dev SM']};
+const bgs = {admin:'#B91C1C', lead:'#7E22CE', user:'#F26419', dev:'#0891B2'};
+
+TEAM.forEach(m => {
+  const [rcls, rlbl] = roleMap[m.role];
+  const bg = bgs[m.role];
+  const initials = m.nick;
+  const emailKV = `<div class="kv"><span class="ic">✉</span>${m.email.split('@')[0]}</div>`;
+  const phoneKV = `<div class="kv${m.phone?'':' miss'}"><span class="ic">📱</span>${m.phone || 'no phone'}</div>`;
+  const tmnKV   = `<div class="kv${m.tmn?'':' miss'}"><span class="ic">₿</span>${m.tmn || 'no TMN.ID'}</div>`;
+  const nethKV  = `<div class="kv${m.neth?'':' miss'}"><span class="ic">🏠</span>${m.neth || 'no home net'}</div>`;
+  const netmKV  = `<div class="kv${m.netm?'':' miss'}"><span class="ic">📶</span>${m.netm || 'no mobile'}</div>`;
+  document.querySelector(`[data-group="${m.grp}"]`).insertAdjacentHTML('beforeend', `
+    <div class="mini-card ${m.grp}">
+      ${m.me ? '<span class="mc-me">You</span>' : ''}
+      <div class="mc-av" style="background:${bg}">${initials}<div class="p"></div></div>
+      <div class="mc-body">
+        <div class="mc-name">${m.n}</div>
+        <div class="mc-nick"><span class="p">"${m.nick}"</span></div>
+        <div class="mc-tags"><span class="tag ${rcls}">${rlbl}</span></div>
+        <div class="mc-contact">${emailKV}${phoneKV}${tmnKV}${nethKV}${netmKV}</div>
+      </div>
+      <a class="mc-edit">Edit ▸</a>
+    </div>
+  `);
+});
+</script>
+</body>
+</html>

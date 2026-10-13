@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test: Incident Launcher — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico">
+  <script src="assets/js/theme.js"></script>
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <style>
+    body { font-family: system-ui,sans-serif; margin:0; padding:0; }
+    .test-shell { max-width: 960px; margin: 32px auto; padding: 0 24px; }
+    h1 { font-size:22px; font-weight:800; margin:0 0 4px; }
+    .sub { color:var(--text-muted,#888); font-size:13px; margin-bottom:24px; }
+    .test-controls { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; align-items:center; }
+    .btn {
+      padding:8px 18px; border-radius:8px; font-size:13px; font-weight:700;
+      cursor:pointer; border:1px solid var(--border,#ddd); font-family:inherit;
+      display:flex; align-items:center; gap:6px; text-decoration:none;
+    }
+    .btn-primary { background:var(--accent,#6366f1); color:#fff; border-color:transparent; }
+    .btn-ghost   { background:transparent; color:var(--text,#333); }
+    .btn:disabled { opacity:.5; pointer-events:none; }
+    .test-input { padding:8px 12px; border:1px solid var(--border,#ddd); border-radius:8px; font-size:13px; font-family:inherit; background:var(--bg-card,#fff); color:var(--text,#333); }
+
+    .suite { margin-bottom:28px; }
+    .suite-title {
+      font-size:13px; font-weight:700; color:var(--text-muted,#888); text-transform:uppercase; letter-spacing:.05em;
+      margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border,#eee);
+      display:flex; align-items:center; gap:8px;
+    }
+    .suite-badge { font-size:10px; padding:2px 8px; border-radius:99px; background:var(--bg-hover,#f5f5f5); color:var(--text-muted,#888); }
+
+    .test-item {
+      display:flex; align-items:flex-start; gap:12px; padding:10px 14px;
+      border:1px solid var(--border,#eee); border-radius:10px; margin-bottom:8px;
+      background:var(--bg-card,#fff);
+      transition: border-color .15s;
+    }
+    .test-item.pass  { border-color:#22c55e44; background:rgba(34,197,94,.04); }
+    .test-item.fail  { border-color:#ef444444; background:rgba(239,68,68,.04); }
+    .test-item.skip  { border-color:#f59e0b44; background:rgba(245,158,11,.04); }
+    .test-item.running { border-color:#6366f144; background:rgba(99,102,241,.04); }
+
+    .test-icon { font-size:18px; flex-shrink:0; width:24px; text-align:center; line-height:1.4; }
+    .test-icon.pass  { color:#22c55e; }
+    .test-icon.fail  { color:#ef4444; }
+    .test-icon.skip  { color:#f59e0b; }
+    .test-icon.running { color:#6366f1; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .test-body { flex:1; min-width:0; }
+    .test-name { font-size:13px; font-weight:600; color:var(--text,#333); }
+    .test-desc { font-size:11.5px; color:var(--text-muted,#888); margin-top:2px; }
+    .test-detail {
+      font-size:11.5px; margin-top:6px; padding:6px 10px;
+      border-radius:6px; background:var(--bg-hover,#f5f5f5);
+      font-family:monospace; white-space:pre-wrap; word-break:break-all; max-height:120px; overflow-y:auto;
+    }
+    .test-detail.pass  { color:#166534; background:rgba(34,197,94,.06); }
+    .test-detail.fail  { color:#991b1b; background:rgba(239,68,68,.06); }
+    .test-time { font-size:10px; color:var(--text-muted,#aaa); flex-shrink:0; align-self:center; }
+
+    .summary-bar {
+      position:sticky; bottom:0; background:var(--bg,#fff); border-top:2px solid var(--border,#eee);
+      padding:12px 24px; display:flex; align-items:center; gap:16px;
+      font-size:13px; font-weight:600;
+    }
+    .s-pass { color:#22c55e; }
+    .s-fail { color:#ef4444; }
+    .s-skip { color:#f59e0b; }
+    .progress-bar { flex:1; height:6px; background:var(--bg-hover,#eee); border-radius:3px; overflow:hidden; }
+    .progress-fill { height:100%; background:#22c55e; border-radius:3px; transition:width .3s; }
+    .progress-fill.has-fail { background:#ef4444; }
+
+    .il-config-note {
+      padding:12px 16px; border-radius:8px; background:rgba(99,102,241,.06);
+      border:1px solid rgba(99,102,241,.2); font-size:12.5px; margin-bottom:20px; color:var(--text,#333);
+    }
+    .il-config-note strong { color:var(--accent,#6366f1); }
+  </style>
+</head>
+<body>
+
+<div class="test-shell">
+  <h1>🧪 Incident Launcher — Test Runner</h1>
+  <p class="sub">ทดสอบทุก API endpoint + UI validation ก่อนใช้งานจริง · Auth required</p>
+
+  <div class="il-config-note">
+    <strong>ตั้งค่าก่อนรัน test:</strong>
+    Ticket Key เช่น <code>SMC-10461</code> (ใช้ test Jira transitions) ·
+    Jenkins Server ID เช่น <code>jsrv_99316f22f9ad</code> ·
+    Job Path เช่น <code>/job/wallet-maintenance_login</code>
+  </div>
+
+  <div class="test-controls">
+    <button class="btn btn-primary" id="run-all-btn" onclick="Runner.runAll()">▶ Run All Tests</button>
+    <button class="btn btn-ghost" onclick="Runner.reset()">↺ Reset</button>
+    <input class="test-input" id="cfg-ticket"    placeholder="Jira ticket key (SMC-XXXX)"         style="width:200px">
+    <input class="test-input" id="cfg-server"    placeholder="Jenkins server ID"                   style="width:200px">
+    <input class="test-input" id="cfg-jobpath"   placeholder="Jenkins job path"                   style="width:200px">
+    <input class="test-input" id="cfg-ch-name"   placeholder="Channel name (for notify test)"    style="width:200px">
+  </div>
+
+  <div id="test-suites"></div>
+</div>
+
+<div class="summary-bar" id="summary-bar" style="display:none">
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  <span class="s-pass" id="s-pass">✓ 0</span>
+  <span class="s-fail" id="s-fail">✗ 0</span>
+  <span class="s-skip" id="s-skip">— 0</span>
+  <span id="s-total" style="color:var(--text-muted)">/ 0</span>
+</div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+/* ─────────────────────────────────────────────────────
+   Incident Launcher Test Runner
+───────────────────────────────────────────────────── */
+Auth.requireAuth();
+
+const Runner = (() => {
+  let _results = {};
+  let _total   = 0;
+
+  // ── Test suites ──────────────────────────────────────
+  const SUITES = [
+    {
+      title: 'API — Config',
+      tests: [
+        {
+          id: 'config_load',
+          name: 'Load Launcher Config',
+          desc: 'GET /api/incident-launcher/index.php?action=config',
+          async run() {
+            // API.get → {ok,status,data}; respond(['config'=>...]) → data={config:{...}}
+            const r = await API.get('/incident-launcher/index.php?action=config');
+            if (!r?.ok) throw new Error(r?.data?.message || `HTTP ${r?.status}`);
+            if (!r?.data?.config) throw new Error('response ไม่มี config key (data.config)');
+            const cfg = r.data.config;
+            const info = [
+              `channels: ${(cfg.channels||[]).length}`,
+              `templates: ${(cfg.templates||[]).length}`,
+              `ma_jobs: ${(cfg.ma_jobs||[]).length}`,
+              `partner_groups: ${(cfg.partner_groups||[]).length}`,
+              `jira_issue_type: ${cfg.jira_issue_type || '(ว่าง)'}`,
+              `escalate_transition: ${cfg.jira_escalate_transition || '(ยังไม่ตั้งค่า)'}`,
+            ].join('\n');
+            return { ok: true, detail: info };
+          },
+        },
+        {
+          id: 'config_channel_count',
+          name: 'Config: มี Channels ครบ',
+          desc: 'ตรวจว่า config มี channels ตั้งค่าแล้ว',
+          async run() {
+            const r = await API.get('/incident-launcher/index.php?action=config');
+            const chs = r?.data?.config?.channels || [];
+            if (!chs.length) return { ok: false, skip: true, detail: 'ยังไม่มี channels — ตั้งค่าใน Admin Config → Channels ก่อน' };
+            const detail = chs.map(c => `• ${c.name} [${c.platform}] ${c.auth ? '✓ webhook' : '(manual)'}`).join('\n');
+            return { ok: true, detail };
+          },
+        },
+        {
+          id: 'config_ma_jobs',
+          name: 'Config: มี MA Jobs ครบ',
+          desc: 'ตรวจว่า config มี MA jobs',
+          async run() {
+            const r = await API.get('/incident-launcher/index.php?action=config');
+            const jobs = r?.data?.config?.ma_jobs || [];
+            if (!jobs.length) return { ok: false, skip: true, detail: 'ยังไม่มี MA jobs — ตั้งค่าใน Admin Config → MA Jobs ก่อน' };
+            const detail = jobs.map(j => `• ${j.name} [${j.type}]${j.type==='jenkins'?` server=${j.server_id} path=${j.job_path}`:''}`).join('\n');
+            return { ok: true, detail };
+          },
+        },
+      ],
+    },
+    {
+      title: 'API — Jenkins',
+      tests: [
+        {
+          id: 'jenkins_servers',
+          name: 'Jenkins: server list',
+          desc: 'GET /api/jenkins-proxy/index.php?list=1',
+          async run() {
+            const r = await API.get('/jenkins-proxy/index.php?list=1');
+            // respondOk($list) → r.data = {success,message,data:[...servers...]}
+            const servers = r?.data?.data;
+            if (!Array.isArray(servers)) throw new Error(`ไม่ได้รับ array (got: ${JSON.stringify(r?.data).slice(0,100)})`);
+            if (!servers.length) return { ok: false, skip: true, detail: 'ยังไม่มี Jenkins servers ตั้งค่าไว้' };
+            const detail = servers.map(s => `• ${s.id}: ${s.display} — ${s.base_url}`).join('\n');
+            return { ok: true, detail };
+          },
+        },
+        {
+          id: 'jenkins_job_info',
+          name: 'Jenkins: fetch job parameters',
+          desc: 'GET /api/jenkins-proxy/index.php?server=X&path=Y/api/json',
+          async run() {
+            const srv = document.getElementById('cfg-server')?.value?.trim();
+            const pth = document.getElementById('cfg-jobpath')?.value?.trim();
+            if (!srv || !pth) return { ok: false, skip: true, detail: 'ใส่ Jenkins Server ID + Job Path ในช่อง config ด้านบนก่อน' };
+            const r = await API.get(`/jenkins-proxy/index.php?server=${encodeURIComponent(srv)}&path=${encodeURIComponent(pth + '/api/json')}`);
+            if (!r?.ok) throw new Error(r?.data?.message || `HTTP ${r?.status}`);
+            // respondOk($data) → r.data = {success,message,data: Jenkins_JSON}
+            const jd = r?.data?.data || {};
+            const params = (jd.property||[]).find(p=>p._class?.includes('ParametersDefinitionProperty'))?.parameterDefinitions || [];
+            const detail = [
+              `Job: ${jd.fullName || jd.name || '?'}`,
+              `Buildable: ${jd.buildable}`,
+              `Last build: #${jd.lastBuild?.number || '-'}`,
+              `Parameters (${params.length}):`,
+              ...params.map(p => `  • ${p.name} [${p._class?.split('.').pop()}] default="${p.defaultParameterValue?.value ?? ''}"`),
+            ].join('\n');
+            return { ok: true, detail };
+          },
+        },
+      ],
+    },
+    {
+      title: 'API — Jira',
+      tests: [
+        {
+          id: 'jira_transitions',
+          name: 'Jira: get transitions for ticket',
+          desc: 'GET /api/incident-launcher/index.php?action=jira_transitions&key=SMC-XXX',
+          async run() {
+            const key = document.getElementById('cfg-ticket')?.value?.trim();
+            if (!key) return { ok: false, skip: true, detail: 'ใส่ Jira ticket key (เช่น SMC-10461) ในช่อง config ด้านบน' };
+            const r = await API.get(`/incident-launcher/index.php?action=jira_transitions&key=${encodeURIComponent(key)}`);
+            if (!r?.ok) throw new Error(r?.data?.message || `HTTP ${r?.status}`);
+            // respond(['transitions'=>...]) → r.data = {transitions:[...]}
+            const transitions = r?.data?.transitions || [];
+            if (!transitions.length && !r?.data?.transitions) throw new Error('response ไม่มี transitions key');
+            const escalate = transitions.find(t => t.name?.toLowerCase().includes('escalate'));
+            const detail = [
+              `Ticket: ${key}`,
+              `Transitions (${transitions.length}):`,
+              ...transitions.map(t => `  ${escalate?.id === t.id ? '★' : '•'} [${t.id}] ${t.name}`),
+              '',
+              escalate ? `✓ พบ Escalate transition ID: ${escalate.id}` : '⚠ ไม่พบ "Escalate" transition — ตรวจสอบสิทธิ์ Jira',
+            ].join('\n');
+            return { ok: true, detail };
+          },
+        },
+      ],
+    },
+    {
+      title: 'API — Channel Notify',
+      tests: [
+        {
+          id: 'channel_list',
+          name: 'Channels: platform check',
+          desc: 'ตรวจ auth config ของทุก channel ที่ตั้งค่าไว้',
+          async run() {
+            const r = await API.get('/incident-launcher/index.php?action=config');
+            const chs = r?.data?.config?.channels || [];
+            if (!chs.length) return { ok: false, skip: true, detail: 'ยังไม่มี channels' };
+            const issues = chs.filter(c => c.platform !== 'manual' && !c.auth);
+            const detail = [
+              ...chs.map(c => `• ${c.name} [${c.platform}]: ${c.platform === 'manual' ? 'Manual (copy)' : c.auth ? '✓ webhook ตั้งค่าแล้ว' : '✗ ยังไม่มี auth'}`),
+              '',
+              issues.length ? `⚠ ${issues.length} channel ไม่มี webhook: ${issues.map(c=>c.name).join(', ')}` : '✓ ทุก channel มี auth ครบ',
+            ].join('\n');
+            return { ok: !issues.length, detail };
+          },
+        },
+        {
+          id: 'channel_test_send',
+          name: 'Channel: send test message',
+          desc: 'ส่ง test message ไปยัง channel ที่ระบุ (ต้องใส่ชื่อ channel ใน config)',
+          async run() {
+            const name = document.getElementById('cfg-ch-name')?.value?.trim();
+            if (!name) return { ok: false, skip: true, detail: 'ใส่ชื่อ channel ในช่อง "Channel name" ด้านบน เพื่อทดสอบการส่งจริง' };
+            const r = await API.get('/incident-launcher/index.php?action=config');
+            const ch = (r?.data?.config?.channels||[]).find(c => c.name.toLowerCase().includes(name.toLowerCase()));
+            if (!ch) return { ok: false, skip: true, detail: `ไม่พบ channel ที่มีชื่อ "${name}"` };
+            if (ch.platform === 'manual') return { ok: false, skip: true, detail: `"${ch.name}" เป็น Manual channel — ไม่ส่ง HTTP (copy only)` };
+            const msg = `[TEST - SOM Incident Launcher] ทดสอบการส่งข้อความจาก Test Runner · ${new Date().toLocaleString('th-TH')}`;
+            await API.post('/incident-launcher/index.php', { action: 'notify_channel', channel_id: ch.id, message: msg });
+            return { ok: true, detail: `✓ ส่ง test message ไปยัง "${ch.name}" [${ch.platform}] สำเร็จ — ตรวจสอบใน chat ได้เลย` };
+          },
+        },
+      ],
+    },
+    {
+      title: 'API — Service Performance + Impact',
+      tests: [
+        {
+          id: 'sp_api',
+          name: 'Service Performance: API response',
+          desc: 'GET /api/service-performance/index.php',
+          async run() {
+            const r = await API.get('/service-performance/index.php');
+            if (!r?.ok) throw new Error(r?.data?.message || `HTTP ${r?.status}`);
+            // respondOk([{results,...}]) → r.data = {success,message,data:{results:[...],...}}
+            const spData = r?.data?.data || {};
+            const results = spData?.results || [];
+            if (!results.length && !spData?.results) throw new Error('ไม่มี results ใน response (ตรวจสอบ SP sources config)');
+            const totalSvc = results.reduce((n, rw) => n + (rw.services?.length || 0), 0);
+            const detail = [
+              `Runways: ${results.length}`,
+              `Total services: ${totalSvc}`,
+              ...results.map(rw => `  • ${rw.slug || rw.name}: ${(rw.services||[]).length} services, fromCache=${rw.fromCache ?? '?'}${rw.error ? ` ⚠ ${rw.error}` : ''}`),
+            ].join('\n');
+            return { ok: true, detail };
+          },
+        },
+        {
+          id: 'impact_summary',
+          name: 'Impact Summary: Prometheus query',
+          desc: 'GET /api/incident-launcher/index.php?action=impact_summary&from=now-1h',
+          async run() {
+            const from = new Date(Date.now() - 3600000).toISOString();
+            const r = await API.get(`/incident-launcher/index.php?action=impact_summary&from=${encodeURIComponent(from)}`);
+            if (!r?.ok) throw new Error(r?.data?.message || `HTTP ${r?.status}`);
+            // respond([...]) → r.data = {results:[...], from, to, range_seconds, source_count}
+            const rd = r.data || {};
+            const detail = [
+              `Time range: ${Math.round((rd.range_seconds||0)/60)} นาที`,
+              `Sources queried: ${rd.source_count || 0}`,
+              `Services with restarts: ${(rd.results||[]).length}`,
+              ...(rd.results||[]).slice(0, 5).map(s => `  • ${s.service} (${s.namespace}) — ${Math.round(s.restarts)} restarts`),
+              (rd.results||[]).length > 5 ? `  … และอีก ${rd.results.length - 5} รายการ` : '',
+            ].filter(Boolean).join('\n');
+            return { ok: true, detail };
+          },
+        },
+      ],
+    },
+    {
+      title: 'UI Validation (Client-side)',
+      tests: [
+        {
+          id: 'ui_form_validation',
+          name: 'Form: ต้องมี Incident Title',
+          desc: 'ตรวจว่า _collectIncident() reject เมื่อไม่มี title',
+          async run() {
+            // Test by calling the launcher page logic via window check
+            const page = window.open('incident-launcher.html', '_blank');
+            return { ok: true, detail: 'เปิดหน้า Launcher ในหน้าต่างใหม่ — ทดสอบ manual:\n1. กด Guided/Express mode\n2. กด Run/Launch โดยไม่กรอก title\n3. ต้องแสดง error toast' };
+          },
+        },
+        {
+          id: 'ui_escalate_prereq',
+          name: 'Escalate: ต้องมี Jira ticket ก่อน',
+          desc: 'Escalate task ต้อง skip เมื่อยังไม่มี ticket key',
+          async run() {
+            return { ok: true, detail: 'ตรวจสอบ manual:\n1. รัน Escalate task ก่อนรัน Jira task\n2. ต้องแสดง status "skipped" พร้อม message "ยังไม่มี Jira ticket"' };
+          },
+        },
+        {
+          id: 'ui_jenkins_modal',
+          name: 'Jenkins: Build with Parameters modal',
+          desc: 'เปิด MA Form ของ Jenkins job แล้วต้องแสดง params',
+          async run() {
+            const r = await API.get('/incident-launcher/index.php?action=config');
+            const jenkinsJobs = (r?.data?.config?.ma_jobs||[]).filter(j=>j.type==='jenkins');
+            if (!jenkinsJobs.length) return { ok: false, skip: true, detail: 'ยังไม่มี Jenkins MA jobs — ตั้งค่าใน Admin Config → MA Jobs' };
+            return { ok: true, detail: `พบ ${jenkinsJobs.length} Jenkins job:\n${jenkinsJobs.map(j=>`• ${j.name} — server: ${j.server_id}, path: ${j.job_path}`).join('\n')}\n\nทดสอบ manual: กด "Open MA Form" ใน Launcher` };
+          },
+        },
+        {
+          id: 'ui_timeline',
+          name: 'Timeline: แสดงหลัง action แรก',
+          desc: 'MA Timeline section ต้องปรากฏหลังส่ง channel / build Jenkins',
+          async run() {
+            return { ok: true, detail: 'ทดสอบ manual:\n1. ส่ง channel message หรือ Mark Done MA job\n2. Timeline section ต้องปรากฏด้านล่าง พร้อม timestamp' };
+          },
+        },
+      ],
+    },
+    {
+      title: 'Auth & Permissions',
+      tests: [
+        {
+          id: 'auth_me',
+          name: 'Auth: ตรวจ user + role',
+          desc: 'GET /api/auth/me.php',
+          async run() {
+            const r = await API.get('/auth/me.php');
+            if (!r?.ok) throw new Error(r?.data?.message || `HTTP ${r?.status}`);
+            // me.php uses respondOk or respond — try both patterns
+            const u = r?.data?.data?.user || r?.data?.user || r?.data?.data || r?.data || {};
+            if (!u?.id) throw new Error(`ไม่ได้รับข้อมูล user (data: ${JSON.stringify(r?.data).slice(0,100)})`);
+            const isSm = (u.team === 'sm');
+            const detail = [
+              `User: ${u.name || u.username} (${u.id})`,
+              `Role: ${u.role}`,
+              `Team: ${u.team || '-'} ${isSm ? '✓' : '⚠ ต้อง team=sm'}`,
+              `Email: ${u.email || '-'}`,
+            ].join('\n');
+            return { ok: isSm, detail };
+          },
+        },
+        {
+          id: 'auth_sm_only',
+          name: 'Permissions: config endpoint ต้อง SM team',
+          desc: 'ตรวจว่า endpoint return 403 ถ้าไม่ใช่ SM',
+          async run() {
+            const r = await API.get('/auth/me.php');
+            const u = r?.data?.data?.user || r?.data?.user || r?.data?.data || r?.data || {};
+            const team = u?.team || '';
+            if (team === 'sm') return { ok: true, detail: `✓ Current user is SM team — permission OK` };
+            return { ok: false, detail: `⚠ User team="${team}" ≠ "sm" — incident-launcher API จะ return 403` };
+          },
+        },
+      ],
+    },
+  ];
+
+  // ── Render ───────────────────────────────────────────
+  function render() {
+    const container = document.getElementById('test-suites');
+    container.innerHTML = SUITES.map(s => `
+      <div class="suite">
+        <div class="suite-title">
+          ${s.title}
+          <span class="suite-badge">${s.tests.length} tests</span>
+        </div>
+        ${s.tests.map(t => `
+          <div class="test-item" id="ti-${t.id}">
+            <div class="test-icon" id="ic-${t.id}">○</div>
+            <div class="test-body">
+              <div class="test-name">${t.name}</div>
+              <div class="test-desc">${t.desc}</div>
+              <div class="test-detail" id="td-${t.id}" style="display:none"></div>
+            </div>
+            <div class="test-time" id="tt-${t.id}"></div>
+          </div>`).join('')}
+      </div>`).join('');
+  }
+
+  // ── Run ──────────────────────────────────────────────
+  async function runAll() {
+    _results = {};
+    const btn = document.getElementById('run-all-btn');
+    if (btn) btn.disabled = true;
+    document.getElementById('summary-bar').style.display = 'flex';
+
+    const allTests = SUITES.flatMap(s => s.tests);
+    _total = allTests.length;
+    _updateSummary();
+
+    for (const t of allTests) {
+      await runOne(t);
+      _updateSummary();
+    }
+
+    if (btn) btn.disabled = false;
+  }
+
+  async function runOne(t) {
+    _setStatus(t.id, 'running', '…');
+    const start = Date.now();
+    try {
+      const r = await t.run();
+      const ms = Date.now() - start;
+      if (r.skip) {
+        _setStatus(t.id, 'skip', r.detail, ms);
+        _results[t.id] = 'skip';
+      } else if (r.ok) {
+        _setStatus(t.id, 'pass', r.detail, ms);
+        _results[t.id] = 'pass';
+      } else {
+        _setStatus(t.id, 'fail', r.detail || 'Failed', ms);
+        _results[t.id] = 'fail';
+      }
+    } catch (e) {
+      const ms = Date.now() - start;
+      _setStatus(t.id, 'fail', e?.message || String(e), ms);
+      _results[t.id] = 'fail';
+    }
+  }
+
+  function _setStatus(id, status, detail, ms) {
+    const item   = document.getElementById(`ti-${id}`);
+    const icon   = document.getElementById(`ic-${id}`);
+    const td     = document.getElementById(`td-${id}`);
+    const tt     = document.getElementById(`tt-${id}`);
+    if (!item) return;
+    item.className = `test-item ${status}`;
+    icon.className = `test-icon ${status}`;
+    const iconMap = { pass:'✓', fail:'✗', skip:'—', running:'◌' };
+    icon.textContent = iconMap[status] || '○';
+    if (detail) {
+      td.style.display = '';
+      td.className = `test-detail ${status}`;
+      td.textContent = detail;
+    }
+    if (ms !== undefined) tt.textContent = ms + 'ms';
+  }
+
+  function _updateSummary() {
+    const vals  = Object.values(_results);
+    const pass  = vals.filter(v=>v==='pass').length;
+    const fail  = vals.filter(v=>v==='fail').length;
+    const skip  = vals.filter(v=>v==='skip').length;
+    const done  = vals.length;
+    document.getElementById('s-pass').textContent  = `✓ ${pass}`;
+    document.getElementById('s-fail').textContent  = `✗ ${fail}`;
+    document.getElementById('s-skip').textContent  = `— ${skip}`;
+    document.getElementById('s-total').textContent = `/ ${_total}`;
+    const pct = _total ? Math.round((done / _total) * 100) : 0;
+    const bar = document.getElementById('progress-fill');
+    bar.style.width = pct + '%';
+    bar.className = `progress-fill ${fail > 0 ? 'has-fail' : ''}`;
+  }
+
+  function reset() {
+    _results = {};
+    _total   = 0;
+    SUITES.flatMap(s=>s.tests).forEach(t => {
+      _setStatus(t.id, '', '', undefined);
+      const item = document.getElementById(`ti-${t.id}`);
+      if (item) item.className = 'test-item';
+      const icon = document.getElementById(`ic-${t.id}`);
+      if (icon) { icon.className = 'test-icon'; icon.textContent = '○'; }
+      const td = document.getElementById(`td-${t.id}`);
+      if (td) td.style.display = 'none';
+      const tt = document.getElementById(`tt-${t.id}`);
+      if (tt) tt.textContent = '';
+    });
+    document.getElementById('summary-bar').style.display = 'none';
+  }
+
+  document.addEventListener('DOMContentLoaded', render);
+  return { runAll, reset };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Case Notes — GenZ</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <script src="assets/js/theme.js"></script>
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .main-content, .page-content { min-width:0; overflow-x:hidden; }
+
+    .gn-tools {
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+      background:var(--bg-card, white); border:1.5px solid var(--border, #e8e8e8); border-radius:14px;
+      padding:12px 16px; margin-bottom:16px;
+    }
+    .gn-search { flex:1; min-width:220px; display:flex; align-items:center; gap:8px; }
+    .gn-search input {
+      flex:1; padding:8px 12px; font-size:13px;
+      border:1.5px solid var(--border,#e8e8e8); border-radius:8px;
+      background:var(--bg); color:var(--text);
+    }
+    .gn-btn {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:8px 14px; font-size:12px; font-weight:700;
+      border:none; border-radius:8px; cursor:pointer;
+      background: linear-gradient(90deg,#a78bfa 0%,#f472b6 40%,#fbbf24 70%,#22d3ee 100%);
+      background-size:200% 100%; animation:gn-holo 3s linear infinite;
+      color:white; text-shadow:0 1px 1px rgba(0,0,0,.2);
+      box-shadow:0 2px 6px rgba(167,139,250,.35);
+      transition:transform .12s;
+    }
+    .gn-btn:hover { transform:translateY(-1px); }
+    @keyframes gn-holo { to { background-position:-200% 0; } }
+    .gn-btn.ghost {
+      background:none; color:var(--text-muted, #666); border:1.5px solid var(--border,#ddd);
+      animation:none; text-shadow:none; box-shadow:none;
+    }
+    .gn-btn.ghost:hover { border-color:#f472b6; color:#f472b6; }
+
+    /* Filter chips */
+    .gn-chips { display:flex; gap:6px; flex-wrap:wrap; }
+    .gn-chip {
+      padding:4px 10px; font-size:11px; font-weight:600;
+      border-radius:999px; border:1.5px solid var(--border,#e8e8e8);
+      background:var(--bg); color:var(--text-muted,#666);
+      cursor:pointer; transition:all .15s;
+    }
+    .gn-chip.active {
+      border-color:transparent; color:white;
+      background:linear-gradient(90deg,#a78bfa,#f472b6);
+    }
+    .gn-chip:hover:not(.active) { border-color:#f472b6; color:#f472b6; }
+
+    /* Notebook list */
+    .gn-notebook {
+      background:var(--bg-card,#fdfcf7);
+      border:1.5px solid var(--border,#e8e2d0);
+      border-radius:14px;
+      overflow:hidden;
+      box-shadow:0 2px 8px rgba(0,0,0,.04);
+      position:relative;
+    }
+    /* red margin line like a notebook */
+    .gn-notebook::before {
+      content:''; position:absolute; top:0; bottom:0; left:64px;
+      width:1.5px; background:rgba(244,114,182,.35); pointer-events:none;
+    }
+    body.dark .gn-notebook,
+    body[data-theme="dark"] .gn-notebook { background:var(--bg-card); }
+
+    .gn-row {
+      display:grid;
+      grid-template-columns: 64px 1fr auto;
+      align-items:stretch;
+      gap:0;
+      padding:0;
+      cursor:pointer;
+      border-bottom:1px dashed var(--border,#e8e2d0);
+      transition:background .15s ease;
+      position:relative;
+    }
+    .gn-row:last-child { border-bottom:none; }
+    .gn-row:hover { background:rgba(167,139,250,.05); }
+    .gn-row:hover .gn-row-num { color:#f472b6; }
+
+    /* Left column: page number + severity dot */
+    .gn-row-num {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:6px; padding:14px 8px;
+      font-family:'Space Grotesk',sans-serif;
+      font-size:11px; font-weight:800; letter-spacing:.1em;
+      color:var(--text-muted,#a09680);
+      border-right:1px solid var(--border,#e8e2d0);
+      background:linear-gradient(180deg, rgba(255,255,255,.4), transparent);
+    }
+    .gn-row-num .dot {
+      width:8px; height:8px; border-radius:50%;
+      box-shadow:0 0 0 2px rgba(255,255,255,.6);
+    }
+    .gn-row.sev-low  .gn-row-num .dot { background:#22d3ee; }
+    .gn-row.sev-med  .gn-row-num .dot { background:#a78bfa; }
+    .gn-row.sev-high .gn-row-num .dot { background:#fbbf24; }
+    .gn-row.sev-critical .gn-row-num .dot { background:#ef4444; box-shadow:0 0 0 2px rgba(239,68,68,.25), 0 0 10px rgba(239,68,68,.6); }
+
+    /* Middle column: content */
+    .gn-row-body {
+      padding:14px 18px 14px 22px;
+      min-width:0;
+      display:flex; flex-direction:column; gap:6px;
+    }
+    .gn-row-head {
+      display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    }
+    .gn-row-cat {
+      font-family:'Space Grotesk',sans-serif;
+      font-size:9.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+      color:#a78bfa;
+      padding:2px 8px; border-radius:4px;
+      background:rgba(167,139,250,.08);
+    }
+    .gn-sev {
+      font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+      padding:2px 8px; border-radius:999px; flex-shrink:0;
+    }
+    .gn-sev.low      { background:#e0f7fa; color:#0e7490; }
+    .gn-sev.med      { background:#ede9fe; color:#6d28d9; }
+    .gn-sev.high     { background:#fef3c7; color:#92400e; }
+    .gn-sev.critical { background:#fee2e2; color:#991b1b; }
+
+    .gn-row-body h3 {
+      margin:0;
+      font-family:'Space Grotesk',sans-serif;
+      font-size:16px; font-weight:800; line-height:1.35;
+      color:var(--text);
+      letter-spacing:-.01em;
+    }
+    .gn-row-body p {
+      margin:0;
+      font-size:12.5px; line-height:1.6;
+      color:var(--text-muted,#8a8272);
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .gn-tags { display:flex; gap:4px; flex-wrap:wrap; }
+    .gn-tag {
+      padding:1px 7px; font-size:10px; font-weight:600;
+      border-radius:4px; background:rgba(167,139,250,.1); color:#7c3aed;
+    }
+    .gn-row-meta {
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      font-size:10.5px; color:var(--text-muted,#a09680);
+      margin-top:2px;
+    }
+    .gn-row-meta .sep { opacity:.4; }
+
+    /* Right column: steps progress + arrow */
+    .gn-row-right {
+      display:flex; flex-direction:column; align-items:flex-end; justify-content:center;
+      gap:6px; padding:14px 18px 14px 8px;
+      min-width:90px;
+    }
+    .gn-row-steps {
+      font-family:'Space Grotesk',sans-serif;
+      font-size:11px; font-weight:800; letter-spacing:.05em;
+      color:#f472b6;
+      display:flex; align-items:center; gap:4px;
+    }
+    .gn-row-arrow {
+      font-size:16px; color:var(--text-muted,#c0b8a0);
+      transition:transform .15s, color .15s;
+    }
+    .gn-row:hover .gn-row-arrow { transform:translateX(3px); color:#a78bfa; }
+
+    @media (max-width:640px) {
+      .gn-row { grid-template-columns: 48px 1fr; }
+      .gn-row-right { grid-column:1 / -1; padding:0 18px 12px 70px; flex-direction:row; justify-content:flex-start; }
+      .gn-notebook::before { left:48px; }
+    }
+
+    /* Empty state */
+    .gn-empty {
+      padding:60px 20px; text-align:center;
+      background:var(--bg-card,white);
+      border:1.5px dashed var(--border,#e0e0e0);
+      border-radius:14px;
+    }
+    .gn-empty h3 { font-family:'Space Grotesk',sans-serif; font-size:16px; margin:12px 0 4px; }
+    .gn-empty p  { color:var(--text-muted,#888); font-size:12px; margin:0 0 16px; }
+
+    /* Slide-in drawer (right side) */
+    .gn-mask {
+      position:fixed; inset:0;
+      background:rgba(15,15,30,0);
+      backdrop-filter:blur(0);
+      z-index:2000;
+      pointer-events:none;
+      transition:background .35s ease, backdrop-filter .35s ease;
+    }
+    .gn-mask.on {
+      pointer-events:auto;
+      background:rgba(15,15,30,.45);
+      backdrop-filter:blur(5px);
+    }
+    .gn-modal {
+      position:fixed; top:0; right:0; bottom:0;
+      width:min(760px, 96vw);
+      background:var(--bg-card,white);
+      display:flex; flex-direction:column;
+      box-shadow:-20px 0 60px rgba(0,0,0,.25);
+      transform:translateX(100%);
+      transition:transform .38s cubic-bezier(.22,.9,.28,1);
+      border-left:4px solid #a78bfa;
+      overflow:hidden;
+    }
+    .gn-mask.on .gn-modal { transform:translateX(0); }
+
+    /* accent ribbon animates in slightly after the drawer */
+    .gn-modal::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:3px;
+      background:linear-gradient(90deg,#a78bfa 0%,#f472b6 40%,#fbbf24 70%,#22d3ee 100%);
+      transform:scaleX(0); transform-origin:left;
+      transition:transform .55s cubic-bezier(.22,.9,.28,1) .2s;
+    }
+    .gn-mask.on .gn-modal::before { transform:scaleX(1); }
+
+    .gn-modal-hd {
+      padding:18px 24px; border-bottom:1px solid var(--border,#f0f0f0);
+      display:flex; align-items:center; gap:12px;
+      background:linear-gradient(90deg, rgba(167,139,250,.08), rgba(244,114,182,.05), transparent);
+    }
+    .gn-modal-hd .t {
+      font-family:'Space Grotesk',sans-serif;
+      font-size:16px; font-weight:800; flex:1;
+      opacity:0; transform:translateX(12px);
+      transition:opacity .35s ease .18s, transform .35s ease .18s;
+    }
+    .gn-mask.on .gn-modal-hd .t { opacity:1; transform:translateX(0); }
+    .gn-modal-hd .x {
+      background:none; border:none; cursor:pointer;
+      width:32px; height:32px; border-radius:8px; font-size:18px;
+      color:var(--text-muted,#666);
+      transition:background .15s, transform .15s;
+    }
+    .gn-modal-hd .x:hover { background:rgba(0,0,0,.05); transform:rotate(90deg); }
+    .gn-modal-bd {
+      padding:24px 28px; overflow-y:auto; flex:1;
+      opacity:0; transform:translateY(8px);
+      transition:opacity .4s ease .22s, transform .4s ease .22s;
+    }
+    .gn-mask.on .gn-modal-bd { opacity:1; transform:translateY(0); }
+    .gn-modal-ft {
+      padding:14px 24px; border-top:1px solid var(--border,#f0f0f0);
+      display:flex; gap:8px; justify-content:flex-end;
+      background:var(--bg,#fafafa);
+      opacity:0; transform:translateY(8px);
+      transition:opacity .4s ease .28s, transform .4s ease .28s;
+    }
+    .gn-mask.on .gn-modal-ft { opacity:1; transform:translateY(0); }
+
+    /* stagger fields when drawer opens */
+    .gn-mask.on .gn-modal-bd .gn-field,
+    .gn-mask.on .gn-modal-bd .gn-detail-sec {
+      animation: gn-fieldIn .4s ease both;
+    }
+    .gn-mask.on .gn-modal-bd > * > .gn-field:nth-child(1),
+    .gn-mask.on .gn-modal-bd > .gn-detail-sec:nth-of-type(1) { animation-delay:.30s; }
+    .gn-mask.on .gn-modal-bd > * > .gn-field:nth-child(2),
+    .gn-mask.on .gn-modal-bd > .gn-detail-sec:nth-of-type(2) { animation-delay:.34s; }
+    .gn-mask.on .gn-modal-bd > * > .gn-field:nth-child(3),
+    .gn-mask.on .gn-modal-bd > .gn-detail-sec:nth-of-type(3) { animation-delay:.38s; }
+    .gn-mask.on .gn-modal-bd > * > .gn-field:nth-child(4),
+    .gn-mask.on .gn-modal-bd > .gn-detail-sec:nth-of-type(4) { animation-delay:.42s; }
+    .gn-mask.on .gn-modal-bd > * > .gn-field:nth-child(n+5),
+    .gn-mask.on .gn-modal-bd > .gn-detail-sec:nth-of-type(n+5) { animation-delay:.46s; }
+    @keyframes gn-fieldIn {
+      from { opacity:0; transform:translateX(14px); }
+      to   { opacity:1; transform:translateX(0); }
+    }
+
+    @media (max-width:640px) {
+      .gn-modal { width:100vw; border-left:none; border-top:4px solid #a78bfa; }
+    }
+
+    /* Form fields */
+    .gn-field { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+    .gn-field label {
+      font-family:'Space Grotesk',sans-serif;
+      font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+      color:var(--text-muted,#666);
+    }
+    .gn-field label .hint { font-weight:500; letter-spacing:0; text-transform:none; color:#999; margin-left:6px; font-size:10.5px; }
+    .gn-field input, .gn-field textarea, .gn-field select {
+      padding:9px 12px; font-size:13px; font-family:inherit;
+      border:1.5px solid var(--border,#e0e0e0); border-radius:8px;
+      background:var(--bg); color:var(--text);
+      transition:border-color .12s;
+    }
+    .gn-field input:focus, .gn-field textarea:focus, .gn-field select:focus {
+      outline:none; border-color:#a78bfa;
+      box-shadow:0 0 0 3px rgba(167,139,250,.15);
+    }
+    .gn-field textarea { min-height:80px; resize:vertical; line-height:1.55; }
+    .gn-row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+    /* Steps checklist */
+    .gn-steps-wrap { display:flex; flex-direction:column; gap:6px; }
+    .gn-step {
+      display:flex; align-items:flex-start; gap:8px;
+      padding:8px 10px; border-radius:8px;
+      background:var(--bg,#fafafa); border:1px solid var(--border,#eee);
+    }
+    .gn-step input[type="checkbox"] { margin-top:4px; flex-shrink:0; accent-color:#a78bfa; }
+    .gn-step input[type="text"] { flex:1; border:none; background:transparent; padding:4px; font-size:13px; color:var(--text); }
+    .gn-step input[type="text"]:focus { outline:none; }
+    .gn-step .del { background:none; border:none; cursor:pointer; color:#ef4444; opacity:.5; padding:4px 8px; }
+    .gn-step .del:hover { opacity:1; }
+    .gn-step .drag { color:#ccc; cursor:grab; padding:4px; font-size:14px; }
+
+    /* Links repeater */
+    .gn-links-wrap { display:flex; flex-direction:column; gap:6px; }
+    .gn-link-row { display:grid; grid-template-columns: 140px 1fr auto; gap:8px; align-items:center; }
+    .gn-link-row input {
+      padding:7px 10px; font-size:12px; border:1px solid var(--border,#ddd);
+      border-radius:6px; background:var(--bg); color:var(--text);
+    }
+
+    /* Detail view */
+    .gn-detail h2 {
+      font-family:'Space Grotesk',sans-serif;
+      font-size:22px; margin:0 0 10px;
+      color:var(--text);
+    }
+    .gn-detail-meta { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+    .gn-detail-sec {
+      margin:18px 0;
+      padding-top:14px;
+      border-top:1px dashed var(--border,#eee);
+    }
+    .gn-detail-sec:first-of-type { border-top:none; padding-top:0; margin-top:0; }
+    .gn-detail-sec h4 {
+      font-family:'Space Grotesk',sans-serif;
+      font-size:10.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+      color:#a78bfa; margin:0 0 8px;
+      display:flex; align-items:center; gap:6px;
+    }
+    .gn-detail-sec p, .gn-detail-sec .body {
+      margin:0; font-size:13px; line-height:1.65; white-space:pre-wrap;
+      color:var(--text);
+    }
+    .gn-detail-sec .body:empty::before {
+      content:'— ยังไม่ได้เขียน —'; color:var(--text-muted,#aaa); font-style:italic; font-size:12px;
+    }
+    .gn-step-view {
+      display:flex; align-items:center; gap:10px;
+      padding:8px 12px; border-radius:8px;
+      background:rgba(167,139,250,.06); margin-bottom:6px;
+      border:1px solid transparent;
+    }
+    .gn-step-view.done { text-decoration:line-through; opacity:.55; }
+    .gn-step-view .num {
+      width:20px; height:20px; border-radius:50%;
+      background:#a78bfa; color:white;
+      display:flex; align-items:center; justify-content:center;
+      font-size:10px; font-weight:800; flex-shrink:0;
+    }
+    .gn-step-view.done .num { background:#22c55e; }
+    .gn-link-view {
+      display:inline-flex; align-items:center; gap:5px;
+      padding:4px 10px; font-size:12px;
+      background:rgba(244,114,182,.08); color:#be185d;
+      border-radius:6px; margin:2px 4px 2px 0;
+      text-decoration:none;
+    }
+    .gn-link-view:hover { background:rgba(244,114,182,.15); }
+
+    .gn-btn.danger {
+      background:#fee2e2; color:#991b1b; animation:none; text-shadow:none;
+      box-shadow:none; border:1px solid #fecaca;
+    }
+    .gn-btn.danger:hover { background:#fecaca; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="topbar-title-left">
+          <div class="page-title"><i data-icon="book-open"></i> Case Notes</div>
+          <div class="page-sub">Runbook ส่วนกลางของทีม GenZ — เจอเคสอะไร จดไว้ที่นี่</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="gn-btn" onclick="openEditor()"><i data-icon="plus"></i> เพิ่ม Note</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="gn-tools">
+        <div class="gn-search">
+          <i data-icon="search" style="color:var(--text-muted,#999)"></i>
+          <input id="gn-q" type="text" placeholder="ค้นหา title / อาการ / tag / service ..." oninput="_debouncedRender()">
+        </div>
+        <div class="gn-chips" id="gn-chips">
+          <button class="gn-chip active" data-cat="">ทั้งหมด</button>
+        </div>
+      </div>
+
+      <div id="gn-list">
+        <div style="text-align:center;padding:40px;color:var(--text-muted,#888);font-size:12px">กำลังโหลด...</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Editor / Detail modal -->
+<div class="gn-mask" id="gn-mask" onclick="if(event.target===this) closeModal()">
+  <div class="gn-modal">
+    <div class="gn-modal-hd">
+      <span class="t" id="gn-modal-title">Case Note</span>
+      <button class="x" onclick="closeModal()">✕</button>
+    </div>
+    <div class="gn-modal-bd" id="gn-modal-bd"></div>
+    <div class="gn-modal-ft" id="gn-modal-ft"></div>
+  </div>
+</div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js?v=20260827-genz"></script>
+<script src="assets/js/layout.js"></script>
+<script>
+if (!Auth.requireAuth()) {}
+Layout.render('genz-notes');
+
+// Guard: SM + is_genz (sm_admin/dev_sm bypass too, matching backend)
+(function guard() {
+  const u = Auth.getUser();
+  if (!u) return;
+  const isAdmin = ['sm_admin', 'dev_sm'].includes(u.role);
+  if (u.team !== 'sm' || (!u.is_genz && !isAdmin)) {
+    document.querySelector('.page-content').innerHTML =
+      '<div style="padding:40px;text-align:center;color:#ef4444;font-weight:700">Case Notes ใช้ได้เฉพาะสมาชิก GenZ Team</div>';
+    throw new Error('forbidden');
+  }
+})();
+
+const CATEGORIES = [
+  { id:'batch',      label:'Batch' },
+  { id:'db',         label:'Database' },
+  { id:'network',    label:'Network' },
+  { id:'k8s',        label:'K8s / Pod' },
+  { id:'alert',      label:'Alert' },
+  { id:'deploy',     label:'Deploy' },
+  { id:'grafana',    label:'Grafana' },
+  { id:'jenkins',    label:'Jenkins' },
+  { id:'general',    label:'General' },
+];
+const SEVERITY = [
+  { id:'low',      label:'Low' },
+  { id:'med',      label:'Medium' },
+  { id:'high',     label:'High' },
+  { id:'critical', label:'Critical' },
+];
+
+let _all = [];
+let _curCat = '';
+let _debounceTimer = null;
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const _debouncedRender = () => { clearTimeout(_debounceTimer); _debounceTimer = setTimeout(renderList, 200); };
+const fmtDate = iso => { try { return new Date(iso).toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'2-digit'}); } catch { return ''; } };
+
+// ── Build category chips ───────────────────────────────────
+(function buildChips() {
+  const el = document.getElementById('gn-chips');
+  CATEGORIES.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'gn-chip';
+    b.textContent = c.label;
+    b.dataset.cat = c.id;
+    b.onclick = () => { _curCat = c.id; refreshChips(); renderList(); };
+    el.appendChild(b);
+  });
+  el.querySelector('.gn-chip[data-cat=""]').onclick = () => { _curCat = ''; refreshChips(); renderList(); };
+})();
+function refreshChips() {
+  document.querySelectorAll('.gn-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.cat === _curCat);
+  });
+}
+
+// ── Load ──────────────────────────────────────────────────
+async function loadAll() {
+  const r = await API.genzNotes.list();
+  _all = r?.ok ? (r.data.data || []) : [];
+  renderList();
+}
+
+function filterList() {
+  const q = (document.getElementById('gn-q').value || '').trim().toLowerCase();
+  return _all.filter(n => {
+    if (_curCat && n.category !== _curCat) return false;
+    if (!q) return true;
+    const hay = [
+      n.title, n.symptoms, n.root_cause, n.when_encountered, n.notes,
+      ...(n.tags || []), ...(n.related_services || [])
+    ].join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+}
+
+function renderList() {
+  const list = filterList();
+  const el = document.getElementById('gn-list');
+  if (!list.length) {
+    el.innerHTML = `
+      <div class="gn-empty">
+        <div style="font-size:32px">✦</div>
+        <h3>${_all.length ? 'ไม่พบ note ที่ตรงกับเงื่อนไข' : 'ยังไม่มี Case Note'}</h3>
+        <p>${_all.length ? 'ลองเปลี่ยน filter หรือคำค้นหา' : 'เริ่มจดเคสแรกกันเลย'}</p>
+        ${_all.length ? '' : '<button class="gn-btn" onclick="openEditor()"><i data-icon=\'plus\'></i> เพิ่ม Note</button>'}
+      </div>`;
+    return;
+  }
+  el.className = '';
+  const rows = list.map((n, i) => {
+    const catLabel = (CATEGORIES.find(c => c.id === n.category) || {}).label || n.category;
+    const sevLabel = (SEVERITY.find(s => s.id === n.severity) || {}).label || 'Medium';
+    const stepDone = (n.resolution_steps || []).filter(s => s.done).length;
+    const stepTotal = (n.resolution_steps || []).length;
+    const pageNo = String(i + 1).padStart(2, '0');
+    return `
+      <div class="gn-row sev-${esc(n.severity || 'med')}" onclick="openDetail('${esc(n.id)}')">
+        <div class="gn-row-num">
+          <span>№${pageNo}</span>
+          <span class="dot" title="${esc(sevLabel)}"></span>
+        </div>
+        <div class="gn-row-body">
+          <div class="gn-row-head">
+            <span class="gn-row-cat">${esc(catLabel)}</span>
+            <span class="gn-sev ${esc(n.severity || 'med')}">${esc(sevLabel)}</span>
+            ${(n.tags && n.tags.length)
+              ? n.tags.slice(0,4).map(t => `<span class="gn-tag">#${esc(t)}</span>`).join('')
+              : ''}
+          </div>
+          <h3>${esc(n.title)}</h3>
+          <p>${esc(n.symptoms || n.root_cause || n.notes || '(ยังไม่มีอาการ)')}</p>
+          <div class="gn-row-meta">
+            <span>อัปเดต ${esc(fmtDate(n.updated_at))}</span>
+            <span class="sep">·</span>
+            <span>${esc(n.updated_by_name || 'GenZ')}</span>
+            ${(n.related_services||[]).length ? `<span class="sep">·</span><span>${esc((n.related_services||[]).slice(0,2).join(', '))}${n.related_services.length>2?' +'+(n.related_services.length-2):''}</span>` : ''}
+          </div>
+        </div>
+        <div class="gn-row-right">
+          ${stepTotal ? `<span class="gn-row-steps">${stepDone}/${stepTotal} steps</span>` : ''}
+          <span class="gn-row-arrow">→</span>
+        </div>
+      </div>`;
+  }).join('');
+  el.innerHTML = `<div class="gn-notebook">${rows}</div>`;
+}
+
+// ── Detail view ────────────────────────────────────────────
+function openDetail(id) {
+  const n = _all.find(x => x.id === id);
+  if (!n) return;
+  const me = Auth.getUser();
+  const canEdit = me && (me.id === n.created_by || ['sm_admin','dev_sm'].includes(me.role));
+  const catLabel = (CATEGORIES.find(c => c.id === n.category) || {}).label || n.category;
+  const sevLabel = (SEVERITY.find(s => s.id === n.severity) || {}).label || 'Medium';
+  document.getElementById('gn-modal-title').textContent = 'Case Note';
+  document.getElementById('gn-modal-bd').innerHTML = `
+    <div class="gn-detail">
+      <div class="gn-detail-meta">
+        <span class="gn-card-cat">${esc(catLabel)}</span>
+        <span class="gn-sev ${esc(n.severity || 'med')}">${esc(sevLabel)}</span>
+        ${(n.tags||[]).map(t => `<span class="gn-tag">#${esc(t)}</span>`).join('')}
+      </div>
+      <h2>${esc(n.title)}</h2>
+
+      <div class="gn-detail-sec">
+        <h4>✦ อาการที่เห็น</h4>
+        <div class="body">${esc(n.symptoms || '')}</div>
+      </div>
+
+      <div class="gn-detail-sec">
+        <h4>✦ เจอเคสนี้ตอนไหน / Trigger</h4>
+        <div class="body">${esc(n.when_encountered || '')}</div>
+      </div>
+
+      <div class="gn-detail-sec">
+        <h4>✦ Root cause</h4>
+        <div class="body">${esc(n.root_cause || '')}</div>
+      </div>
+
+      ${(n.resolution_steps||[]).length ? `
+      <div class="gn-detail-sec">
+        <h4>✦ วิธีแก้ (Step-by-step)</h4>
+        ${n.resolution_steps.map((s, i) => `
+          <div class="gn-step-view ${s.done ? 'done' : ''}">
+            <div class="num">${i+1}</div>
+            <div>${esc(s.text)}</div>
+          </div>`).join('')}
+      </div>` : ''}
+
+      ${(n.related_services||[]).length ? `
+      <div class="gn-detail-sec">
+        <h4>✦ Services ที่เกี่ยว</h4>
+        <div>${n.related_services.map(s => `<span class="gn-tag" style="font-size:11px">${esc(s)}</span>`).join(' ')}</div>
+      </div>` : ''}
+
+      ${(n.links||[]).length ? `
+      <div class="gn-detail-sec">
+        <h4>✦ Links</h4>
+        <div>${n.links.map(l => `<a class="gn-link-view" href="${esc(l.url)}" target="_blank" rel="noopener">↗ ${esc(l.label)}</a>`).join('')}</div>
+      </div>` : ''}
+
+      ${n.notes ? `
+      <div class="gn-detail-sec">
+        <h4>✦ Note เพิ่มเติม</h4>
+        <div class="body">${esc(n.notes)}</div>
+      </div>` : ''}
+
+      <div class="gn-detail-sec" style="color:var(--text-muted,#999);font-size:11px">
+        สร้างโดย <b>${esc(n.created_by_name || 'GenZ')}</b> ${esc(fmtDate(n.created_at))}
+        ${n.updated_at && n.updated_at !== n.created_at ? ` · อัปเดตล่าสุด ${esc(fmtDate(n.updated_at))} โดย <b>${esc(n.updated_by_name || '')}</b>` : ''}
+      </div>
+    </div>`;
+  document.getElementById('gn-modal-ft').innerHTML = `
+    <button class="gn-btn ghost" onclick="closeModal()">ปิด</button>
+    ${canEdit ? `
+      <button class="gn-btn danger" onclick="deleteNote('${esc(id)}')">ลบ</button>
+      <button class="gn-btn" onclick="openEditor('${esc(id)}')">แก้ไข</button>
+    ` : ''}
+  `;
+  document.getElementById('gn-mask').classList.add('on');
+  window.Icons?.render?.(document.getElementById('gn-modal-bd'));
+  window.Icons?.render?.(document.getElementById('gn-modal-ft'));
+}
+
+// ── Editor form ────────────────────────────────────────────
+function openEditor(id) {
+  const n = id ? _all.find(x => x.id === id) : {
+    id:'', title:'', category:'general', severity:'med', tags:[], symptoms:'', when_encountered:'',
+    root_cause:'', resolution_steps:[], links:[], related_services:[], notes:''
+  };
+  if (!n) return;
+  document.getElementById('gn-modal-title').textContent = id ? 'แก้ไข Case Note' : 'สร้าง Case Note ใหม่';
+  document.getElementById('gn-modal-bd').innerHTML = `
+    <form id="gn-form" onsubmit="saveNote(event, '${esc(id || '')}')">
+      <div class="gn-field">
+        <label>Title <span style="color:#ef4444">*</span></label>
+        <input name="title" required maxlength="200" placeholder="เช่น: Batch NANO-CUTOFF ค้างที่ step 3" value="${esc(n.title)}">
+      </div>
+
+      <div class="gn-row2">
+        <div class="gn-field">
+          <label>Category</label>
+          <select name="category">
+            ${CATEGORIES.map(c => `<option value="${c.id}" ${c.id===n.category?'selected':''}>${c.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="gn-field">
+          <label>Severity</label>
+          <select name="severity">
+            ${SEVERITY.map(s => `<option value="${s.id}" ${s.id===n.severity?'selected':''}>${s.label}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
+      <div class="gn-field">
+        <label>Tags <span class="hint">คั่นด้วยคอมม่า</span></label>
+        <input name="tags" value="${esc((n.tags||[]).join(', '))}" placeholder="oom, restart, timeout">
+      </div>
+
+      <div class="gn-field">
+        <label>อาการที่เห็น <span class="hint">Symptoms</span></label>
+        <textarea name="symptoms" maxlength="4000" placeholder="อธิบายว่าเจอ error / behavior แบบไหน">${esc(n.symptoms)}</textarea>
+      </div>
+
+      <div class="gn-field">
+        <label>เจอเคสนี้ตอนไหน <span class="hint">Trigger / Context</span></label>
+        <textarea name="when_encountered" maxlength="2000" placeholder="เกิดตอน deploy? cutoff? load สูง? volume ใหญ่?">${esc(n.when_encountered)}</textarea>
+      </div>
+
+      <div class="gn-field">
+        <label>Root cause</label>
+        <textarea name="root_cause" maxlength="4000" placeholder="รากของปัญหาคืออะไร">${esc(n.root_cause)}</textarea>
+      </div>
+
+      <div class="gn-field">
+        <label>วิธีแก้ (Steps) <span class="hint">คลิกช่องเช็คเมื่อทำเสร็จ</span></label>
+        <div class="gn-steps-wrap" id="gn-steps"></div>
+        <button type="button" class="gn-btn ghost" style="margin-top:8px; align-self:flex-start" onclick="addStep()">+ เพิ่ม step</button>
+      </div>
+
+      <div class="gn-field">
+        <label>Related services <span class="hint">คั่นด้วยคอมม่า</span></label>
+        <input name="related_services" value="${esc((n.related_services||[]).join(', '))}" placeholder="nano-cutoff, tmn-wallet-service">
+      </div>
+
+      <div class="gn-field">
+        <label>Links</label>
+        <div class="gn-links-wrap" id="gn-links"></div>
+        <button type="button" class="gn-btn ghost" style="margin-top:8px; align-self:flex-start" onclick="addLink()">+ เพิ่ม link</button>
+      </div>
+
+      <div class="gn-field">
+        <label>Note เพิ่มเติม</label>
+        <textarea name="notes" maxlength="4000" placeholder="อะไรก็ตามที่อยากบันทึกเพิ่ม">${esc(n.notes)}</textarea>
+      </div>
+    </form>
+  `;
+  document.getElementById('gn-modal-ft').innerHTML = `
+    <button class="gn-btn ghost" onclick="closeModal()">ยกเลิก</button>
+    <button class="gn-btn" onclick="document.getElementById('gn-form').requestSubmit()">${id ? 'บันทึกการแก้ไข' : 'สร้าง Note'}</button>
+  `;
+  // Populate steps + links
+  (n.resolution_steps||[]).forEach(s => addStep(s.text, s.done));
+  if (!(n.resolution_steps||[]).length) addStep('', false);
+  (n.links||[]).forEach(l => addLink(l.label, l.url));
+
+  document.getElementById('gn-mask').classList.add('on');
+  window.Icons?.render?.(document.getElementById('gn-modal-bd'));
+}
+
+function addStep(text = '', done = false) {
+  const wrap = document.getElementById('gn-steps');
+  const el = document.createElement('div');
+  el.className = 'gn-step';
+  el.innerHTML = `
+    <span class="drag">⋮⋮</span>
+    <input type="checkbox" ${done ? 'checked' : ''}>
+    <input type="text" placeholder="อธิบาย step..." value="${esc(text)}" maxlength="400">
+    <button type="button" class="del" onclick="this.parentElement.remove()">✕</button>
+  `;
+  wrap.appendChild(el);
+}
+function addLink(label = '', url = '') {
+  const wrap = document.getElementById('gn-links');
+  const el = document.createElement('div');
+  el.className = 'gn-link-row';
+  el.innerHTML = `
+    <input type="text" placeholder="label" value="${esc(label)}" maxlength="120">
+    <input type="text" placeholder="https://..." value="${esc(url)}" maxlength="500">
+    <button type="button" class="gn-btn ghost" style="padding:6px 10px" onclick="this.parentElement.remove()">✕</button>
+  `;
+  wrap.appendChild(el);
+}
+
+async function saveNote(ev, id) {
+  ev.preventDefault();
+  const f = document.getElementById('gn-form');
+  const fd = new FormData(f);
+  const steps = [...document.querySelectorAll('#gn-steps .gn-step')].map(row => ({
+    text: row.querySelector('input[type="text"]').value.trim(),
+    done: row.querySelector('input[type="checkbox"]').checked,
+  })).filter(s => s.text);
+  const links = [...document.querySelectorAll('#gn-links .gn-link-row')].map(row => {
+    const [labelI, urlI] = row.querySelectorAll('input');
+    return { label: labelI.value.trim(), url: urlI.value.trim() };
+  }).filter(l => l.url);
+  const body = {
+    title:             fd.get('title'),
+    category:          fd.get('category'),
+    severity:          fd.get('severity'),
+    tags:              (fd.get('tags') || '').split(',').map(t => t.trim()).filter(Boolean),
+    symptoms:          fd.get('symptoms'),
+    when_encountered:  fd.get('when_encountered'),
+    root_cause:        fd.get('root_cause'),
+    resolution_steps:  steps,
+    links,
+    related_services:  (fd.get('related_services') || '').split(',').map(t => t.trim()).filter(Boolean),
+    notes:             fd.get('notes'),
+  };
+  const r = (id && id !== 'undefined') ? await API.genzNotes.update(id, body) : await API.genzNotes.create(body);
+  if (!r?.ok) { Toast.error(r?.data?.message || 'บันทึกไม่สำเร็จ'); return; }
+  Toast.success(id ? 'แก้ไขเรียบร้อย' : 'สร้าง Note เรียบร้อย');
+  closeModal();
+  loadAll();
+}
+
+async function deleteNote(id) {
+  if (!confirm('ลบ Case Note นี้ถาวร?')) return;
+  const r = await API.genzNotes.delete(id);
+  if (!r?.ok) { Toast.error(r?.data?.message || 'ลบไม่สำเร็จ'); return; }
+  Toast.success('ลบเรียบร้อย');
+  closeModal();
+  loadAll();
+}
+
+function closeModal() { document.getElementById('gn-mask').classList.remove('on'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+loadAll();
+</script>
+</body>
+</html>

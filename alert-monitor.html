@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alert Monitor — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="assets/css/dev-badge.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/alert-monitor/alert-monitor.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Alert Monitor</div>
+        <div class="page-sub">Service Monitoring — SM · JSM Ops alerts summary</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="am-wrap">
+
+        <!-- ── HERO ─────────────────────────────────────────── -->
+        <section class="am-hero">
+          <div class="am-hero-top">
+            <div class="am-hero-title">
+              <span class="am-hero-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </span>
+              <div>
+                <h1>Alert Monitor <span class="am-team-pill">Service Monitoring - SM</span></h1>
+                <div class="am-hero-sub">สรุป &amp; วิเคราะห์ JSM Ops alerts รายเดือน · pulled from acm-opscenter</div>
+              </div>
+            </div>
+            <div class="am-hero-actions">
+              <span class="am-sync-hint" id="am-sync-hint">
+                <span class="am-sync-dot idle" id="am-sync-dot"></span>
+                <span id="am-sync-text">รอ sync</span>
+              </span>
+              <button class="am-btn primary" id="am-btn-refresh">
+                <span id="am-refresh-icon">↻</span> รีเฟรช
+              </button>
+              <a class="am-btn" href="admin/alert-monitor-config.html" id="am-btn-config" style="display:none"><i data-icon="settings"></i> Config</a>
+            </div>
+          </div>
+          <div class="am-hero-stats" id="am-hero-stats">
+            <div class="am-hero-stat">
+              <span class="lbl">Alerts (ปีนี้)</span>
+              <span class="val am-skel" id="am-hs-total">·····</span>
+              <span class="sub" id="am-hs-total-sub">alerts</span>
+            </div>
+            <div class="am-hero-stat">
+              <span class="lbl">Months tracked</span>
+              <span class="val am-skel" id="am-hs-months">····</span>
+              <span class="sub" id="am-hs-months-sub">months</span>
+            </div>
+            <div class="am-hero-stat">
+              <span class="lbl">Last synced</span>
+              <span class="val am-skel" id="am-hs-sync">····</span>
+              <span class="sub" id="am-hs-sync-sub">from JSM</span>
+            </div>
+          </div>
+        </section>
+
+        <div class="am-progress" id="am-progress">
+          <span id="am-progress-label">กำลัง sync ข้อมูลย้อนหลัง...</span>
+          <div class="bar"><div class="fill" id="am-progress-fill" style="width:0%"></div></div>
+          <span id="am-progress-pct" style="font-family: ui-monospace, monospace; min-width: 40px; text-align:right">0%</span>
+        </div>
+
+        <!-- ── Year selector ────────────────────────────────── -->
+        <div class="am-year-bar">
+          <span class="am-year-lbl">Year</span>
+          <div class="am-year-tabs" id="am-year-tabs">
+            <span class="am-skel" style="height:32px; width:200px; display:inline-block; border-radius:7px"></span>
+          </div>
+        </div>
+
+        <!-- ── KPI cards ─────────────────────────────────────── -->
+        <div class="am-kpi-grid">
+          <div class="am-kpi total">
+            <span class="am-kpi-lbl">รวม (เดือนล่าสุด)</span>
+            <span class="am-kpi-val am-skel" id="am-kpi-total">·····</span>
+            <span class="am-kpi-sub" id="am-kpi-total-sub"></span>
+          </div>
+          <div class="am-kpi monitor">
+            <span class="am-kpi-lbl">Monitoring</span>
+            <span class="am-kpi-val am-skel" id="am-kpi-mon">·····</span>
+            <span class="am-kpi-sub" id="am-kpi-mon-sub"></span>
+          </div>
+          <div class="am-kpi batch">
+            <span class="am-kpi-lbl">Batch</span>
+            <span class="am-kpi-val am-skel" id="am-kpi-batch">·····</span>
+            <span class="am-kpi-sub" id="am-kpi-batch-sub"></span>
+          </div>
+          <div class="am-kpi delta">
+            <span class="am-kpi-lbl">Δ vs เดือนก่อน</span>
+            <span class="am-kpi-val am-skel" id="am-kpi-delta">·····</span>
+            <span class="am-kpi-sub" id="am-kpi-delta-sub"></span>
+          </div>
+        </div>
+
+        <!-- ── Chart + analysis ──────────────────────────────── -->
+        <div class="am-mid-grid">
+          <div class="am-card">
+            <h3>Alerts รายเดือน (Monitoring / Batch / Other)</h3>
+            <div class="am-chart-wrap"><canvas id="am-chart-monthly"></canvas></div>
+            <div class="am-legend">
+              <span><span class="dot monitor"></span>Monitoring</span>
+              <span><span class="dot batch"></span>Batch</span>
+              <span><span class="dot other"></span>Other</span>
+            </div>
+          </div>
+          <div class="am-card">
+            <h3>วิเคราะห์อัตโนมัติ</h3>
+            <ul class="am-analysis" id="am-analysis">
+              <li class="am-skel" style="height:60px">·</li>
+              <li class="am-skel" style="height:40px">·</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ── Compare 2 months ─────────────────────────────── -->
+        <div class="am-card" style="margin-bottom:20px">
+          <h3>
+            เปรียบเทียบ 2 เดือน
+            <span class="am-compare-controls">
+              <select id="am-cmp-a"></select>
+              <span class="vs">vs</span>
+              <select id="am-cmp-b"></select>
+              <button class="am-btn primary" id="am-cmp-btn">Compare</button>
+            </span>
+          </h3>
+          <div class="am-compare-body" id="am-compare-body">
+            <div class="am-compare-empty">เลือก 2 เดือนแล้วกด <b>Compare</b> เพื่อดูสรุปการเปลี่ยนแปลง</div>
+          </div>
+        </div>
+
+        <!-- ── Heatmap Hour × Month ─────────────────────────── -->
+        <div class="am-card am-heatmap-card">
+          <h3>Alerts รายชั่วโมง × เดือน</h3>
+          <div class="am-heatmap-scroll" id="am-heatmap-scroll">
+            <div class="am-skel" style="height:400px"></div>
+          </div>
+        </div>
+
+        <!-- ── Top 10 ───────────────────────────────────────── -->
+        <div class="am-top">
+          <div class="am-top-head">
+            <h3>Top 10 Alerts</h3>
+            <div class="am-top-tabs" id="am-top-tabs">
+              <button class="am-top-tab active" data-view="all">รวมทั้งช่วง</button>
+              <button class="am-top-tab" data-view="per-month">แยกรายเดือน</button>
+              <button class="am-top-tab" data-view="high-freq">≥20 ครั้ง/เดือน</button>
+            </div>
+            <span class="meta" id="am-top-meta" style="font-size:11px;color:var(--text-muted);font-family:ui-monospace,monospace;flex-basis:100%;text-align:right"></span>
+          </div>
+          <div class="am-top-month-strip" id="am-top-month-strip"></div>
+          <table class="am-table">
+            <thead>
+              <tr>
+                <th style="width:32px">#</th>
+                <th>Alert Title</th>
+                <th style="width:110px">Category</th>
+                <th style="width:80px; text-align:right">Count</th>
+                <th style="width:110px" id="am-top-trend-th">Trend</th>
+                <th style="width:70px; text-align:right" id="am-top-delta-th">Δ</th>
+              </tr>
+            </thead>
+            <tbody id="am-top-body">
+              <tr><td colspan="6"><div class="am-skel" style="height:180px"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="./assets/pages/alert-monitor/alert-monitor.js"></script>
+<script src="./assets/pages/alert-monitor/alert-monitor-page.js"></script>
+
+</body>
+</html>

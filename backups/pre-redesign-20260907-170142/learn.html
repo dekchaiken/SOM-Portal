@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learning — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <script src="assets/js/theme.js"></script>
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <style>
+    /* ────────── Page-level CSS vars (overridden at runtime from page-config) ────────── */
+    :root {
+      --accent:        #f26419;
+      --accent-soft:   rgba(242,100,25,.10);
+      --accent-line:   rgba(242,100,25,.35);
+      --accent-glow:   rgba(242,100,25,.18);
+      --card-bg:       var(--bg-card, #fff);
+      --card-pad:      22px 24px;
+      --grid-gap:      16px;
+      --card-min:      300px;
+      --section-gap:   20px;
+      --shadow-sm:     0 1px 2px rgba(15,17,23,.04), 0 1px 1px rgba(15,17,23,.03);
+      --shadow-md:     0 4px 12px rgba(15,17,23,.06), 0 2px 4px rgba(15,17,23,.04);
+      --shadow-lg:     0 12px 28px rgba(15,17,23,.10), 0 4px 10px rgba(15,17,23,.05);
+    }
+    html[data-theme="dark"] {
+      --shadow-sm:     0 1px 2px rgba(0,0,0,.30);
+      --shadow-md:     0 4px 14px rgba(0,0,0,.35);
+      --shadow-lg:     0 14px 32px rgba(0,0,0,.45);
+    }
+    body.density-compact  { --card-pad:16px 18px; --grid-gap:12px; --card-min:260px; --section-gap:16px }
+    body.density-spacious { --card-pad:28px 30px; --grid-gap:20px; --card-min:340px; --section-gap:26px }
+
+    /* ════════════════════════════════════════════════════════
+       SPLIT CHOOSER — full-frame immersive entry point
+       ════════════════════════════════════════════════════════ */
+    #split-chooser {
+      display:flex; position:relative; overflow:hidden;
+      border:1px solid var(--border); border-radius:20px;
+      box-shadow:var(--shadow-lg);
+      min-height:clamp(300px,62vh,500px);
+      max-height:600px;
+      margin-bottom:var(--section-gap);
+      transition:max-height .46s cubic-bezier(.4,0,.2,1),
+                 opacity .34s ease,
+                 margin-bottom .46s ease;
+    }
+    #split-chooser.collapsing {
+      max-height:0 !important;
+      opacity:0;
+      margin-bottom:0;
+      pointer-events:none;
+    }
+    .sc-panel {
+      --scp:var(--accent);
+      --scp-s:var(--accent-soft);
+      --scp-l:var(--accent-line);
+      position:relative; overflow:hidden;
+      display:flex; flex-direction:column; justify-content:flex-end;
+      padding:clamp(22px,3vw,38px) clamp(20px,3vw,36px);
+      cursor:pointer; flex:1;
+      transition:flex .42s cubic-bezier(.4,0,.2,1),
+                 opacity .34s ease;
+    }
+    .sc-panel.sc-course {
+      background:
+        radial-gradient(150% 200% at 5% 5%, rgba(242,100,25,.18), transparent 55%),
+        linear-gradient(155deg,rgba(255,246,242,.8) 0%,var(--card-bg) 62%);
+      border-right:1px solid var(--border);
+    }
+    .sc-panel.sc-exam {
+      --scp:#6366f1;
+      --scp-s:rgba(99,102,241,.10);
+      --scp-l:rgba(99,102,241,.32);
+      background:
+        radial-gradient(150% 200% at 95% 5%, rgba(99,102,241,.16), transparent 55%),
+        linear-gradient(205deg,rgba(241,241,255,.8) 0%,var(--card-bg) 62%);
+    }
+    html[data-theme="dark"] .sc-panel.sc-course {
+      background:radial-gradient(150% 200% at 5% 5%,rgba(242,100,25,.22),transparent 55%), var(--card-bg);
+    }
+    html[data-theme="dark"] .sc-panel.sc-exam {
+      --scp:#818cf8;
+      background:radial-gradient(150% 200% at 95% 5%,rgba(99,102,241,.22),transparent 55%), var(--card-bg);
+    }
+    /* Dot mesh */
+    .sc-panel::before {
+      content:''; position:absolute; inset:0; pointer-events:none;
+      background-image:radial-gradient(circle, var(--scp-l) 1px, transparent 1px);
+      background-size:20px 20px; opacity:.5;
+      mask-image:linear-gradient(225deg, black 0%, transparent 62%);
+      -webkit-mask-image:linear-gradient(225deg, black 0%, transparent 62%);
+    }
+    /* Big icon top-left */
+    .sc-bigicon {
+      position:absolute; top:26px; left:28px;
+      width:58px; height:58px; border-radius:16px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      background:color-mix(in srgb,var(--scp) 12%,transparent);
+      border:1.5px solid color-mix(in srgb,var(--scp) 28%,transparent);
+      color:var(--scp); font-size:24px;
+      transition:transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s;
+      box-shadow:0 2px 10px -4px color-mix(in srgb,var(--scp) 30%,transparent);
+    }
+    .sc-panel:hover .sc-bigicon {
+      transform:scale(1.08);
+      box-shadow:0 6px 18px -4px color-mix(in srgb,var(--scp) 50%,transparent);
+    }
+    /* Stat pills top-right */
+    .sc-stats-col {
+      position:absolute; top:22px; right:22px;
+      display:flex; flex-direction:column; gap:6px; align-items:flex-end;
+    }
+    .sc-stat-pill {
+      display:inline-flex; align-items:center; gap:5px;
+      padding:5px 12px; border-radius:999px; font-size:11px; font-weight:700;
+      background:color-mix(in srgb,var(--scp) 10%,var(--card-bg));
+      border:1px solid color-mix(in srgb,var(--scp) 24%,transparent);
+      color:var(--scp);
+      transition:transform .2s;
+    }
+    .sc-panel:hover .sc-stat-pill { transform:translateY(-1px) }
+    /* Body */
+    .sc-body { position:relative; z-index:2 }
+    .sc-eyebrow {
+      font-size:9.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+      color:var(--scp); opacity:.65; margin-bottom:8px;
+    }
+    .sc-title {
+      font-size:clamp(26px,3.8vw,42px); font-weight:900; letter-spacing:-.03em; line-height:1.05;
+      color:var(--text); margin-bottom:10px;
+    }
+    .sc-title em { color:var(--scp); font-style:normal }
+    .sc-sub {
+      font-size:13px; color:var(--text-muted); line-height:1.7;
+      margin-bottom:22px; max-width:360px;
+    }
+    .sc-progress-row {
+      display:flex; align-items:center; gap:10px; margin-bottom:26px;
+    }
+    .sc-pbar {
+      flex:1; height:6px; border-radius:999px;
+      background:color-mix(in srgb,var(--scp) 14%,var(--border));
+      overflow:hidden;
+    }
+    .sc-pfill {
+      height:100%; border-radius:999px; background:var(--scp);
+      transition:width .9s cubic-bezier(.4,0,.2,1) .3s;
+    }
+    .sc-pct {
+      font-size:13px; font-weight:900; color:var(--scp);
+      white-space:nowrap; min-width:48px; text-align:right;
+    }
+    .sc-cta {
+      display:inline-flex; align-items:center; gap:10px;
+      padding:13px 26px; border-radius:14px; border:none;
+      font-size:14px; font-weight:800; cursor:pointer; color:#fff;
+      background:var(--scp);
+      box-shadow:0 4px 18px -4px color-mix(in srgb,var(--scp) 55%,transparent);
+      transition:transform .22s cubic-bezier(.4,0,.2,1), box-shadow .22s;
+    }
+    .sc-cta:hover {
+      transform:translateY(-2px);
+      box-shadow:0 8px 28px -4px color-mix(in srgb,var(--scp) 65%,transparent);
+    }
+    .sc-cta .sc-arrow { display:inline-flex; transition:transform .2s ease }
+    .sc-cta:hover .sc-arrow { transform:translateX(4px) }
+    /* Divider badge */
+    .sc-divider {
+      position:absolute; top:50%; left:50%;
+      transform:translate(-50%,-50%); z-index:10;
+      width:44px; height:44px; border-radius:50%;
+      background:var(--card-bg); border:2px solid var(--border);
+      box-shadow:var(--shadow-md);
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:800; color:var(--text-muted);
+      pointer-events:none;
+      transition:opacity .22s ease, transform .3s ease;
+    }
+    /* Cover sweep overlay (JS-created, handles the click wipe) */
+    .sc-cover {
+      position:absolute; inset:0; pointer-events:none; z-index:20;
+      clip-path:inset(0 100% 0 0);
+      transition:clip-path .38s cubic-bezier(.76,0,.24,1);
+    }
+    .sc-cover.from-right { clip-path:inset(0 0 0 100%) }
+    .sc-cover.sweep      { clip-path:inset(0 0% 0 0) !important }
+    /* Panel re-entry animation (back to chooser) */
+    @keyframes scPanelEnter {
+      from { opacity:0; transform:translateY(14px) }
+      to   { opacity:1; transform:none }
+    }
+    #split-chooser.entering .sc-panel {
+      animation:scPanelEnter .45s cubic-bezier(.16,1,.3,1) both;
+    }
+    #split-chooser.entering .sc-panel.sc-exam { animation-delay:.08s }
+    /* Choosing: other panel collapses */
+    #split-chooser.choosing-c .sc-exam,
+    #split-chooser.choosing-e .sc-course {
+      flex:0 0 0; opacity:0; pointer-events:none;
+    }
+    #split-chooser.choosing-c .sc-exam  { border-left:none }
+    #split-chooser.choosing-c .sc-divider,
+    #split-chooser.choosing-e .sc-divider {
+      opacity:0; transform:translate(-50%,-50%) scale(.5);
+    }
+    /* ── Mode bar ─────────────────────────────────────────── */
+    #mode-bar {
+      display:none; align-items:center; gap:12px;
+      padding:10px 16px; border-radius:12px;
+      background:var(--card-bg); border:1px solid var(--border);
+      box-shadow:var(--shadow-sm); margin-bottom:var(--section-gap);
+      animation:fadeUp .32s ease both;
+    }
+    #mode-bar.visible { display:flex }
+    #back-btn {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 12px; border-radius:8px;
+      border:1px solid var(--border); background:transparent;
+      font-size:12px; font-weight:700; cursor:pointer; color:var(--text-muted);
+      transition:background .15s, color .15s, border-color .15s;
+      white-space:nowrap;
+    }
+    #back-btn:hover { background:var(--bg-input); color:var(--text) }
+    .mbar-label {
+      display:flex; align-items:center; gap:8px;
+      font-size:14px; font-weight:800; color:var(--text);
+    }
+    .mbar-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0 }
+    #mode-bar.mode-c .mbar-dot { background:var(--accent) }
+    #mode-bar.mode-e .mbar-dot { background:#6366f1 }
+    html[data-theme="dark"] #mode-bar.mode-e .mbar-dot { background:#818cf8 }
+    .mbar-cnt {
+      font-size:11px; font-weight:700; color:var(--text-muted);
+      background:var(--bg-input); padding:2px 9px; border-radius:999px;
+      border:1px solid var(--border);
+    }
+
+    /* ════════════════════════════════════════════════════════
+       PATH CHOOSER — two big "mode" cards (Learn vs Exam)
+       Both always visible so users see there are TWO things.
+       ════════════════════════════════════════════════════════ */
+    .path-hub {
+      display:grid; grid-template-columns:1fr 1fr; gap:14px;
+      margin-bottom:var(--section-gap);
+    }
+    @media (max-width:640px) {
+      #split-chooser { flex-direction:column; min-height:auto }
+      .sc-panel.sc-course { border-right:none; border-bottom:1px solid var(--border) }
+      .sc-divider { top:auto; left:50%; transform:translate(-50%,0); position:relative;
+                    margin:-22px auto; display:flex }
+      .sc-stats-col { position:static; flex-direction:row; flex-wrap:wrap; margin-bottom:12px }
+      .sc-bigicon { position:static; margin-bottom:14px }
+      #split-chooser.choosing-c .sc-exam,
+      #split-chooser.choosing-e .sc-course { flex:0 0 0; max-height:0 }
+    }
+
+    /* blocks.so aesthetic: flat block, 1px border, calm shadow, restrained accent.
+       No heavy gradients/glows — active state = soft tint + thin left rail. */
+    .path-card {
+      --pc: var(--accent);                       /* per-card hue */
+      position:relative; overflow:hidden; cursor:pointer;
+      border:1px solid var(--border); border-radius:14px;
+      padding:18px 20px; background:var(--card-bg);
+      box-shadow:var(--shadow-sm);
+      display:flex; gap:15px; align-items:center;
+      transition:transform .2s cubic-bezier(.4,0,.2,1),
+                 box-shadow .2s, border-color .2s, background .2s;
+    }
+    .path-card.exam { --pc:#6366f1 }             /* exam mode = indigo, visually distinct */
+    html[data-theme="dark"] .path-card.exam { --pc:#818cf8 }
+    .path-card:hover {
+      transform:translateY(-2px); box-shadow:var(--shadow-md);
+      border-color:color-mix(in srgb, var(--pc) 35%, transparent);
+    }
+    .path-card:focus-visible { outline:2px solid var(--pc); outline-offset:2px }
+    .path-card.active {
+      border-color:color-mix(in srgb, var(--pc) 45%, transparent);
+      background:color-mix(in srgb, var(--pc) 5%, var(--card-bg));
+    }
+    .path-card.active::before {                  /* thin left accent rail = minimal active marker */
+      content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--pc);
+    }
+    .pc-mark {
+      width:50px; height:50px; border-radius:12px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:25px; line-height:1;
+      background:color-mix(in srgb, var(--pc) 12%, transparent);
+      border:1px solid color-mix(in srgb, var(--pc) 22%, transparent);
+      color:var(--pc);
+      transition:transform .2s cubic-bezier(.4,0,.2,1);
+    }
+    .path-card:hover .pc-mark { transform:scale(1.04) }
+    .pc-body { flex:1; min-width:0 }
+    .pc-title {
+      font-size:16px; font-weight:800; letter-spacing:-.01em; color:var(--text);
+      display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    }
+    .pc-viewing {
+      display:none; font-size:9px; font-weight:800; letter-spacing:.5px; text-transform:uppercase;
+      padding:2px 8px; border-radius:999px;
+      background:color-mix(in srgb, var(--pc) 15%, transparent); color:var(--pc);
+    }
+    .path-card.active .pc-viewing { display:inline-flex }
+    .pc-count { font-size:12.5px; color:var(--text-muted); margin-top:3px }
+    .pc-count b { color:var(--text); font-weight:800; font-size:14px }
+    .pc-stats { display:flex; flex-wrap:wrap; gap:6px 13px; margin-top:9px; font-size:11px; color:var(--text-muted) }
+    .pc-stats .s { display:inline-flex; align-items:center; gap:5px }
+    .pc-stats .dot { width:6px; height:6px; border-radius:50%; flex-shrink:0 }
+    .pc-go {
+      margin-left:auto; align-self:center; flex-shrink:0;
+      width:34px; height:34px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      background:color-mix(in srgb, var(--pc) 12%, transparent); color:var(--pc);
+      font-size:16px; font-weight:800;
+      transition:transform .2s, background .2s, color .2s;
+    }
+    .path-card:hover .pc-go { transform:translateX(3px) }
+    .path-card.active .pc-go { background:var(--pc); color:#fff }
+
+    /* Header above the active grid — reinforces "what am I looking at" */
+    .pane-head { display:flex; align-items:baseline; gap:10px; margin-bottom:14px; flex-wrap:wrap }
+    .pane-head h2 { font-size:15px; font-weight:800; margin:0; display:flex; align-items:center; gap:8px; color:var(--text) }
+    .pane-head .cnt {
+      font-size:11px; font-weight:700; color:var(--text-muted);
+      background:var(--border); padding:2px 9px; border-radius:999px;
+    }
+
+    .lp-pane { display:none } .lp-pane.active { display:block; animation:fadeUp .35s ease both }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(6px) }
+      to   { opacity:1; transform:translateY(0) }
+    }
+
+    .course-grid {
+      display:grid; gap:var(--grid-gap);
+      grid-template-columns:repeat(auto-fill, minmax(var(--card-min), 1fr));
+    }
+
+    /* ════════════════════════════════════════════════════════
+       RING + PHASE-DOTS CARD  (V2 Ring Icon merged w/ Skill Tree)
+       Whole card = button · progress ring around icon · per-phase
+       dots below title · stats as chips · no separate CTA.
+       ════════════════════════════════════════════════════════ */
+    .rn-card {
+      --cc: var(--bar-color, var(--accent));
+      --pct: 0;
+      position:relative; overflow:hidden;
+      background:var(--card-bg);
+      border:1px solid var(--border); border-radius:16px;
+      padding:22px 20px 20px;
+      text-decoration:none; color:inherit;
+      display:flex; flex-direction:column; gap:14px;
+      box-shadow:var(--shadow-sm);
+      transition:transform .22s cubic-bezier(.4,0,.2,1),
+                 box-shadow .22s, border-color .18s ease;
+      cursor:pointer;
+      animation:cardEnter .45s cubic-bezier(.16,1,.3,1) both;
+    }
+    .rn-card::before {
+      content:''; position:absolute; inset:0; pointer-events:none;
+      background:radial-gradient(circle at 100% 0%,
+        color-mix(in srgb, var(--cc) 10%, transparent), transparent 45%);
+      transition:opacity .22s; opacity:.7;
+    }
+    .rn-card:hover {
+      transform:translateY(-3px);
+      border-color:color-mix(in srgb, var(--cc) 45%, transparent);
+      box-shadow:var(--shadow-lg);
+    }
+    .rn-card:hover::before { opacity:1 }
+    .rn-card:hover .rn-ring { transform:scale(1.05); }
+
+    /* ══════════════════════════════════════════════════════
+       POPULAR treatment — make it feel undeniably HOT.
+       Layers: warm fire tint · bright orange 2px border · pulsing
+       ambient glow · diagonal corner ribbon (top-right) · flickering
+       flame emblem · rising sparks · shimmer sweep · warm halo behind
+       ring · warm % badge. All effects respect prefers-reduced-motion.
+       ══════════════════════════════════════════════════════ */
+    .rn-card.popular {
+      /* Warm fire-orange base tint layered onto cover_color */
+      background:
+        radial-gradient(140% 200% at 0% 0%,
+          rgba(251,146,60,.28), transparent 55%),
+        radial-gradient(120% 180% at 100% 100%,
+          rgba(239,68,68,.20), transparent 55%),
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--cc) 14%, var(--card-bg)) 0%,
+          var(--card-bg) 60%);
+      border:2px solid #f97316;
+      box-shadow:
+        0 6px 24px rgba(249,115,22,.38),
+        0 2px 6px rgba(0,0,0,.06),
+        inset 0 0 0 1px rgba(255,190,110,.18);
+      animation:
+        cardEnter .45s cubic-bezier(.16,1,.3,1) both,
+        rnPopularPulse 2.6s ease-in-out infinite 1s;
+    }
+    html[data-theme="dark"] .rn-card.popular {
+      border-color:#fb923c;
+      box-shadow:
+        0 6px 26px rgba(251,146,60,.48),
+        0 2px 6px rgba(0,0,0,.5),
+        inset 0 0 0 1px rgba(255,190,110,.14);
+    }
+    .rn-card.popular:hover {
+      border-color:#ef4444;
+      transform:translateY(-4px);
+      box-shadow:
+        0 18px 48px rgba(249,115,22,.60),
+        0 6px 14px rgba(0,0,0,.12),
+        inset 0 0 0 1px rgba(255,210,140,.28);
+    }
+    @keyframes rnPopularPulse {
+      0%, 100% { box-shadow:
+                   0 6px 24px rgba(249,115,22,.38),
+                   0 2px 6px rgba(0,0,0,.06),
+                   inset 0 0 0 1px rgba(255,190,110,.18); }
+      50%      { box-shadow:
+                   0 10px 36px rgba(249,115,22,.62),
+                   0 2px 8px rgba(0,0,0,.10),
+                   inset 0 0 0 1px rgba(255,210,140,.30); }
+    }
+
+    /* Shimmer sweep — bright + rhythmic */
+    .rn-card.popular::after {
+      content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+      background:linear-gradient(115deg,
+        transparent 25%,
+        rgba(255,220,160,.32) 45%,
+        rgba(255,220,160,.10) 55%,
+        transparent 70%);
+      transform:translateX(-100%);
+      animation:rnShimmer 4.2s ease-in-out .4s infinite;
+      z-index:2;
+    }
+    @keyframes rnShimmer {
+      0%, 10%   { transform:translateX(-100%); }
+      35%, 100% { transform:translateX(110%); }
+    }
+
+    /* Diagonal corner ribbon — top-right, classic "hot/featured" banner */
+    .rn-popular-ribbon {
+      position:absolute;
+      top:20px; right:-48px;
+      width:170px;
+      padding:6px 0 5px;
+      background:linear-gradient(90deg, #fbbf24 0%, #f97316 50%, #ef4444 100%);
+      color:#fff;
+      text-align:center;
+      font-size:10.5px; font-weight:900;
+      letter-spacing:.16em; text-transform:uppercase;
+      transform:rotate(45deg);
+      box-shadow:
+        0 3px 12px rgba(239,68,68,.55),
+        inset 0 0 0 1px rgba(255,255,255,.20);
+      z-index:6; pointer-events:none; white-space:nowrap;
+      display:inline-flex; align-items:center; justify-content:center; gap:5px;
+    }
+    .rn-popular-ribbon .icon-svg {
+      width:12px; height:12px;
+      filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));
+    }
+
+    /* Flickering flame emblem in the top-left corner */
+    .rn-popular-flame {
+      position:absolute;
+      top:12px; left:14px;
+      width:22px; height:22px;
+      color:#f97316;
+      filter:drop-shadow(0 2px 8px rgba(249,115,22,.75));
+      z-index:5; pointer-events:none;
+      display:flex; align-items:center; justify-content:center;
+      animation:rnFlameFlicker 1.6s ease-in-out infinite;
+    }
+    .rn-popular-flame .icon-svg { width:22px; height:22px; }
+    @keyframes rnFlameFlicker {
+      0%, 100% { transform:scale(1)     rotate(-3deg); opacity:1;   }
+      25%      { transform:scale(1.08)  rotate( 2deg); opacity:.92; }
+      50%      { transform:scale(.96)   rotate(-2deg); opacity:1;   }
+      75%      { transform:scale(1.05)  rotate( 3deg); opacity:.88; }
+    }
+    /* Hide the flame when a cross-team badge occupies the same corner */
+    .rn-card.popular .rn-team-badge ~ .rn-popular-flame { display:none; }
+
+    /* Rising sparks — three tiny embers floating up along the left edge */
+    .rn-popular-sparks {
+      position:absolute;
+      top:0; left:40px; bottom:0; width:28px;
+      pointer-events:none; z-index:4;
+    }
+    .rn-popular-sparks span {
+      position:absolute; bottom:14px;
+      width:4px; height:4px; border-radius:50%;
+      background:radial-gradient(circle, #fef3c7 0%, #fbbf24 45%, #f97316 100%);
+      box-shadow:0 0 8px rgba(251,191,36,.85);
+      opacity:0;
+      animation:rnSpark 2.6s ease-in infinite;
+    }
+    .rn-popular-sparks span:nth-child(1) { left:2px;  animation-delay:0s;   }
+    .rn-popular-sparks span:nth-child(2) { left:12px; animation-delay:.85s; }
+    .rn-popular-sparks span:nth-child(3) { left:22px; animation-delay:1.7s; }
+    @keyframes rnSpark {
+      0%   { transform:translateY(0)     scale(.5); opacity:0; }
+      15%  { opacity:1; }
+      70%  { opacity:.6; }
+      100% { transform:translateY(-110%) scale(1);  opacity:0; }
+    }
+
+    /* Warm halo behind the ring — makes the icon feel on fire */
+    .rn-card.popular .rn-ring-wrap { position:relative; }
+    .rn-card.popular .rn-ring-wrap::before {
+      content:'';
+      position:absolute; inset:-18px;
+      border-radius:50%;
+      background:radial-gradient(circle,
+        rgba(251,146,60,.45) 0%,
+        rgba(249,115,22,.20) 40%,
+        transparent 70%);
+      animation:rnHalo 3s ease-in-out infinite;
+      pointer-events:none;
+      z-index:0;
+    }
+    @keyframes rnHalo {
+      0%, 100% { transform:scale(1);    opacity:.78; }
+      50%      { transform:scale(1.16); opacity:1;   }
+    }
+    /* Keep the ring on top of its own halo */
+    .rn-card.popular .rn-ring { position:relative; z-index:1; }
+
+    /* Warm-tint the % badge on popular cards so it matches the ribbon */
+    .rn-card.popular .rn-pct:not(.done):not(.locked):not(.warn):not(.new) {
+      background:linear-gradient(135deg, #fbbf24, #f97316);
+      box-shadow:0 3px 12px rgba(249,115,22,.55);
+      color:#fff;
+    }
+
+    .rn-card.locked { opacity:.65; filter:saturate(.45); cursor:not-allowed; }
+
+    /* ══════════════════════════════════════════════════════
+       SM-FEATURED — cool emerald counterpart to Popular's warm orange.
+       For team-anchor tiles like Team Onboarding: pinned, distinctive,
+       but not competing with Popular's fire intensity.
+       ══════════════════════════════════════════════════════ */
+    .rn-card.sm-featured {
+      background:
+        radial-gradient(140% 200% at 100% 0%,
+          rgba(16,185,129,.22), transparent 55%),
+        radial-gradient(120% 180% at 0% 100%,
+          rgba(59,130,246,.16), transparent 55%),
+        linear-gradient(135deg,
+          color-mix(in srgb, #10b981 12%, var(--card-bg)) 0%,
+          var(--card-bg) 60%);
+      border:2px solid #10b981;
+      box-shadow:
+        0 6px 22px rgba(16,185,129,.32),
+        0 2px 6px rgba(0,0,0,.05),
+        inset 0 0 0 1px rgba(110,231,183,.18);
+      animation:
+        cardEnter .45s cubic-bezier(.16,1,.3,1) both,
+        rnSmPulse 3.4s ease-in-out infinite 1s;
+    }
+    html[data-theme="dark"] .rn-card.sm-featured {
+      border-color:#34d399;
+      box-shadow:
+        0 6px 26px rgba(52,211,153,.42),
+        0 2px 6px rgba(0,0,0,.5),
+        inset 0 0 0 1px rgba(110,231,183,.14);
+    }
+    .rn-card.sm-featured:hover {
+      border-color:#059669;
+      transform:translateY(-4px);
+      box-shadow:
+        0 16px 42px rgba(16,185,129,.50),
+        0 6px 14px rgba(0,0,0,.10),
+        inset 0 0 0 1px rgba(167,243,208,.28);
+    }
+    @keyframes rnSmPulse {
+      0%, 100% { box-shadow:
+                   0 6px 22px rgba(16,185,129,.32),
+                   0 2px 6px rgba(0,0,0,.05),
+                   inset 0 0 0 1px rgba(110,231,183,.18); }
+      50%      { box-shadow:
+                   0 10px 32px rgba(16,185,129,.52),
+                   0 2px 8px rgba(0,0,0,.08),
+                   inset 0 0 0 1px rgba(167,243,208,.28); }
+    }
+    /* Corner ribbon — top-LEFT diagonal (mirror of Popular's top-right) */
+    .rn-sm-ribbon {
+      position:absolute;
+      top:20px; left:-48px;
+      width:170px;
+      padding:6px 0 5px;
+      background:linear-gradient(90deg, #34d399 0%, #10b981 50%, #059669 100%);
+      color:#fff;
+      text-align:center;
+      font-size:10.5px; font-weight:900;
+      letter-spacing:.16em; text-transform:uppercase;
+      transform:rotate(-45deg);
+      box-shadow:
+        0 3px 12px rgba(16,185,129,.55),
+        inset 0 0 0 1px rgba(255,255,255,.20);
+      z-index:6; pointer-events:none; white-space:nowrap;
+      display:inline-flex; align-items:center; justify-content:center; gap:5px;
+    }
+    .rn-sm-ribbon .icon-svg {
+      width:12px; height:12px;
+      filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));
+    }
+    /* Emerald halo behind the ring — cool counterpart to popular's warm halo */
+    .rn-card.sm-featured .rn-ring-wrap { position:relative; }
+    .rn-card.sm-featured .rn-ring-wrap::before {
+      content:'';
+      position:absolute; inset:-16px;
+      border-radius:50%;
+      background:radial-gradient(circle,
+        rgba(16,185,129,.35) 0%,
+        rgba(59,130,246,.14) 45%,
+        transparent 72%);
+      animation:rnSmHalo 3.6s ease-in-out infinite;
+      pointer-events:none;
+      z-index:0;
+    }
+    @keyframes rnSmHalo {
+      0%, 100% { transform:scale(1);    opacity:.75; }
+      50%      { transform:scale(1.14); opacity:1;   }
+    }
+    .rn-card.sm-featured .rn-ring { position:relative; z-index:1; }
+    /* Emerald-tint the % badge on sm-featured cards so it matches the ribbon */
+    .rn-card.sm-featured .rn-pct:not(.done):not(.locked):not(.warn):not(.new) {
+      background:linear-gradient(135deg, #34d399, #059669);
+      box-shadow:0 3px 12px rgba(16,185,129,.55);
+      color:#fff;
+    }
+
+    /* Cross-team badge (super_viewer / shared course) */
+    .rn-team-badge {
+      position:absolute; top:14px; left:14px; z-index:3;
+      padding:2px 8px; border-radius:999px;
+      font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+      color:var(--tm-color, #6366F1);
+      background:color-mix(in srgb, var(--tm-color, #6366F1) 12%, transparent);
+      border:1px solid color-mix(in srgb, var(--tm-color, #6366F1) 32%, transparent);
+      display:inline-flex; align-items:center; gap:4px;
+    }
+
+    /* Ring wrap ═══════════════════════════════════════════ */
+    .rn-ring-wrap {
+      align-self:center; position:relative;
+      margin-top:6px;
+    }
+    .rn-ring {
+      width:96px; height:96px; border-radius:50%;
+      background:conic-gradient(var(--cc) calc(var(--pct) * 1%), var(--border) 0);
+      display:flex; align-items:center; justify-content:center;
+      transition:transform .22s;
+      position:relative;
+    }
+    .rn-ring::before {
+      content:''; position:absolute; inset:6px; border-radius:50%; background:var(--card-bg);
+    }
+    .rn-ring-inner {
+      position:relative; z-index:1;
+      width:68px; height:68px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(135deg,
+        color-mix(in srgb, var(--cc) 22%, transparent),
+        color-mix(in srgb, var(--cc) 8%, transparent));
+      border:1px solid color-mix(in srgb, var(--cc) 28%, transparent);
+      color:var(--cc); font-size:26px;
+    }
+    .rn-card.done .rn-ring {
+      background:conic-gradient(var(--success) 100%, var(--border) 0);
+    }
+    .rn-card.done .rn-ring-inner {
+      background:linear-gradient(135deg, var(--success), #15803d);
+      border-color:var(--success);
+      color:#fff;
+    }
+    .rn-card.locked .rn-ring-inner {
+      color:var(--warning);
+      background:rgba(245,158,11,.12);
+      border-color:rgba(245,158,11,.35);
+    }
+    /* Floating percentage/score badge on the ring — z-index above shimmer (2)
+       + halo (0) so ✓/percent stays readable on popular cards */
+    .rn-pct {
+      position:absolute; top:-4px; right:-6px; z-index:3;
+      min-width:38px; height:32px; padding:0 10px;
+      border-radius:999px;
+      background:var(--cc); color:#fff;
+      font-family:'JetBrains Mono', ui-monospace, monospace;
+      font-size:11.5px; font-weight:800; letter-spacing:-.02em;
+      display:flex; align-items:center; justify-content:center; gap:1px;
+      border:3px solid var(--card-bg);
+      box-shadow:0 3px 10px color-mix(in srgb, var(--cc) 35%, transparent);
+    }
+    .rn-pct .u { font-size:9px; opacity:.7; font-weight:700; }
+    .rn-pct.done { background:var(--success); box-shadow:0 3px 10px rgba(34,197,94,.4); }
+    .rn-pct.warn { background:var(--warning); box-shadow:0 3px 10px rgba(245,158,11,.4); }
+    .rn-pct.locked { background:var(--warning); font-size:14px; }
+    .rn-pct.new { background:var(--info); box-shadow:0 3px 10px rgba(59,130,246,.4); }
+
+    /* Title area ═══════════════════════════════════════════ */
+    .rn-title-wrap {
+      text-align:center; padding:0 6px;
+    }
+    .rn-title {
+      font-size:15px; font-weight:800; letter-spacing:-.005em; line-height:1.3;
+      margin:0 0 3px; color:var(--text);
+    }
+    .rn-sub {
+      font-size:12px; color:var(--text-muted); line-height:1.5; margin:0;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    }
+
+    /* Phase dots (skill-tree) ══════════════════════════════ */
+    .rn-phases {
+      padding:12px 14px;
+      background:var(--bg-input);
+      border:1px solid var(--border); border-radius:10px;
+    }
+    .rn-phases-head {
+      display:flex; justify-content:space-between; align-items:baseline;
+      font-size:10.5px; font-weight:800; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.07em;
+      margin-bottom:9px;
+    }
+    .rn-phases-head b {
+      color:var(--text); font-size:12px; letter-spacing:0; text-transform:none;
+      font-family:'JetBrains Mono', ui-monospace, monospace; font-weight:800;
+    }
+    .rn-dots {
+      display:flex; align-items:center; gap:0;
+    }
+    .rn-dot {
+      flex-shrink:0;
+      width:26px; height:26px; border-radius:50%;
+      background:var(--card-bg); border:2px solid var(--border);
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:800; color:var(--text-muted);
+      font-family:'JetBrains Mono', ui-monospace, monospace;
+      transition:transform .15s;
+      position:relative; overflow:hidden;
+    }
+    .rn-dot.done {
+      background:var(--success); border-color:var(--success); color:#fff;
+    }
+    .rn-dot.fail {
+      background:var(--danger); border-color:var(--danger); color:#fff;
+    }
+    .rn-dot.pass {
+      background:var(--success); border-color:var(--success); color:#fff;
+      font-size:9.5px;
+    }
+    .rn-dot.current {
+      background:var(--card-bg); border-color:var(--cc); color:var(--cc);
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--cc) 22%, transparent);
+      animation:rnPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes rnPulse {
+      50% { box-shadow:0 0 0 6px color-mix(in srgb, var(--cc) 12%, transparent); }
+    }
+    .rn-dot.locked {
+      border-style:dashed; color:transparent;
+      background-image:linear-gradient(135deg, var(--border) 25%, transparent 25%,
+        transparent 50%, var(--border) 50%, var(--border) 75%, transparent 75%);
+      background-size:6px 6px;
+    }
+    .rn-dot.more {
+      border-style:solid; background:transparent; color:var(--text-muted);
+      font-size:9.5px;
+    }
+    .rn-line {
+      flex:1; height:3px; min-width:4px;
+      background:var(--border);
+    }
+    .rn-line.done { background:var(--success); }
+    .rn-line.fail { background:var(--danger); }
+    .rn-line.pass { background:var(--success); }
+
+    /* Optional note (prereq / exam window) ═════════════════ */
+    .rn-note {
+      padding:8px 12px; border-radius:8px;
+      font-size:11.5px; font-weight:600; line-height:1.4;
+      display:flex; align-items:center; gap:6px;
+    }
+    .rn-note.locked   { background:rgba(245,158,11,.10); color:var(--warning); border:1px solid rgba(245,158,11,.28); }
+    .rn-note.upcoming { background:rgba(59,130,246,.10); color:var(--info);    border:1px solid rgba(59,130,246,.28); }
+    .rn-note.open     { background:rgba(34,197,94,.10);  color:var(--success); border:1px solid rgba(34,197,94,.28); }
+    .rn-note.closed   { background:rgba(239,68,68,.10);  color:var(--danger);  border:1px solid rgba(239,68,68,.28); }
+
+    /* Stats chips (integrated) ════════════════════════════ */
+    .rn-stats {
+      display:flex; gap:5px; flex-wrap:wrap; justify-content:center;
+      margin-top:auto;
+    }
+    .rn-chip {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:4px 10px; border-radius:999px;
+      font-size:10.5px; font-weight:800; letter-spacing:.03em;
+      background:var(--bg-input); border:1px solid var(--border);
+      color:var(--text-muted);
+    }
+    .rn-chip.progress { background:color-mix(in srgb, var(--cc) 14%, transparent);
+                        border-color:color-mix(in srgb, var(--cc) 35%, transparent); color:var(--cc); }
+    .rn-chip.done     { background:rgba(34,197,94,.14); border-color:rgba(34,197,94,.35); color:var(--success); }
+    .rn-chip.warn     { background:rgba(245,158,11,.14); border-color:rgba(245,158,11,.35); color:var(--warning); }
+    .rn-chip.new      { background:rgba(59,130,246,.14); border-color:rgba(59,130,246,.35); color:var(--info); }
+    .rn-chip.popular  { background:rgba(251,146,60,.15); border-color:rgba(251,146,60,.4);  color:#ea580c; }
+    html[data-theme="dark"] .rn-chip.popular { color:#fdba74; }
+    html[data-theme="dark"] .rn-chip.done { color:#4ade80; }
+    html[data-theme="dark"] .rn-chip.new  { color:#93c5fd; }
+
+    /* Legacy no-op aliases (unused in new design, kept to avoid
+       CSS errors if a stray selector survives elsewhere) */
+    .bl-card, .bl-mark, .bl-info, .bl-title, .bl-sub,
+    .bl-status, .bl-progress, .bl-bar, .bl-badges, .bl-badge,
+    .bl-meta, .bl-window, .bl-action, .bl-best, .bl-chev,
+    .bl-team-badge, .bl-prereq { /* superseded */ }
+
+    /* Stagger the first 12 rn-cards on load */
+    @keyframes cardEnter {
+      from { opacity:0; transform:translateY(10px) }
+      to   { opacity:1; transform:translateY(0) }
+    }
+    .rn-card:nth-child(1)  { animation-delay:.02s }
+    .rn-card:nth-child(2)  { animation-delay:.06s }
+    .rn-card:nth-child(3)  { animation-delay:.10s }
+    .rn-card:nth-child(4)  { animation-delay:.14s }
+    .rn-card:nth-child(5)  { animation-delay:.18s }
+    .rn-card:nth-child(6)  { animation-delay:.22s }
+    .rn-card:nth-child(7)  { animation-delay:.26s }
+    .rn-card:nth-child(8)  { animation-delay:.30s }
+    .rn-card:nth-child(n+9){ animation-delay:.34s }
+
+    /* Retry button used in the empty/error state (keep .bl-go alive) */
+    .bl-go {
+      padding:8px 14px; border-radius:9px; font-weight:600; font-size:12px;
+      background:var(--accent); color:#fff; border:0; cursor:pointer; text-decoration:none;
+      display:inline-flex; align-items:center; gap:5px;
+      box-shadow:0 2px 8px var(--accent-glow);
+      transition:filter .15s, transform .15s, box-shadow .15s;
+    }
+    .bl-go:hover {
+      filter:brightness(1.08); transform:translateX(2px);
+      box-shadow:0 4px 14px var(--accent-glow);
+    }
+
+    .empty {
+      text-align:center; padding:60px 20px; color:var(--text-muted);
+      border:1.5px dashed var(--border); border-radius:14px;
+      background:var(--card-bg);
+    }
+    .empty .icon { font-size:38px; margin-bottom:10px; opacity:.45 }
+
+
+    /* Honor user reduced-motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      .rn-card, .lp-pane, .rn-ring { animation:none !important; transition:none !important }
+      .rn-card.popular,
+      .rn-card.popular::after,
+      .rn-card.popular .rn-ring-wrap::before,
+      .rn-popular-flame,
+      .rn-popular-sparks span { animation:none !important; }
+      .rn-popular-sparks { display:none; }
+      .rn-dot.current { animation:none }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="graduation-cap"></i> Learning</div>
+        <div class="page-sub">คอร์สเรียน + ข้อสอบประจำปีของทีม SM</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- ══ Full-Split Immersive Chooser ══ -->
+      <div id="split-chooser">
+
+        <!-- COURSE panel (left / orange) -->
+        <div class="sc-panel sc-course" onclick="enterMode('learns')">
+          <div class="sc-bigicon"><i data-icon="book-open"></i></div>
+          <div class="sc-stats-col">
+            <div class="sc-stat-pill" id="sc-done-courses">
+              <i data-icon="check"></i>
+              <span id="sc-done-courses-txt">· จบแล้ว</span>
+            </div>
+            <div class="sc-stat-pill" id="sc-todo-courses">
+              <i data-icon="clock"></i>
+              <span id="sc-todo-courses-txt">· รอเรียน</span>
+            </div>
+          </div>
+          <div class="sc-body">
+            <div class="sc-eyebrow">Mode 01</div>
+            <div class="sc-title"><em>คอร์ส</em>เรียน</div>
+            <div class="sc-sub">เรียนรู้ทักษะใหม่ผ่านคอร์สที่ทีม SM คัดมาให้<br>เรียนตามเวลาของตัวเองได้เลย ไม่มีเดดไลน์</div>
+            <div class="sc-progress-row">
+              <div class="sc-pbar"><div class="sc-pfill" id="sc-courses-fill" style="width:0%"></div></div>
+              <div class="sc-pct" id="sc-courses-pct">—</div>
+            </div>
+            <button class="sc-cta" tabindex="-1">
+              <i data-icon="book-open"></i>
+              เข้าสู่คอร์สเรียน
+              <i data-icon="arrow-right" class="sc-arrow"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Divider badge -->
+        <div class="sc-divider">หรือ</div>
+
+        <!-- EXAM panel (right / indigo) -->
+        <div class="sc-panel sc-exam" onclick="enterMode('exams')">
+          <div class="sc-bigicon"><i data-icon="clipboard-check"></i></div>
+          <div class="sc-stats-col">
+            <div class="sc-stat-pill" id="sc-done-exams">
+              <i data-icon="check"></i>
+              <span id="sc-done-exams-txt">· ผ่านแล้ว</span>
+            </div>
+            <div class="sc-stat-pill" id="sc-urgent-exams" style="display:none">
+              <i data-icon="alert-triangle"></i>
+              <span>ใกล้หมดเวลา</span>
+            </div>
+          </div>
+          <div class="sc-body">
+            <div class="sc-eyebrow">Mode 02</div>
+            <div class="sc-title">ทำ<em>ข้อสอบ</em></div>
+            <div class="sc-sub">ทดสอบความรู้และรับ Certificate ประจำปี<br>มีเวลาจำกัด — เตรียมตัวให้พร้อมก่อนเข้า</div>
+            <div class="sc-progress-row">
+              <div class="sc-pbar"><div class="sc-pfill" id="sc-exams-fill" style="width:0%"></div></div>
+              <div class="sc-pct" id="sc-exams-pct">—</div>
+            </div>
+            <button class="sc-cta" tabindex="-1">
+              <i data-icon="clipboard-check"></i>
+              เข้าสู่การสอบ
+              <i data-icon="arrow-right" class="sc-arrow"></i>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /#split-chooser -->
+
+      <!-- ══ Mode bar — shown after choosing ══ -->
+      <div id="mode-bar">
+        <button id="back-btn" onclick="backToChooser()">
+          <i data-icon="arrow-left"></i> เปลี่ยน Mode
+        </button>
+        <div class="mbar-label">
+          <div class="mbar-dot"></div>
+          <span id="mbar-text">—</span>
+        </div>
+        <span class="mbar-cnt" id="mbar-cnt"></span>
+      </div>
+
+      <!-- ── Learns ── -->
+      <div class="lp-pane" data-pane="learns">
+        <div class="pane-head">
+          <h2>📚 คอร์สเรียนทั้งหมด</h2>
+          <span class="cnt" id="head-learns-cnt"></span>
+        </div>
+        <div id="grid" class="course-grid">
+          <div data-skel="list" data-rows="3"></div>
+        </div>
+      </div>
+
+      <!-- ── Exams ── -->
+      <div class="lp-pane" data-pane="exams">
+        <div class="pane-head">
+          <h2>📝 ข้อสอบทั้งหมด</h2>
+          <span class="cnt" id="head-exams-cnt"></span>
+        </div>
+        <div id="ex-grid" class="course-grid">
+          <div data-skel="list" data-rows="3"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/skeletons.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/analytics.js"></script>
+<script src="assets/js/analytics-features.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script>
+  if (!Auth.requireAuth()) { /* requireAuth redirects internally; stop init */ }
+  Layout.render('learn');
+  trackLearningView('main');
+
+  // ── Full-Split Immersive chooser → mode transition ──
+  const panes = document.querySelectorAll('.lp-pane');
+  const chooser = document.getElementById('split-chooser');
+  const modeBar = document.getElementById('mode-bar');
+  let _currentMode = 'choosing'; // 'choosing' | 'learns' | 'exams'
+
+  function enterMode(pane, immediate = false) {
+    if (_currentMode === pane) return;
+    _currentMode = pane;
+
+    const isCourse = pane === 'learns';
+
+    if (immediate) {
+      // Direct URL hash navigation — skip animation
+      chooser.style.display = 'none';
+      _showModeBar(pane);
+      panes.forEach(p => p.classList.toggle('active', p.dataset.pane === pane));
+      if (location.hash !== '#' + pane) history.replaceState(null, '', '#' + pane);
+      return;
+    }
+
+    // Step 1: inject cover overlay on the chosen panel, then sweep it across
+    const panels = chooser.querySelectorAll('.sc-panel');
+    const chosen = [...panels].find(p => p.classList.contains(isCourse ? 'sc-course' : 'sc-exam'));
+    const cover = document.createElement('div');
+    cover.className = 'sc-cover' + (isCourse ? '' : ' from-right');
+    cover.style.background = isCourse
+      ? 'linear-gradient(135deg,rgba(242,100,25,.22),rgba(242,100,25,.12))'
+      : 'linear-gradient(135deg,rgba(99,102,241,.22),rgba(99,102,241,.12))';
+    chosen.appendChild(cover);
+    // force reflow, then trigger sweep
+    cover.getBoundingClientRect();
+    cover.classList.add('sweep');
+
+    // Step 2: at 260ms, start collapsing the whole chooser
+    chooser.classList.add(isCourse ? 'choosing-c' : 'choosing-e');
+    setTimeout(() => {
+      chooser.classList.add('collapsing');
+    }, 260);
+
+    // Step 3: at 600ms, hide chooser, show mode-bar + pane
+    setTimeout(() => {
+      chooser.style.display = 'none';
+      _showModeBar(pane);
+      panes.forEach(p => p.classList.toggle('active', p.dataset.pane === pane));
+      if (window.Icons?.replaceAll) window.Icons.replaceAll(document.body);
+      if (location.hash !== '#' + pane) history.replaceState(null, '', '#' + pane);
+    }, 600);
+  }
+
+  function _showModeBar(pane) {
+    modeBar.classList.remove('mode-c', 'mode-e', 'visible');
+    modeBar.classList.add(pane === 'learns' ? 'mode-c' : 'mode-e', 'visible');
+    const txt = document.getElementById('mbar-text');
+    const cnt = document.getElementById('mbar-cnt');
+    if (txt) txt.textContent = pane === 'learns' ? 'คอร์สเรียน' : 'ทำข้อสอบ';
+    const cntEl = document.getElementById(pane === 'learns' ? 'head-learns-cnt' : 'head-exams-cnt');
+    if (cnt && cntEl) cnt.textContent = cntEl.textContent;
+  }
+
+  function backToChooser() {
+    _currentMode = 'choosing';
+
+    // Step 1: fade out pane + mode-bar immediately
+    panes.forEach(p => p.classList.remove('active'));
+    modeBar.classList.remove('visible', 'mode-c', 'mode-e');
+    history.replaceState(null, '', location.pathname);
+
+    // Step 2: after mode-bar fades, expand chooser back in
+    setTimeout(() => {
+      // Clean up enter-mode residue
+      chooser.querySelectorAll('.sc-cover').forEach(el => el.remove());
+      chooser.classList.remove('choosing-c', 'choosing-e', 'entering');
+
+      // Bring chooser back to view, still collapsed (collapsing class intact)
+      chooser.style.display = '';
+      chooser.scrollIntoView({ block: 'start' });
+
+      // Force reflow so browser registers the max-height:0 state first,
+      // then removing 'collapsing' triggers the expand transition
+      chooser.getBoundingClientRect();
+      chooser.classList.remove('collapsing');
+
+      // Step 3: after expand finishes, trigger panel slide-up animation
+      setTimeout(() => {
+        chooser.classList.add('entering');
+        setTimeout(() => chooser.classList.remove('entering'), 550);
+      }, 420);
+    }, 140);
+  }
+
+  // Honor direct hash links (from sidebar, back button, etc.)
+  const _initHash = location.hash.slice(1);
+  if (['learns','exams'].includes(_initHash)) {
+    enterMode(_initHash, true);
+  }
+  window.addEventListener('hashchange', () => {
+    const h = location.hash.slice(1);
+    if (['learns','exams'].includes(h) && _currentMode !== h) enterMode(h, true);
+    if (!h && _currentMode !== 'choosing') backToChooser();
+  });
+
+  // Expose for analytics and back-btn keyboard
+  window.backToChooser = backToChooser;
+
+  // ── Apply admin-configurable page config (hero/accent/density/badge) ──
+  function applyPageConfig(cfg) {
+    if (!cfg) return;
+    const root = document.documentElement;
+
+    if (cfg.accent_color && /^#[0-9a-fA-F]{6}$/.test(cfg.accent_color)) {
+      const c = cfg.accent_color;
+      root.style.setProperty('--accent', c);
+      root.style.setProperty('--accent-soft', hexAlpha(c, .10));
+      root.style.setProperty('--accent-line', hexAlpha(c, .35));
+    }
+
+    document.body.classList.remove('density-compact', 'density-spacious');
+    if (cfg.layout_density === 'compact')  document.body.classList.add('density-compact');
+    if (cfg.layout_density === 'spacious') document.body.classList.add('density-spacious');
+
+    /* hero-subtitle removed (split-chooser has static copy) */
+  }
+
+  function hexAlpha(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  // Re-render skeletons (replaces error/retry state) before refetching
+  function showLoading() {
+    const grid = document.getElementById('grid');
+    const exg  = document.getElementById('ex-grid');
+    grid.innerHTML = '<div data-skel="list" data-rows="3"></div>';
+    exg.innerHTML  = '<div data-skel="list" data-rows="3"></div>';
+    if (window.Skeletons?.mount) Skeletons.mount(grid);
+    if (window.Skeletons?.mount) Skeletons.mount(exg);
+  }
+
+  // Replace empty/skel content with a clickable retry block
+  function showRetry(elId, label) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = `
+      <div class="empty" style="grid-column:1/-1; cursor:pointer" onclick="loadAll()">
+        <div class="icon">⚠️</div>
+        <div style="margin-bottom:10px">${label}</div>
+        <button class="bl-go" type="button" onclick="event.stopPropagation(); loadAll()">↻ ลองใหม่</button>
+      </div>`;
+  }
+
+  let _loading = false;
+  async function loadAll() {
+    if (_loading) return;            // guard concurrent loads
+    _loading = true;
+    showLoading();
+    try {
+      const user = Auth.getUser();
+
+      // Page config (non-blocking — render with defaults if it fails)
+      const cfgRes = await API.courses.getPageConfig().catch(() => null);
+      const cfg = cfgRes?.ok ? (cfgRes.data?.data || {}) : {};
+      applyPageConfig(cfg);
+
+      /* hero-title removed — greeting now lives in split-chooser eyebrow */
+
+      // Gate: must finish Team Onboarding — SM regular members only.
+      //   • super_admin / sm_admin / dev_sm bypass (they run the system,
+      //     they're not new hires being onboarded).
+      //   • Non-SM teams have no onboarding programme.
+      //   • super_admin using "view as TEAM" previews as that team → gate off
+      //     unless view-as = sm.
+      //   • ?skip_ob=1 in the URL is an emergency escape hatch.
+      const skipOb    = /[?&]skip_ob=1/.test(location.search);
+      const role      = String(user?.role || '').toLowerCase();
+      const isAdmin   = role === 'super_admin' || role === 'sm_admin' || role === 'dev_sm';
+      const viewAs    = (typeof Auth !== 'undefined' && Auth._getViewAsTeam) ? Auth._getViewAsTeam() : null;
+      const scopeTeam = role === 'super_admin' ? (viewAs?.slug || null) : (user?.team || null);
+      const gateOn    = !skipOb && !isAdmin && scopeTeam === 'sm';
+
+      // "SM scope" for admin — the team whose UI is being viewed:
+      //   • If any admin sets view-as → honor that pick (preview mode).
+      //   • Otherwise use user.team (super_admin without view-as has no team).
+      // Never infer team from the role name — 'sm_admin' is a historical
+      // label reused as any team's per-team admin role (e.g. user 'testim'
+      // has role=sm_admin, team=im).
+      const adminEffectiveTeam = viewAs?.slug
+        || (role === 'super_admin' ? null : (user?.team || null));
+      const isSmScopedAdmin = isAdmin && adminEffectiveTeam === 'sm';
+
+      // Small breadcrumb so it's obvious in DevTools whether the gate fires.
+      console.log('[learn] onboarding gate', {
+        role, team: user?.team, scopeTeam, isAdmin, gateOn,
+        viewAs: viewAs?.slug, adminEffectiveTeam, isSmScopedAdmin,
+      });
+
+      // Fetch onboarding progress for regular SM (gating) and SM-scoped
+      // admins (reference-tile). Admins won't be redirected — the gate
+      // only fires when gateOn is true. Non-SM users skip both.
+      const wantOb  = gateOn || isSmScopedAdmin;
+      const obRes   = wantOb ? await API.onboarding.myProgress().catch(() => null) : null;
+      if (gateOn && obRes?.ok && !obRes.data?.data?.finished_at) {
+        window.location.replace('onboarding.html');
+        return;
+      }
+      // Show the "Team Onboarding" tile for:
+      //   • Regular SM members — with their real progress
+      //   • SM-scoped admins (sm_admin/dev_sm, or super_admin viewing SM)
+      //     — as a Reference tile linking to review view
+      const isSmTeam = !isAdmin && scopeTeam === 'sm';
+
+      const [coursesRes, examsRes] = await Promise.all([
+        API.courses.listCourses().catch(() => null),
+        API.exams.list().catch(() => null),
+      ]);
+
+      if (!coursesRes?.ok) { showRetry('grid', 'โหลด courses ไม่สำเร็จ'); }
+      else {
+      const courses = coursesRes.data?.data || [];
+      const gridItems = courses;
+      if ((isSmTeam || isSmScopedAdmin) && obRes?.ok) {
+        const obData    = obRes.data?.data || {};
+        const chapState = obData.chapter_state || [];
+        const finished  = !!obData.finished_at;
+        // SM-scoped admins get a Reference tile regardless of personal
+        // progress — they're not being onboarded, they just want the material.
+        const asRef = isSmScopedAdmin && !finished;
+        const obCourse  = {
+          id: '__onboarding__',
+          title: asRef ? 'Team Onboarding (Reference)' : 'Team Onboarding',
+          subtitle: asRef ? 'เนื้อหา onboarding ทีม SM — สำหรับอ่านย้อนหลัง' : 'ปฐมนิเทศสมาชิกใหม่ทีม SM',
+          icon: '🚀',
+          cover_color: '#10b981',
+          my_percent: asRef ? null : (finished ? 100 : (obData.percent || 0)),
+          my_status:  asRef ? 'reference' : (finished ? 'completed' : (obData.percent > 0 ? 'in_progress' : 'not_started')),
+          my_locked: false,
+          phases_count: chapState.length,
+          my_passed:    chapState.filter(c => c.completed).length,
+          _href: (finished || asRef) ? 'onboarding.html?review=1' : 'onboarding.html',
+          _unit: 'บท',
+          is_sm_featured: true,
+          sm_ribbon_label: 'SM Team',
+        };
+        gridItems.unshift(obCourse);
+      }
+      renderCourseGrid(gridItems);
+    }
+
+    if (!examsRes?.ok) { showRetry('ex-grid', 'โหลด exams ไม่สำเร็จ'); }
+    else renderExamGrid(examsRes.data?.data || []);
+    } catch (err) {
+      console.error('learn page load failed:', err);
+      showRetry('grid', 'เกิดข้อผิดพลาด');
+      showRetry('ex-grid', 'เกิดข้อผิดพลาด');
+    } finally {
+      _loading = false;
+      _lastFetchAt = Date.now();
+    }
+  }
+
+  let _lastFetchAt = Date.now();
+  // Run on first paint
+  loadAll();
+
+  // ── Re-load on bfcache restore (back/forward navigation) ──
+  // When the user clicks ← back from learn-course / exam, browsers may
+  // restore the page from memory without re-running scripts. Force a
+  // fresh fetch so stats (best score, my_attempts, etc.) stay accurate.
+  window.addEventListener('pageshow', (ev) => {
+    if (ev.persisted) loadAll();
+  });
+
+  // ── Re-load when tab becomes visible again (e.g. user switched away
+  //    to take an exam in another tab and came back). 60s grace period
+  //    so we don't refetch immediately if the user just briefly tabbed away.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - _lastFetchAt > 60 * 1000) {
+      loadAll();
+    }
+  });
+
+  // Days between now and an ISO timestamp (returns -1 if invalid)
+  function daysSince(iso) {
+    if (!iso) return -1;
+    const t = new Date(iso).getTime();
+    if (!t) return -1;
+    return Math.floor((Date.now() - t) / (86400 * 1000));
+  }
+  // Build badge chips (integrated into card's .rn-stats row) + optional
+  // popular decorations. Returns { chips, cls, flagHtml }.
+  //   cls      → modifier class ('popular' → warm bg/border/glow, 'done' → green accents)
+  //   flagHtml → corner ribbon + flame emblem + rising sparks (empty if not popular)
+  function buildBadges({ isPopular, isNew, isDone, isSmFeatured, smLabel }) {
+    const chips = [];
+    if (isDone)    chips.push('<span class="rn-chip done"><i data-icon="check"></i> Done</span>');
+    if (isNew)     chips.push('<span class="rn-chip new"><i data-icon="sparkles"></i> New</span>');
+    // Popular / SM-featured are signalled by the corner ribbon + styling —
+    // a chip would be redundant with all that.
+    const popHtml = isPopular
+      ? '<div class="rn-popular-ribbon"><i data-icon="flame"></i> Popular</div>'
+      + '<div class="rn-popular-flame" aria-hidden="true"><i data-icon="flame"></i></div>'
+      + '<div class="rn-popular-sparks" aria-hidden="true"><span></span><span></span><span></span></div>'
+      : '';
+    const smHtml = isSmFeatured
+      ? `<div class="rn-sm-ribbon"><i data-icon="users"></i> ${escHtml(smLabel || 'SM Team')}</div>`
+      : '';
+    return {
+      chips,
+      cls: (isPopular ? ' popular' : '')
+         + (isSmFeatured ? ' sm-featured' : '')
+         + (isDone ? ' done' : ''),
+      flagHtml: popHtml + smHtml,
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  RING + PHASE-DOTS BUILDERS
+  //  ─────────────────────────────────────────────────────────────
+  //  buildRing({ pct, iconHtml, done, locked, pctLabel, pctTone })
+  //    Renders conic-gradient ring + centered icon + floating pct badge.
+  //  buildPhaseDots({ items, headLabel, headValue })
+  //    items[]: array of { state, label }
+  //      state: 'done' | 'current' | 'pending' | 'locked' | 'pass' | 'fail' | 'more'
+  //      label: text rendered inside the dot (fits ~2-3 chars)
+  //    Auto-truncates when items.length > MAX_DOTS with a "+N" bubble.
+  // ═══════════════════════════════════════════════════════════════
+  const MAX_DOTS = 6;
+
+  function buildRing({ pct = 0, iconHtml = '', done = false, locked = false, pctLabel = '', pctTone = '' }) {
+    const p = Math.max(0, Math.min(100, pct));
+    const showPct = pctLabel !== '' ? pctLabel : (p + '%');
+    const toneCls = pctTone
+      ? pctTone
+      : done ? 'done'
+      : locked ? 'locked'
+      : (p >= 100 ? 'done' : '');
+    return `
+      <div class="rn-ring-wrap">
+        <div class="rn-ring" style="--pct:${p}">
+          <div class="rn-ring-inner">${iconHtml}</div>
+        </div>
+        <div class="rn-pct ${toneCls}">${showPct}</div>
+      </div>`;
+  }
+
+  function buildPhaseDots({ items, headLabel = 'Phases', headValue = '' }) {
+    if (!items || !items.length) return '';
+    let shown = items;
+    if (items.length > MAX_DOTS) {
+      shown = items.slice(0, MAX_DOTS - 1).concat([{
+        state: 'more',
+        label: `+${items.length - (MAX_DOTS - 1)}`,
+      }]);
+    }
+    let dotsHtml = '';
+    shown.forEach((it, i) => {
+      if (i > 0) {
+        const prev = shown[i - 1];
+        const both = (a, b, k) =>
+          (a.state === k || a.state === 'pass') && (b.state === k || b.state === 'pass');
+        let lineCls = '';
+        if (both(prev, it, 'done')) lineCls = 'done';
+        else if (both(prev, it, 'pass')) lineCls = 'pass';
+        else if (prev.state === 'fail' && it.state === 'fail') lineCls = 'fail';
+        dotsHtml += `<span class="rn-line ${lineCls}"></span>`;
+      }
+      dotsHtml += `<div class="rn-dot ${it.state}">${escHtml(it.label || '')}</div>`;
+    });
+    return `
+      <div class="rn-phases">
+        <div class="rn-phases-head">
+          <span>${escHtml(headLabel)}</span>
+          ${headValue ? `<b>${escHtml(headValue)}</b>` : ''}
+        </div>
+        <div class="rn-dots">${dotsHtml}</div>
+      </div>`;
+  }
+
+  // Update split-chooser course stats + section header
+  function setLearnStats(courses) {
+    const total  = courses.length;
+    const done   = courses.filter(c => (c.my_status || '') === 'completed').length;
+    const todo   = total - done;
+    const pct    = total > 0 ? Math.round(done / total * 100) : 0;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('head-learns-cnt', `${total} คอร์ส`);
+    set('sc-done-courses-txt', `${done} จบแล้ว`);
+    set('sc-todo-courses-txt', `${todo} รอเรียน`);
+    set('sc-courses-pct', total > 0 ? `${pct}%` : '—');
+    const fill = document.getElementById('sc-courses-fill');
+    if (fill) fill.style.width = pct + '%';
+  }
+
+  function renderCourseGrid(courses) {
+    const grid = document.getElementById('grid');
+    setLearnStats(courses);
+    if (!courses.length) {
+      grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+        <div class="icon"><i data-icon="book-open"></i></div>
+        <div>ยังไม่มีคอร์สให้เรียนตอนนี้</div>
+      </div>`;
+      if (window.Icons?.replaceAll) window.Icons.replaceAll(grid);
+      return;
+    }
+    grid.innerHTML = courses.map(c => {
+      const color   = c.cover_color || '#f26419';
+      const total   = Math.max(0, c.phases_count || 0);
+      const passed  = Math.max(0, Math.min(total, c.my_passed || 0));
+      const pct     = c.my_percent || 0;
+      const status  = c.my_status || 'not_started';
+      const locked  = !!c.my_locked;
+      const unit    = c._unit || 'phases';
+
+      const days = daysSince(c.created_at);
+      const b = locked ? { chips:[], cls:'' } : buildBadges({
+        isPopular: !!c.is_popular,
+        isNew:     days >= 0 && days <= 30,
+        isDone:    status === 'completed',
+        isSmFeatured: !!c.is_sm_featured,
+        smLabel:   c.sm_ribbon_label,
+      });
+
+      const ringPct = locked ? 0 : pct;
+      const iconHtml = locked
+        ? '<i data-icon="lock"></i>'
+        : (typeof renderIcon === 'function' ? renderIcon(c.icon) : escHtml(c.icon || '📘'));
+      const isRef = status === 'reference';
+      const ringHtml = buildRing({
+        pct: isRef ? 100 : ringPct,
+        iconHtml,
+        done: status === 'completed' || isRef,
+        locked,
+        pctLabel: locked ? '<i data-icon="lock"></i>' : (status === 'completed' ? '✓' : (isRef ? '<i data-icon="book-open"></i>' : (pct + '%'))),
+      });
+
+      let phaseItems;
+      if (locked) {
+        const N = Math.max(1, total || 4);
+        phaseItems = Array.from({ length: N }, () => ({ state: 'locked', label: '' }));
+      } else if (total === 0) {
+        phaseItems = [{ state: 'pending', label: '?' }];
+      } else {
+        phaseItems = Array.from({ length: total }, (_, i) => {
+          if (i < passed) return { state: 'done', label: (i + 1).toString() };
+          if (i === passed && status === 'in_progress') return { state: 'current', label: (i + 1).toString() };
+          return { state: 'pending', label: (i + 1).toString() };
+        });
+      }
+      const phasesHtml = buildPhaseDots({
+        items: phaseItems,
+        headLabel: unit === 'บท' ? 'บท' : 'Phases',
+        headValue: locked ? '—' : `${passed} / ${total}`,
+      });
+
+      const noteHtml = locked
+        ? `<div class="rn-note locked"><i data-icon="lock"></i> ต้องเรียนให้จบก่อน: <strong>${(c.unmet_prereqs||[]).map(u => escHtml(u.title)).join(', ')}</strong></div>`
+        : '';
+
+      const extraChips = [];
+      if (!locked && status === 'in_progress') {
+        extraChips.push(`<span class="rn-chip progress"><i data-icon="activity"></i> Phase ${passed + 1}</span>`);
+      }
+      if (!locked && status === 'not_started' && !b.chips.length) {
+        extraChips.push(`<span class="rn-chip"><i data-icon="circle"></i> ยังไม่เริ่ม</span>`);
+      }
+      if (!locked && status === 'reference') {
+        extraChips.push(`<span class="rn-chip"><i data-icon="book-open"></i> Reference</span>`);
+      }
+      if (locked) {
+        extraChips.push(`<span class="rn-chip warn"><i data-icon="lock"></i> Locked</span>`);
+      }
+      const allChips = [...b.chips, ...extraChips];
+      const chipsHtml = allChips.length
+        ? `<div class="rn-stats">${allChips.join('')}</div>` : '';
+
+      const doneCls = status === 'completed' ? ' done' : '';
+
+      return `
+        <a href="${locked ? '#' : (c._href || `learn-course.html?id=${encodeURIComponent(c.id)}`)}"
+           class="rn-card${locked ? ' locked' : ''}${doneCls}${b.cls}"
+           style="--bar-color:${color}"
+           ${locked ? 'onclick="event.preventDefault(); Toast.warning(\'ต้องเรียนคอร์สก่อนหน้าให้จบก่อน\')"' : ''}>
+          ${b.flagHtml || ''}
+          ${ringHtml}
+          <div class="rn-title-wrap">
+            <div class="rn-title">${escHtml(c.title)}</div>
+            <p class="rn-sub">${escHtml(c.subtitle || c.description || '')}</p>
+          </div>
+          ${phasesHtml}
+          ${noteHtml}
+          ${chipsHtml}
+        </a>
+      `;
+    }).join('');
+    if (window.Icons?.replaceAll) window.Icons.replaceAll(grid);
+  }
+
+  // Update split-chooser exam stats + section header
+  function setExamStats(exams) {
+    const total  = exams.length;
+    const passed = exams.filter(e => !!e.my_passed).length;
+    const pct    = total > 0 ? Math.round(passed / total * 100) : 0;
+    const now    = Date.now();
+    const urgent = exams.filter(e => {
+      if (e.my_passed || !e.exam_window?.enabled || !e.exam_window?.end) return false;
+      const end = new Date(e.exam_window.end).getTime();
+      return end > now && (end - now) < 7 * 24 * 3600 * 1000; // within 7 days
+    }).length;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('head-exams-cnt', `${total} ชุด`);
+    set('sc-done-exams-txt', `${passed} ผ่านแล้ว`);
+    set('sc-exams-pct', total > 0 ? `${pct}%` : '—');
+    const fill = document.getElementById('sc-exams-fill');
+    if (fill) fill.style.width = pct + '%';
+    const urgentPill = document.getElementById('sc-urgent-exams');
+    if (urgentPill) urgentPill.style.display = urgent > 0 ? 'inline-flex' : 'none';
+  }
+
+  function renderExamGrid(exams) {
+    const grid = document.getElementById('ex-grid');
+    setExamStats(exams);
+    if (!exams.length) {
+      grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+        <div class="icon"><i data-icon="edit"></i></div>
+        <div>ยังไม่มีข้อสอบให้ทำตอนนี้</div>
+      </div>`;
+      if (window.Icons?.replaceAll) window.Icons.replaceAll(grid);
+      return;
+    }
+    const now = Date.now();
+    grid.innerHTML = exams.map(e => {
+      const color        = e.cover_color || '#f26419';
+      const myA          = e.my_attempts || 0;
+      const maxA         = e.max_attempts || 0;
+      const remain       = maxA > 0 ? Math.max(0, maxA - myA) : null;
+      const passed       = !!e.my_passed;
+      const best         = e.my_best_score || 0;
+      const courseLocked = !!e.my_course_locked;
+
+      // Determine "can start" + reason
+      let canStart = !courseLocked;
+      let winState = null;                  // 'upcoming' | 'open' | 'closed' | null
+      if (!courseLocked && e.exam_window?.enabled) {
+        const s = e.exam_window.start ? new Date(e.exam_window.start).getTime() : 0;
+        const en = e.exam_window.end ? new Date(e.exam_window.end).getTime() : 0;
+        if (s && now < s) { winState = 'upcoming'; canStart = false; }
+        else if (en && now > en) { winState = 'closed'; canStart = false; }
+        else { winState = 'open'; }
+      }
+      const attemptsExhausted = canStart && maxA > 0 && remain === 0 && !passed;
+      if (attemptsExhausted) canStart = false;
+
+      // Badges
+      const days = daysSince(e.created_at);
+      const b = courseLocked ? { chips:[], cls:'' } : buildBadges({
+        isPopular: !!e.is_popular,
+        isNew:     days >= 0 && days <= 30,
+        isDone:    passed,
+      });
+
+      // Ring — score-oriented (best score %, not phases)
+      const ringPct = courseLocked ? 0 : (passed ? Math.max(best, e.pass_score || 0) : best);
+      const iconHtml = courseLocked
+        ? '<i data-icon="lock"></i>'
+        : (typeof renderIcon === 'function' ? renderIcon(e.icon, '<i data-icon="edit"></i>') : escHtml(e.icon || '📝'));
+      const ringHtml = buildRing({
+        pct: ringPct,
+        iconHtml,
+        done: passed,
+        locked: courseLocked,
+        pctLabel: courseLocked ? '<i data-icon="lock"></i>'
+                : passed ? `${best}<span class="u">%</span>`
+                : myA > 0 ? `${best}<span class="u">%</span>`
+                : (winState === 'upcoming' ? '<i data-icon="clock"></i>' : '—'),
+        pctTone: courseLocked ? 'locked'
+               : passed ? 'done'
+               : (myA > 0 && !passed && attemptsExhausted) ? 'warn'
+               : (winState === 'upcoming' ? 'new' : ''),
+      });
+
+      // Attempt dots
+      let attemptItems;
+      if (courseLocked) {
+        const N = maxA > 0 ? maxA : 3;
+        attemptItems = Array.from({ length: N }, () => ({ state: 'locked', label: '' }));
+      } else {
+        const total = maxA > 0 ? maxA : Math.max(myA + 1, 3);
+        attemptItems = Array.from({ length: total }, (_, i) => {
+          const num = (i + 1).toString();
+          if (i < myA) {
+            // Used attempt: last-used = pass if passed=true, otherwise fail
+            const isPassSlot = passed && i === myA - 1;
+            return isPassSlot
+              ? { state: 'pass', label: `${best}` }
+              : { state: 'fail', label: 'x' };
+          }
+          if (i === myA && canStart) return { state: 'current', label: num };
+          return { state: 'pending', label: num };
+        });
+      }
+      const attemptsHtml = buildPhaseDots({
+        items: attemptItems,
+        headLabel: 'Attempts',
+        headValue: courseLocked ? '—' : (maxA > 0 ? `${myA} / ${maxA}` : `${myA} · ∞`),
+      });
+
+      // Note (prereq or window)
+      let noteHtml = '';
+      if (courseLocked) {
+        const titles = (e.unmet_course_prereqs || []).map(u => escHtml(u.title)).join(', ');
+        noteHtml = `<div class="rn-note locked"><i data-icon="lock"></i> ต้องเรียนให้จบก่อน: <strong>${titles}</strong></div>`;
+      } else if (winState === 'upcoming') {
+        noteHtml = `<div class="rn-note upcoming"><i data-icon="clock"></i> จะเปิด ${fmtDate(e.exam_window.start)}</div>`;
+      } else if (winState === 'closed') {
+        noteHtml = `<div class="rn-note closed"><i data-icon="clock"></i> ปิดสอบแล้ว · สิ้นสุด ${fmtDate(e.exam_window.end)}</div>`;
+      } else if (winState === 'open') {
+        noteHtml = `<div class="rn-note open"><i data-icon="circle"></i> เปิดสอบ — ปิด ${fmtDate(e.exam_window.end)}</div>`;
+      }
+
+      // Status chips
+      const qCount = (e.pool_enabled && e.pool_total_show > 0 && e.pool_total_show < e.questions_count)
+        ? `${e.pool_total_show} ข้อ (สุ่ม)`
+        : `${e.questions_count} ข้อ`;
+      const passChip = e.pass_score > 0 ? `pass ${e.pass_score}%` : 'ไม่มีเกณฑ์';
+      const extraChips = [
+        `<span class="rn-chip"><i data-icon="edit"></i> ${escHtml(qCount)}</span>`,
+        `<span class="rn-chip"><i data-icon="target"></i> ${escHtml(passChip)}</span>`,
+      ];
+      if (courseLocked) {
+        extraChips.push('<span class="rn-chip warn"><i data-icon="lock"></i> Locked</span>');
+      } else if (attemptsExhausted) {
+        extraChips.push('<span class="rn-chip warn"><i data-icon="alert-triangle"></i> หมดสิทธิ์</span>');
+      } else if (winState === 'upcoming') {
+        extraChips.push('<span class="rn-chip new"><i data-icon="clock"></i> ยังไม่ถึงเวลา</span>');
+      } else if (myA > 0 && !passed && maxA > 0 && remain === 1) {
+        extraChips.push('<span class="rn-chip warn"><i data-icon="alert-triangle"></i> เหลือครั้งสุดท้าย</span>');
+      } else if (myA > 0 && !passed) {
+        extraChips.push('<span class="rn-chip progress"><i data-icon="activity"></i> เคยทำ ' + myA + ' ครั้ง</span>');
+      } else if (myA === 0 && canStart && !b.chips.length) {
+        extraChips.push('<span class="rn-chip"><i data-icon="circle"></i> ยังไม่ได้ทำ</span>');
+      }
+      const allChips = [...b.chips, ...extraChips];
+      const chipsHtml = `<div class="rn-stats">${allChips.join('')}</div>`;
+
+      const doneCls = passed ? ' done' : '';
+
+      // Wrap in <a> when clickable, <div> when not (attempts exhausted etc.).
+      const startsWith = canStart
+        ? `<a href="exam.html?id=${encodeURIComponent(e.id)}" onclick="return openExamWindow(event, this.href);"`
+        : `<div ${courseLocked ? 'onclick="Toast.warning(\'ต้องเรียนคอร์สก่อนหน้าให้จบก่อน\')"' : ''}`;
+      const endsWith = canStart ? '</a>' : '</div>';
+
+      return `
+        ${startsWith}
+           class="rn-card${canStart ? '' : ' locked'}${doneCls}${b.cls}"
+           style="--bar-color:${color}">
+          ${b.flagHtml || ''}
+          ${ringHtml}
+          <div class="rn-title-wrap">
+            <div class="rn-title">${escHtml(e.title)}</div>
+            <p class="rn-sub">${escHtml(e.subtitle || e.description || '')}</p>
+          </div>
+          ${attemptsHtml}
+          ${noteHtml}
+          ${chipsHtml}
+        ${endsWith}
+      `;
+    }).join('');
+    if (window.Icons?.replaceAll) window.Icons.replaceAll(grid);
+  }
+
+  function fmtDate(s) {
+    try { return new Date(s).toLocaleString('th-TH', { dateStyle:'medium', timeStyle:'short' }); }
+    catch { return s; }
+  }
+
+  // Open exam in a separate browser WINDOW (popup) so fullscreen + anti-cheat
+  // run isolated from the original tab. Same profile, separate window.
+  function openExamWindow(ev, href) {
+    ev.preventDefault();
+    const w = Math.min(screen.availWidth, 1400);
+    const h = Math.min(screen.availHeight, 900);
+    const left = Math.max(0, Math.floor((screen.availWidth  - w) / 2));
+    const top  = Math.max(0, Math.floor((screen.availHeight - h) / 2));
+    const features = `popup=yes,width=${w},height=${h},left=${left},top=${top}` +
+                     `,toolbar=no,location=no,menubar=no,status=no,scrollbars=yes,resizable=yes`;
+    const win = window.open(href, 'som_exam_' + Date.now(), features);
+    if (!win) { Toast?.error?.('โปรดอนุญาต popup สำหรับเว็บนี้'); location.href = href; }
+    else { try { win.focus(); } catch(_) {} }
+    return false;
+  }
+  window.openExamWindow = openExamWindow;
+</script>
+</body>
+</html>

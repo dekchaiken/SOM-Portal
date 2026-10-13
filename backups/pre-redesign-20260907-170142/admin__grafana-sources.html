@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grafana Sources — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ══ Grafana Sources — blocks.so / shadcn design system (scoped) ══ */
+    .gs {
+      --gbg:#ffffff; --gsub:#fafafa; --gbd:#e4e4e7; --gbd2:#d4d4d8;
+      --gtx:#09090b; --gmut:#71717a; --gsoft:#a1a1aa; --ghov:rgba(9,9,11,.04);
+      --grc:14px; --grb:8px; --gsh:0 1px 2px rgba(9,9,11,.05);
+      --gblue:#2563eb; --gok:#16a34a; --gdanger:#ef4444; --gwarn:#d97706;
+      --gskel:linear-gradient(90deg,#f4f4f5 25%,#e9e9ec 37%,#f4f4f5 63%);
+      color:var(--gtx); font-variant-numeric:tabular-nums;
+    }
+    html[data-theme="dark"] .gs {
+      --gbg:#0a0a0a; --gsub:#18181b; --gbd:#27272a; --gbd2:#3f3f46;
+      --gtx:#fafafa; --gmut:#a1a1aa; --gsoft:#71717a; --ghov:rgba(255,255,255,.05);
+      --gsh:none;
+      --gblue:#60a5fa; --gok:#4ade80; --gdanger:#f87171; --gwarn:#fbbf24;
+      --gskel:linear-gradient(90deg,#18181b 25%,#232326 37%,#18181b 63%);
+    }
+    .gs .ico, .modal .ico { width:1em;height:1em;display:inline-block;vertical-align:-.14em;stroke-width:2; }
+
+    .gs-hint { font-size:12px;color:var(--gmut);line-height:1.65;margin-bottom:18px;
+      background:var(--gsub);border:1px solid var(--gbd);border-radius:var(--grb);padding:13px 15px; }
+    .gs-hint code { font-family:ui-monospace,monospace;font-size:11px;background:var(--gbg);border:1px solid var(--gbd);padding:1px 5px;border-radius:4px; }
+
+    /* ── Table card ── */
+    .gs-card { background:var(--gbg);border:1px solid var(--gbd);border-radius:var(--grc);box-shadow:var(--gsh);overflow:hidden; }
+    .gs-table { width:100%;border-collapse:collapse;font-size:13px; }
+    .gs-table th { text-align:left;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+      color:var(--gsoft);font-weight:600;padding:11px 16px;background:var(--gsub);border-bottom:1px solid var(--gbd); }
+    .gs-table td { padding:13px 16px;border-bottom:1px solid var(--gbd);vertical-align:middle; }
+    .gs-table tbody tr:last-child td { border-bottom:none; }
+    .gs-table tbody tr { transition:background .12s; }
+    .gs-table tbody tr:hover { background:var(--ghov); }
+    .gs-name { display:flex;align-items:center;gap:9px;font-weight:600;font-size:13.5px; }
+    .gs-dot { width:9px;height:9px;border-radius:50%;flex:none; }
+    .gs-url { font-family:ui-monospace,monospace;font-size:11.5px;color:var(--gmut);word-break:break-all; }
+    .gs-badge { display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:650;padding:3px 9px;border-radius:999px;
+      background:color-mix(in srgb,var(--gmut) 14%,transparent);color:var(--gmut); }
+    .gs-badge.token { background:color-mix(in srgb,var(--gblue) 12%,transparent);color:var(--gblue); }
+    .gs-badge.off   { background:color-mix(in srgb,var(--gdanger) 13%,transparent);color:var(--gdanger); }
+    .gs-test-res { font-size:11px;margin-left:8px;font-weight:600; }
+
+    /* ── Buttons ── */
+    .gs-btn { display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;line-height:1;
+      padding:6px 11px;border-radius:var(--grb);border:1px solid var(--gbd);background:var(--gbg);color:var(--gmut);cursor:pointer;transition:all .13s; }
+    .gs-btn:hover { color:var(--gtx);background:var(--ghov);border-color:var(--gbd2); }
+    .gs-btn:disabled { opacity:.5;cursor:default; }
+    .gs-btn.danger:hover { color:var(--gdanger);border-color:var(--gdanger);background:color-mix(in srgb,var(--gdanger) 8%,transparent); }
+    .gs-btn.icon { padding:6px 8px; }
+    .gs-btn.primary { background:var(--gtx);color:var(--gbg);border-color:var(--gtx); }
+    .gs-btn.primary:hover { opacity:.9;color:var(--gbg); }
+
+    /* ── skeleton ── */
+    .gs-skel { border-radius:6px;background:var(--gskel);background-size:400% 100%;animation:gs-sh 1.4s ease infinite;display:inline-block; }
+    @keyframes gs-sh { 0%{background-position:100% 0} 100%{background-position:0 0} }
+    @keyframes gs-spin { to { transform:rotate(360deg); } }
+    .ico.spin { animation:gs-spin .7s linear infinite; }
+
+    /* ── custom form widgets (used inside the standard app .modal — global vars) ── */
+    .gs-authtabs { display:flex;gap:8px; }
+    .gs-authtab { flex:1;padding:9px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);
+      cursor:pointer;font-size:12px;font-weight:600;text-align:center;color:var(--text-muted);transition:all .13s; }
+    .gs-authtab:hover { border-color:var(--text-muted); }
+    .gs-authtab.active { border-color:#2563eb;color:#2563eb;background:rgba(37,99,235,.08); }
+
+    .switch { position:relative;display:inline-block;width:38px;height:22px;flex:none; }
+    .switch input { display:none; }
+    .slider { position:absolute;inset:0;cursor:pointer;background:var(--border);border-radius:22px;transition:.2s; }
+    .slider:before { content:"";position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.25); }
+    .switch input:checked + .slider { background:#16a34a; }
+    .switch input:checked + .slider:before { transform:translateX(16px); }
+
+    .gs-color-row { display:flex;align-items:center;gap:10px; }
+    .gs-color { width:44px;height:34px;padding:3px;border:1px solid var(--border);border-radius:var(--radius);
+      background:var(--bg);cursor:pointer;box-sizing:border-box;flex:none; }
+    .gs-color::-webkit-color-swatch-wrapper { padding:0; }
+    .gs-color::-webkit-color-swatch { border:none;border-radius:4px; }
+    .gs-color::-moz-color-swatch { border:none;border-radius:4px; }
+    .gs-swatches { display:flex;gap:7px;flex-wrap:wrap; }
+    .gs-sw { width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:0 0 0 1px var(--border);transition:transform .1s; }
+    .gs-sw:hover { transform:scale(1.18); }
+    .gs-sw.sel { box-shadow:0 0 0 2px var(--text); }
+    .gs-mask { font-size:11px;color:var(--text-muted);margin-top:6px;font-family:ui-monospace,monospace; }
+    .gs-hintline { font-size:11px;color:var(--text-muted);margin-top:5px;line-height:1.5; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="archive"></i> Grafana Sources</div>
+        <div class="page-sub">org/instance ที่หน้า Paused Alerts ดึงสถานะ · auth ต่อ source</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadSources()" style="font-size:11px">↺ Reload</button>
+        <button class="btn btn-primary" onclick="openModal()">+ เพิ่ม Source</button>
+      </div>
+    </header>
+
+    <main class="page-content gs">
+      <div class="gs-hint" id="gs-hint">
+        แต่ละ source = 1 Grafana org ที่จะถูกสแกนหา alert ที่ <b>paused</b> ·
+        <b>Auth mode</b>: <code>basic</code> ใช้ user/pass กลางจาก <code>.env</code> (เข้าได้ทุก org) หรือ
+        <code>token</code> ใส่ service-account token เฉพาะ org นั้น (ปลอดภัยกว่า — เพิกถอนต่อ org ได้) ·
+        ปิด source ที่ไม่ต้องการชั่วคราวได้ด้วยสวิตช์
+      </div>
+
+      <div class="gs-card">
+        <table class="gs-table">
+          <thead>
+            <tr>
+              <th style="width:44px">On</th>
+              <th>Source</th>
+              <th>Grafana URL</th>
+              <th style="width:60px">Org</th>
+              <th style="width:120px">Auth</th>
+              <th style="width:150px">Test</th>
+              <th style="width:96px"></th>
+            </tr>
+          </thead>
+          <tbody id="gs-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal (standard app component) -->
+<div class="modal-overlay" id="gs-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title" id="gs-modal-title">เพิ่ม Source</span>
+      <button class="btn-close" onclick="closeModal()"><i data-icon="x"></i></button>
+    </div>
+
+    <div class="modal-body">
+      <input type="hidden" id="gs-edit-slug">
+
+      <div class="form-group">
+        <label class="form-label">ชื่อ Source *</label>
+        <input type="text" id="gs-f-name" class="form-control" placeholder="เช่น EKS TMN">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Grafana URL *</label>
+        <input type="text" id="gs-f-url" class="form-control" placeholder="https://grafana-thanos.truemoney.com" style="font-family:ui-monospace,monospace">
+      </div>
+
+      <div style="display:flex;gap:16px">
+        <div class="form-group" style="flex:1;min-width:120px">
+          <label class="form-label">Org ID *</label>
+          <input type="number" id="gs-f-org" class="form-control" min="1" placeholder="3">
+          <div class="gs-hintline">เลข org ใน Grafana (เช่น 2, 3, 4)</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">สี badge</label>
+          <div class="gs-color-row">
+            <input type="color" id="gs-f-color" class="gs-color" value="#3b82f6" oninput="onColorInput(this.value)">
+            <div class="gs-swatches" id="gs-swatches"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Auth mode</label>
+        <div class="gs-authtabs" id="gs-authtabs">
+          <div class="gs-authtab active" data-auth="basic">basic (จาก .env)</div>
+          <div class="gs-authtab" data-auth="token">token (ต่อ org)</div>
+        </div>
+      </div>
+
+      <div class="form-group" id="gs-token-field" style="display:none">
+        <label class="form-label">Service-account token</label>
+        <input type="password" id="gs-f-token" class="form-control" placeholder="glsa_…" autocomplete="off" style="font-family:ui-monospace,monospace">
+        <div class="gs-mask" id="gs-token-mask"></div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:0">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <span class="switch"><input type="checkbox" id="gs-f-enabled" checked><span class="slider"></span></span>
+          <span id="gs-enabled-lbl" style="font-weight:600;font-size:12px">เปิดใช้งาน</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-ghost btn-sm" id="gs-test-btn" onclick="testInModal()"><i data-icon="plug"></i> ทดสอบการเชื่อมต่อ</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="closeModal()">ยกเลิก</button>
+        <button class="btn btn-primary" id="gs-save-btn" onclick="saveSource()">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('grafana-sources');
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast = (m, ok = true) => (window.Toast ? (ok ? Toast.success(m) : Toast.error(m)) : alert(m));
+
+// ── lucide-style inline icons ──
+const ICO = {
+  plug:     '<path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/>',
+  edit:     '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/>',
+  trash:    '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  check:    '<path d="M20 6 9 17l-5-5"/>',
+  x:        '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  spinner:  '<line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>',
+  plus:     '<path d="M5 12h14"/><path d="M12 5v14"/>',
+};
+const icon = (n, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${ICO[n] || ''}</svg>`;
+
+let _sources = [];
+let _authMode = 'basic';
+
+// ── Auth-mode tab switch ──
+$('gs-authtabs').addEventListener('click', e => {
+  const tab = e.target.closest('.gs-authtab'); if (!tab) return;
+  _authMode = tab.dataset.auth;
+  document.querySelectorAll('.gs-authtab').forEach(t => t.classList.toggle('active', t === tab));
+  $('gs-token-field').style.display = _authMode === 'token' ? '' : 'none';
+});
+$('gs-f-enabled').addEventListener('change', e => {
+  $('gs-enabled-lbl').textContent = e.target.checked ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+});
+
+// ── Color presets ──
+const GS_PALETTE = ['#3b82f6','#0ea5e9','#a855f7','#10b981','#eab308','#f97316','#14b8a6','#ef4444'];
+function renderSwatches() {
+  $('gs-swatches').innerHTML = GS_PALETTE.map(c =>
+    `<span class="gs-sw" style="background:${c}" data-c="${c}" onclick="pickColor('${c}')" title="${c}"></span>`).join('');
+}
+function pickColor(c) { $('gs-f-color').value = c; onColorInput(c); }
+function onColorInput(v) {
+  document.querySelectorAll('.gs-sw').forEach(sw =>
+    sw.classList.toggle('sel', (sw.dataset.c || '').toLowerCase() === String(v).toLowerCase()));
+}
+renderSwatches();
+
+function skeletonRows(n = 4) {
+  const cell = (w) => `<td><span class="gs-skel" style="height:12px;width:${w}"></span></td>`;
+  let out = '';
+  for (let i = 0; i < n; i++) {
+    out += `<tr>
+      <td><span class="gs-skel" style="height:22px;width:38px;border-radius:22px"></span></td>
+      <td><div style="display:flex;align-items:center;gap:9px"><span class="gs-skel" style="height:9px;width:9px;border-radius:50%"></span><span class="gs-skel" style="height:13px;width:110px"></span></div></td>
+      ${cell('180px')}${cell('24px')}${cell('64px')}${cell('90px')}
+      <td><span class="gs-skel" style="height:26px;width:60px"></span></td>
+    </tr>`;
+  }
+  return out;
+}
+
+async function loadSources() {
+  $('gs-tbody').innerHTML = skeletonRows();
+  const res = await API.grafanaSources.list();
+  if (!res || !res.ok) {
+    $('gs-tbody').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--gdanger);padding:28px">${esc(res?.data?.message || 'โหลดไม่สำเร็จ')}</td></tr>`;
+    return;
+  }
+  const d = res.data?.data || {};
+  _sources = d.sources || [];
+
+  if (d.basicUser !== 'set') {
+    $('gs-hint').innerHTML += '<br><b style="color:var(--gwarn)"><i data-icon=\"alert-triangle\"></i> GRAFANA_BASIC_USER/PASS ยังไม่ได้ตั้งใน .env</b> — source แบบ basic จะดึงไม่ได้';
+  }
+
+  if (!_sources.length) {
+    $('gs-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gmut);padding:36px">ยังไม่มี source — กด “+ เพิ่ม Source”</td></tr>';
+    return;
+  }
+
+  $('gs-tbody').innerHTML = _sources.map(s => {
+    const authBadge = s.authMode === 'token'
+      ? `<span class="gs-badge token">token${s.hasToken ? '' : ' <i data-icon=\"alert-triangle\"></i>'}</span>`
+      : `<span class="gs-badge">basic</span>`;
+    return `<tr data-slug="${esc(s.slug)}">
+      <td>
+        <span class="switch"><input type="checkbox" ${s.enabled ? 'checked' : ''}
+          onchange="toggleEnabled('${esc(s.slug)}', this.checked)"><span class="slider"></span></span>
+      </td>
+      <td><div class="gs-name"><span class="gs-dot" style="background:${esc(s.color)}"></span>${esc(s.name)}
+        ${s.enabled ? '' : '<span class="gs-badge off" style="margin-left:6px">ปิด</span>'}</div></td>
+      <td><span class="gs-url">${esc(s.grafanaUrl)}</span></td>
+      <td>${s.orgId}</td>
+      <td>${authBadge}${s.authMode === 'token' && s.hasToken ? `<div class="gs-mask">${esc(s.maskedToken)}</div>` : ''}</td>
+      <td><button class="gs-btn" onclick="testRow('${esc(s.slug)}', this)">${icon('plug')} test</button><span class="gs-test-res" id="tr-${esc(s.slug)}"></span></td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="gs-btn icon" title="แก้ไข" onclick="openModal('${esc(s.slug)}')">${icon('edit')}</button>
+        <button class="gs-btn icon danger" title="ลบ" onclick="deleteSource('${esc(s.slug)}')">${icon('trash')}</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function toggleEnabled(slug, enabled) {
+  const res = await API.grafanaSources.update(slug, { enabled });
+  if (!res || !res.ok) { toast(res?.data?.message || 'อัปเดตไม่สำเร็จ', false); loadSources(); return; }
+  const s = _sources.find(x => x.slug === slug); if (s) s.enabled = enabled;
+  toast(enabled ? 'เปิดใช้งานแล้ว' : 'ปิดแล้ว');
+}
+
+async function testRow(slug, btn) {
+  const s = _sources.find(x => x.slug === slug); if (!s) return;
+  const out = $('tr-' + slug);
+  btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = icon('spinner', 'spin') + ' …';
+  const res = await API.grafanaSources.test({ grafanaUrl: s.grafanaUrl, orgId: s.orgId, authMode: s.authMode, slug });
+  btn.disabled = false; btn.innerHTML = orig;
+  if (res?.ok) { out.innerHTML = `<span style="color:var(--gok)">${icon('check')} ${res.data?.data?.count ?? 0} paused</span>`; }
+  else { out.innerHTML = `<span style="color:var(--gdanger)">${icon('x')} ${esc(res?.data?.message || 'fail')}</span>`; }
+}
+
+function openModal(slug) {
+  $('gs-modal').classList.add('active');
+  if (slug) {
+    const s = _sources.find(x => x.slug === slug);
+    if (!s) return;
+    $('gs-modal-title').textContent = 'แก้ไข Source';
+    $('gs-edit-slug').value = slug;
+    $('gs-f-name').value = s.name;
+    $('gs-f-url').value = s.grafanaUrl;
+    $('gs-f-org').value = s.orgId;
+    $('gs-f-color').value = /^#[0-9a-f]{6}$/i.test(s.color) ? s.color : '#3b82f6';
+    $('gs-f-enabled').checked = s.enabled;
+    $('gs-enabled-lbl').textContent = s.enabled ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+    _setAuth(s.authMode);
+    $('gs-f-token').value = '';
+    $('gs-token-mask').textContent = (s.authMode === 'token' && s.hasToken)
+      ? 'ปัจจุบัน: ' + s.maskedToken + ' — เว้นว่างไว้เพื่อคงค่าเดิม' : '';
+  } else {
+    $('gs-modal-title').textContent = 'เพิ่ม Source';
+    $('gs-edit-slug').value = '';
+    $('gs-f-name').value = ''; $('gs-f-url').value = '';
+    $('gs-f-org').value = ''; $('gs-f-color').value = '#3b82f6';
+    $('gs-f-enabled').checked = true; $('gs-enabled-lbl').textContent = 'เปิดใช้งาน';
+    _setAuth('basic');
+    $('gs-f-token').value = ''; $('gs-token-mask').textContent = '';
+  }
+  onColorInput($('gs-f-color').value);
+}
+function closeModal() { $('gs-modal').classList.remove('active'); }
+
+function _setAuth(mode) {
+  _authMode = mode;
+  document.querySelectorAll('.gs-authtab').forEach(t => t.classList.toggle('active', t.dataset.auth === mode));
+  $('gs-token-field').style.display = mode === 'token' ? '' : 'none';
+}
+
+function _formPayload() {
+  return {
+    name:       $('gs-f-name').value.trim(),
+    grafanaUrl: $('gs-f-url').value.trim(),
+    orgId:      parseInt($('gs-f-org').value, 10) || 0,
+    color:      $('gs-f-color').value,
+    authMode:   _authMode,
+    token:      $('gs-f-token').value.trim(),
+    enabled:    $('gs-f-enabled').checked,
+  };
+}
+
+async function saveSource() {
+  const p = _formPayload();
+  if (!p.name)       { toast('ใส่ชื่อ Source', false); return; }
+  if (!p.grafanaUrl) { toast('ใส่ Grafana URL', false); return; }
+  const slug = $('gs-edit-slug').value;
+  const btn = $('gs-save-btn'); btn.disabled = true;
+  const res = slug ? await API.grafanaSources.update(slug, p) : await API.grafanaSources.create(p);
+  btn.disabled = false;
+  if (!res || !res.ok) { toast(res?.data?.message || 'บันทึกไม่สำเร็จ', false); return; }
+  toast('บันทึกแล้ว');
+  closeModal();
+  loadSources();
+}
+
+async function testInModal() {
+  const p = _formPayload();
+  if (!p.grafanaUrl) { toast('ใส่ Grafana URL ก่อน', false); return; }
+  const btn = $('gs-test-btn'); btn.disabled = true; btn.textContent = '⏳ กำลังทดสอบ…';
+  const body = { grafanaUrl: p.grafanaUrl, orgId: p.orgId, authMode: p.authMode, token: p.token };
+  if (!body.token && $('gs-edit-slug').value) body.slug = $('gs-edit-slug').value; // reuse stored token
+  const res = await API.grafanaSources.test(body);
+  btn.disabled = false; btn.innerHTML = '<i data-icon=\"plug\"></i> ทดสอบการเชื่อมต่อ';
+  if (res?.ok) toast(`เชื่อมต่อได้ · ${res.data?.data?.count ?? 0} paused`);
+  else toast(res?.data?.message || 'เชื่อมต่อไม่ได้', false);
+}
+
+async function deleteSource(slug) {
+  const s = _sources.find(x => x.slug === slug);
+  const ok = await confirmDialog(
+    `ลบ source "${s?.name || slug}" ออกจากการสแกน? (ไม่กระทบ Grafana — แค่เอาออกจากหน้า Paused Alerts)`,
+    'ลบ Source',
+    { confirmText: 'ลบ', cancelText: 'ยกเลิก', variant: 'danger' }
+  );
+  if (!ok) return;
+  const res = await API.grafanaSources.delete(slug);
+  if (!res || !res.ok) { toast(res?.data?.message || 'ลบไม่สำเร็จ', false); return; }
+  toast('ลบแล้ว');
+  loadSources();
+}
+
+$('gs-modal').addEventListener('click', e => { if (e.target === $('gs-modal')) closeModal(); });
+loadSources();
+</script>
+</body>
+</html>

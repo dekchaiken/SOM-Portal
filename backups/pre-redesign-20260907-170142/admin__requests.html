@@ -1,0 +1,1084 @@
+    <!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feature Requests & Bug Reports — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ── Stats Cards ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--stat-color, #888);
+    }
+    .stat-num {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-top: 6px;
+    }
+
+    /* ── Filters ── */
+    .filters-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .filter-select {
+      padding: 8px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--bg-card);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    /* ── Ticket Number Badge ── */
+    .ticket-badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 800;
+      font-family: monospace;
+      background: rgba(242,100,25,.1);
+      color: var(--orange, #f26419);
+      border: 1px solid rgba(242,100,25,.3);
+      letter-spacing: .02em;
+    }
+
+    /* ── Requests Table ── */
+    .requests-table {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .requests-table table {
+      width: 100%;
+    }
+    .requests-table th {
+      background: var(--bg);
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      border-bottom: 1.5px solid var(--border);
+    }
+    .requests-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .requests-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .requests-table tbody tr:hover {
+      background: rgba(242,100,25,.04);
+    }
+    .req-type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .req-type-feature {
+      background: rgba(139,92,246,.1);
+      color: #8b5cf6;
+      border: 1px solid rgba(139,92,246,.3);
+    }
+    .req-type-bug {
+      background: rgba(239,68,68,.1);
+      color: #ef4444;
+      border: 1px solid rgba(239,68,68,.3);
+    }
+    .req-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .req-status-pending {
+      background: rgba(245,158,11,.1);
+      color: #f59e0b;
+      border: 1px solid rgba(245,158,11,.3);
+    }
+    .req-status-in_progress {
+      background: rgba(59,130,246,.1);
+      color: #3b82f6;
+      border: 1px solid rgba(59,130,246,.3);
+    }
+    .req-status-completed {
+      background: rgba(34,197,94,.1);
+      color: #22c55e;
+      border: 1px solid rgba(34,197,94,.3);
+    }
+    .req-status-rejected {
+      background: rgba(107,114,128,.1);
+      color: #6b7280;
+      border: 1px solid rgba(107,114,128,.3);
+    }
+    .req-priority-high {
+      color: #ef4444;
+      font-weight: 700;
+    }
+    .req-priority-medium {
+      color: #f59e0b;
+    }
+    .req-priority-low {
+      color: #22c55e;
+    }
+
+    /* ── Comment Thread ── */
+    .cmt-thread {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .cmt-bubble {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .cmt-bubble.is-admin { flex-direction: row-reverse; }
+    .cmt-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      flex-shrink: 0;
+      color: #fff;
+    }
+    .cmt-avatar.admin-av { background: var(--orange, #f26419); }
+    .cmt-avatar.user-av  { background: #6b7280; }
+    .cmt-body { max-width: 80%; }
+    .cmt-bubble.is-admin .cmt-body { align-items: flex-end; display: flex; flex-direction: column; }
+    .cmt-meta {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .cmt-bubble.is-admin .cmt-meta { flex-direction: row-reverse; }
+    .cmt-text {
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .cmt-bubble.is-admin .cmt-text {
+      background: rgba(242,100,25,.12);
+      border: 1px solid rgba(242,100,25,.25);
+      border-radius: 10px 2px 10px 10px;
+    }
+    .cmt-bubble:not(.is-admin) .cmt-text {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 2px 10px 10px 10px;
+    }
+    .cmt-role-badge {
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 700;
+      background: rgba(242,100,25,.12);
+      color: var(--orange, #f26419);
+    }
+    .cmt-input-area {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .cmt-input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 12px;
+      resize: none;
+      min-height: 36px;
+      max-height: 120px;
+      overflow-y: auto;
+      transition: border-color .15s;
+    }
+    .cmt-input:focus { outline: none; border-color: var(--orange); }
+
+    /* ── Overview Panel ── */
+    .ov-panel {
+      display: grid;
+      grid-template-columns: 220px 1fr 210px;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    @media (max-width:960px) {
+      .ov-panel { grid-template-columns:1fr 1fr; }
+      .ov-panel > .ov-card:first-child { grid-column:1/-1; }
+    }
+    @media (max-width:600px) { .ov-panel { grid-template-columns:1fr; } }
+
+    .ov-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .ov-card-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Donut */
+    .ov-donut-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .ov-donut-ring {
+      position: relative;
+      width: 110px;
+      height: 110px;
+    }
+    .ov-donut-ring svg {
+      width: 110px;
+      height: 110px;
+      transform: rotate(-90deg);
+    }
+    .ov-donut-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .ov-donut-pct {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+    }
+    .ov-donut-sub {
+      font-size: 9px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .ov-legend {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .ov-legend-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+    .ov-legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* Bars */
+    .ov-bar-group { margin-bottom: 4px; }
+    .ov-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+    .ov-bar-track {
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
+      overflow: hidden;
+    }
+    .ov-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width .5s cubic-bezier(.4,0,.2,1);
+    }
+    .ov-section-lbl {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin: 14px 0 10px;
+    }
+    .ov-section-lbl:first-child { margin-top: 0; }
+
+    /* Top requesters */
+    .ov-user-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .ov-user-row:last-child { border-bottom: none; }
+    .ov-rank {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .ov-rank-1 { background: rgba(245,158,11,.15); border-color: #f59e0b; color: #f59e0b; }
+    .ov-rank-2 { background: rgba(148,163,184,.1); border-color: #94a3b8; color: #94a3b8; }
+    .ov-rank-3 { background: rgba(180,120,60,.1); border-color: #b4783c; color: #b4783c; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="edit"></i> Feature Requests & Bug Reports</div>
+        <div class="page-sub">จัดการคำขอและรายงานปัญหาจากผู้ใช้</div>
+      </div>
+      <div class="topbar-actions"></div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="edit"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Feature Requests &amp; Bug Reports</h1>
+          <p>จัดการคำขอฟีเจอร์ใหม่และรายงานปัญหาจากผู้ใช้ · เปลี่ยน status · reply</p>
+        </div>
+      </section>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card" style="--stat-color:#f59e0b">
+          <div class="stat-num" id="stat-pending">0</div>
+          <div class="stat-label">⏳ Pending</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#3b82f6">
+          <div class="stat-num" id="stat-in-progress">0</div>
+          <div class="stat-label"><i data-icon="refresh-cw"></i> In Progress</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#22c55e">
+          <div class="stat-num" id="stat-completed">0</div>
+          <div class="stat-label"><i data-icon="check-circle"></i> Completed</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#8b5cf6">
+          <div class="stat-num" id="stat-features">0</div>
+          <div class="stat-label"><i data-icon="sparkles"></i> Features</div>
+        </div>
+        <div class="stat-card" style="--stat-color:#ef4444">
+          <div class="stat-num" id="stat-bugs">0</div>
+          <div class="stat-label"><i data-icon="bug"></i> Bugs</div>
+        </div>
+      </div>
+
+      <!-- Overview Panel -->
+      <div class="ov-panel" id="ov-panel">
+
+        <!-- Left: Status donut -->
+        <div class="ov-card">
+          <div class="ov-card-title"><i data-icon="pie-chart"></i> Status Overview</div>
+          <div class="ov-donut-wrap">
+            <div class="ov-donut-ring">
+              <svg viewBox="0 0 110 110" id="ov-donut-svg"></svg>
+              <div class="ov-donut-center">
+                <div class="ov-donut-pct" id="ov-donut-pct">—</div>
+                <div class="ov-donut-sub">completed</div>
+              </div>
+            </div>
+            <div class="ov-legend" id="ov-legend"></div>
+          </div>
+        </div>
+
+        <!-- Center: Type + Priority bars -->
+        <div class="ov-card">
+          <div class="ov-card-title"><i data-icon="bar-chart-2"></i> Breakdown</div>
+          <div id="ov-breakdown"></div>
+        </div>
+
+        <!-- Right: Top requesters -->
+        <div class="ov-card">
+          <div class="ov-card-title"><i data-icon="users"></i> Top Requesters</div>
+          <div id="ov-top-users"></div>
+        </div>
+
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-bar">
+        <select id="filter-type" class="filter-select" onchange="applyFilters()">
+          <option value="">All Types</option>
+          <option value="feature">Feature Request</option>
+          <option value="bug">Bug Report</option>
+        </select>
+        <select id="filter-status" class="filter-select" onchange="applyFilters()">
+          <option value="">All Status</option>
+          <option value="pending">⏳ Pending</option>
+          <option value="in_progress">In Progress</option>
+          <option value="completed">Completed</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <select id="filter-priority" class="filter-select" onchange="applyFilters()">
+          <option value="">All Priority</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="loadRequests()" style="margin-left:auto">↺ Refresh</button>
+      </div>
+
+      <!-- Table -->
+      <div class="requests-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket</th>
+              <th>Type</th>
+              <th>Title</th>
+              <th>Requester</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="requests-tbody">
+            <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal" style="max-width:760px;max-height:90vh;display:flex;flex-direction:column">
+    <div class="modal-header" style="flex-shrink:0">
+      <span class="modal-title" id="detail-title">Request Details</span>
+      <button class="btn-close" onclick="Modal.close('detail-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div style="display:flex;flex:1;overflow:hidden;min-height:0">
+      <!-- Left: ticket info -->
+      <div class="modal-body" id="detail-body" style="flex:1;overflow-y:auto;border-right:1.5px solid var(--border)">
+        <!-- Populated by JS -->
+      </div>
+      <!-- Right: comment thread -->
+      <div style="width:300px;flex-shrink:0;display:flex;flex-direction:column;padding:0">
+        <div style="padding:14px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0">
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:6px">
+            <i data-icon="message-square"></i> Comments
+            <span id="detail-cmt-count" style="padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700;background:var(--border);color:var(--text-muted)">0</span>
+          </div>
+        </div>
+        <div id="detail-cmt-thread" style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+          <div style="text-align:center;color:var(--text-muted);font-size:11px;padding:20px 0">ยังไม่มี comment</div>
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0">
+          <div class="cmt-input-area" style="margin-top:0;padding-top:0;border-top:none">
+            <textarea id="detail-cmt-input" class="cmt-input" rows="2" placeholder="Reply…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAdminComment()}"></textarea>
+            <button class="btn btn-primary btn-sm" onclick="sendAdminComment()" style="flex-shrink:0;align-self:flex-end" title="Send">
+              <i data-icon="send"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="flex-shrink:0">
+      <button class="btn btn-ghost" onclick="Modal.close('detail-modal')">Close</button>
+      <button class="btn btn-ghost btn-sm" onclick="openUpdateFromDetail()" style="margin-left:auto"><i data-icon="pencil"></i> Update Status</button>
+    </div>
+  </div>
+</div>
+
+<!-- Update Status Modal -->
+<div class="modal-overlay" id="update-modal">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <span class="modal-title"><i data-icon="pencil"></i> Update Request Status</span>
+      <button class="btn-close" onclick="Modal.close('update-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="update-req-id">
+      
+      <div class="form-group">
+        <label class="form-label">Request Title</label>
+        <div id="update-req-title" style="font-weight:600;color:var(--text);padding:8px 0"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Status <span style="color:var(--danger)">*</span></label>
+        <select id="update-status" class="form-control">
+          <option value="pending">⏳ Pending - รอดำเนินการ</option>
+          <option value="in_progress">In Progress - กำลังดำเนินการ</option>
+          <option value="completed">Completed - เสร็จสิ้น</option>
+          <option value="rejected">Rejected - ปฏิเสธ</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <select id="update-priority" class="form-control">
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Admin Note</label>
+        <textarea id="update-note" class="form-control" rows="4" placeholder="หมายเหตุสำหรับผู้ส่งคำขอ (optional)"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('update-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStatusUpdate()">
+        <span id="update-icon"><i data-icon="save"></i></span>
+        <span id="update-text">Save Changes</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal" style="max-width:450px">
+    <div class="modal-header">
+      <span class="modal-title"><i data-icon="trash"></i> Delete Request</span>
+      <button class="btn-close" onclick="Modal.close('delete-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="delete-req-id">
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:48px;margin-bottom:16px"><i data-icon="alert-triangle"></i></div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:8px">ต้องการลบคำขอนี้?</div>
+        <div id="delete-req-title" style="font-size:13px;color:var(--text-muted);margin-bottom:16px"></div>
+        <div style="font-size:12px;color:var(--danger);background:rgba(239,68,68,.1);padding:10px;border-radius:8px">
+          <i data-icon="alert-triangle"></i> การลบไม่สามารถย้อนกลับได้
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('delete-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">
+        <span><i data-icon="trash"></i></span>
+        <span>Delete</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+  if (!Auth.requireAdmin()) {}
+  Layout.render('admin');
+
+  let allRequests = [];
+  let filteredRequests = [];
+
+  async function loadRequests() {
+    try {
+      const res = await API.get('/requests/index.php');
+      if (!res?.ok) {
+        Toast.error('Failed to load requests');
+        return;
+      }
+      // Ensure it's an array
+      const data = res.data;
+      allRequests = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+      updateStats();
+      applyFilters();
+    } catch (err) {
+      Toast.error('Error loading requests: ' + err.message);
+    }
+  }
+
+  function updateStats() {
+    document.getElementById('stat-pending').textContent = allRequests.filter(r => r.status === 'pending').length;
+    document.getElementById('stat-in-progress').textContent = allRequests.filter(r => r.status === 'in_progress').length;
+    document.getElementById('stat-completed').textContent = allRequests.filter(r => r.status === 'completed').length;
+    document.getElementById('stat-features').textContent = allRequests.filter(r => r.type === 'feature').length;
+    document.getElementById('stat-bugs').textContent = allRequests.filter(r => r.type === 'bug').length;
+    renderOverview();
+  }
+
+  function renderOverview() {
+    const total = allRequests.length;
+    if (!total) return;
+
+    /* ── counts ── */
+    const sc = {
+      pending:     allRequests.filter(r => r.status === 'pending').length,
+      in_progress: allRequests.filter(r => r.status === 'in_progress').length,
+      completed:   allRequests.filter(r => r.status === 'completed').length,
+      rejected:    allRequests.filter(r => r.status === 'rejected').length,
+    };
+    const features = allRequests.filter(r => r.type === 'feature').length;
+    const bugs     = allRequests.filter(r => r.type === 'bug').length;
+    const pc = {
+      high:   allRequests.filter(r => r.priority === 'high').length,
+      medium: allRequests.filter(r => r.priority === 'medium').length,
+      low:    allRequests.filter(r => r.priority === 'low').length,
+    };
+
+    /* ── Donut (SVG stroke-dasharray technique) ── */
+    const R = 42, cx = 55, cy = 55;
+    const circ = 2 * Math.PI * R;
+    const segments = [
+      { key: 'completed',   color: '#22c55e', label: 'Completed'   },
+      { key: 'in_progress', color: '#3b82f6', label: 'In Progress' },
+      { key: 'pending',     color: '#f59e0b', label: 'Pending'     },
+      { key: 'rejected',    color: '#6b7280', label: 'Rejected'    },
+    ];
+    let offset = 0;
+    const rings = segments.map(s => {
+      const len = (sc[s.key] / total) * circ;
+      const el  = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${s.color}" stroke-width="12" stroke-dasharray="${len.toFixed(2)} ${circ.toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" stroke-linecap="butt"/>`;
+      offset += len;
+      return el;
+    });
+    document.getElementById('ov-donut-svg').innerHTML =
+      `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--border)" stroke-width="12"/>` +
+      rings.join('');
+    const pct = Math.round((sc.completed / total) * 100);
+    document.getElementById('ov-donut-pct').textContent = pct + '%';
+
+    /* ── Legend ── */
+    document.getElementById('ov-legend').innerHTML = segments.map(s => `
+      <div class="ov-legend-row">
+        <span style="display:flex;align-items:center;gap:6px">
+          <span class="ov-legend-dot" style="background:${s.color}"></span>
+          <span style="color:var(--text-muted)">${s.label}</span>
+        </span>
+        <span style="font-weight:700;color:var(--text)">${sc[s.key]}</span>
+      </div>`).join('');
+
+    /* ── Breakdown bars ── */
+    const bar = (label, count, color) => {
+      const p = total ? Math.round(count / total * 100) : 0;
+      return `<div class="ov-bar-group" style="margin-bottom:10px">
+        <div class="ov-bar-label">
+          <span style="color:var(--text-muted)">${label}</span>
+          <span style="font-weight:700;color:var(--text)">${count} <span style="font-weight:400;color:var(--text-muted)">(${p}%)</span></span>
+        </div>
+        <div class="ov-bar-track"><div class="ov-bar-fill" style="width:${p}%;background:${color}"></div></div>
+      </div>`;
+    };
+    document.getElementById('ov-breakdown').innerHTML =
+      `<div class="ov-section-lbl">ประเภทคำขอ</div>` +
+      bar('Feature Request', features, '#8b5cf6') +
+      bar('Bug Report', bugs, '#ef4444') +
+      `<div class="ov-section-lbl">Priority</div>` +
+      bar('High', pc.high, '#ef4444') +
+      bar('Medium', pc.medium, '#f59e0b') +
+      bar('Low', pc.low, '#22c55e');
+
+    /* ── Top requesters ── */
+    const byUser = {};
+    allRequests.forEach(r => {
+      const k = r.user_name || 'Unknown';
+      if (!byUser[k]) byUser[k] = { name: k, team: r.team, count: 0 };
+      byUser[k].count++;
+    });
+    const top = Object.values(byUser).sort((a, b) => b.count - a.count).slice(0, 5);
+    document.getElementById('ov-top-users').innerHTML = top.length
+      ? top.map((u, i) => `
+          <div class="ov-user-row">
+            <div class="ov-rank ov-rank-${i < 3 ? i + 1 : ''}">${i + 1}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(u.name)}</div>
+              ${u.team ? `<div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">${escHtml(u.team)}</div>` : ''}
+            </div>
+            <div style="font-size:13px;font-weight:800;color:var(--text);flex-shrink:0">${u.count}</div>
+          </div>`).join('')
+      : '<div style="color:var(--text-muted);font-size:12px;padding:20px 0;text-align:center">ยังไม่มีข้อมูล</div>';
+  }
+
+  function applyFilters() {
+    const typeFilter = document.getElementById('filter-type').value;
+    const statusFilter = document.getElementById('filter-status').value;
+    const priorityFilter = document.getElementById('filter-priority').value;
+
+    filteredRequests = allRequests.filter(r => {
+      if (typeFilter && r.type !== typeFilter) return false;
+      if (statusFilter && r.status !== statusFilter) return false;
+      if (priorityFilter && r.priority !== priorityFilter) return false;
+      return true;
+    });
+
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('requests-tbody');
+    
+    if (!filteredRequests.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">No requests found</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = filteredRequests.map(r => {
+      const typeIcon = r.type === 'feature' ? '<i data-icon="sparkles"></i>' : '<i data-icon="bug"></i>';
+      const typeClass = r.type === 'feature' ? 'req-type-feature' : 'req-type-bug';
+      const typeLabel = r.type === 'feature' ? 'Feature' : 'Bug';
+
+      const statusIcons = {
+        pending: '⏳',
+        in_progress: '<i data-icon="refresh-cw"></i>',
+        completed: '<i data-icon="check-circle"></i>',
+        rejected: '<i data-icon="x-circle"></i>'
+      };
+      const statusLabels = {
+        pending: 'Pending',
+        in_progress: 'In Progress',
+        completed: 'Completed',
+        rejected: 'Rejected'
+      };
+
+      const priorityIcons = {
+        high: '<i data-icon="circle"></i>',
+        medium: '<i data-icon="circle"></i>',
+        low: '<i data-icon="circle"></i>'
+      };
+
+      const createdDate = new Date(r.created_at).toLocaleDateString('th-TH', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+
+      const ticketBadge = r.ticket_number
+        ? `<span class="ticket-badge">${escHtml(r.ticket_number)}</span>`
+        : '<span style="color:var(--text-muted);font-size:10px">—</span>';
+
+      return `<tr>
+        <td>${ticketBadge}</td>
+        <td><span class="req-type-badge ${typeClass}">${typeIcon} ${typeLabel}</span></td>
+        <td>
+          <div style="font-weight:600;color:var(--text);margin-bottom:2px">${escHtml(r.title)}</div>
+          <div style="font-size:10px;color:var(--text-muted)">${escHtml(r.description.substring(0, 60))}${r.description.length > 60 ? '...' : ''}</div>
+        </td>
+        <td style="font-size:11px">${escHtml(r.user_name)}</td>
+        <td><span class="req-priority-${r.priority}">${priorityIcons[r.priority]} ${r.priority.toUpperCase()}</span></td>
+        <td><span class="req-status-badge req-status-${r.status}">${statusIcons[r.status]} ${statusLabels[r.status]}</span></td>
+        <td style="font-size:11px;color:var(--text-muted)">${createdDate}</td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="viewDetail('${r.id}')" title="View"><i data-icon="eye"></i></button>
+            <button class="btn btn-ghost btn-sm" onclick="updateStatus('${r.id}')" title="Update Status"><i data-icon="pencil"></i></button>
+            <button class="btn btn-danger btn-sm" onclick="deleteRequest('${r.id}')" title="Delete"><i data-icon="trash"></i></button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  let _detailReqId = null;
+
+  function viewDetail(id) {
+    const req = allRequests.find(r => r.id === id);
+    if (!req) return;
+    _detailReqId = id;
+
+    const typeIcon = req.type === 'feature' ? '<i data-icon="sparkles"></i>' : '<i data-icon="bug"></i>';
+    const typeLabel = req.type === 'feature' ? 'Feature Request' : 'Bug Report';
+    const statusLabels = { pending:'Pending', in_progress:'In Progress', completed:'Completed', rejected:'Rejected' };
+    const statusColors  = { pending:'#f59e0b', in_progress:'#3b82f6', completed:'#22c55e', rejected:'#6b7280' };
+
+    const ticketHtml = req.ticket_number
+      ? `<span class="ticket-badge" style="font-size:12px;padding:3px 10px">${escHtml(req.ticket_number)}</span>`
+      : '';
+
+    document.getElementById('detail-title').innerHTML = `${ticketHtml}&nbsp;${typeIcon} ${escHtml(req.title)}`;
+
+    document.getElementById('detail-body').innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:14px;padding:20px">
+        <!-- status bar -->
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="req-status-badge req-status-${req.status}">${statusLabels[req.status]}</span>
+          <span class="req-type-badge ${req.type === 'feature' ? 'req-type-feature' : 'req-type-bug'}">${typeIcon} ${typeLabel}</span>
+          <span class="req-priority-${req.priority}" style="font-size:11px">${req.priority.toUpperCase()}</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Requester</div>
+            <div style="font-size:13px;font-weight:600">${escHtml(req.user_name)}</div>
+            ${req.team ? `<div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">${escHtml(req.team)}</div>` : ''}
+          </div>
+          <div>
+            <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Created</div>
+            <div style="font-size:12px">${new Date(req.created_at).toLocaleString('th-TH')}</div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Description</div>
+          <div style="white-space:pre-wrap;line-height:1.6;font-size:13px;background:var(--bg);padding:12px;border-radius:8px;border:1px solid var(--border)">${escHtml(req.description)}</div>
+        </div>
+
+        ${req.admin_note ? `<div>
+          <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Admin Note (Legacy)</div>
+          <div style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:10px;border-radius:8px;color:var(--text-muted)">${escHtml(req.admin_note)}</div>
+        </div>` : ''}
+      </div>`;
+
+    // Render comment thread
+    renderCommentThread(req.comments || []);
+    Modal.open('detail-modal');
+    // auto-focus comment input
+    setTimeout(() => document.getElementById('detail-cmt-input')?.focus(), 200);
+  }
+
+  function renderCommentThread(comments) {
+    const thread = document.getElementById('detail-cmt-thread');
+    const count  = document.getElementById('detail-cmt-count');
+    if (count) count.textContent = comments.length;
+
+    if (!comments.length) {
+      thread.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:11px;padding:20px 0">ยังไม่มี comment</div>';
+      return;
+    }
+
+    thread.innerHTML = comments.map(c => {
+      const isAdmin = ['super_admin', 'sm_admin', 'dev_sm'].includes(c.author_role);
+      const initials = (c.author_name || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+      const time = new Date(c.created_at).toLocaleString('th-TH', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+      return `
+        <div class="cmt-bubble ${isAdmin ? 'is-admin' : ''}">
+          <div class="cmt-avatar ${isAdmin ? 'admin-av' : 'user-av'}">${initials}</div>
+          <div class="cmt-body">
+            <div class="cmt-meta">
+              <span style="font-weight:700;color:var(--text)">${escHtml(c.author_name)}</span>
+              ${isAdmin ? '<span class="cmt-role-badge">Admin</span>' : ''}
+              <span>${time}</span>
+            </div>
+            <div class="cmt-text">${escHtml(c.text)}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // scroll to bottom
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  async function sendAdminComment() {
+    const input = document.getElementById('detail-cmt-input');
+    const text = input?.value.trim();
+    if (!text || !_detailReqId) return;
+
+    const btn = input.nextElementSibling;
+    btn.disabled = true;
+    input.disabled = true;
+
+    try {
+      const res = await API.patch('/requests/index.php', { id: _detailReqId, comment: text });
+      if (res?.ok) {
+        input.value = '';
+        // Optimistically push comment into allRequests
+        const idx = allRequests.findIndex(r => r.id === _detailReqId);
+        if (idx !== -1) {
+          if (!allRequests[idx].comments) allRequests[idx].comments = [];
+          allRequests[idx].comments.push(res.data.data);
+          renderCommentThread(allRequests[idx].comments);
+        }
+      } else {
+        Toast.error(res?.data?.message || 'ส่ง comment ไม่สำเร็จ');
+      }
+    } catch (err) {
+      Toast.error('เกิดข้อผิดพลาด: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      input.disabled = false;
+      input.focus();
+    }
+  }
+
+  function openUpdateFromDetail() {
+    if (_detailReqId) {
+      Modal.close('detail-modal');
+      updateStatus(_detailReqId);
+    }
+  }
+
+  async function updateStatus(id) {
+    const req = allRequests.find(r => r.id === id);
+    if (!req) return;
+
+    // Populate modal
+    document.getElementById('update-req-id').value = id;
+    document.getElementById('update-req-title').innerHTML =
+      (req.ticket_number ? `<span class="ticket-badge" style="margin-right:6px">${escHtml(req.ticket_number)}</span>` : '') +
+      escHtml(req.title);
+    document.getElementById('update-status').value = req.status;
+    document.getElementById('update-priority').value = req.priority;
+    document.getElementById('update-note').value = req.admin_note || '';
+
+    Modal.open('update-modal');
+  }
+
+  async function saveStatusUpdate() {
+    const id = document.getElementById('update-req-id').value;
+    const newStatus = document.getElementById('update-status').value;
+    const newPriority = document.getElementById('update-priority').value;
+    const note = document.getElementById('update-note').value.trim();
+
+    const btn = document.querySelector('#update-modal .btn-primary');
+    const icon = document.getElementById('update-icon');
+    const text = document.getElementById('update-text');
+    
+    btn.disabled = true;
+    icon.textContent = '⏳';
+    text.textContent = 'Saving...';
+
+    try {
+      const res = await API.put('/requests/index.php', {
+        id,
+        status: newStatus,
+        priority: newPriority,
+        admin_note: note || null
+      });
+
+      if (res?.ok) {
+        Toast.success('Status updated successfully');
+        Modal.close('update-modal');
+        loadRequests();
+      } else {
+        Toast.error(res?.data?.message || 'Update failed');
+      }
+    } catch (err) {
+      Toast.error('Error: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      icon.innerHTML = '<i data-icon="save"></i>';
+      text.textContent = 'Save Changes';
+    }
+  }
+
+  async function deleteRequest(id) {
+    const req = allRequests.find(r => r.id === id);
+    if (!req) return;
+
+    // Populate delete modal
+    document.getElementById('delete-req-id').value = id;
+    document.getElementById('delete-req-title').textContent = req.title;
+
+    Modal.open('delete-modal');
+  }
+
+  async function confirmDelete() {
+    const id = document.getElementById('delete-req-id').value;
+    
+    const btn = document.querySelector('#delete-modal .btn-danger');
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span><span>Deleting...</span>';
+
+    try {
+      const res = await API.delete(`/requests/index.php?id=${id}`);
+      
+      if (res?.ok) {
+        Toast.success('Request deleted');
+        Modal.close('delete-modal');
+        loadRequests();
+      } else {
+        Toast.error(res?.data?.message || 'Delete failed');
+        btn.disabled = false;
+        btn.innerHTML = '<span><i data-icon="trash"></i></span><span>Delete</span>';
+      }
+    } catch (err) {
+      Toast.error('Error: ' + err.message);
+      btn.disabled = false;
+      btn.innerHTML = '<span><i data-icon="trash"></i></span><span>Delete</span>';
+    }
+  }
+
+  loadRequests();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Migrate User — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  <link rel="stylesheet" href="./assets/pages/migrate-user/migrate-user.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content" style="display:flex;flex-direction:column">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="git-merge"></i> Migrate User</div>
+        <div class="page-sub">Trigger Rundeck job · Migrate From Jenkins PRODUCTION</div>
+      </div>
+    </header>
+
+    <div class="mu-wrap" id="mu-wrap">
+
+      <!-- ── Status cards ────────────────────────────── -->
+      <div class="mu-status-grid">
+        <div class="mu-status-card">
+          <div class="mu-status-icon"><i data-icon="server"></i></div>
+          <div>
+            <div class="mu-status-label">Rundeck</div>
+            <div class="mu-status-value" id="mu-st-rundeck">th-ops-rundeck</div>
+          </div>
+        </div>
+        <div class="mu-status-card">
+          <div class="mu-status-icon"><i data-icon="layers"></i></div>
+          <div>
+            <div class="mu-status-label">Project</div>
+            <div class="mu-status-value" id="mu-st-project">Migrate_From_Jenkins_PRODUCTION</div>
+          </div>
+        </div>
+        <div class="mu-status-card">
+          <div class="mu-status-icon"><i data-icon="activity"></i></div>
+          <div>
+            <div class="mu-status-label">Last Run</div>
+            <div class="mu-status-value muted" id="mu-st-last">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Form card ─────────────────────────────────── -->
+      <div class="mu-card mu-body-enter">
+        <div class="mu-card-title"><i data-icon="terminal"></i> Job Parameters</div>
+        <div class="mu-card-sub">กรอกข้อมูล user ที่ต้องการ migrate จาก Jenkins PRODUCTION</div>
+
+        <div class="mu-field">
+          <label>tmnID</label>
+          <input id="mu-tmn-id" placeholder="tmn.1XXXXXXXXX" autocomplete="off" />
+          <div class="mu-field-hint">รูปแบบ: tmn.&lt;user_id&gt;</div>
+        </div>
+        <div class="mu-field">
+          <label>Contact Email</label>
+          <input id="mu-contact" type="email" placeholder="ABC@mail.com" autocomplete="off" />
+        </div>
+
+        <button class="mu-submit" id="mu-run-btn" onclick="MU.run()">
+          <i data-icon="play"></i>
+          Run Job
+        </button>
+      </div>
+
+      <!-- ── Output card (hidden until job runs) ─────── -->
+      <div class="mu-card" id="mu-output-card" style="display:none">
+        <div class="mu-card-title"><i data-icon="file-text"></i> Execution Output</div>
+
+        <div class="mu-out-head">
+          <span class="mu-badge queued" id="mu-badge">
+            <span class="mu-spinner"></span> Queued
+          </span>
+          <span style="font-size:11.5px;color:var(--text-muted)" id="mu-exec-id"></span>
+          <a class="mu-exec-link" id="mu-rundeck-link" href="#" target="_blank" style="display:none">
+            <i data-icon="external-link"></i> View in Rundeck
+          </a>
+        </div>
+
+        <div class="mu-log-wrap">
+          <pre class="mu-log" id="mu-log"><div class="mu-log-empty">Waiting for output…</div></pre>
+        </div>
+      </div>
+
+      <!-- ── Run History ──────────────────────────────── -->
+      <div class="mu-card" id="mu-history-card">
+        <div class="mu-card-title">
+          <i data-icon="clock"></i> Run History
+          <button class="mu-hist-refresh" onclick="MU.loadHistory()" title="Refresh"><i data-icon="refresh-cw"></i></button>
+        </div>
+        <div class="mu-card-sub">ประวัติการ run job ทั้งหมดในทีม</div>
+        <div id="mu-hist-body">
+          <div class="mu-log-empty" style="padding:28px 0">กำลังโหลด…</div>
+        </div>
+      </div>
+
+    </div><!-- /mu-wrap -->
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script>
+window.MU = {
+  pollTimer: null,
+  execId: null,
+  pollCount: 0,
+  MAX_POLLS: 120,
+
+  run() {
+    const tmnId   = document.getElementById('mu-tmn-id').value.trim();
+    const contact = document.getElementById('mu-contact').value.trim();
+
+    let valid = true;
+    document.getElementById('mu-tmn-id').classList.remove('error');
+    document.getElementById('mu-contact').classList.remove('error');
+
+    if (!tmnId) {
+      document.getElementById('mu-tmn-id').classList.add('error');
+      valid = false;
+    }
+    if (!contact || !contact.includes('@')) {
+      document.getElementById('mu-contact').classList.add('error');
+      valid = false;
+    }
+    if (!valid) {
+      if (typeof Toast !== 'undefined') Toast.show('กรุณากรอก tmnID และ Contact Email ให้ครบ', 'error');
+      return;
+    }
+
+    this._showOutput();
+    this._setBadge('queued', 'Queued');
+    document.getElementById('mu-run-btn').disabled = true;
+
+    API.get(`/rundeck-proxy.php?action=run_migrate&tmnID=${encodeURIComponent(tmnId)}&contact=${encodeURIComponent(contact)}`)
+      .then(res => {
+        if (!res.ok || !res?.data?.data?.id) {
+          const msg = res?.data?.error || res?.data?.message || `HTTP ${res.status}`;
+          throw new Error(msg);
+        }
+        this.execId = res.data.data.id;
+
+        document.getElementById('mu-exec-id').textContent = `Execution #${this.execId}`;
+        const link = document.getElementById('mu-rundeck-link');
+        link.href = `https://th-ops-rundeck.mgt.ascendmoney.io/execution/show/${this.execId}`;
+        link.style.display = '';
+
+        this._setBadge('running', 'Running');
+        document.getElementById('mu-st-last').textContent = `#${this.execId}`;
+        document.getElementById('mu-st-last').className = 'mu-status-value warn';
+
+        this._startPolling();
+      })
+      .catch(err => {
+        this._setBadge('failed', 'Failed');
+        const logEl = document.getElementById('mu-log');
+        logEl.textContent = `Error: ${err.message || err}`;
+        document.getElementById('mu-run-btn').disabled = false;
+        if (typeof Toast !== 'undefined') Toast.show(`Error: ${err.message || err}`, 'error');
+      });
+  },
+
+  _showOutput() {
+    const card = document.getElementById('mu-output-card');
+    card.style.display = '';
+    document.getElementById('mu-log').innerHTML = '<div class="mu-log-empty">Waiting for output…</div>';
+    document.getElementById('mu-exec-id').textContent = '';
+    document.getElementById('mu-rundeck-link').style.display = 'none';
+    this.execId = null;
+    this.pollCount = 0;
+    clearInterval(this.pollTimer);
+    setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+  },
+
+  _startPolling() {
+    clearInterval(this.pollTimer);
+    this._poll();
+    this.pollTimer = setInterval(() => this._poll(), 2500);
+  },
+
+  async _poll() {
+    if (!this.execId) return;
+    this.pollCount++;
+    if (this.pollCount > this.MAX_POLLS) {
+      clearInterval(this.pollTimer);
+      return;
+    }
+
+    try {
+      const [outRes, statusRes] = await Promise.all([
+        API.get(`/rundeck-proxy.php?action=output&executionId=${this.execId}&src=migrate`),
+        API.get(`/rundeck-proxy.php?action=status&executionId=${this.execId}&src=migrate`)
+      ]);
+
+      const entries = outRes?.data?.data?.entries ?? [];
+      if (entries.length > 0) {
+        const logEl = document.getElementById('mu-log');
+        logEl.textContent = entries.map(e => e.log ?? '').join('\n');
+        const wrap = logEl.parentElement;
+        wrap.scrollTop = wrap.scrollHeight;
+      }
+
+      const status = statusRes?.data?.data?.status;
+      if (status === 'running') {
+        this._setBadge('running', 'Running');
+      } else if (status === 'succeeded') {
+        this._setBadge('succeeded', 'Succeeded');
+        clearInterval(this.pollTimer);
+        document.getElementById('mu-run-btn').disabled = false;
+        document.getElementById('mu-st-last').className = 'mu-status-value ok';
+        if (typeof Toast !== 'undefined') Toast.show('Job สำเร็จ!', 'success');
+      } else if (status === 'failed') {
+        this._setBadge('failed', 'Failed');
+        clearInterval(this.pollTimer);
+        document.getElementById('mu-run-btn').disabled = false;
+        document.getElementById('mu-st-last').className = 'mu-status-value bad';
+        if (typeof Toast !== 'undefined') Toast.show('Job ล้มเหลว — ดู log ด้านล่าง', 'error');
+      } else if (status === 'aborted') {
+        this._setBadge('aborted', 'Aborted');
+        clearInterval(this.pollTimer);
+        document.getElementById('mu-run-btn').disabled = false;
+      }
+    } catch (_) {
+      // silent — keep polling
+    }
+  },
+
+  _setBadge(cls, label) {
+    const el = document.getElementById('mu-badge');
+    el.className = `mu-badge ${cls}`;
+    const spin = (cls === 'running' || cls === 'queued')
+      ? '<span class="mu-spinner"></span> '
+      : '';
+    el.innerHTML = spin + label;
+  },
+
+  async loadHistory() {
+    const body = document.getElementById('mu-hist-body');
+    const res = await API.get('/migrate-user/index.php?action=history&limit=5');
+    const rows = res?.data?.data ?? [];
+    if (!rows.length) {
+      body.innerHTML = '<div class="mu-log-empty" style="padding:28px 0">ยังไม่มีประวัติการ run</div>';
+      return;
+    }
+    const fmt = ts => {
+      try {
+        const d = new Date(ts);
+        return d.toLocaleDateString('th-TH', { day:'2-digit', month:'short', year:'numeric' })
+          + ' ' + d.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+      } catch { return ts; }
+    };
+    body.innerHTML = `
+      <table class="mu-hist-table">
+        <thead><tr>
+          <th>เวลา</th>
+          <th>ผู้รัน</th>
+          <th>tmnID</th>
+          <th>Contact</th>
+          <th>Execution</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(e => `<tr>
+            <td class="mu-hist-time">${fmt(e.ts)}</td>
+            <td class="mu-hist-user">${e.user_name || e.user_id || '—'}</td>
+            <td class="mu-hist-tmn">${e.detail?.tmnID || '—'}</td>
+            <td>${e.detail?.contact || '—'}</td>
+            <td>${e.detail?.execution_id
+              ? `<a class="mu-hist-exec" href="https://th-ops-rundeck.mgt.ascendmoney.io/execution/show/${e.detail.execution_id}" target="_blank">#${e.detail.execution_id}</a>`
+              : '—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+};
+
+(function init() {
+
+  Auth.requireAuth();
+  Layout.render('migrate-user');
+  MU.loadHistory();
+})();
+</script>
+</body>
+</html>

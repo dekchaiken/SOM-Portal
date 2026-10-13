@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backup Data — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/backup/backup.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="save"></i> Backup Data</div>
+        <div class="page-sub">สำรองข้อมูลระบบอัตโนมัติ · ดาวน์โหลด · จัดการ</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="./index.html" class="btn btn-ghost" style="font-size:11px">← Admin Panel</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="save"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Backup Data</h1>
+          <p>สำรองข้อมูลระบบอัตโนมัติ · ดาวน์โหลด zip ของ <code>/data/</code> · จัดการ retention</p>
+        </div>
+      </section>
+
+      <!-- Stats row -->
+      <div class="bk-stats" id="bk-stats">
+        <div class="bk-stat" style="--bk-color:#22c55e">
+          <div class="bk-stat-icon"><i data-icon="calendar"></i></div>
+          <div class="bk-stat-val" id="st-last">—</div>
+          <div class="bk-stat-lbl">Backup ล่าสุด</div>
+          <div class="bk-stat-sub" id="st-last-ago"></div>
+        </div>
+        <div class="bk-stat" style="--bk-color:#3b82f6">
+          <div class="bk-stat-icon"><i data-icon="package"></i></div>
+          <div class="bk-stat-val" id="st-count">—</div>
+          <div class="bk-stat-lbl">Backup ที่เก็บไว้</div>
+          <div class="bk-stat-sub">เก็บสูงสุด 8 ชุด</div>
+        </div>
+        <div class="bk-stat" style="--bk-color:#8b5cf6">
+          <div class="bk-stat-icon"><i data-icon="bar-chart"></i></div>
+          <div class="bk-stat-val" id="st-size">—</div>
+          <div class="bk-stat-lbl">ขนาดรวมทั้งหมด</div>
+          <div class="bk-stat-sub" id="st-size-sub"></div>
+        </div>
+      </div>
+
+      <!-- Auto-backup info -->
+      <div class="auto-info">
+        <div class="auto-info-icon"><i data-icon="chip"></i></div>
+        <div>
+          <span class="auto-dot"></span>
+          <strong>Auto-Backup ทำงานอยู่</strong> — ระบบสร้าง backup อัตโนมัติทุก
+          <strong>7 วัน</strong> เมื่อ admin เปิดเว็บ<br>
+          เก็บ backup ล่าสุด <strong>8 ชุด</strong> (~2 เดือน) · ไฟล์ backup คือ
+          <code>.zip</code> ของทุกไฟล์ใน <code>data/</code>
+          · กด <strong>ดาวน์โหลด</strong> เก็บไว้บนเครื่องเพิ่มเติมได้เลย
+        </div>
+      </div>
+
+      <!-- Backup list card -->
+      <div class="bk-card">
+        <div class="bk-card-hd">
+          <div class="bk-card-hd-left">
+            <div class="bk-card-icon"><i data-icon="save"></i></div>
+            <div>
+              <div class="bk-card-title">Backup ทั้งหมด</div>
+              <div class="bk-card-sub" id="bk-sub">กำลังโหลด…</div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btn-create" style="font-size:11px">
+            + สร้าง Backup ตอนนี้
+          </button>
+        </div>
+
+        <div id="bk-table-wrap" style="overflow-x:auto">
+          <table class="bk-tbl">
+            <thead>
+              <tr>
+                <th class="col-num">#</th>
+                <th class="col-name">ชื่อไฟล์</th>
+                <th class="col-size">ขนาด</th>
+                <th class="col-date">วันที่สร้าง</th>
+                <th class="col-btns"></th>
+              </tr>
+            </thead>
+            <tbody id="bk-tbody">
+              <tr><td colspan="5" style="padding:32px;text-align:center;color:var(--text-muted)">
+                <div class="spinner" style="display:inline-block;margin-right:8px"></div>กำลังโหลด…
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="bk-empty" id="bk-empty" style="display:none">
+          <div class="bk-empty-icon"><i data-icon="inbox"></i></div>
+          <div>ยังไม่มี Backup</div>
+          <div class="bk-empty-desc">
+            กดปุ่ม <strong>+ สร้าง Backup ตอนนี้</strong> เพื่อสำรองข้อมูลครั้งแรก<br>
+            หรือรอ Auto-Backup ที่จะทำงานอัตโนมัติทุก 7 วัน
+          </div>
+        </div>
+      </div>
+
+      <!-- How-to-restore info -->
+      <div class="bk-card" style="border-color:rgba(251,191,36,.35)">
+        <div class="bk-card-hd" style="border-bottom:none;padding-bottom:0">
+          <div class="bk-card-hd-left">
+            <div class="bk-card-icon" style="background:rgba(251,191,36,.12);color:#f59e0b"><i data-icon="wrench"></i></div>
+            <div>
+              <div class="bk-card-title">วิธี Restore จาก Backup</div>
+              <div class="bk-card-sub">ถ้าเว็บมีปัญหา ทำตามขั้นตอนนี้</div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:0 20px 18px;font-size:11px;color:var(--text-muted);line-height:1.85">
+          <ol style="margin:12px 0 0 16px;padding:0">
+            <li>ดาวน์โหลด backup <code>.zip</code> ล่าสุดจากหน้านี้ไว้ที่เครื่อง</li>
+            <li>Clone หรือ deploy โปรเจ็กต์ใหม่บน server</li>
+            <li>แตกไฟล์ <code>.zip</code> แล้ว copy ทุกไฟล์ไปวางใน <code>data/</code> ทับไฟล์เดิม</li>
+            <li>ระบบจะกลับมาทำงานปกติโดยไม่ต้อง config ใหม่</li>
+          </ol>
+          <div style="margin-top:10px;padding:8px 12px;background:var(--bg);border-radius:7px;font-size:10px">
+            <i data-icon="lightbulb"></i> แนะนำให้ดาวน์โหลด backup เก็บไว้บนเครื่องหรือ Google Drive เป็นประจำเพิ่มเติมด้วย
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Confirm dialog ── -->
+<div class="confirm-wrap" id="confirm-wrap">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon"><i data-icon="trash"></i></div>
+    <div class="confirm-title" id="confirm-title">ยืนยันการลบ</div>
+    <div class="confirm-desc"  id="confirm-desc"></div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" id="confirm-cancel-btn">ยกเลิก</button>
+      <button class="confirm-ok"     id="confirm-ok-btn">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/backup/backup.js"></script>
+</body>
+</html>

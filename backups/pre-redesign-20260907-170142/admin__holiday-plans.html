@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Holiday Plans — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+  .main-content,.page-content { min-width:0;overflow-x:hidden; }
+  .adm-hp-wrap { display:flex;flex-direction:column;gap:20px; }
+
+  .adm-mnav { background:white;border:1.5px solid #e8e8e8;border-radius:14px;padding:12px 18px;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px; }
+  .adm-mnav-l { display:flex;align-items:center;gap:6px; }
+  .adm-mnav-btn { background:none;border:1.5px solid #e8e8e8;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px;color:var(--text);display:flex;align-items:center;justify-content:center;transition:all .15s; }
+  .adm-mnav-btn:hover { border-color:var(--orange);color:var(--orange);background:var(--orange-bg); }
+  .adm-mnav-title { font-size:15px;font-weight:800;color:var(--text);min-width:165px;text-align:center; }
+  .adm-chips { display:flex;gap:8px;flex-wrap:wrap;align-items:center; }
+  .adm-chip { padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:var(--orange-dim);color:var(--orange);border:1px solid rgba(242,100,25,.25); }
+  .adm-chip.green { background:rgba(34,197,94,.1);color:#16a34a;border-color:rgba(34,197,94,.25); }
+  .adm-chip.red   { background:rgba(239,68,68,.1);color:#ef4444;border-color:rgba(239,68,68,.2); }
+
+  .panel-card { background:white;border:1.5px solid #e8e8e8;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06); }
+  .panel-hd { padding:14px 20px;border-bottom:1.5px solid #f0f0f0;font-size:11px;font-weight:700;color:#666;letter-spacing:.05em;text-transform:uppercase;background:linear-gradient(135deg,#fff8f0 0%,white 100%);display:flex;align-items:center;gap:8px; }
+
+  .status-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:1px;background:#f0f0f0;padding:1px; }
+  .status-cell { background:white;padding:11px 14px;display:flex;align-items:center;gap:10px; }
+  .status-dot  { width:9px;height:9px;border-radius:50%;flex-shrink:0; }
+  .status-name { font-size:12px;font-weight:700;color:var(--text); }
+  .status-sub  { font-size:10px;color:#999;margin-top:1px; }
+  .status-badge { margin-left:auto;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap; }
+  .status-badge.done { background:var(--orange-dim);color:var(--orange);border:1px solid rgba(242,100,25,.2); }
+  .status-badge.none { background:#f5f5f5;color:#ccc; }
+
+  .cal-scroll { overflow-x:auto; }
+  .cal-tbl { border-collapse:collapse;font-size:11px;background:white;min-width:max-content;width:100%; }
+  .cal-tbl thead th { padding:0;border-bottom:1.5px solid #e8e8e8; }
+  .cal-th-name { position:sticky;left:0;z-index:10;background:linear-gradient(135deg,#fff8f0 0%,white 100%);color:#666;padding:10px 16px;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;min-width:175px;text-align:left;border-right:2px solid #e8e8e8;border-bottom:1.5px solid #e8e8e8; }
+  .cal-th-day { min-width:30px;width:30px;text-align:center;font-size:9px;font-weight:700;padding:5px 2px;color:#999;background:#fafafa;border-right:1px solid #eee;vertical-align:bottom; }
+  .cal-th-day.wkd { background:#fff5f5;color:#ef4444; }
+  .cal-th-day.hol { background:#fffbeb;color:#b45309; }
+  .cal-th-day.tod { background:var(--orange);color:white; }
+  .cal-th-total { min-width:64px;background:var(--orange-bg);color:var(--orange);text-align:center;padding:10px 8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-left:2px solid rgba(242,100,25,.2); }
+  .cal-tbl tbody tr { border-bottom:1px solid #f0f0f0; }
+  .cal-tbl tbody tr:last-child { border-bottom:none; }
+  .cal-tbl tbody tr:hover td { background:rgba(242,100,25,.03); }
+  .cal-td-name { position:sticky;left:0;z-index:5;background:white;padding:8px 12px;border-right:2px solid #e8e8e8;white-space:nowrap;min-width:175px;display:flex;align-items:center;gap:8px; }
+  .cal-tbl tbody tr:hover .cal-td-name { background:#fdf4ec; }
+  .rem-badge { font-size:11px;font-weight:800;flex-shrink:0;background:var(--orange-dim);color:var(--orange);border:1px solid rgba(242,100,25,.25);border-radius:7px;padding:2px 8px;min-width:30px;text-align:center; }
+  .cal-td-cell { min-width:30px;width:30px;height:32px;border-right:1px solid #f0f0f0;padding:0;cursor:pointer;transition:background .1s; }
+  .cal-td-cell.wkd { background:#fafafa; }
+  .cal-td-cell.hol { background:#fffbeb; }
+  .cal-td-cell.plan { background:rgba(242,100,25,.28); }
+  .cal-td-cell.plan:hover { background:rgba(242,100,25,.5); }
+  .cal-td-cell:not(.plan):hover { background:var(--orange-bg); }
+  .cal-td-total { text-align:center;font-weight:800;font-size:12px;color:var(--orange);padding:0 10px;border-left:2px solid rgba(242,100,25,.15);min-width:64px; }
+  .cal-legend { display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:11px;color:#888; }
+  .cal-legend-dot { width:13px;height:13px;border-radius:3px;flex-shrink:0; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="topbar-title-left">
+          <div class="page-title"><i data-icon="calendar"></i> Holiday Plans</div>
+          <div class="page-sub">ภาพรวมแผนวันหยุดล่วงหน้าทั้งทีม — Admin</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadAll()" style="font-size:11px">↺ รีเฟรช</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="calendar"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Holiday Plans</h1>
+          <p>ภาพรวมแผนวันหยุดล่วงหน้าทั้งทีม — Toggle ดูแต่ละคน, sync กับ leave management</p>
+        </div>
+      </section>
+
+      <div class="adm-hp-wrap">
+
+        <div class="adm-mnav">
+          <div class="adm-mnav-l">
+            <button class="adm-mnav-btn" onclick="changeYear(-1)">«</button>
+            <button class="adm-mnav-btn" onclick="changeMonth(-1)">‹</button>
+            <div class="adm-mnav-title" id="adm-title">กำลังโหลด...</div>
+            <button class="adm-mnav-btn" onclick="changeMonth(1)">›</button>
+            <button class="adm-mnav-btn" onclick="changeYear(1)">»</button>
+            <button class="btn btn-ghost btn-sm" onclick="goToday()" style="font-size:10px;margin-left:4px">วันนี้</button>
+          </div>
+          <div class="adm-chips">
+            <div class="adm-chip green" id="chip-done">—</div>
+            <div class="adm-chip red"   id="chip-missing">—</div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-hd"><i data-icon="users"></i> สถานะการกรอกแผน — <strong id="adm-status-label" style="color:var(--text);text-transform:none;font-size:12px"></strong></div>
+          <div class="status-grid" id="status-grid">
+            <div style="padding:24px;color:#aaa;font-size:12px;background:white;grid-column:1/-1">กำลังโหลด...</div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-hd"><i data-icon="calendar"></i> ตารางแผนวันหยุด
+            <span style="margin-left:auto;font-size:10px;color:#aaa;font-weight:500;text-transform:none;letter-spacing:0">คลิกเซลล์เพื่อเพิ่ม/ลบแผนแต่ละคนได้</span>
+          </div>
+          <div class="cal-scroll">
+            <table class="cal-tbl">
+              <thead id="cal-thead"></thead>
+              <tbody id="cal-tbody"><tr><td colspan="40" style="text-align:center;padding:40px;color:#aaa;font-size:12px">กำลังโหลด...</td></tr></tbody>
+            </table>
+          </div>
+          <div style="padding:12px 18px;border-top:1px solid #f0f0f0">
+            <div class="cal-legend">
+              <div style="display:flex;align-items:center;gap:5px"><div class="cal-legend-dot" style="background:rgba(242,100,25,.28)"></div><span>มีแผน</span></div>
+              <div style="display:flex;align-items:center;gap:5px"><div class="cal-legend-dot" style="background:#fffbeb;border:1px solid #e8e8e8"></div><span>วันหยุดนักขัตฤกษ์</span></div>
+              <div style="display:flex;align-items:center;gap:5px"><div class="cal-legend-dot" style="background:#fafafa;border:1px solid #e8e8e8"></div><span>เสาร์-อาทิตย์</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/theme.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAuth()) {}
+Layout.render('admin-holiday-plans');
+
+const _today = new Date();
+let curYear  = _today.getFullYear(), curMonth = _today.getMonth()+1;
+let plansData={}, usersData=[], quotaData={}, leaveData=[], holidayMap=new Map();
+let fullYearScheduleData={}, _fullYearLoadedFor=null;
+
+const MTH=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const DTH=['อา','จ','อ','พ','พฤ','ศ','ส'];
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const p2=n=>String(n).padStart(2,'0');
+const ds=(y,m,d)=>`${y}-${p2(m)}-${p2(d)}`;
+
+function changeMonth(d){const py=curYear;curMonth+=d;if(curMonth>12){curMonth=1;curYear++;}if(curMonth<1){curMonth=12;curYear--;}loadMonthData();if(curYear!==py)loadFullYearSchedule();}
+function changeYear(d){curYear+=d;loadAll();}
+function goToday(){const py=curYear;curYear=_today.getFullYear();curMonth=_today.getMonth()+1;loadMonthData();if(curYear!==py)loadFullYearSchedule();}
+
+async function loadAll(){
+  const[uR,qR,lR,hR]=await Promise.all([API.users.list(),API.vacation.getQuotas(),API.leave.list({admin:true}),API.holidays.list()]);
+  usersData=uR?.ok?(uR.data.data||[]):[];
+  quotaData=qR?.ok?(qR.data.data||{}):{};
+  leaveData=lR?.ok?(lR.data.data||[]):[];
+  holidayMap=new Map((hR?.ok?(hR.data.data||[]):[]).map(h=>[h.date,h.name]));
+  await loadMonthData();
+  loadFullYearSchedule();
+}
+async function loadMonthData(){
+  const r=await API.holidayPlans.get(curYear,curMonth);
+  plansData=r?.ok?(r.data.data?.plans||{}):{};
+  renderAll();
+}
+async function loadFullYearSchedule(){
+  if(_fullYearLoadedFor===curYear)return;
+  _fullYearLoadedFor=curYear;
+  fullYearScheduleData={};
+  const results=await Promise.all(Array.from({length:12},(_,i)=>API.schedule.get(curYear,i+1)));
+  results.forEach(r=>{if(r?.ok)Object.assign(fullYearScheduleData,r.data.data||{});});
+  renderAll();
+}
+function getRemaining(uid){
+  const q=parseFloat(quotaData[uid])||0; if(!q)return null;
+  const yearStr=String(curYear);
+  const cov=new Set();
+  const usedFromLeaves=leaveData.filter(l=>l.user_id===uid&&l.status==='approved'&&l.type==='vacation')
+    .reduce((s,l)=>{
+      let yearDates=[];
+      if(l.dates?.length) yearDates=l.dates.filter(d=>d.startsWith(yearStr));
+      else if(l.start_date&&l.end_date){
+        for(let d=new Date(l.start_date);d<=new Date(l.end_date);d.setDate(d.getDate()+1)){
+          const ds=d.toISOString().slice(0,10);
+          if(ds.startsWith(yearStr)) yearDates.push(ds);
+        }
+      }
+      yearDates.forEach(d=>cov.add(d));
+      if(!yearDates.length)return s;
+      return s+(l.duration==='half'?yearDates.length*0.5:yearDates.length);
+    },0);
+  const extraFromSchedule=Object.entries(fullYearScheduleData).reduce((s,[date,day])=>{
+    if(!date.startsWith(yearStr)||cov.has(date))return s;
+    return s+(day.vacation||[]).reduce((ss,v)=>
+      ss+(typeof v==='object'&&v.user_id===uid?(v.days||1):v===uid?1:0),0);
+  },0);
+  const r=q-usedFromLeaves-extraFromSchedule;
+  return r%1===0?r:parseFloat(r.toFixed(1));
+}
+
+function renderAll(){
+  const todStr=ds(_today.getFullYear(),_today.getMonth()+1,_today.getDate());
+  const dim=new Date(curYear,curMonth,0).getDate(), label=`${MTH[curMonth]} ${curYear+543}`;
+  document.getElementById('adm-title').textContent=label;
+  document.getElementById('adm-status-label').textContent=label;
+
+  const planners=usersData.filter(u=>(plansData[u.id]||[]).length>0);
+  const missing=usersData.filter(u=>(plansData[u.id]||[]).length===0);
+  document.getElementById('chip-done').innerHTML=`<i data-icon=\"check\"></i> ${planners.length} คนกรอกแล้ว`;
+  document.getElementById('chip-missing').innerHTML=`<i data-icon=\"x\"></i> ${missing.length} ยังไม่กรอก`;
+
+  document.getElementById('status-grid').innerHTML=usersData.length?usersData.map(u=>{
+    const cnt=(plansData[u.id]||[]).length, rem=getRemaining(u.id);
+    return`<div class="status-cell">
+      <div class="status-dot" style="background:${cnt>0?'var(--orange)':'#e5e7eb'}"></div>
+      <div><div class="status-name">${esc(u.nickname||u.name.split(' ')[0]||u.name)}</div>
+      <div class="status-sub">${rem!==null?`เหลือ ${rem} วัน`:'ยังไม่ตั้งโควต้า'}</div></div>
+      <span class="status-badge ${cnt>0?'done':'none'}">${cnt>0?cnt+' วัน':'—'}</span>
+    </div>`;
+  }).join(''):'<div style="padding:24px;color:#aaa;font-size:12px;background:white;grid-column:1/-1">ยังไม่มีสมาชิก</div>';
+
+  let hd=`<tr><th class="cal-th-name">ชื่อ</th>`;
+  for(let d=1;d<=dim;d++){
+    const date=ds(curYear,curMonth,d),dw=new Date(curYear,curMonth-1,d).getDay();
+    let c='cal-th-day';
+    if(date===todStr)c+=' tod'; else if(holidayMap.has(date))c+=' hol'; else if(dw===0||dw===6)c+=' wkd';
+    hd+=`<th class="${c}" ${holidayMap.has(date)?`title="${esc(holidayMap.get(date))}"`:''}><div>${p2(d)}</div><div style="font-size:8px;opacity:.7">${DTH[dw]}</div></th>`;
+  }
+  hd+=`<th class="cal-th-total">วันแผน</th></tr>`;
+  document.getElementById('cal-thead').innerHTML=hd;
+
+  document.getElementById('cal-tbody').innerHTML=usersData.length?usersData.map(u=>{
+    const rem=getRemaining(u.id), remOvr=rem!==null&&rem<0?`color:#ef4444;border-color:#ef4444;background:#ef444422`:rem!==null&&rem<=3?`color:#f97316;border-color:#f97316;background:#f9731622`:'';
+    const plan=new Set(plansData[u.id]||[]);
+    let cells='';
+    for(let d=1;d<=dim;d++){
+      const date=ds(curYear,curMonth,d),dw=new Date(curYear,curMonth-1,d).getDay();
+      let c='cal-td-cell';
+      if(plan.has(date))c+=' plan'; else if(holidayMap.has(date))c+=' hol'; else if(dw===0||dw===6)c+=' wkd';
+      cells+=`<td class="${c}" onclick="adminToggle('${u.id}','${date}')"></td>`;
+    }
+    return`<tr>
+      <td class="cal-td-name">
+        <span class="rem-badge" style="${remOvr}">${rem!==null?rem:'—'}</span>
+        <div><div style="font-weight:700;font-size:12px;color:var(--text)">${esc(u.nickname||u.name.split(' ')[0]||u.name)}</div>${u.nickname?`<div style="font-size:9px;color:#aaa">${esc(u.name)}</div>`:''}</div>
+      </td>${cells}
+      <td class="cal-td-total">${plan.size>0?`<strong>${plan.size}</strong>`:`<span style="color:#ddd">—</span>`}</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="40" style="text-align:center;padding:32px;color:#aaa;font-size:12px">ยังไม่มีสมาชิก</td></tr>';
+}
+
+async function adminToggle(userId,date){
+  const[y,m]=date.split('-').map(Number);
+  if(y!==curYear||m!==curMonth)return;
+  const cur=new Set(plansData[userId]||[]);
+  cur.has(date)?cur.delete(date):cur.add(date);
+  const dates=[...cur].sort();
+  const res=await API.holidayPlans.save({year:curYear,month:curMonth,dates,user_id:userId});
+  if(!res?.ok){Toast.error('บันทึกไม่สำเร็จ');return;}
+  plansData[userId]=dates; renderAll();
+}
+
+loadAll();
+</script>
+</body>
+</html>

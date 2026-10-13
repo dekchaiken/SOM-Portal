@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <style>
+    .view-toggle {
+      display:flex;gap:2px;background:var(--bg);border:1px solid var(--border);
+      border-radius:8px;padding:3px;
+    }
+    .view-toggle button {
+      padding:5px 12px;border-radius:6px;border:none;background:transparent;
+      font-size:11px;font-weight:600;color:var(--text-muted);cursor:pointer;
+      transition:all .15s;font-family:inherit;
+    }
+    .view-toggle button.active {
+      background:var(--bg-card);color:var(--text);
+      box-shadow:0 1px 4px rgba(0,0,0,.08);
+    }
+    .monitor-section { margin-bottom:24px; }
+    .monitor-section-label {
+      font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+      color:var(--text-muted);margin-bottom:10px;
+    }
+    .monitor-grid {
+      display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;
+    }
+    .monitor-card {
+      position:relative;background:var(--bg-card);border:1.5px solid var(--border);
+      border-radius:14px;padding:16px 16px 14px;display:flex;flex-direction:column;
+      gap:10px;text-decoration:none;color:inherit;cursor:pointer;
+      transition:all .2s ease;overflow:hidden;min-height:110px;
+    }
+    .monitor-card::before {
+      content:'';position:absolute;bottom:0;left:0;right:0;height:2.5px;
+      background:linear-gradient(90deg,var(--orange),transparent);
+      border-radius:0 0 14px 14px;transform:scaleX(0);transform-origin:left;
+      transition:transform .22s ease;
+    }
+    .monitor-card:hover::before { transform:scaleX(1); }
+    .monitor-card:hover {
+      border-color:rgba(242,100,25,.22);
+      box-shadow:0 8px 28px rgba(0,0,0,.08),0 2px 6px rgba(242,100,25,.1);
+      transform:translateY(-2px);
+    }
+    .mc-live {
+      position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;
+      letter-spacing:.04em;padding:2px 7px;border-radius:20px;
+      background:rgba(34,197,94,.12);color:#15803d;border:1px solid rgba(34,197,94,.25);
+    }
+    .mc-icon { font-size:22px;line-height:1; }
+    .mc-info { margin-top:auto; }
+    .mc-name { font-size:12.5px;font-weight:700;color:var(--text);letter-spacing:-.01em;line-height:1.3;margin-bottom:3px; }
+    .mc-desc { font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+
+    .live-dot { width:7px;height:7px;background:#22c55e;border-radius:50%;animation:pulsedot 2s infinite; }
+    @keyframes pulsedot { 0%,100%{opacity:1}50%{opacity:.4} }
+
+    /* ── Iframe overlay ───────────────────────────── */
+    .iframe-overlay {
+      display:none;position:fixed;inset:0;z-index:1200;
+      background:rgba(0,0,0,.55);align-items:center;justify-content:center;
+    }
+    .iframe-overlay.open { display:flex; }
+    .iframe-panel {
+      width:96vw;height:92vh;background:#1a1a2e;border-radius:14px;
+      display:flex;flex-direction:column;overflow:hidden;
+      box-shadow:0 24px 80px rgba(0,0,0,.5);
+    }
+    .iframe-topbar {
+      display:flex;align-items:center;gap:10px;padding:10px 14px;
+      background:var(--bg-card);border-bottom:1px solid var(--border);flex-shrink:0;
+    }
+    .iframe-topbar-title { font-size:13px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .iframe-topbar-url {
+      font-size:10px;color:var(--text-muted);max-width:300px;overflow:hidden;
+      text-overflow:ellipsis;white-space:nowrap;font-family:monospace;
+    }
+    .iframe-btn {
+      padding:5px 10px;border-radius:6px;border:none;cursor:pointer;font-size:11px;
+      font-family:inherit;font-weight:600;transition:all .15s;
+    }
+    .iframe-btn-newtab { background:var(--bg);color:var(--text);border:1px solid var(--border); }
+    .iframe-btn-newtab:hover { border-color:var(--orange);color:var(--orange); }
+    .iframe-btn-close { background:#fee2e2;color:#dc2626; }
+    .iframe-btn-close:hover { background:#fca5a5; }
+    .iframe-panel iframe { flex:1;border:none;width:100%; }
+
+    /* ── Wall 3x3 view ─────────────────────────────────── */
+    #wall-view { display:none;flex:1;padding:12px;overflow:hidden;background:#0b0b12; }
+    #wall-view.active { display:flex; }
+    .wall-grid {
+      flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+      gap:8px;min-height:0;
+    }
+    .wall-cell {
+      position:relative;background:#1a1a2e;border-radius:8px;overflow:hidden;
+      display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.06);
+    }
+    .wall-cell-head {
+      display:flex;align-items:center;gap:6px;padding:5px 10px;
+      background:rgba(0,0,0,.35);font-size:11px;font-weight:700;color:#e5e7eb;
+      border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;
+    }
+    .wall-cell-head .live-dot { width:6px;height:6px; }
+    .wall-cell-name { flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .wall-cell-open, .wall-cell-expand {
+      font-size:10px;color:#94a3b8;text-decoration:none;padding:2px 6px;
+      border-radius:4px;border:1px solid rgba(255,255,255,.1);
+      background:transparent;cursor:pointer;font-family:inherit;line-height:1;
+    }
+    .wall-cell-open:hover, .wall-cell-expand:hover { color:var(--orange);border-color:var(--orange); }
+    .wall-cell-actions { display:flex;gap:4px;align-items:center; }
+    /* Render iframe at Full HD then scale to fit cell (keeps gauges/charts crisp) */
+    .wall-cell-frame {
+      position:relative;flex:1;overflow:hidden;background:#0b0b12;
+    }
+    .wall-cell-frame iframe {
+      position:absolute;top:0;left:0;border:none;
+      width:1920px;height:1080px;
+      transform-origin:top left;
+      transform:scale(var(--scale,1));
+    }
+    .wall-cell-empty {
+      flex:1;display:flex;align-items:center;justify-content:center;
+      color:#475569;font-size:11px;
+    }
+    /* Fallback when iframe can't embed (X-Frame-Options, login required, etc.) */
+    .wall-cell-fallback {
+      flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:12px;padding:20px;text-align:center;cursor:pointer;
+      background:linear-gradient(135deg,#1a1a2e 0%,#0f0f1a 100%);
+      transition:background .2s;
+    }
+    .wall-cell-fallback:hover { background:linear-gradient(135deg,#222238 0%,#13131f 100%); }
+    .wall-cell-fallback-icon { font-size:36px;opacity:.85; }
+    .wall-cell-fallback-title { font-size:13px;font-weight:700;color:#e5e7eb; }
+    .wall-cell-fallback-desc { font-size:10.5px;color:#94a3b8;line-height:1.5;max-width:240px; }
+    .wall-cell-fallback-btn {
+      margin-top:4px;padding:6px 14px;border-radius:6px;
+      background:rgba(242,100,25,.15);color:var(--orange);font-size:11px;font-weight:600;
+      border:1px solid rgba(242,100,25,.4);
+    }
+    .wall-cell-fallback:hover .wall-cell-fallback-btn {
+      background:var(--orange);color:#fff;
+    }
+
+    /* Zoom toggle */
+    .wall-zoom-toggle {
+      display:flex;gap:2px;background:var(--bg);border:1px solid var(--border);
+      border-radius:8px;padding:3px;margin-left:8px;
+    }
+    .wall-zoom-toggle button {
+      padding:4px 9px;border-radius:6px;border:none;background:transparent;
+      font-size:10.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:inherit;
+    }
+    .wall-zoom-toggle button.active { background:var(--bg-card);color:var(--text); }
+
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content" style="display:flex;flex-direction:column;overflow:hidden">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title" style="display:flex;align-items:center;gap:8px">
+          <span class="live-dot"></span> Monitoring
+        </div>
+        <div class="page-sub">Grafana Dashboards — Real-time</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="view-toggle">
+          <button id="btn-list" class="active" onclick="setView('list')"><i data-icon="menu"></i> List</button>
+          <button id="btn-wall" onclick="setView('wall')">▦ Wall 3×3</button>
+          <button id="btn-poly" onclick="setView('polywall')">⊞ Polywall</button>
+        </div>
+        <div class="wall-zoom-toggle" id="wall-zoom" style="display:none">
+          <button data-res="fhd" onclick="setWallRes('fhd')">FHD</button>
+          <button data-res="hd"  onclick="setWallRes('hd')">HD</button>
+          <button data-res="fit" onclick="setWallRes('fit')">Fit</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- LIST VIEW -->
+    <main class="page-content" id="list-view" style="flex:1;overflow-y:auto">
+
+
+      <!-- Dynamic sections rendered by JS -->
+      <div id="monitor-sections">
+        <div data-skel="cards" data-rows="8"></div>
+      </div>
+
+    </main>
+
+    <!-- WALL 3x3 VIEW -->
+    <section id="wall-view">
+      <div class="wall-grid" id="wall-grid"></div>
+    </section>
+
+  </div>
+</div>
+
+
+<!-- ── Iframe Overlay ─────────────────────────────────── -->
+<div class="iframe-overlay" id="iframe-overlay">
+  <div class="iframe-panel">
+    <div class="iframe-topbar">
+      <span class="live-dot"></span>
+      <span class="iframe-topbar-title" id="iframe-title">—</span>
+      <span class="iframe-topbar-url" id="iframe-url-label">—</span>
+      <button class="iframe-btn iframe-btn-newtab" id="iframe-newtab-btn" title="Open in new tab">↗ New Tab</button>
+      <button class="iframe-btn iframe-btn-close" onclick="closeIframe()"><i data-icon="x"></i> Close</button>
+    </div>
+    <iframe id="iframe-el" src="about:blank" allowfullscreen
+      allow="fullscreen" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/skeletons.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/analytics.js"></script>
+<script src="./assets/js/analytics-features.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script>
+  if (!Auth.requireAuth()) {}
+  Layout.render('monitoring');
+  trackMonitoringView('monitoring');
+
+  // Populated from API — used by polywall
+  let MONITORS    = [];
+  let POLYWALL_URL = '';
+
+  /* ── Section config ──────────────────────────────────── */
+  const SECTION_META = {
+    overview: { label: 'Service Overview',    live: true  },
+    monitor:  { label: 'Monitor Dashboards',  live: true  },
+    polywall: { label: 'Polywall',            live: false },
+    '':       { label: 'Other',               live: false }
+  };
+  const SECTION_ORDER = ['overview', 'monitor', 'polywall', ''];
+
+  /* ── Load monitors from API ──────────────────────────── */
+  async function loadMonitors() {
+    const res = await API.links.list('monitoring');
+    const links = res?.ok ? (res.data.data || []) : [];
+
+    // Group by subsection
+    const grouped = {};
+    links.forEach(l => {
+      const key = l.subsection || '';
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(l);
+    });
+
+    // Populate MONITORS for polywall (subsection = 'monitor')
+    MONITORS = (grouped['monitor'] || []).map((l, i) => ({
+      id:        i + 1,
+      name:      l.name,
+      desc:      l.description || '',
+      url:       l.url,
+      icon:      l.icon || '',
+      open_mode: l.open_mode || 'iframe'
+    }));
+
+    // Store polywall URL for the Polywall button
+    POLYWALL_URL = (grouped['polywall'] || [])[0]?.url || '';
+
+    // Render list sections
+    const container = document.getElementById('monitor-sections');
+    const sectionsHtml = SECTION_ORDER
+      .filter(k => grouped[k]?.length)
+      .map(k => {
+        const meta  = SECTION_META[k] || { label: k, live: false };
+        const items = grouped[k];
+        const isPolywall = k === 'polywall';
+
+        const cards = items.map(l => {
+          const actionType = l.open_mode === 'iframe' ? 'iframe' : 'newtab';
+          return `
+            <div class="monitor-card" data-action="${actionType}" data-url="${escHtml(l.url)}" data-name="${escHtml(l.name)}">
+              ${meta.live ? '<span class="mc-live">LIVE</span>' : ''}
+              <div class="mc-icon">${renderIcon(l.icon, '<i data-icon="circle"></i>')}</div>
+              <div class="mc-info">
+                <div class="mc-name">${escHtml(l.name)}</div>
+                <div class="mc-desc">${escHtml(l.description || '')}</div>
+              </div>
+            </div>`;
+        }).join('');
+
+        const gridStyle = isPolywall ? 'style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))"' : '';
+        return `
+          <div class="monitor-section">
+            <div class="monitor-section-label">${escHtml(meta.label)}</div>
+            <div class="monitor-grid" ${gridStyle}>${cards}</div>
+          </div>`;
+      }).join('');
+
+    container.innerHTML = sectionsHtml || '<div class="empty-state"><p>No monitors configured</p></div>';
+  }
+
+  /* ── View toggle ──────────────────────────────────────── */
+  async function setView(mode) {
+    if (mode === 'polywall') {
+      if (!POLYWALL_URL) { await SOMDialog.alert('Polywall URL not configured', { title: 'แจ้งเตือน', icon: 'info' }); return; }
+      window.location.href = './viewer.html?src=' + encodeURIComponent(POLYWALL_URL) + '&title=Polywall';
+      return;
+    }
+    const listEl = document.getElementById('list-view');
+    const wallEl = document.getElementById('wall-view');
+    const btnList = document.getElementById('btn-list');
+    const btnWall = document.getElementById('btn-wall');
+
+    const zoomEl = document.getElementById('wall-zoom');
+
+    if (mode === 'wall') {
+      renderWall();
+      listEl.style.display = 'none';
+      wallEl.classList.add('active');
+      btnList.classList.remove('active');
+      btnWall.classList.add('active');
+      zoomEl.style.display = 'flex';
+      zoomEl.querySelectorAll('button').forEach(b => {
+        b.classList.toggle('active', b.dataset.res === WALL_RES);
+      });
+    } else {
+      listEl.style.display = '';
+      wallEl.classList.remove('active');
+      btnList.classList.add('active');
+      btnWall.classList.remove('active');
+      zoomEl.style.display = 'none';
+      // unload iframes to stop background load
+      document.getElementById('wall-grid').innerHTML = '';
+    }
+  }
+
+  /* ── Wall 3x3 renderer ───────────────────────────────── */
+  // Virtual resolution that each iframe is rendered at, then scaled to fit the cell.
+  // 'fhd'  = 1920x1080 (crisp dashboards, smaller text)
+  // 'hd'   = 1280x720  (bigger text, less detail)
+  // 'fit'  = native cell size, no scaling
+  let WALL_RES = localStorage.getItem('som_wall_res') || 'fhd';
+  const RES_MAP = { fhd: [1920, 1080], hd: [1280, 720] };
+
+  // Hosts that are known to refuse iframe embedding (X-Frame-Options / CSP frame-ancestors
+  // / require SSO login). Cells pointing at these get the click-to-open fallback card
+  // instead of a broken iframe. Exact hostname match — subdomains like p.datadoghq.com
+  // (DataDog public dashboards) are embeddable and must NOT be blacklisted.
+  const UNEMBEDDABLE_HOSTS = new Set([
+    'app.datadoghq.com', 'app.datadoghq.eu',
+    'datadoghq.com',     'datadoghq.eu',
+  ]);
+  // Subdomains that ARE embeddable even though their parent is blacklisted
+  const EMBEDDABLE_HOSTS = new Set([
+    'p.datadoghq.com', 'p.datadoghq.eu',
+  ]);
+  function isUnembeddable(url, openMode) {
+    if (openMode === 'newtab') return true;
+    try {
+      const host = new URL(url).hostname.toLowerCase();
+      if (EMBEDDABLE_HOSTS.has(host)) return false;
+      return UNEMBEDDABLE_HOSTS.has(host);
+    } catch { return false; }
+  }
+
+  function renderWall() {
+    const grid = document.getElementById('wall-grid');
+    const cells = [];
+    for (let i = 0; i < 9; i++) {
+      const m = MONITORS[i];
+      if (!m) {
+        cells.push(`<div class="wall-cell"><div class="wall-cell-head"><span class="wall-cell-name">— slot ${i+1}</span></div><div class="wall-cell-empty">No monitor configured</div></div>`);
+        continue;
+      }
+      const head = `
+        <div class="wall-cell-head">
+          <span class="live-dot"></span>
+          <span class="wall-cell-name">${escHtml(m.name)}</span>
+          <div class="wall-cell-actions">
+            <button class="wall-cell-expand" data-expand-url="${escHtml(m.url)}" data-expand-name="${escHtml(m.name)}" title="Expand to fullscreen"><i data-icon="maximize"></i></button>
+            <a class="wall-cell-open" href="${escHtml(m.url)}" target="_blank" rel="noopener" title="Open in new tab">↗</a>
+          </div>
+        </div>`;
+
+      if (isUnembeddable(m.url, m.open_mode)) {
+        // Render fallback card — iframe would be blocked by X-Frame-Options or need login
+        let hostLabel = '';
+        try { hostLabel = new URL(m.url).hostname; } catch {}
+        cells.push(`
+          <div class="wall-cell">
+            ${head}
+            <div class="wall-cell-fallback" data-url="${escHtml(m.url)}">
+              <div class="wall-cell-fallback-icon">${renderIcon(m.icon, '<i data-icon="bar-chart"></i>')}</div>
+              <div class="wall-cell-fallback-title">${escHtml(m.name)}</div>
+              <div class="wall-cell-fallback-desc">${escHtml(m.desc || hostLabel || 'External dashboard — embed not allowed')}</div>
+              <div class="wall-cell-fallback-btn">Open in new tab ↗</div>
+            </div>
+          </div>`);
+        continue;
+      }
+
+      const proxied = rewriteForProxy(m.url);
+      const isFit = WALL_RES === 'fit';
+      const iframeStyle = isFit
+        ? 'position:relative;width:100%;height:100%;transform:none;'
+        : '';
+      cells.push(`
+        <div class="wall-cell">
+          ${head}
+          <div class="wall-cell-frame">
+            <iframe src="${escHtml(proxied)}" allowfullscreen style="${iframeStyle}"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+          </div>
+        </div>`);
+    }
+    grid.innerHTML = cells.join('');
+    // First pass on next frame (after layout), then attach a ResizeObserver
+    // so every cell rescales itself whenever its box changes — covers initial
+    // settle, sidebar toggle, devtools open/close, window resize, etc.
+    requestAnimationFrame(() => {
+      applyWallScale();
+      attachWallObserver();
+    });
+  }
+
+  function applyScaleToFrame(frame) {
+    if (WALL_RES === 'fit') return;
+    const [vw, vh] = RES_MAP[WALL_RES] || RES_MAP.fhd;
+    const cw = frame.clientWidth, ch = frame.clientHeight;
+    if (!cw || !ch) return;
+    // Cover: virtual viewport fills the cell, overflow hidden.
+    const scale = Math.max(cw / vw, ch / vh);
+    frame.style.setProperty('--scale', scale);
+    const iframe = frame.querySelector('iframe');
+    if (iframe) { iframe.style.width = vw + 'px'; iframe.style.height = vh + 'px'; }
+  }
+
+  function applyWallScale() {
+    document.querySelectorAll('#wall-grid .wall-cell-frame').forEach(applyScaleToFrame);
+  }
+
+  let _wallObserver = null;
+  function attachWallObserver() {
+    if (_wallObserver) _wallObserver.disconnect();
+    if (typeof ResizeObserver === 'undefined') return;
+    _wallObserver = new ResizeObserver(entries => {
+      entries.forEach(e => applyScaleToFrame(e.target));
+    });
+    document.querySelectorAll('#wall-grid .wall-cell-frame').forEach(f => _wallObserver.observe(f));
+  }
+
+  function setWallRes(res) {
+    WALL_RES = res;
+    localStorage.setItem('som_wall_res', res);
+    document.querySelectorAll('.wall-zoom-toggle button').forEach(b => {
+      b.classList.toggle('active', b.dataset.res === res);
+    });
+    renderWall();
+  }
+
+  // Re-scale on window resize
+  let _wallResizeT;
+  window.addEventListener('resize', () => {
+    if (!document.getElementById('wall-view').classList.contains('active')) return;
+    clearTimeout(_wallResizeT);
+    _wallResizeT = setTimeout(applyWallScale, 120);
+  });
+
+  // Wall cell interactions: expand button → fullscreen overlay, fallback card → new tab
+  document.getElementById('wall-grid').addEventListener('click', e => {
+    const expand = e.target.closest('.wall-cell-expand');
+    if (expand) {
+      e.preventDefault();
+      openIframe(expand.dataset.expandUrl, expand.dataset.expandName);
+      return;
+    }
+    const fb = e.target.closest('.wall-cell-fallback');
+    if (fb) {
+      window.open(fb.dataset.url, '_blank', 'noopener');
+    }
+  });
+
+  /* ── Init ─────────────────────────────────────────────── */
+  loadMonitors();
+
+  /* ── Grafana proxy config ────────────────────────────── */
+  // ถ้า iframe เปิด Grafana จะ rewrite URL ให้วิ่งผ่าน reverse proxy
+  // เพื่อแก้ปัญหา third-party cookie / SameSite ที่ทำให้ login ไม่ผ่าน
+  const GRAFANA_PROXY = {
+    origin:   '',                                       // same-origin (ผ่าน Apache ProxyPass ที่ port 8888)
+    prefix:   '',                                       // root-mounted (Grafana ใช้ root paths /public/ /api/)
+    upstream: 'https://grafana-thanos.truemoney.com',   // Grafana ต้นทางที่จะถูก rewrite
+  };
+
+  function rewriteForProxy(url) {
+    if (!url || !url.startsWith(GRAFANA_PROXY.upstream)) return url;
+    const tail  = url.slice(GRAFANA_PROXY.upstream.length); // เหลือ /d/xxx?…
+    const token = (typeof Auth !== 'undefined' && Auth.getToken) ? Auth.getToken() : null;
+    const sep   = tail.includes('?') ? '&' : '?';
+    const auth  = token ? `${sep}token=${encodeURIComponent(token)}` : '';
+    return GRAFANA_PROXY.origin + GRAFANA_PROXY.prefix + tail + auth;
+  }
+
+  /* ── Iframe helpers ──────────────────────────────────── */
+  function openIframe(url, name) {
+    const proxied = rewriteForProxy(url);
+    document.getElementById('iframe-title').textContent     = name;
+    document.getElementById('iframe-url-label').textContent = url;
+    document.getElementById('iframe-el').src               = proxied;
+    document.getElementById('iframe-newtab-btn').onclick    = () => window.open(url, '_blank', 'noopener');
+    document.getElementById('iframe-overlay').classList.add('open');
+  }
+  function closeIframe() {
+    document.getElementById('iframe-overlay').classList.remove('open');
+    document.getElementById('iframe-el').src = 'about:blank';
+  }
+  // Close on overlay background click
+  document.getElementById('iframe-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('iframe-overlay')) closeIframe();
+  });
+  // Esc to close
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeIframe();
+  });
+
+  // Event delegation for dynamically rendered monitor cards
+  document.getElementById('monitor-sections').addEventListener('click', e => {
+    const card = e.target.closest('[data-action]');
+    if (!card) return;
+    const url  = card.dataset.url;
+    const name = card.dataset.name;
+    if (card.dataset.action === 'newtab') window.open(url, '_blank', 'noopener');
+    if (card.dataset.action === 'iframe') openIframe(url, name);
+  });
+
+</script>
+</body>
+</html>

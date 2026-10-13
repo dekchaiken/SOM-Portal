@@ -1,0 +1,2123 @@
+{
+ "title": "7-Eleven · Gateway & Acquiring Flow",
+ "uid": "711-sof-monitoring",
+ "refresh": "1m",
+ "time": {
+  "from": "now-3h",
+  "to": "now"
+ },
+ "timezone": "Asia/Bangkok",
+ "panels": [
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "valueName": "last"
+     },
+     "mappings": [],
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 14,
+    "w": 24,
+    "x": 0,
+    "y": 6
+   },
+   "id": 2002,
+   "options": {
+    "composites": [],
+    "content": "%%{init: {\"flowchart\": {\"useMaxWidth\": true, \"htmlLabels\": true}, \"theme\": \"dark\"}}%%\ngraph TD\n  subgraph CLIENT[\"Client Layer\"]\n    POS[\"7-11 POS Counter\"]\n    APP[\"7App / Mobile SDK\"]\n  end\n\n  GW711[\"seven-custom-in-gateway\"]\n\n  POS -->|Payment Code| GW711\n  APP -->|Barcode| GW711\n\n  GW711 -->|200 OK| charge_ok([\"Charge: OK\"])\n  GW711 -->|non-200| charge_fail([\"Charge: Fail\"])\n  GW711 --> cancel_ok([\"Cancel: OK\"])\n  GW711 --> refund_ok([\"Refund: OK\"])\n  GW711 --> consent_ok([\"Consent: OK\"])\n  classDef svc    fill:#242930,stroke:#5794c7,stroke-width:2px,color:#fff\n  classDef ok     fill:#1c2c22,stroke:#47a468,stroke-width:2px,color:#fff\n  classDef fail   fill:#2c1e1e,stroke:#cc3333,stroke-width:2px,color:#fff\n  classDef client fill:#2c2020,stroke:#e05252,stroke-width:3px,color:#e05252,font-weight:bold\n  classDef net    fill:#2c251e,stroke:#ff8c42,stroke-width:2px,color:#fff",
+    "legend": {
+     "show": true
+    },
+    "links": [],
+    "mermaidThemeVariablesDark": {
+     "common": {
+      "fontFamily": "Roboto,Helvetica Neue,Arial,sans-serif"
+     }
+    },
+    "mermaidThemeVariablesLight": {
+     "common": {
+      "fontFamily": "Roboto,Helvetica Neue,Arial,sans-serif"
+     }
+    },
+    "nodeSize": {
+     "minHeight": 30,
+     "minWidth": 30
+    },
+    "pluginVersion": "latest",
+    "style": "width:100%;",
+    "useBackground": false,
+    "valueName": "current"
+   },
+   "pluginVersion": "1.10.4",
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CHARGE\",status_code=\"200 OK\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "charge_ok",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CHARGE\",status_code!=\"200 OK\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "charge_fail",
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CANCEL\",status_code=\"200 OK\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "cancel_ok",
+     "refId": "C"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"REFUNDS\",status_code=\"200 OK\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "refund_ok",
+     "refId": "D"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"users-consent\",status_code=\"200 OK\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "consent_ok",
+     "refId": "E"
+    }
+   ],
+   "title": "Gateway - Transaction Flow (5m window)",
+   "type": "jdbranham-diagram-panel"
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "tOZ1JoTMk"
+   },
+   "description": "จำนวน Charge transaction ทั้งหมดที่เข้ามาที่ seven-custom-in-gateway\n\nดูยังไง: ค่าควรเป็นปกติต่อเนื่อง ถ้า drop ลงกะทันหันหมายความว่า 7-11 หยุดส่ง request เข้ามา (ปัญหาฝั่ง 7-11 หรือ network)\n\nใช้เป็น: first check ว่า traffic เรียกเข้ามาระบบหรือเปล่า",
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 20
+   },
+   "hiddenSeries": false,
+   "id": 2003,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null as zero",
+   "options": {
+    "alertThreshold": true
+   },
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (status_code, service) (increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{status_code=\"200 OK\"}[1m]))",
+     "hide": true,
+     "interval": "",
+     "legendFormat": "{{service}} - {{status_code}}",
+     "range": true,
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (status_code, service) (increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CHARGE\",status_code=\"200 OK\"}[1m]))",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "{{service}} - {{status_code}}",
+     "range": true,
+     "refId": "B"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "Payment at 7-Eleven",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:206",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:207",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "tOZ1JoTMk"
+   },
+   "description": "จำนวน transaction ที่ fail ที่ Gateway layer แยกตาม status_code และ service (CHARGE/CANCEL/REFUND)\n\nดูยังไง: ถ้า fail spike ขึ้นให้ดู status_code ว่าเป็น 500 (app พัง) หรือ 504 (timeout) หรือ 400 (data ผิด)\n\nใช้ร่วมกับ: Section D Error Breakdown เพื่อ drill down สาเหตุ",
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 20
+   },
+   "hiddenSeries": false,
+   "id": 2004,
+   "legend": {
+    "alignAsTable": true,
+    "avg": false,
+    "current": true,
+    "max": true,
+    "min": false,
+    "rightSide": true,
+    "show": true,
+    "sort": "max",
+    "sortDesc": true,
+    "total": false,
+    "values": true
+   },
+   "lines": true,
+   "linewidth": 1,
+   "links": [
+    {
+     "title": "",
+     "url": "https://grafana-thanos.truemoney.com/d/000000901k/seven-custom-in-gateway-transaction-count?orgId=3&refresh=30s&var-Interval=1h&var-Datasource=ThanosQuerier&var-env=production&var-pod=All&var-cluster=All&from=now-6h&to=now"
+    }
+   ],
+   "nullPointMode": "null as zero",
+   "options": {
+    "alertThreshold": true
+   },
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (status_code, service) (increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{status_code!=\"200 OK\"}[1m]))",
+     "hide": true,
+     "interval": "",
+     "legendFormat": "{{service}} - {{status_code}}",
+     "range": true,
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (status_code, service) (increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{status_code=\"200 OK\"}[1m]))",
+     "hide": true,
+     "interval": "",
+     "legendFormat": "{{service}} - {{status_code}}",
+     "range": true,
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (status_code, service) (increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{status_code=\"500 INTERNAL_SERVER_ERROR\"}[1m]))",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "{{service}} - {{status_code}}",
+     "range": true,
+     "refId": "C"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "fill": true,
+     "line": true,
+     "op": "gt",
+     "value": 10,
+     "visible": true
+    }
+   ],
+   "timeRegions": [],
+   "title": "Payment at 7-Eleven Fail",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:206",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:207",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "tOZ1JoTMk"
+   },
+   "description": "จำนวน Cancel transaction เทียบกับ Charge ใน Gateway\n\nดูยังไง: Cancel ปกติจะน้อยกว่า Charge มาก ถ้า Cancel สูงผิดปกติดู Section E Cancel/Charge Ratio\n\nเกี่ยวกับ: Case #4 — Transaction Cancel ปริมาณสูงผิดปกติ",
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 28
+   },
+   "hiddenSeries": false,
+   "id": 2005,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null as zero",
+   "options": {
+    "alertThreshold": true
+   },
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "exemplar": true,
+     "expr": "sum by (status_code, service) (increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CANCEL\",status_code=\"200 OK\"}[1m]))",
+     "interval": "",
+     "legendFormat": "{{service}} - {{status_code}}",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (status_code, service) (increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CHARGE\",status_code=\"200 OK\"}[1m]))",
+     "hide": true,
+     "interval": "",
+     "legendFormat": "{{service}} - {{status_code}}",
+     "range": true,
+     "refId": "B"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "fill": true,
+     "line": true,
+     "op": "gt",
+     "value": 50,
+     "visible": true
+    }
+   ],
+   "timeRegions": [],
+   "title": "Payment at 7-Eleven Cancel Channel",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:206",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:207",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "Average processing time ของ seven-custom-in-gateway แยกตาม service (CHARGE/CANCEL/REFUND)\n\nดูยังไง: ค่าปกติอยู่ที่ ~300-600ms ถ้าสูงเกิน 1,000ms ให้ตรวจสอบ upstream SoF ว่าตัวไหน slow\n\nสำคัญ: 7-Eleven timeout ที่ 12,000ms ดู P99 ใน Section C เพิ่มเติม",
+   "fieldConfig": {
+    "defaults": {
+     "unit": "ms"
+    },
+    "overrides": []
+   },
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 28
+   },
+   "hiddenSeries": false,
+   "id": 2006,
+   "legend": {
+    "alignAsTable": false,
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "rightSide": false,
+    "show": true,
+    "sort": "max",
+    "sortDesc": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null as zero",
+   "options": {
+    "alertThreshold": true
+   },
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_count{service=~\"CHARGE|CANCEL|REFUNDS\"}[1m])) by(service,status_code)",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "{{service}} - {{status_code}}",
+     "range": true,
+     "refId": "B"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "fill": true,
+     "line": true,
+     "op": "gt",
+     "value": 5000,
+     "visible": true
+    }
+   ],
+   "timeRegions": [],
+   "title": "Response Time - SEVEN_CUSTOM_IN_GATEWAY",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "transparent": true,
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:40",
+     "format": "ms",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:41",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "tOZ1JoTMk"
+   },
+   "description": "Alert panel — ตรวจจับว่า Charge success เป็น 0 ในช่วงเวลาใดเวลาหนึ่ง\n\nถ้าเป็น 0 ต่อเนื่องให้ตรวจสอบ Gateway และ Acquiring ทันที",
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": true,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "links": [
+      {
+       "targetBlank": true,
+       "title": "seven_custom_in_gateway_transaction_count",
+       "url": "https://grafana-thanos.truemoney.com/d/000000901/seven_custom_in_gateway_transaction_count?orgId=3"
+      }
+     ],
+     "mappings": [],
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     },
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 6,
+    "w": 12,
+    "x": 0,
+    "y": 36
+   },
+   "id": 2007,
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   },
+   "pluginVersion": "8.4.7",
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CHARGE\",status_code=\"200 OK\"}[1m]))",
+     "interval": "",
+     "legendFormat": "Status = 200",
+     "range": true,
+     "refId": "A"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "op": "lt",
+     "value": 1,
+     "visible": true
+    }
+   ],
+   "title": "[SMC] Payment Charge Via 7-Eleven Success = 0",
+   "type": "timeseries"
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "tOZ1JoTMk"
+   },
+   "description": "Alert panel — trigger เมื่อ Charge fail เกิน 10 ครั้งใน 1 นาที\n\nค่า threshold นี้ปรับได้ตาม baseline ปกติของระบบ",
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": true,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "links": [
+      {
+       "targetBlank": true,
+       "title": "seven_custom_in_gateway_transaction_count",
+       "url": "https://grafana-thanos.truemoney.com/d/000000901/seven_custom_in_gateway_transaction_count?orgId=3"
+      }
+     ],
+     "mappings": [],
+     "noValue": "0",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 20
+       }
+      ]
+     },
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 6,
+    "w": 12,
+    "x": 12,
+    "y": 36
+   },
+   "id": 2008,
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   },
+   "pluginVersion": "8.4.7",
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (service,status_code)(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CHARGE\",status_code!=\"200 OK\",app_name=\"seven-custom-in-gateway\"}[1m]))",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "Fail - {{service}} - {{status_code}}",
+     "range": true,
+     "refId": "A"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "op": "gt",
+     "value": 10,
+     "visible": true
+    }
+   ],
+   "title": "[SMC] 7-Eleven Charge Fail > 10",
+   "type": "timeseries"
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "tOZ1JoTMk"
+   },
+   "description": "Alert panel — trigger เมื่อ Cancel fail เกิน 10 ครั้งใน 1 นาที\n\nถ้า alert นี้ดังพร้อมกับ Cancel/Charge Ratio สูง ให้ตรวจ Case #4",
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": true,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "links": [
+      {
+       "targetBlank": true,
+       "title": "seven_custom_in_gateway_transaction_count",
+       "url": "https://grafana-thanos.truemoney.com/d/000000901/seven_custom_in_gateway_transaction_count?orgId=3"
+      }
+     ],
+     "mappings": [],
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 20
+       }
+      ]
+     },
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 6,
+    "w": 24,
+    "x": 0,
+    "y": 42
+   },
+   "id": 2009,
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   },
+   "pluginVersion": "8.4.7",
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (service,status_code)(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CANCEL\",status_code!=\"200 OK\",app_name=\"seven-custom-in-gateway\"}[1m]))",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "Fail - {{service}} - {{status_code}}",
+     "range": true,
+     "refId": "A"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "op": "gt",
+     "value": 10,
+     "visible": true
+    }
+   ],
+   "title": "[SMC] 7-Eleven Cancel Fail > 10",
+   "type": "timeseries"
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "tOZ1JoTMk"
+   },
+   "description": "Alert panel — trigger เมื่อ Refund fail เกิน 10 ครั้งใน 1 นาที\n\nถ้า alert นี้ดังให้ตรวจ Refund Queue Depth ใน Section E",
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": true,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "links": [
+      {
+       "targetBlank": true,
+       "title": "seven_custom_in_gateway_transaction_count",
+       "url": "https://grafana-thanos.truemoney.com/d/000000901/seven_custom_in_gateway_transaction_count?orgId=3"
+      }
+     ],
+     "mappings": [],
+     "noValue": "0",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 20
+       }
+      ]
+     },
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 6,
+    "w": 24,
+    "x": 0,
+    "y": 48
+   },
+   "id": 2010,
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   },
+   "pluginVersion": "8.4.7",
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (service,status_code)(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"REFUNDS\",status_code!=\"200 OK\"}[1m]))",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "Fail - {{service}} - {{status_code}}",
+     "range": true,
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (service,status_code)(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"REFUNDS\"}[1m]))",
+     "hide": true,
+     "interval": "",
+     "legendFormat": "Fail - {{service}} - {{status_code}}",
+     "range": true,
+     "refId": "B"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "op": "gt",
+     "value": 10,
+     "visible": true
+    }
+   ],
+   "title": "[SMC] 7-Eleven Refund Fail > 10",
+   "type": "timeseries"
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "tOZ1JoTMk"
+   },
+   "description": "จำนวน consent request (ผูก 7-Eleven APP) ที่สำเร็จ\n\nดูยังไง: ใช้ดู pattern การ binding app กับ 7-11 account ถ้า drop อาจมีปัญหา consent service",
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "links": [
+      {
+       "targetBlank": true,
+       "title": "seven_custom_in_gateway_transaction_count",
+       "url": "https://grafana-thanos.truemoney.com/d/000000901k/seven-custom-in-gateway-transaction-count?orgId=3&refresh=30s"
+      }
+     ],
+     "mappings": [],
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 20
+       }
+      ]
+     },
+     "unit": "short"
+    },
+    "overrides": [
+     {
+      "__systemRef": "hideSeriesFrom",
+      "matcher": {
+       "id": "byNames",
+       "options": {
+        "mode": "exclude",
+        "names": [
+         "users-consent - 200 OK"
+        ],
+        "prefix": "All except:",
+        "readOnly": true
+       }
+      },
+      "properties": [
+       {
+        "id": "custom.hideFrom",
+        "value": {
+         "legend": false,
+         "tooltip": false,
+         "viz": true
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "gridPos": {
+    "h": 6,
+    "w": 12,
+    "x": 0,
+    "y": 54
+   },
+   "id": 2011,
+   "links": [
+    {
+     "title": "",
+     "url": "https://grafana-thanos.truemoney.com/d/000000901k/seven-custom-in-gateway-transaction-count?orgId=3&refresh=1m&from=now-30d&to=now&editPanel=2"
+    }
+   ],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "none",
+     "sort": "none"
+    }
+   },
+   "pluginVersion": "8.4.7",
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum by (service,status_code)(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"users-consent\",status_code=\"200 OK\"}[20m]))",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "{{service}} - {{status_code}}",
+     "range": true,
+     "refId": "A"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "op": "lt",
+     "value": 1,
+     "visible": true
+    }
+   ],
+   "title": "7-Eleven Users-Consent",
+   "type": "timeseries"
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "tOZ1JoTMk"
+   },
+   "description": "จำนวน barcode verify ที่สำเร็จจาก seven-custom-in-gateway\n\nดูยังไง: ควรมี traffic ปกติ ถ้าเป็น 0 หมายความว่า POS ไม่สามารถ scan barcode ได้เลย",
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 6,
+    "w": 12,
+    "x": 12,
+    "y": 54
+   },
+   "hiddenSeries": false,
+   "id": 2012,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null as zero",
+   "options": {
+    "alertThreshold": true
+   },
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "exemplar": true,
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"preregister-verifyBarcode\",status_code=\"200 OK\"}[5m]))",
+     "interval": "",
+     "legendFormat": "Status = 200",
+     "refId": "A"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "fill": true,
+     "line": true,
+     "op": "lt",
+     "value": 0.01,
+     "visible": true
+    }
+   ],
+   "timeRegions": [],
+   "title": "7-Eleven Verify Barcode (Dip chip) Success",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:206",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:207",
+     "format": "short",
+     "logBase": 1,
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "valueName": "last"
+     },
+     "mappings": [],
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 12,
+    "w": 24,
+    "x": 0,
+    "y": 61
+   },
+   "id": 2014,
+   "options": {
+    "composites": [],
+    "content": "%%{init: {\"flowchart\": {\"useMaxWidth\": true, \"htmlLabels\": true}, \"theme\": \"dark\"}}%%\ngraph TD\n  GW711[\"seven-custom-in-gateway\"] --> ACQ[\"Acquiring Service\"]\n\n  ACQ -->|200| acq_ok([\"Total: OK\"])\n  ACQ -->|non-200| acq_fail([\"Total: Fail\"])\n\n  subgraph BREAKDOWN[\"Fail — breakdown by SoF type\"]\n    acq_card([\"Card: Fail\"])\n    acq_balance([\"Balance: Fail\"])\n    acq_bank([\"Bank: Fail\"])\n    acq_paynext([\"PayNext: Fail\"])\n  end\n\n  acq_fail --> acq_card\n  acq_fail --> acq_balance\n  acq_fail --> acq_bank\n  acq_fail --> acq_paynext\n  classDef svc    fill:#242930,stroke:#5794c7,stroke-width:2px,color:#fff\n  classDef ok     fill:#1c2c22,stroke:#47a468,stroke-width:2px,color:#fff\n  classDef fail   fill:#2c1e1e,stroke:#cc3333,stroke-width:2px,color:#fff\n  classDef client fill:#2c2020,stroke:#e05252,stroke-width:3px,color:#e05252,font-weight:bold\n  classDef net    fill:#2c251e,stroke:#ff8c42,stroke-width:2px,color:#fff",
+    "legend": {
+     "show": true
+    },
+    "links": [],
+    "mermaidThemeVariablesDark": {
+     "common": {
+      "fontFamily": "Roboto,Helvetica Neue,Arial,sans-serif"
+     }
+    },
+    "mermaidThemeVariablesLight": {
+     "common": {
+      "fontFamily": "Roboto,Helvetica Neue,Arial,sans-serif"
+     }
+    },
+    "nodeSize": {
+     "minHeight": 30,
+     "minWidth": 30
+    },
+    "pluginVersion": "latest",
+    "style": "width:100%;",
+    "useBackground": false,
+    "valueName": "current"
+   },
+   "pluginVersion": "1.10.4",
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(acquiring_service_total_transaction_total{status_code=\"200\",app_name=\"acquiring-service\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "acq_ok",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(acquiring_service_total_transaction_total{status_code!=\"200\",app_name=\"acquiring-service\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "acq_fail",
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(acquiring_service_total_payment_payment_method_transaction_total{payment_method=\"Card\",status_code!=\"200\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "acq_card",
+     "refId": "C"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(acquiring_service_total_payment_payment_method_transaction_total{payment_method=\"Balance\",status_code!=\"200\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "acq_balance",
+     "refId": "D"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(acquiring_service_total_payment_payment_method_transaction_total{payment_method=\"Bank\",status_code!=\"200\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "acq_bank",
+     "refId": "E"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(acquiring_service_total_payment_payment_method_transaction_total{payment_method=\"PayNext\",status_code!=\"200\"}[5m]))",
+     "instant": true,
+     "interval": "1m",
+     "legendFormat": "acq_paynext",
+     "refId": "F"
+    }
+   ],
+   "title": "Acquiring - Payment by SoF Type (5m window)",
+   "type": "jdbranham-diagram-panel"
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 73
+   },
+   "hiddenSeries": false,
+   "id": 2015,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "options": {
+    "alertThreshold": true
+   },
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(acquiring_service_total_transaction_total{status_code=\"200\",app_name=\"acquiring-service\"}[1m])) by (status_code)",
+     "interval": "",
+     "legendFormat": "Success",
+     "refId": "A"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "Acquiring  Payment Success (All SoF)",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:200",
+     "format": "short",
+     "label": "count",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:201",
+     "format": "short",
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 73
+   },
+   "hiddenSeries": false,
+   "id": 2016,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "options": {
+    "alertThreshold": true
+   },
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(acquiring_service_total_transaction_total{status_code!=\"200\",app_name=\"acquiring-service\"}[1m])) by (status_code,status_code_reason)",
+     "interval": "",
+     "legendFormat": "{{status_code}} – {{status_code_reason}}",
+     "refId": "A"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "Acquiring  Payment Fail (All SoF)",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "count",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "tOZ1JoTMk"
+   },
+   "description": "นับ transaction ที่ fail เพราะ timeout แยกตาม SoF type\n\nดูยังไง: ถ้า timeout spike ขึ้นให้ดู P99 Latency ใน Section C ว่า SoF ไหน slow จนเกิน threshold\n\nเกี่ยวกับ: Case #1 — High Latency / Session Timeout",
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "auto",
+      "spanNulls": false,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "mappings": [],
+     "noValue": "0",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     },
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 81
+   },
+   "id": 2017,
+   "links": [
+    {
+     "targetBlank": true,
+     "title": "main-acquiring-service-transaction-count",
+     "url": "https://grafana-thanos.truemoney.com/d/000000169/main-acquiring-service-transaction-count?orgId=3&refresh=5s&from=now-12h&to=now"
+    }
+   ],
+   "options": {
+    "legend": {
+     "calcs": [
+      "lastNotNull",
+      "max"
+     ],
+     "displayMode": "table",
+     "placement": "right",
+     "showLegend": true,
+     "sortBy": "Max",
+     "sortDesc": true
+    },
+    "tooltip": {
+     "mode": "single",
+     "sort": "none"
+    }
+   },
+   "pluginVersion": "9.5.15",
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "expr": "sum by (status_code, status_code_reason) (increase(acquiring_service_total_transaction_total{service=\"Payment\", status_code!=\"200\", status_code_reason=\"failed_timeout\"}[1m])) ",
+     "hide": false,
+     "legendFormat": " {{status_code}} - {{status_code_reason}}",
+     "range": true,
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "expr": "sum by (status_code, payment_method)(increase(acquiring_service_total_payment_payment_method_transaction_total{status_code=\"400\", payment_method=\"Card\"}[1m]))",
+     "hide": false,
+     "legendFormat": " {{payment_method}} - {{status_code}}",
+     "range": true,
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "expr": "sum by (status_code, payment_method)(increase(acquiring_service_total_payment_payment_method_transaction_total{status_code=\"400\", payment_method!~\"Balance|Bank|PayNext|PayNextExtra|Card\"}[1m]))",
+     "hide": false,
+     "legendFormat": " {{payment_method}} - {{status_code}}",
+     "range": true,
+     "refId": "C"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "expr": "sum by (status_code, payment_method)(increase(acquiring_service_total_payment_payment_method_transaction_total{status_code=\"400\", payment_method=\"PayNext\"}[1m]))/3.5",
+     "hide": false,
+     "legendFormat": " {{payment_method}} - {{status_code}}",
+     "range": true,
+     "refId": "D"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "tOZ1JoTMk"
+     },
+     "editorMode": "code",
+     "expr": "sum by (status_code, payment_method)(increase(acquiring_service_total_payment_payment_method_transaction_total{status_code=\"400\", payment_method=\"PayNextExtra\"}[1m]))",
+     "hide": false,
+     "legendFormat": " {{payment_method}} - {{status_code}}",
+     "range": true,
+     "refId": "E"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "op": "gt",
+     "value": 10,
+     "visible": true
+    }
+   ],
+   "title": "SOF failed_timeout",
+   "type": "timeseries"
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "Alert panel — trigger เมื่อ invalid_payment_id error เกิน 25 ครั้งใน 1 นาที\n\nอาจหมายความว่า 7-11 ส่ง payment_id ซ้ำหรือ expire (Case #3)",
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "never",
+      "spanNulls": true,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "mappings": [],
+     "noValue": "0",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     },
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 81
+   },
+   "id": 2018,
+   "links": [
+    {
+     "targetBlank": true,
+     "title": "third-party-pay-composite-transaction-count",
+     "url": "https://grafana-thanos.truemoney.com/d/000000213/third-party-pay-composite-transaction-count?orgId=3&refresh=10s"
+    }
+   ],
+   "options": {
+    "legend": {
+     "calcs": [],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   },
+   "pluginVersion": "8.4.7",
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "sum(increase(acquiring_service_total_transaction_total{status_code!=\"200\", app_name=\"acquiring-service\",status_code_reason=\"invalid_payment_id\"}[1m])) by (status_code, status_code_reason, app_name)",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "{{app_name}} : {{status_code_reason}} - {{status_code}} ",
+     "range": true,
+     "refId": "A"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "op": "gt",
+     "value": 25,
+     "visible": true
+    }
+   ],
+   "title": "[SMC] Acquiring-transaction_invalid_payment_id_Fail => 25",
+   "transparent": true,
+   "type": "timeseries"
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "จำนวน message ใน RabbitMQ Queue ของ Acquiring Refund\n\nดูยังไง: ค่าปกติควรใกล้ 0 ถ้า queue สะสมสูงขึ้นหมายความว่า Consumer/Worker ประมวลผลไม่ทัน\n\nเกี่ยวกับ: Case #2 — ตัดเงินแล้ว Slip ไม่พิมพ์ (refund ค้างใน queue)",
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "axisCenteredZero": false,
+      "axisColorMode": "text",
+      "axisLabel": "",
+      "axisPlacement": "auto",
+      "barAlignment": 0,
+      "drawStyle": "line",
+      "fillOpacity": 0,
+      "gradientMode": "none",
+      "hideFrom": {
+       "legend": false,
+       "tooltip": false,
+       "viz": false
+      },
+      "lineInterpolation": "linear",
+      "lineWidth": 1,
+      "pointSize": 5,
+      "scaleDistribution": {
+       "type": "linear"
+      },
+      "showPoints": "auto",
+      "spanNulls": true,
+      "stacking": {
+       "group": "A",
+       "mode": "none"
+      },
+      "thresholdsStyle": {
+       "mode": "off"
+      }
+     },
+     "mappings": [],
+     "noValue": "0",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     },
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 6,
+    "w": 24,
+    "x": 0,
+    "y": 89
+   },
+   "id": 2019,
+   "maxDataPoints": 1230,
+   "options": {
+    "legend": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "single",
+     "sort": "none"
+    }
+   },
+   "pluginVersion": "8.4.7",
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "editorMode": "code",
+     "exemplar": true,
+     "expr": "rabbitmq_queue_messages{queue=~\"acquiring-transaction-refund-event|acquiring-transaction-refund-event-dl\"}",
+     "hide": false,
+     "interval": "",
+     "legendFormat": "{{queue}}",
+     "range": true,
+     "refId": "A"
+    }
+   ],
+   "thresholds": [
+    {
+     "colorMode": "critical",
+     "op": "gt",
+     "value": 50,
+     "visible": true
+    }
+   ],
+   "title": "queue_messages_acquiring-transaction-refund-event",
+   "transparent": true,
+   "type": "timeseries"
+  },
+  {
+   "aliasColors": {},
+   "bars": false,
+   "dashLength": 10,
+   "dashes": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "fill": 1,
+   "fillGradient": 0,
+   "gridPos": {
+    "h": 8,
+    "w": 24,
+    "x": 0,
+    "y": 95
+   },
+   "hiddenSeries": false,
+   "id": 2020,
+   "legend": {
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "show": true,
+    "total": false,
+    "values": false
+   },
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "options": {
+    "alertThreshold": true
+   },
+   "percentage": false,
+   "pluginVersion": "9.5.21",
+   "pointradius": 2,
+   "points": false,
+   "renderer": "flot",
+   "seriesOverrides": [],
+   "spaceLength": 10,
+   "stack": false,
+   "steppedLine": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "avg(acquiring_service_time_payment_payment_method_transaction{payment_method=\"Card\",status_code=\"200\"})",
+     "interval": "",
+     "legendFormat": "Card",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "avg(acquiring_service_time_payment_payment_method_transaction{payment_method=\"Balance\",status_code=\"200\"})",
+     "interval": "",
+     "legendFormat": "Balance",
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "avg(acquiring_service_time_payment_payment_method_transaction{payment_method=\"Bank\",status_code=\"200\"})",
+     "interval": "",
+     "legendFormat": "Bank",
+     "refId": "C"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "avg(acquiring_service_time_payment_payment_method_transaction{payment_method=\"PayNext\",status_code=\"200\"})",
+     "interval": "",
+     "legendFormat": "PayNext",
+     "refId": "D"
+    }
+   ],
+   "thresholds": [],
+   "timeRegions": [],
+   "title": "Acquiring  Processing Time by SoF Type",
+   "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+   },
+   "type": "graph",
+   "xaxis": {
+    "mode": "time",
+    "show": true,
+    "values": []
+   },
+   "yaxes": [
+    {
+     "$$hashKey": "object:282",
+     "format": "short",
+     "label": "ms",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "$$hashKey": "object:283",
+     "format": "short",
+     "show": true
+    }
+   ],
+   "yaxis": {
+    "align": false
+   }
+  }
+ ]
+}

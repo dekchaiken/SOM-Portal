@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PW Schedule — SOM-Portal</title>
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<script src="assets/js/theme.js"></script>
+<link rel="stylesheet" href="assets/css/dark.css">
+<link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+
+  <link rel="stylesheet" href="./assets/pages/pw-schedule/pw-schedule.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="topbar-title-left">
+          <div class="page-title">◐ PW Schedule</div>
+          <div class="page-sub">Planned Work overview สำหรับกะดึก</div>
+        </div>
+      </div>
+      <!-- Manage actions default hidden. The inline script (near Layout.render)
+           reveals them when the viewer is SM (or raw super_admin). Non-SM teams
+           granted 'pw-schedule' land here as read-only viewers. Refresh (↺)
+           stays visible for everyone since re-fetching the shared data is safe. -->
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm pw-topbar-btn pw-manage" id="pw-btn-cron" title="Cron Expression Builder" style="display:none">⧗ Cron</button>
+        <button class="btn btn-ghost btn-sm pw-topbar-btn pw-manage" id="pw-btn-sync" title="Sync from Google Sheet" style="display:none">↻ Sync Sheet</button>
+        <button class="btn btn-ghost btn-sm pw-topbar-btn pw-manage" id="pw-btn-template" title="สร้าง Template แจ้งเพื่อทราบสำหรับ PW" style="display:none"><i data-icon="megaphone"></i> Template</button>
+        <button class="btn btn-ghost btn-sm pw-topbar-btn pw-manage" id="pw-btn-notify" style="display:none">↗ Send Noti</button>
+        <button class="btn btn-primary btn-sm pw-topbar-btn pw-manage" id="pw-btn-add" style="display:none">＋ Add PW</button>
+        <button class="btn btn-ghost btn-sm" onclick="PW.refresh()" style="font-size:11px">↺</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="pw-wrap">
+
+        <!-- View tabs -->
+        <div class="pw-tabs" role="tablist">
+          <button class="pw-tab active" role="tab" data-pw-tab="round" id="pw-tab-btn-round">
+            <i data-icon="clipboard-list"></i> Round
+          </button>
+          <button class="pw-tab" role="tab" data-pw-tab="calendar" id="pw-tab-btn-calendar">
+            <i data-icon="calendar"></i> Calendar
+          </button>
+        </div>
+
+        <!-- ── Round view (existing) ─────────────────────────────── -->
+        <div id="pw-tab-round">
+
+        <!-- Round hero (round info + progress + stats, unified) -->
+        <div class="pw-hero">
+          <div class="pw-hero-top">
+            <div class="pw-hero-eyebrow">
+              <i data-icon="moon"></i>
+              <span>PW Round · Overnight Shift</span>
+            </div>
+            <div class="pw-hero-actions">
+              <span class="pw-live-dot" id="pw-live-dot" title="Auto-refreshing">Live</span>
+              <button class="pw-sound-btn" id="pw-btn-test-sound" title="Test sound">Enable sound</button>
+              <span class="pw-sound-hint" id="pw-sound-hint" style="display:none">
+                <span>Browser noti</span>
+                <button id="pw-btn-enable-noti">Enable</button>
+              </span>
+            </div>
+          </div>
+
+          <div class="pw-hero-mid">
+            <div>
+              <div class="pw-round-title" id="pw-round-title">—</div>
+              <div class="pw-round-sub">
+                <i data-icon="clock"></i><span id="pw-round-sub">Loading…</span>
+              </div>
+            </div>
+            <select class="pw-round-select" id="pw-round-select"></select>
+          </div>
+
+          <div class="pw-progress">
+            <div class="pw-progress-bar"><div class="pw-progress-fill" id="pw-hero-progress-fill" style="width:0%"></div></div>
+            <div class="pw-progress-txt" id="pw-hero-progress-txt">0 / 0 done</div>
+          </div>
+
+          <div class="pw-hero-stats">
+            <div class="pw-stat-pill">
+              <span class="pw-stat-pill-num pw-stat-num" id="pw-stat-total">0</span>
+              <span class="pw-stat-pill-lbl">Total</span>
+            </div>
+            <div class="pw-stat-pill internal">
+              <span class="pw-stat-pill-num pw-stat-num accent" id="pw-stat-internal">0</span>
+              <span class="pw-stat-pill-lbl">Internal</span>
+            </div>
+            <div class="pw-stat-pill">
+              <span class="pw-stat-pill-num pw-stat-num" id="pw-stat-external">0</span>
+              <span class="pw-stat-pill-lbl">External</span>
+            </div>
+            <div class="pw-stat-pill done">
+              <span class="pw-stat-pill-num pw-stat-num done" id="pw-stat-done">0</span>
+              <span class="pw-stat-pill-lbl">Completed</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Next up / Live now (may have multiple banners) -->
+        <div id="pw-next-list" class="pw-next-list"></div>
+
+        <!-- Round done banner -->
+        <div class="pw-banner-done" id="pw-done-banner" style="display:none">
+          <i data-icon="check-circle"></i>
+          <span id="pw-done-msg">All tasks completed for this round.</span>
+        </div>
+
+        <!-- Section head -->
+        <div class="pw-section-head">
+          <div class="pw-section-title">
+            <i data-icon="clipboard-list"></i>
+            <span>All tasks · ordered by start time</span>
+          </div>
+          <div class="pw-progress">
+            <div class="pw-progress-bar"><div class="pw-progress-fill" id="pw-section-progress-fill" style="width:0%"></div></div>
+            <div class="pw-section-title muted" id="pw-progress-text">0 / 0 done</div>
+          </div>
+        </div>
+
+        <!-- List -->
+        <div id="pw-list" class="pw-list"></div>
+
+        <!-- Empty state -->
+        <div id="pw-empty" class="pw-empty" style="display:none">
+          <i data-icon="inbox"></i>
+          <div class="pw-empty-title">ยังไม่มี PW ในรอบนี้</div>
+          <div class="pw-empty-sub">กดปุ่ม “＋ Add PW” เพื่อเริ่มเพิ่มรายการ</div>
+        </div>
+
+        </div><!-- /#pw-tab-round -->
+
+        <!-- ── Calendar view (Teamup) ────────────────────────────── -->
+        <div id="pw-tab-calendar" style="display:none;flex-direction:column;gap:12px">
+
+          <div class="pw-cal-bar">
+            <div class="pw-cal-nav">
+              <button class="pw-cal-btn icon" id="pw-cal-prev" title="Previous month"><i data-icon="chevron-left"></i></button>
+              <div class="pw-cal-title" id="pw-cal-title">—</div>
+              <button class="pw-cal-btn icon" id="pw-cal-next" title="Next month"><i data-icon="chevron-right"></i></button>
+              <button class="pw-cal-btn" id="pw-cal-today">Today</button>
+            </div>
+            <div class="pw-cal-nav">
+              <div class="pw-cal-meta" id="pw-cal-meta"><i data-icon="clock"></i><span id="pw-cal-meta-txt">—</span></div>
+              <button class="pw-cal-btn" id="pw-cal-refresh" title="Force refresh from Teamup"><i data-icon="refresh-cw"></i> Refresh</button>
+              <a class="pw-cal-btn" href="https://teamup.com/" target="_blank" rel="noopener" id="pw-cal-open" style="text-decoration:none"><i data-icon="external-link"></i> Open in Teamup</a>
+            </div>
+          </div>
+
+          <div id="pw-cal-legend-mount"></div>
+
+          <div id="pw-cal-body">
+            <div class="pw-cal-empty" id="pw-cal-loading">
+              <i data-icon="calendar"></i>
+              <div class="pw-cal-empty-title">Loading…</div>
+            </div>
+          </div>
+
+        </div><!-- /#pw-tab-calendar -->
+
+        <!-- Event detail popover -->
+        <div class="pw-cal-detail-wrap" id="pw-cal-detail-wrap">
+          <div class="pw-cal-detail" role="dialog" aria-modal="true">
+            <div class="pw-cal-detail-badge" id="pw-cal-detail-badge">
+              <span class="pw-cal-legend-dot" id="pw-cal-detail-dot"></span>
+              <span id="pw-cal-detail-cal">—</span>
+            </div>
+            <h4 id="pw-cal-detail-title">—</h4>
+            <div id="pw-cal-detail-body"></div>
+            <div class="pw-cal-detail-actions">
+              <button class="pw-cal-btn" id="pw-cal-detail-close">Close</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Form modal -->
+<div class="pw-modal-wrap" id="pw-modal-wrap">
+  <div class="pw-modal" role="dialog" aria-modal="true">
+    <h3 id="pw-modal-title">Add Planwork</h3>
+    <div class="pw-modal-sub">กรอกรายละเอียดของ PW — Type, ชื่อ, ช่วงเวลา และข้อมูลเสริม</div>
+
+    <div class="pw-form-row">
+      <label class="pw-label">Type</label>
+      <div class="pw-radio-group" id="pw-radio-type">
+        <div class="pw-radio active" data-val="INTERNAL">INTERNAL</div>
+        <div class="pw-radio" data-val="EXTERNAL">EXTERNAL</div>
+      </div>
+    </div>
+
+    <div class="pw-form-row">
+      <label class="pw-label">PW Name</label>
+      <input class="pw-input" id="pw-f-name" placeholder="เช่น CMT-14061 Upgrade EKS 1.32 → 1.35 (Nano)">
+    </div>
+
+    <div class="pw-form-row split">
+      <div>
+        <label class="pw-label">Start</label>
+        <input type="datetime-local" class="pw-input" id="pw-f-start">
+      </div>
+      <div>
+        <label class="pw-label">End</label>
+        <input type="datetime-local" class="pw-input" id="pw-f-end">
+      </div>
+    </div>
+
+    <div class="pw-form-row">
+      <label class="pw-label">MOP (URL)</label>
+      <input class="pw-input" id="pw-f-mop" placeholder="https://docs.google.com/...">
+    </div>
+
+    <div class="pw-form-row">
+      <label class="pw-label">Link Meet</label>
+      <input class="pw-input" id="pw-f-meet" placeholder="https://meet.google.com/...">
+    </div>
+
+    <div class="pw-form-row">
+      <label class="pw-label">Task</label>
+      <input class="pw-input" id="pw-f-task" placeholder="04:15 - test all service">
+    </div>
+
+    <div class="pw-form-row">
+      <label class="pw-label">Impact Service</label>
+      <input class="pw-input" id="pw-f-impact" placeholder="No Service Impacted">
+    </div>
+
+    <div class="pw-form-row split">
+      <div>
+        <label class="pw-label">Contact / Owner</label>
+        <input class="pw-input" id="pw-f-owner" placeholder="Tawatchai D.">
+      </div>
+      <div>
+        <label class="pw-label">Ticket SMC</label>
+        <input class="pw-input" id="pw-f-ticket" placeholder="SMC-12345">
+      </div>
+    </div>
+
+    <div class="pw-form-row">
+      <label class="pw-label">Remark</label>
+      <textarea class="pw-textarea" id="pw-f-remark" placeholder="หมายเหตุ"></textarea>
+    </div>
+
+    <div class="pw-form-row">
+      <label class="pw-label">Attachments · รูปภาพ หรือ ข้อความเพิ่มเติม</label>
+      <div id="pw-f-atts" class="pw-atts"></div>
+      <div class="pw-att-add">
+        <label class="pw-att-pick">
+          <input type="file" id="pw-f-att-file" accept="image/*" hidden multiple>
+          <span>＋ แนบรูป</span>
+        </label>
+        <button type="button" class="pw-att-pick" id="pw-f-att-note">＋ เพิ่มข้อความ</button>
+        <span id="pw-f-att-hint" class="pw-att-hint">รูป ≤ 5MB · ข้อความเปล่าก็ได้ จะไปเป็น reply ใน thread</span>
+      </div>
+    </div>
+
+    <div class="pw-modal-foot">
+      <button class="pw-btn-danger" id="pw-f-delete" style="display:none">Delete</button>
+      <div class="right">
+        <button class="pw-btn-ghost"   id="pw-f-cancel">Cancel</button>
+        <button class="pw-btn-primary" id="pw-f-save">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Cron Builder modal -->
+<div class="cron-modal-backdrop" id="cron-modal-backdrop">
+  <div class="cron-modal">
+    <div class="cron-modal-head">
+      <div class="cron-modal-title">⧗ Cron Builder <span>Quartz · 7-field Expression Generator</span></div>
+      <button class="cron-modal-close" id="cron-modal-close" title="Close">×</button>
+    </div>
+    <iframe class="cron-modal-frame" id="cron-modal-frame" src="" title="Cron Builder"></iframe>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="pw-lb-wrap" id="pw-lb-wrap">
+  <button class="pw-lb-close" id="pw-lb-close" title="Close">×</button>
+  <img class="pw-lb-img" id="pw-lb-img" alt="">
+</div>
+
+<!-- Template modal (📢 แจ้งเพื่อทราบ) -->
+<div class="pw-modal-wrap" id="pw-tpl-wrap">
+  <div class="pw-modal" role="dialog" aria-modal="true" style="max-width:640px">
+    <h3><i data-icon="megaphone"></i> Template — แจ้งเพื่อทราบ (Google Chat)</h3>
+    <div class="pw-modal-sub">เลือก PW แล้วระบบจะดึงหัวข้อ + วันเวลา + รายการ MA จาก ticket มาช่วยร่าง · แก้ได้ก่อน Send</div>
+
+    <div class="pw-form-row">
+      <label class="pw-label">PW ในรอบนี้</label>
+      <select class="pw-select" id="pw-tpl-pick">
+        <option value="">— เลือก PW —</option>
+      </select>
+      <div class="pw-att-hint" id="pw-tpl-status" style="min-height:14px">&nbsp;</div>
+    </div>
+
+    <div class="pw-form-row">
+      <label class="pw-label">ข้อความ</label>
+      <textarea class="pw-textarea" id="pw-tpl-text"
+        style="min-height:220px; font-family:'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace; font-size:12.5px; line-height:1.55"
+        placeholder="เลือก PW ก่อนเพื่อให้ระบบร่างข้อความให้…"></textarea>
+    </div>
+
+    <div class="pw-modal-foot">
+      <div class="pw-att-hint" id="pw-tpl-webhook-info" style="align-self:center">&nbsp;</div>
+      <div class="right">
+        <button class="pw-btn-ghost"   id="pw-tpl-cancel">ปิด</button>
+        <button class="pw-btn-ghost"   id="pw-tpl-copy"><i data-icon="clipboard"></i> Copy</button>
+        <button class="pw-btn-primary" id="pw-tpl-send" disabled title="เลือก PW ก่อน"><i data-icon="rocket"></i> Send to Google Chat</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/skeletons.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/csrf.js"></script>
+<script src="assets/js/analytics.js"></script>
+<script src="assets/js/analytics-features.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script src="./assets/pages/pw-schedule/pw-schedule.js"></script>
+<script src="./assets/pages/pw-schedule/pw-schedule-page.js"></script>
+</body>
+</html>

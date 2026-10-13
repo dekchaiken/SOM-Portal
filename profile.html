@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/dev-badge.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/profile/profile.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title" id="page-title">◈ Profile</div>
+        <div class="page-sub" id="page-subtitle">จัดการบัญชีและดูกิจกรรมของคุณ</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" onclick="history.back()" style="font-size:11px">← Back</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="pf-shell">
+
+        <!-- ══ HERO ════════════════════════════════════════ -->
+        <div class="c pf-hero-row" style="overflow:visible">
+          <div class="hero-banner">
+            <div class="hero-tag" id="pf-hero-tag">SM·HUB / profile</div>
+          </div>
+          <div class="hero-body">
+
+            <div class="av-wrap">
+              <div class="av" onclick="document.getElementById('avatar-file').click()"
+                   title="คลิกเพื่อเปลี่ยนรูป">
+                <span id="av-initials"></span>
+                <div class="av-ov"><span><i data-icon="camera"></i></span><span>เปลี่ยนรูป</span></div>
+              </div>
+              <div class="av-online"></div>
+            </div>
+            <input type="file" id="avatar-file" accept="image/png,image/jpeg,image/gif,image/webp">
+            <canvas id="avatar-canvas" width="200" height="200"></canvas>
+
+            <div class="hero-info">
+              <div class="hero-eyebrow"><span class="o">~/<span id="pf-team-slug">sm</span></span> <i data-icon="play"></i> whoami</div>
+              <div class="hero-name" id="pf-name">—</div>
+              <div class="hero-meta">
+                <span class="role-badge" id="pf-role">—</span>
+                <span class="un-chip"><span class="at">#</span><span id="pf-username">—</span></span>
+              </div>
+              <div class="av-btns">
+                <button class="btn btn-ghost btn-sm"
+                        onclick="document.getElementById('avatar-file').click()"
+                        style="font-size:10px"><i data-icon="camera"></i> เปลี่ยนรูป</button>
+                <button class="btn btn-ghost btn-sm" id="rm-av-btn"
+                        onclick="removeAvatar()"
+                        style="font-size:10px;display:none;color:var(--danger)"><i data-icon="x"></i> ลบรูป</button>
+              </div>
+            </div>
+
+            <!-- Stats — right side of hero -->
+            <div class="hero-stats-wrap">
+              <div class="hs"><div class="hs-n acc" id="s-total">—</div><div class="hs-l">Activities</div></div>
+              <div class="hs"><div class="hs-n"     id="s-posts">—</div><div class="hs-l">Posts</div></div>
+              <div class="hs"><div class="hs-n"     id="s-cmt">—</div>  <div class="hs-l">Comments</div></div>
+              <div class="hs"><div class="hs-n"     id="s-login">—</div><div class="hs-l">Logins</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ LEFT ════════════════════════════════════════ -->
+        <div class="pf-left">
+
+          <!-- Account Info -->
+          <div class="c">
+            <div class="c-head">
+              <div class="c-icon"><i data-icon="user"></i></div>
+              <div><div class="c-title">Account Info</div><div class="c-sub">ชื่อแสดงผลและข้อมูลบัญชี</div></div>
+            </div>
+            <div class="c-body">
+              <div class="pf-row">
+                <div class="pf-label"><i data-icon="pencil"></i> ชื่อแสดงผล</div>
+                <input class="pf-input" type="text" id="input-name"
+                       maxlength="60">
+              </div>
+              <div class="pf-row">
+                <div class="pf-label">🇹🇭 ชื่อ-นามสกุลภาษาไทย</div>
+                <input class="pf-input" type="text" id="input-name-th" maxlength="80"
+                      >
+              </div>
+              <div class="pf-row">
+                <div class="pf-label"><i data-icon="id-card"></i> รหัสพนักงาน (Employee ID)</div>
+                <input class="pf-input" type="text" id="input-emp-id" maxlength="20"
+                      >
+              </div>
+              <div class="pf-row">
+                <div class="pf-label"><i data-icon="lock"></i> Username <span class="ltag">· locked</span></div>
+                <input class="pf-input" type="text" id="input-username" disabled>
+                <div class="pf-hint"><i data-icon="lock"></i> ไม่สามารถเปลี่ยนได้</div>
+              </div>
+              <div class="pf-row">
+                <div class="pf-label"><i data-icon="lock"></i> Email <span class="ltag">· locked</span></div>
+                <input class="pf-input" type="email" id="input-email" disabled>
+                <div class="pf-hint"><i data-icon="lock"></i> ติดต่อ Admin เพื่อเปลี่ยน</div>
+              </div>
+              <div class="pf-row">
+                <div class="pf-label"><i data-icon="smartphone"></i> เบอร์มือถือ</div>
+                <input class="pf-input" type="text" id="input-phone" maxlength="20"
+                      >
+              </div>
+              <div class="pf-row">
+                <div class="pf-label"><img src="./uploads/tmn.png" alt="TMN" style="width:14px;height:14px;object-fit:contain;vertical-align:middle"> TMN.ID / เบอร์ TrueMoney Wallet</div>
+                <input class="pf-input" type="text" id="input-tmn-id" maxlength="20"
+                      >
+              </div>
+              <div class="pf-row">
+                <div class="pf-label"><i data-icon="home"></i> เน็ตบ้าน (ISP + speed)</div>
+                <input class="pf-input" type="text" id="input-net-home" maxlength="100"
+                      >
+              </div>
+              <div class="pf-row">
+                <div class="pf-label"><i data-icon="wifi"></i> เครือข่ายมือถือ</div>
+                <input class="pf-input" type="text" id="input-net-mobile" maxlength="50"
+                      >
+              </div>
+              <div class="pf-row" id="row-avatar-url" style="display:none">
+                <div class="pf-label"><i data-icon="image"></i> รูปภาพ URL <span class="ltag">· หรืออัปโหลดไฟล์จากปุ่มด้านบน</span></div>
+                <input class="pf-input" type="url" id="input-avatar-url" placeholder="https://example.com/photo.jpg" maxlength="500"
+                       oninput="previewAvatarUrl(this.value)">
+                <div class="pf-hint">วาง URL แล้ว preview จะขึ้น · กด "บันทึก" เพื่อยืนยัน</div>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" id="save-btn" onclick="saveProfile()"><i data-icon="save"></i> บันทึก</button>
+                <a href="./change-password.html" class="btn btn-ghost" style="font-size:11px" id="change-pw-link"><i data-icon="key"></i> เปลี่ยนรหัสผ่าน</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Achievements -->
+          <div class="c">
+            <div class="c-head">
+              <div class="c-icon"><i data-icon="trophy"></i></div>
+              <div><div class="c-title">Achievements</div><div class="c-sub">คอร์สเรียน · ข้อสอบ · onboarding</div></div>
+              <div id="ach-points" style="margin-left:auto; font-size:11px; font-weight:700; color:var(--orange)"></div>
+            </div>
+            <div class="c-body">
+              <div id="ach-stats" class="ach-stats">
+                <div class="ach-skel" style="height:60px"></div>
+              </div>
+              <div id="ach-list" style="margin-top:14px"></div>
+            </div>
+          </div>
+
+        </div><!-- /pf-left -->
+
+        <!-- ══ RIGHT ════════════════════════════════════════ -->
+        <div class="pf-right">
+
+          <!-- Heatmap -->
+          <div class="c" style="flex-shrink:0">
+            <div class="c-head">
+              <div class="c-icon"><i data-icon="flame"></i></div>
+              <div><div class="c-title">Activity Heatmap</div><div class="c-sub">กิจกรรมย้อนหลัง 12 เดือน</div></div>
+              <div id="hm-total" style="margin-left:auto;font-size:9.5px;color:var(--text-muted)"></div>
+            </div>
+            <div class="c-body" style="padding:12px 14px 12px">
+              <div class="hm-scroll" id="hm-container">
+                <div style="color:var(--text-muted);font-size:11px;padding:6px 0">⏳ กำลังโหลด...</div>
+              </div>
+              <div class="hm-legend">
+                <span>น้อย</span>
+                <div class="hm-lc" style="background:#EBEBEB"></div>
+                <div class="hm-lc" style="background:rgba(242,100,25,.22)"></div>
+                <div class="hm-lc" style="background:rgba(242,100,25,.46)"></div>
+                <div class="hm-lc" style="background:rgba(242,100,25,.72)"></div>
+                <div class="hm-lc" style="background:var(--orange);box-shadow:0 0 4px rgba(242,100,25,.4)"></div>
+                <span>มาก</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- My Recent Posts -->
+          <div class="c" style="flex-shrink:0;min-height:0;overflow:hidden">
+            <div class="c-head">
+              <div class="c-icon"><i data-icon="edit"></i></div>
+              <div><div class="c-title">My Recent Posts</div><div class="c-sub">โพสต์ล่าสุดที่สร้างบน Web Board</div></div>
+              <button class="btn btn-ghost btn-sm" onclick="loadMyPosts()"
+                      style="margin-left:auto;font-size:9.5px">↺</button>
+            </div>
+            <div id="posts-list">
+              <div class="posts-empty">⏳ กำลังโหลด...</div>
+            </div>
+            <div class="posts-footer">
+              <a href="./board.html" class="btn btn-ghost btn-sm" style="font-size:9.5px">
+                <i data-icon="clipboard"></i> ดูทุกโพสต์บน Web Board →
+              </a>
+            </div>
+          </div>
+
+          <!-- Activity Feed — fills remaining space, scrolls internally -->
+          <div class="c act-card">
+            <div class="c-head">
+              <div class="c-icon"><i data-icon="clipboard"></i></div>
+              <div><div class="c-title">Activity Feed</div><div class="c-sub">กิจกรรมทั้งหมดของคุณ</div></div>
+              <button class="btn btn-ghost btn-sm" onclick="loadActivity(true)"
+                      style="margin-left:auto;font-size:9.5px">↺</button>
+            </div>
+            <div id="act-list" class="act-scroll">
+              <div class="act-empty">⏳ กำลังโหลด...</div>
+            </div>
+            <div id="act-more-wrap" class="act-more" style="display:none">
+              <button class="btn btn-ghost btn-sm" id="act-more-btn"
+                      onclick="loadMoreActivity()" style="font-size:10px">
+                โหลดเพิ่มเติม
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /pf-right -->
+
+      </div><!-- /pf-shell -->
+    </main>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/analytics.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script src="./assets/pages/profile/profile.js"></script>
+</body>
+</html>

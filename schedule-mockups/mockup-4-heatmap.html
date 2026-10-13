@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup 4 — Coverage Heatmap (Schedule)</title>
+<link rel="stylesheet" href="../assets/css/dark.css">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/ui-themes.css">
+<script src="../assets/js/theme.js"></script>
+<style>
+  :root {
+    --hm-hot:#ef4444; --hm-warn:#f59e0b; --hm-ok:#22c55e;
+    --hm-cool:#3b82f6; --hm-violet:#8b5cf6; --hm-orange:#f26419;
+    --hm-text-soft: color-mix(in srgb, var(--text-muted) 70%, transparent);
+    --hm-bg-subtle: color-mix(in srgb, var(--border) 40%, transparent);
+    --hm-cell-w: 30px;
+    --hm-cell-h: 30px;
+  }
+
+  .page-wrap { padding:20px 24px; max-width:1600px; margin:0 auto; }
+  .mockup-banner {
+    background:linear-gradient(90deg, color-mix(in srgb, var(--hm-hot) 12%, var(--bg-card)), var(--bg-card));
+    border:1px solid var(--border); border-radius:12px; padding:10px 16px; font-size:12px;
+    color:var(--text-muted); margin-bottom:14px; display:flex; align-items:center; gap:10px;
+  }
+  .mockup-banner strong { color:var(--text); }
+
+  /* Header */
+  .hm-head {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+    padding:14px 20px; margin-bottom:14px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .hm-title { font-size:22px; font-weight:700; letter-spacing:-.02em; color:var(--text); }
+  .hm-sub   { font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .hm-nav { display:flex; align-items:center; gap:6px; }
+  .hm-nav-btn { width:32px; height:32px; border-radius:8px; background:var(--bg-card); border:1px solid var(--border); cursor:pointer; color:var(--text); font-weight:700; }
+  .hm-nav-btn:hover { background:var(--hm-hot); color:#fff; border-color:var(--hm-hot); }
+  .hm-month { font-size:14px; font-weight:700; padding:0 12px; min-width:150px; text-align:center; }
+
+  /* Coverage bar (top) */
+  .hm-coverage-card {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+    padding:14px 20px 16px; margin-bottom:14px;
+  }
+  .hm-cov-hd {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .hm-cov-t {
+    font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:600;
+    color:var(--hm-text-soft);
+  }
+  .hm-cov-summary { display:flex; gap:16px; font-size:12px; }
+  .hm-cov-summary .kpi { display:flex; align-items:center; gap:5px; }
+  .hm-cov-summary .kpi b { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:800; }
+
+  .hm-cov-lane { display:flex; flex-direction:column; gap:8px; }
+  .hm-cov-row { display:grid; grid-template-columns:80px 1fr; gap:12px; align-items:center; }
+  .hm-cov-lbl { font-size:11px; color:var(--text); font-weight:600; text-align:right; }
+  .hm-cov-cells {
+    display:grid; grid-template-columns:repeat(31, 1fr); gap:2px;
+  }
+  .hm-cov-cell {
+    height:14px; border-radius:2px; position:relative;
+  }
+  .hm-cov-cell.full { background:var(--hm-ok); }
+  .hm-cov-cell.partial { background:var(--hm-warn); }
+  .hm-cov-cell.gap { background:var(--hm-hot); }
+  .hm-cov-cell.weekend { opacity:.7; }
+  .hm-cov-cell.today { outline:2px solid var(--text); outline-offset:1px; z-index:1; }
+
+  .hm-cov-daynums {
+    display:grid; grid-template-columns:repeat(31, 1fr); gap:2px;
+    margin-top:5px; font-size:8.5px; color:var(--hm-text-soft);
+    text-align:center; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  .hm-cov-daynums span.today { color:var(--hm-hot); font-weight:800; }
+
+  /* Main heatmap card */
+  .hm-main-grid {
+    display:grid; grid-template-columns:1fr 280px; gap:14px;
+  }
+  @media (max-width:1200px) { .hm-main-grid { grid-template-columns:1fr; } }
+
+  .hm-card {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+    overflow:hidden;
+  }
+  .hm-card-hd {
+    padding:10px 16px; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
+    font-weight:600; color:var(--hm-text-soft); background:var(--hm-bg-subtle);
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:8px;
+  }
+  .hm-card-hd .r { margin-left:auto; text-transform:none; letter-spacing:0; font-weight:500; font-size:10px; }
+
+  /* Heatmap table */
+  .hm-scroll { overflow-x:auto; padding:14px 16px 16px; }
+  .hm-heatmap {
+    display:grid; gap:2px;
+    grid-template-columns: 140px repeat(31, var(--hm-cell-w));
+    min-width:calc(140px + 31 * var(--hm-cell-w) + 60px);
+  }
+  .hm-hm-hd {
+    text-align:center; font-size:9.5px; color:var(--hm-text-soft); font-weight:600;
+    text-transform:uppercase; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    padding:4px 0;
+  }
+  .hm-hm-hd .dow { display:block; font-size:8px; opacity:.65; margin-top:1px; }
+  .hm-hm-hd.today { color:var(--hm-hot); font-weight:800; }
+  .hm-hm-hd.weekend { color:var(--hm-cool); }
+  .hm-hm-hd.holiday { color:var(--hm-hot); }
+  .hm-hm-hd.corner { text-align:left; padding-left:8px; text-transform:none; letter-spacing:0; font-weight:600; color:var(--text); font-family:inherit; font-size:11px; }
+
+  .hm-hm-person {
+    display:flex; align-items:center; gap:8px;
+    font-size:11.5px; font-weight:600; color:var(--text);
+    padding:5px 8px;
+    border-right:1px solid var(--border);
+  }
+  .hm-hm-person.me { color:var(--hm-orange); }
+  .hm-hm-person .av {
+    width:22px; height:22px; border-radius:7px; color:#fff; font-weight:800; font-size:9px;
+    display:grid; place-items:center; letter-spacing:-.02em; flex:none;
+  }
+
+  .hm-cell {
+    height:var(--hm-cell-h); border-radius:5px;
+    display:grid; place-items:center;
+    font-size:9px; font-weight:800; color:#fff;
+    position:relative; cursor:pointer;
+    transition:transform .1s;
+  }
+  .hm-cell:hover { transform:scale(1.15); z-index:2; box-shadow:0 3px 8px rgba(0,0,0,.2); }
+  /* Intensity levels (0-4) */
+  .hm-cell.i-0 {
+    background:transparent; border:1px dashed color-mix(in srgb, var(--border) 80%, transparent);
+    color:var(--hm-text-soft); font-weight:400;
+  }
+  .hm-cell.i-1 { background:color-mix(in srgb, var(--hm-orange) 35%, transparent); color:var(--text); }
+  .hm-cell.i-2 { background:color-mix(in srgb, var(--hm-orange) 65%, transparent); }
+  .hm-cell.i-3 { background:var(--hm-orange); }
+  .hm-cell.i-3-oc { background:var(--hm-warn); }
+  .hm-cell.i-3-s2 { background:var(--hm-violet); }
+  .hm-cell.i-3-mix { background:linear-gradient(135deg, var(--hm-orange) 50%, var(--hm-violet) 50%); }
+  .hm-cell.leave {
+    background:repeating-linear-gradient(45deg,
+      color-mix(in srgb, var(--hm-text-soft) 45%, transparent),
+      color-mix(in srgb, var(--hm-text-soft) 45%, transparent) 3px,
+      transparent 3px, transparent 6px);
+    color:var(--text);
+  }
+  .hm-cell.today-col {
+    outline:2px solid var(--hm-hot); outline-offset:-1px;
+  }
+  .hm-cell.weekend-bg { background-color:color-mix(in srgb, var(--hm-cool) 8%, transparent); }
+
+  .hm-cell-badge {
+    position:absolute; top:1px; right:2px;
+    font-size:7px; font-weight:800; color:#fff;
+    background:rgba(0,0,0,.35); border-radius:3px; padding:0 3px;
+    line-height:1.2;
+  }
+
+  /* Right sidebar */
+  .hm-side { display:flex; flex-direction:column; gap:14px; }
+  .hm-legend {
+    padding:12px 16px; display:flex; flex-direction:column; gap:8px; font-size:11.5px;
+  }
+  .hm-legend-row { display:flex; align-items:center; gap:9px; }
+  .hm-legend-sw { width:20px; height:12px; border-radius:3px; flex:none; }
+  .hm-legend-txt { color:var(--text); }
+  .hm-legend-txt small { color:var(--hm-text-soft); }
+
+  .hm-workload { padding:12px 16px; display:flex; flex-direction:column; gap:10px; }
+  .hm-wl-row {
+    display:grid; grid-template-columns:auto 1fr auto; gap:9px; align-items:center; font-size:12px;
+  }
+  .hm-wl-row .av {
+    width:22px; height:22px; border-radius:7px; color:#fff; font-weight:800; font-size:9px;
+    display:grid; place-items:center; letter-spacing:-.02em;
+  }
+  .hm-wl-row .name-col { display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .hm-wl-row .name { font-size:11.5px; font-weight:700; color:var(--text); }
+  .hm-wl-row .subline { display:flex; align-items:center; gap:4px; }
+  .hm-wl-row .subbar {
+    height:5px; border-radius:3px; background:var(--hm-bg-subtle); overflow:hidden; flex:1;
+  }
+  .hm-wl-row .subbar > i { display:block; height:100%; background:var(--hm-orange); }
+  .hm-wl-row .n { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:800; font-size:13px; color:var(--text); }
+
+  .hm-warn-list { padding:12px 16px; display:flex; flex-direction:column; gap:8px; font-size:11.5px; }
+  .hm-warn-row { display:flex; gap:8px; padding:7px 10px; background:color-mix(in srgb, var(--hm-hot) 6%, transparent); border-radius:8px; border:1px solid color-mix(in srgb, var(--hm-hot) 30%, transparent); }
+  .hm-warn-row.warn { background:color-mix(in srgb, var(--hm-warn) 6%, transparent); border-color:color-mix(in srgb, var(--hm-warn) 30%, transparent); }
+  .hm-warn-row .ico { font-size:14px; }
+  .hm-warn-row b { color:var(--text); }
+  .hm-warn-row small { color:var(--hm-text-soft); display:block; font-size:10.5px; margin-top:1px; }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="mockup-banner">
+    <strong>Mockup 4 · Coverage Heatmap</strong> — สไตล์ airline crew scheduler. Coverage bar ตอนบนโชว์ให้เห็นวันไหน slot ครบ/ขาด, main grid เป็น heatmap ผู้คน × วัน (สีเข้ม = load มาก). เหมาะสำหรับ lead ที่ต้องดู "team gaps ที่ไหน" กับ "ใครทำหนักเกิน"
+  </div>
+
+  <div class="hm-head">
+    <div>
+      <div class="hm-title">📅 Team Schedule · Coverage View</div>
+      <div class="hm-sub">Heatmap: darker = more shifts · outlined = today · red bar cells = coverage gap</div>
+    </div>
+    <div class="hm-nav">
+      <button class="hm-nav-btn">‹</button>
+      <div class="hm-month">August 2026</div>
+      <button class="hm-nav-btn">›</button>
+    </div>
+  </div>
+
+  <!-- Coverage bar -->
+  <div class="hm-coverage-card">
+    <div class="hm-cov-hd">
+      <div class="hm-cov-t">📊 Daily Coverage — 31 days · 5 slots/day</div>
+      <div class="hm-cov-summary">
+        <div class="kpi" style="color:var(--hm-ok)">● <b id="cov-full">—</b> full</div>
+        <div class="kpi" style="color:var(--hm-warn)">● <b id="cov-partial">—</b> partial</div>
+        <div class="kpi" style="color:var(--hm-hot)">● <b id="cov-gap">—</b> gap</div>
+        <div class="kpi" style="color:var(--text)">● <b id="cov-pct">—</b> coverage</div>
+      </div>
+    </div>
+    <div class="hm-cov-lane" id="cov-lane"></div>
+    <div class="hm-cov-daynums" id="cov-daynums"></div>
+  </div>
+
+  <div class="hm-main-grid">
+    <!-- Main heatmap -->
+    <div class="hm-card">
+      <div class="hm-card-hd">
+        <span>PERSON × DAY HEATMAP</span>
+        <span class="r">shifts + on-call · click cell to see detail</span>
+      </div>
+      <div class="hm-scroll">
+        <div class="hm-heatmap" id="hm-heatmap"></div>
+      </div>
+    </div>
+
+    <!-- Right sidebar -->
+    <div class="hm-side">
+      <div class="hm-card">
+        <div class="hm-card-hd">CELL LEGEND</div>
+        <div class="hm-legend">
+          <div class="hm-legend-row"><span class="hm-legend-sw" style="background:transparent;border:1px dashed color-mix(in srgb, var(--border) 80%, transparent)"></span><span class="hm-legend-txt">Off <small>· no shift</small></span></div>
+          <div class="hm-legend-row"><span class="hm-legend-sw" style="background:color-mix(in srgb, var(--hm-orange) 35%, transparent)"></span><span class="hm-legend-txt">1 shift <small>· light load</small></span></div>
+          <div class="hm-legend-row"><span class="hm-legend-sw" style="background:color-mix(in srgb, var(--hm-orange) 65%, transparent)"></span><span class="hm-legend-txt">2 shifts</small></span></div>
+          <div class="hm-legend-row"><span class="hm-legend-sw" style="background:var(--hm-orange)"></span><span class="hm-legend-txt">Shift#1 only</span></div>
+          <div class="hm-legend-row"><span class="hm-legend-sw" style="background:var(--hm-violet)"></span><span class="hm-legend-txt">Shift#2 only</span></div>
+          <div class="hm-legend-row"><span class="hm-legend-sw" style="background:var(--hm-warn)"></span><span class="hm-legend-txt">On call</span></div>
+          <div class="hm-legend-row"><span class="hm-legend-sw" style="background:linear-gradient(135deg,var(--hm-orange) 50%,var(--hm-violet) 50%)"></span><span class="hm-legend-txt">Shift#1 + Shift#2</small></span></div>
+          <div class="hm-legend-row"><span class="hm-legend-sw" style="background:repeating-linear-gradient(45deg,#999,#999 3px,transparent 3px,transparent 6px)"></span><span class="hm-legend-txt">Leave</span></div>
+        </div>
+      </div>
+
+      <div class="hm-card">
+        <div class="hm-card-hd">
+          <span>WORKLOAD RANK</span>
+          <span class="r" id="wl-max">—</span>
+        </div>
+        <div class="hm-workload" id="hm-workload"></div>
+      </div>
+
+      <div class="hm-card">
+        <div class="hm-card-hd">GAPS TO RESOLVE</div>
+        <div class="hm-warn-list" id="hm-warns"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="sample-data.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const D = window.SCHED_SAMPLE;
+const DOW_TINY = ['Su','M','T','W','T','F','Sa'];
+
+// ── Coverage bar ─────────────────────────────────────────
+(function coverage() {
+  let full = 0, partial = 0, gap = 0;
+  let cells = '';
+  let nums = '';
+  for (let d = 1; d <= D.daysInMonth; d++) {
+    const gapCount = (D.gaps[d] || []).length;
+    const dow = new Date(D.YEAR, D.MONTH - 1, d).getDay();
+    const isWeekend = dow === 0 || dow === 6;
+    const isToday = d === D.TODAY.day;
+    let cls;
+    if (gapCount === 0) { cls = 'full'; full++; }
+    else if (gapCount <= 1) { cls = 'partial'; partial++; }
+    else { cls = 'gap'; gap++; }
+    cells += `<div class="hm-cov-cell ${cls} ${isWeekend ? 'weekend' : ''} ${isToday ? 'today' : ''}" title="Aug ${d}: ${gapCount} gap${gapCount !== 1 ? 's' : ''}"></div>`;
+    nums += `<span class="${isToday ? 'today' : ''}">${d}</span>`;
+  }
+  $('cov-lane').innerHTML = `<div class="hm-cov-row"><div class="hm-cov-lbl">Coverage</div><div class="hm-cov-cells">${cells}</div></div>`;
+  $('cov-daynums').innerHTML = nums;
+  $('cov-full').textContent = full;
+  $('cov-partial').textContent = partial;
+  $('cov-gap').textContent = gap;
+  const totalSlots = D.daysInMonth * 5;
+  const filledSlots = totalSlots - Object.values(D.gaps).flat().length;
+  $('cov-pct').textContent = ((filledSlots / totalSlots) * 100).toFixed(1) + '%';
+})();
+
+// ── Main heatmap ─────────────────────────────────────────
+(function heatmap() {
+  let html = `<div class="hm-hm-hd corner">Team / Day</div>`;
+  for (let d = 1; d <= D.daysInMonth; d++) {
+    const dow = new Date(D.YEAR, D.MONTH - 1, d).getDay();
+    const isToday = d === D.TODAY.day;
+    const isWeekend = dow === 0 || dow === 6;
+    const isHoliday = D.holidays[d];
+    const cls = [
+      isToday ? 'today' : '',
+      isHoliday ? 'holiday' : (isWeekend ? 'weekend' : ''),
+    ].filter(Boolean).join(' ');
+    html += `<div class="hm-hm-hd ${cls}" title="${isHoliday || ''}">${d}<span class="dow">${DOW_TINY[dow]}</span></div>`;
+  }
+
+  D.TEAM.forEach(p => {
+    html += `<div class="hm-hm-person ${p.me ? 'me' : ''}"><span class="av" style="background:${p.color}">${p.short}</span>${p.name}</div>`;
+    for (let d = 1; d <= D.daysInMonth; d++) {
+      const dow = new Date(D.YEAR, D.MONTH - 1, d).getDay();
+      const isWeekend = dow === 0 || dow === 6;
+      const isToday = d === D.TODAY.day;
+      const onLeave = (D.leaves[d] || []).includes(p.id);
+      const events = D.shifts[d].events || [];
+
+      // Which slots this person is in today
+      const s1 = D.isAssigned(d, 's1_tdpk', p.id) || D.isAssigned(d, 's1_wah', p.id);
+      const s2 = D.isAssigned(d, 's2_wah',  p.id);
+      const oc1 = D.isAssigned(d, 's1_oc',  p.id);
+      const oc2 = D.isAssigned(d, 's2_oc',  p.id);
+      const has = s1 || s2 || oc1 || oc2;
+
+      let cellCls = 'i-0', label = '';
+      if (onLeave) {
+        cellCls = 'leave'; label = 'LV';
+      } else if (has) {
+        if (s1 && s2)      { cellCls = 'i-3-mix'; label = 'D+N'; }
+        else if (s1)       { cellCls = 'i-3';     label = 'D';   }
+        else if (s2)       { cellCls = 'i-3-s2';  label = 'N';   }
+        else if (oc1 || oc2) { cellCls = 'i-3-oc'; label = 'OC'; }
+      }
+
+      const extras = [
+        isToday ? 'today-col' : '',
+        (isWeekend && !has && !onLeave) ? 'weekend-bg' : '',
+      ].filter(Boolean).join(' ');
+
+      const ocBadge = (has && (oc1 || oc2) && !(cellCls === 'i-3-oc')) ? `<span class="hm-cell-badge">OC</span>` : '';
+      const evTitle = events.length ? ` · 📌 ${events.join(', ')}` : '';
+      html += `<div class="hm-cell ${cellCls} ${extras}" title="Aug ${d} · ${p.name}${onLeave ? ' · ON LEAVE' : ''}${evTitle}">${label}${ocBadge}</div>`;
+    }
+  });
+
+  $('hm-heatmap').innerHTML = html;
+})();
+
+// ── Workload rank sidebar ────────────────────────────────
+(function wl() {
+  const stats = D.stats().slice().sort((a, b) => b.total - a.total);
+  const max = stats[0].total;
+  $('wl-max').textContent = `${stats[0].name} leads`;
+  $('hm-workload').innerHTML = stats.map(s => {
+    const pct = (s.total / max) * 100;
+    return `<div class="hm-wl-row">
+      <span class="av" style="background:${s.color}">${s.short}</span>
+      <div class="name-col">
+        <div class="name">${s.name}</div>
+        <div class="subline"><div class="subbar"><i style="width:${pct}%;background:${s.color}"></i></div></div>
+      </div>
+      <span class="n">${s.total}</span>
+    </div>`;
+  }).join('');
+})();
+
+// ── Gaps to resolve ──────────────────────────────────────
+(function warns() {
+  const rows = [];
+  Object.entries(D.gaps).forEach(([d, slots]) => {
+    slots.forEach(slot => {
+      rows.push(`<div class="hm-warn-row">
+        <span class="ico">🚨</span>
+        <div><b>Aug ${d}</b> · ${D.SLOT_META[slot].label} unfilled<small>${D.holidays[d] ? 'falls on ' + D.holidays[d] : 'no one assigned'}</small></div>
+      </div>`);
+    });
+  });
+  rows.push(`<div class="hm-warn-row warn">
+    <span class="ico">⚠️</span>
+    <div><b>Aug 26</b> · double-leave day<small>Ann & Pond both off — 1 slot unfilled</small></div>
+  </div>`);
+  rows.push(`<div class="hm-warn-row warn">
+    <span class="ico">💡</span>
+    <div><b>Somchai</b> · highest load (${D.stats().find(s=>s.id==='somchai').total} shifts)<small>consider re-distributing next week</small></div>
+  </div>`);
+  $('hm-warns').innerHTML = rows.join('');
+})();
+</script>
+</body>
+</html>

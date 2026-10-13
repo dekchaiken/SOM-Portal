@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Analytics — Green Month Dashboard (3 tabs)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#F26419;
+  --bg:#F5F6F8; --bg-card:#FFFFFF; --bg-input:#F9F9F9;
+  --text:#1C1C1E; --text-muted:#767676; --text-dim:#9AA0A6;
+  --border:#E5E5E5; --border-soft:#EEEEEE;
+  --good:#16A34A; --good-bg:#DCFCE7;
+  --bad:#DC2626;  --bad-bg:#FEE2E2;
+  --warn:#F59E0B; --warn-bg:#FEF3C7;
+  --font:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--font); font-size:12px}
+.page{max-width:1360px; margin:0 auto; padding:28px 32px 80px}
+
+/* ── Report header ─────────────────── */
+.report-head{margin-bottom:22px}
+.report-title{font-size:26px; font-weight:800; letter-spacing:-.02em; color:var(--text); margin:0}
+.report-title .sub{color:var(--text-muted); font-weight:500; font-style:italic; font-size:16px}
+.title-rule{
+  margin-top:12px; height:4px; border-radius:2px;
+  background:linear-gradient(90deg, #EF4444 0%, #F97316 25%, #FFE3D0 60%, transparent 100%);
+}
+
+/* ── Tab bar ─────────────────────────── */
+.tab-bar{
+  display:flex; gap:6px; margin:22px 0 24px;
+  border-bottom:1px solid var(--border);
+}
+.tab{
+  position:relative; border:0; background:transparent;
+  padding:12px 20px; font-family:var(--font); font-size:12.5px; font-weight:700;
+  color:var(--text-muted); cursor:pointer; letter-spacing:.02em;
+  display:inline-flex; align-items:center; gap:8px;
+  transition:color .15s ease;
+}
+.tab .cnt{
+  font-size:9.5px; font-weight:800; padding:2px 7px; border-radius:10px;
+  background:#EEE; color:var(--text-muted); letter-spacing:.06em;
+}
+.tab.on{color:var(--text)}
+.tab.on .cnt{background:var(--bad-bg); color:var(--bad)}
+.tab.on::after{
+  content:''; position:absolute; left:12px; right:12px; bottom:-1px;
+  height:3px; border-radius:2px 2px 0 0; background:var(--orange);
+}
+.tab:hover{color:var(--text)}
+
+.tab-view{display:none}
+.tab-view.on{display:block; animation:fadeIn .22s ease}
+@keyframes fadeIn{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+
+/* ── KPI hero row ───────────────────── */
+.kpi-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:32px}
+.kpi{
+  background:var(--bg-card); border:1px solid var(--border); border-radius:14px;
+  padding:20px 22px; box-shadow:0 1px 3px rgba(0,0,0,.03);
+  transition:transform .18s ease, box-shadow .18s ease;
+}
+.kpi:hover{transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.06)}
+.kpi-val{font-size:38px; font-weight:800; letter-spacing:-.02em; line-height:1}
+.kpi-val.bad{color:var(--bad)}
+.kpi-val.warn{color:var(--warn)}
+.kpi-val.good{color:var(--good)}
+.kpi-lbl{margin-top:8px; font-size:13.5px; font-weight:700; color:var(--text)}
+.kpi-sub{margin-top:2px; font-size:11px; color:var(--text-muted)}
+
+/* ── Section head ───────────────────── */
+.section-head{
+  font-size:11px; font-weight:800; color:var(--text); letter-spacing:.18em;
+  text-transform:uppercase; margin:8px 0 14px;
+}
+
+/* ── Monthly tracker row ────────────── */
+.month-row{
+  display:grid; grid-template-columns:repeat(12,1fr); gap:10px; margin-bottom:36px;
+}
+.mcell{
+  background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+  padding:14px 10px 12px; display:flex; flex-direction:column; align-items:center;
+  min-height:158px; transition:transform .15s ease; cursor:pointer;
+}
+.mcell:hover{transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.06)}
+.mcell.clean{background:#EAF9EF; border-color:#BBE7C8}
+.mcell.miss {background:#FFEEEE; border-color:#F6C8C8}
+.mcell.future{background:#F5F5F5; border-color:var(--border-soft); cursor:default}
+.mcell .m{font-size:14px; font-weight:800; letter-spacing:-.01em}
+.mcell.clean .m{color:#0B7A2C}
+.mcell.miss  .m{color:#B01717}
+.mcell.future .m{color:var(--text-dim)}
+.mcell .badge{
+  margin:10px 0 8px; width:38px; height:38px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; font-weight:800; color:#fff;
+}
+.mcell.clean .badge{background:var(--good)}
+.mcell.miss  .badge{background:#DC2626}
+.mcell.future .badge{background:#D9D9D9; color:#8A8A8A}
+.mcell .mins{font-size:14px; font-weight:800; color:#B01717; margin-top:2px}
+.mcell .cnt{font-size:10.5px; color:#B01717; margin-top:1px}
+.mcell.clean .mins,.mcell.clean .cnt{color:#0B7A2C}
+.mcell.clean .mins{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:lowercase}
+.mcell .tags{margin-top:8px; display:flex; flex-direction:column; gap:2px; align-items:center}
+.mcell .tags span{font-size:9.5px; font-weight:700; color:#8B2020; letter-spacing:.04em}
+
+/* ── Bottom grid ────────────────────── */
+.bottom{display:grid; grid-template-columns:1.5fr 1fr; gap:24px}
+.panel{background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:20px 22px}
+.panel h4{margin:0 0 14px; font-size:11px; letter-spacing:.18em; font-weight:800; color:var(--text); text-transform:uppercase}
+
+/* CSS bar chart */
+.bars{display:flex; align-items:flex-end; gap:16px; height:220px; padding:0 8px 24px; border-bottom:1px solid var(--border-soft); position:relative}
+.bar-wrap{flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end}
+.bar-val{font-size:11px; font-weight:800; color:var(--text)}
+.bar-val.zero{color:var(--text-dim)}
+.bar{width:100%; max-width:36px; background:var(--orange); border-radius:4px 4px 0 0; min-height:2px}
+.bar.zero{background:#D9D9D9; height:2px !important}
+.bar.green{background:var(--good)}
+.bar.blue{background:#3B82F6}
+.bar-scale{display:flex; gap:16px; padding:0 8px; margin-top:6px}
+.bar-scale .lb{flex:1; text-align:center; font-size:10px; color:var(--text-muted); font-weight:600}
+
+/* Impact list */
+.imp-row{display:flex; align-items:center; justify-content:space-between; padding:12px 4px; border-bottom:1px dashed var(--border-soft)}
+.imp-row:last-child{border-bottom:0}
+.imp-key{display:flex; align-items:center; gap:10px; font-weight:700; font-size:13px}
+.imp-key .dot{width:10px; height:10px; border-radius:50%}
+.imp-key .dot.dtac{background:#E4187C}
+.imp-key .dot.true{background:#F26419}
+.imp-key .dot.tmn {background:#F5C518}
+.imp-key .dot.batch{background:#7C3AED}
+.imp-key .dot.mon  {background:#0EA5E9}
+.imp-key .dot.other{background:#9CA3AF}
+.imp-val{font-size:11.5px; color:var(--text-muted); font-weight:600}
+.imp-val b{color:var(--text); font-weight:800}
+
+/* Detection source stacked bar */
+.det-bar{display:flex; height:24px; border-radius:6px; overflow:hidden; margin:8px 0 14px}
+.det-bar span{display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:800; color:#fff}
+.det-bar .sm{background:var(--good)}
+.det-bar .ss{background:var(--warn)}
+.det-bar .other{background:#9CA3AF}
+.det-legend{display:flex; gap:14px; font-size:11px; color:var(--text-muted); font-weight:700}
+.det-legend .swatch{width:10px; height:10px; border-radius:3px; display:inline-block; margin-right:5px; vertical-align:-1px}
+
+/* Footer */
+.foot{margin-top:22px; display:flex; justify-content:space-between; align-items:center; font-size:10.5px; color:var(--text-muted)}
+.foot .brand{font-size:14px; font-weight:800; letter-spacing:-.01em}
+.foot .brand span{color:var(--bad); font-weight:800}
+
+@media (max-width:1100px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .month-row{grid-template-columns:repeat(6,1fr)}
+  .bottom{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Report header -->
+  <header class="report-head">
+    <h1 class="report-title">
+      Analytics — Green Month Dashboard Y2026
+      <span class="sub">(as of July-2026)</span>
+    </h1>
+    <div class="title-rule"></div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab on" data-tab="server">Server Monitoring <span class="cnt">9 MISS</span></button>
+    <button class="tab" data-tab="batch">Batchfile <span class="cnt">12 OPEN</span></button>
+    <button class="tab" data-tab="monitoring">Monitoring <span class="cnt">8 OPEN</span></button>
+  </div>
+
+  <!-- ═══════════════════════════════════ TAB 1: SERVER MONITORING ═══ -->
+  <section class="tab-view on" id="view-server">
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-val bad">99.66%</div>
+        <div class="kpi-lbl">Overall Service Availability</div>
+        <div class="kpi-sub">All causes of issue</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val warn">1,794</div>
+        <div class="kpi-lbl">Incident Minutes YTD</div>
+        <div class="kpi-sub">from 9 Incident Records</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val good">99.96%</div>
+        <div class="kpi-lbl">Caused by TMN internal</div>
+        <div class="kpi-sub">SLO : 99.95%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val bad">99.69%</div>
+        <div class="kpi-lbl">Caused by External system</div>
+        <div class="kpi-sub">TRUE / DTAC system</div>
+      </div>
+    </div>
+
+    <div class="section-head">Monthly Tracker · SM Detection Miss</div>
+    <div class="month-row">
+      <div class="mcell clean"><div class="m">Jan</div><div class="badge">&#10003;</div><div class="mins">0 min</div><div class="cnt">green</div></div>
+      <div class="mcell miss"><div class="m">Feb</div><div class="badge">1</div><div class="mins">480 min</div><div class="cnt">1 miss</div><div class="tags"><span>DTAC</span></div></div>
+      <div class="mcell miss"><div class="m">Mar</div><div class="badge">2</div><div class="mins">781 min</div><div class="cnt">2 misses</div><div class="tags"><span>DTAC</span><span>TMN</span></div></div>
+      <div class="mcell miss"><div class="m">Apr</div><div class="badge">1</div><div class="mins">98 min</div><div class="cnt">1 miss</div><div class="tags"><span>TRUE</span></div></div>
+      <div class="mcell miss"><div class="m">May</div><div class="badge">3</div><div class="mins">216 min</div><div class="cnt">3 misses</div><div class="tags"><span>DTAC</span><span>TRUE</span><span>TMN</span></div></div>
+      <div class="mcell miss"><div class="m">Jun</div><div class="badge">1</div><div class="mins">103 min</div><div class="cnt">1 miss</div><div class="tags"><span>DTAC</span></div></div>
+      <div class="mcell miss"><div class="m">Jul</div><div class="badge">1</div><div class="mins">116 min</div><div class="cnt">1 miss</div><div class="tags"><span>TMN</span></div></div>
+      <div class="mcell future"><div class="m">Aug</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+      <div class="mcell future"><div class="m">Sep</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+      <div class="mcell future"><div class="m">Oct</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+      <div class="mcell future"><div class="m">Nov</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+      <div class="mcell future"><div class="m">Dec</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+    </div>
+
+    <div class="bottom">
+      <div class="panel">
+        <h4>Outage Minutes by Month</h4>
+        <div class="bars">
+          <div class="bar-wrap"><div class="bar-val zero">0</div><div class="bar zero"></div></div>
+          <div class="bar-wrap"><div class="bar-val">480</div><div class="bar" style="height:60%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">781</div><div class="bar" style="height:100%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">98</div><div class="bar" style="height:13%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">216</div><div class="bar" style="height:28%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">103</div><div class="bar" style="height:14%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">116</div><div class="bar" style="height:16%"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+        </div>
+        <div class="bar-scale">
+          <div class="lb">Jan</div><div class="lb">Feb</div><div class="lb">Mar</div><div class="lb">Apr</div>
+          <div class="lb">May</div><div class="lb">Jun</div><div class="lb">Jul</div><div class="lb">Aug</div>
+          <div class="lb">Sep</div><div class="lb">Oct</div><div class="lb">Nov</div><div class="lb">Dec</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h4>Business Impact (YTD)</h4>
+        <div class="imp-row"><div class="imp-key"><span class="dot dtac"></span>DTAC</div><div class="imp-val"><b>4 incidents</b> &middot; 1,431 min</div></div>
+        <div class="imp-row"><div class="imp-key"><span class="dot true"></span>TRUE</div><div class="imp-val"><b>2 incidents</b> &middot; 184 min</div></div>
+        <div class="imp-row"><div class="imp-key"><span class="dot tmn"></span>TRUE MONEY</div><div class="imp-val"><b>3 incidents</b> &middot; 179 min</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════ TAB 2: BATCHFILE ═══ -->
+  <section class="tab-view" id="view-batch">
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-val bad">89.8%</div>
+        <div class="kpi-lbl">Overall Close Rate</div>
+        <div class="kpi-sub">106 closed / 118 tickets</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val warn">12</div>
+        <div class="kpi-lbl">Open Tickets YTD</div>
+        <div class="kpi-sub">from 12 unclosed batchfiles</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val good">96.4%</div>
+        <div class="kpi-lbl">External Close Rate</div>
+        <div class="kpi-sub">Target : 95%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val bad">82.1%</div>
+        <div class="kpi-lbl">Internal Close Rate</div>
+        <div class="kpi-sub">Below target 90%</div>
+      </div>
+    </div>
+
+    <div class="section-head">Monthly Tracker · Unclosed Batchfile Tickets</div>
+    <div class="month-row">
+      <div class="mcell clean"><div class="m">Jan</div><div class="badge">&#10003;</div><div class="mins">0 open</div><div class="cnt">green</div></div>
+      <div class="mcell miss"><div class="m">Feb</div><div class="badge">2</div><div class="mins">15 tickets</div><div class="cnt">2 open</div><div class="tags"><span>T-WALLET</span></div></div>
+      <div class="mcell miss"><div class="m">Mar</div><div class="badge">3</div><div class="mins">21 tickets</div><div class="cnt">3 open</div><div class="tags"><span>VAS</span><span>BILL</span></div></div>
+      <div class="mcell miss"><div class="m">Apr</div><div class="badge">1</div><div class="mins">14 tickets</div><div class="cnt">1 open</div><div class="tags"><span>VAS</span></div></div>
+      <div class="mcell miss"><div class="m">May</div><div class="badge">2</div><div class="mins">18 tickets</div><div class="cnt">2 open</div><div class="tags"><span>T-WALLET</span><span>VAS</span></div></div>
+      <div class="mcell miss"><div class="m">Jun</div><div class="badge">1</div><div class="mins">16 tickets</div><div class="cnt">1 open</div><div class="tags"><span>BILL</span></div></div>
+      <div class="mcell miss"><div class="m">Jul</div><div class="badge">3</div><div class="mins">20 tickets</div><div class="cnt">3 open</div><div class="tags"><span>VAS</span><span>T-WALLET</span><span>BILL</span></div></div>
+      <div class="mcell future"><div class="m">Aug</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+      <div class="mcell future"><div class="m">Sep</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+      <div class="mcell future"><div class="m">Oct</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+      <div class="mcell future"><div class="m">Nov</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+      <div class="mcell future"><div class="m">Dec</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+    </div>
+
+    <div class="bottom">
+      <div class="panel">
+        <h4>Batchfile Tickets by Month</h4>
+        <div class="bars">
+          <div class="bar-wrap"><div class="bar-val">14</div><div class="bar green" style="height:66%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">15</div><div class="bar" style="height:71%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">21</div><div class="bar" style="height:100%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">14</div><div class="bar" style="height:66%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">18</div><div class="bar" style="height:85%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">16</div><div class="bar" style="height:76%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">20</div><div class="bar" style="height:95%"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+        </div>
+        <div class="bar-scale">
+          <div class="lb">Jan</div><div class="lb">Feb</div><div class="lb">Mar</div><div class="lb">Apr</div>
+          <div class="lb">May</div><div class="lb">Jun</div><div class="lb">Jul</div><div class="lb">Aug</div>
+          <div class="lb">Sep</div><div class="lb">Oct</div><div class="lb">Nov</div><div class="lb">Dec</div>
+        </div>
+        <div style="margin-top:10px; font-size:10.5px; color:var(--text-muted); font-weight:600">
+          <span style="display:inline-block; width:10px; height:10px; background:var(--good); border-radius:2px; margin-right:5px; vertical-align:-1px"></span>Jan = green &nbsp;·&nbsp;
+          <span style="display:inline-block; width:10px; height:10px; background:var(--orange); border-radius:2px; margin-right:5px; vertical-align:-1px"></span>Months with unclosed tickets
+        </div>
+      </div>
+
+      <div class="panel">
+        <h4>Top Categories (YTD Open)</h4>
+        <div class="imp-row"><div class="imp-key"><span class="dot batch"></span>VAS Topup</div><div class="imp-val"><b>5 open</b> &middot; 42% of unclosed</div></div>
+        <div class="imp-row"><div class="imp-key"><span class="dot dtac"></span>T-Wallet</div><div class="imp-val"><b>4 open</b> &middot; 33%</div></div>
+        <div class="imp-row"><div class="imp-key"><span class="dot true"></span>Bill Payment</div><div class="imp-val"><b>3 open</b> &middot; 25%</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════ TAB 3: MONITORING ═══ -->
+  <section class="tab-view" id="view-monitoring">
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-val good">93.2%</div>
+        <div class="kpi-lbl">Overall Close Rate</div>
+        <div class="kpi-sub">110 closed / 118 alerts</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val warn">8</div>
+        <div class="kpi-lbl">Open Alerts YTD</div>
+        <div class="kpi-sub">from 8 unclosed monitoring</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val good">91.5%</div>
+        <div class="kpi-lbl">Detected by SM</div>
+        <div class="kpi-sub">Target : 90%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val warn">8.5%</div>
+        <div class="kpi-lbl">Detected by SS / Other</div>
+        <div class="kpi-sub">10 alerts caught late</div>
+      </div>
+    </div>
+
+    <div class="section-head">Monthly Tracker · Unclosed Monitoring Alerts</div>
+    <div class="month-row">
+      <div class="mcell clean"><div class="m">Jan</div><div class="badge">&#10003;</div><div class="mins">0 open</div><div class="cnt">green</div></div>
+      <div class="mcell miss"><div class="m">Feb</div><div class="badge">1</div><div class="mins">17 alerts</div><div class="cnt">1 open</div><div class="tags"><span>PROD</span></div></div>
+      <div class="mcell miss"><div class="m">Mar</div><div class="badge">2</div><div class="mins">22 alerts</div><div class="cnt">2 open</div><div class="tags"><span>PROD</span><span>UAT</span></div></div>
+      <div class="mcell clean"><div class="m">Apr</div><div class="badge">&#10003;</div><div class="mins">0 open</div><div class="cnt">green</div></div>
+      <div class="mcell miss"><div class="m">May</div><div class="badge">2</div><div class="mins">19 alerts</div><div class="cnt">2 open</div><div class="tags"><span>PROD</span></div></div>
+      <div class="mcell miss"><div class="m">Jun</div><div class="badge">1</div><div class="mins">15 alerts</div><div class="cnt">1 open</div><div class="tags"><span>UAT</span></div></div>
+      <div class="mcell miss"><div class="m">Jul</div><div class="badge">2</div><div class="mins">21 alerts</div><div class="cnt">2 open</div><div class="tags"><span>PROD</span><span>DR</span></div></div>
+      <div class="mcell future"><div class="m">Aug</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+      <div class="mcell future"><div class="m">Sep</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+      <div class="mcell future"><div class="m">Oct</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+      <div class="mcell future"><div class="m">Nov</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+      <div class="mcell future"><div class="m">Dec</div><div class="badge">&mdash;</div><div class="cnt">&mdash;</div></div>
+    </div>
+
+    <div class="bottom">
+      <div class="panel">
+        <h4>Alerts Received by Month</h4>
+        <div class="bars">
+          <div class="bar-wrap"><div class="bar-val">12</div><div class="bar green" style="height:55%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">17</div><div class="bar blue" style="height:77%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">22</div><div class="bar blue" style="height:100%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">11</div><div class="bar green" style="height:50%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">19</div><div class="bar blue" style="height:86%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">15</div><div class="bar blue" style="height:68%"></div></div>
+          <div class="bar-wrap"><div class="bar-val">21</div><div class="bar blue" style="height:95%"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+          <div class="bar-wrap"><div class="bar-val zero">&mdash;</div><div class="bar zero"></div></div>
+        </div>
+        <div class="bar-scale">
+          <div class="lb">Jan</div><div class="lb">Feb</div><div class="lb">Mar</div><div class="lb">Apr</div>
+          <div class="lb">May</div><div class="lb">Jun</div><div class="lb">Jul</div><div class="lb">Aug</div>
+          <div class="lb">Sep</div><div class="lb">Oct</div><div class="lb">Nov</div><div class="lb">Dec</div>
+        </div>
+        <div style="margin-top:10px; font-size:10.5px; color:var(--text-muted); font-weight:600">
+          <span style="display:inline-block; width:10px; height:10px; background:var(--good); border-radius:2px; margin-right:5px; vertical-align:-1px"></span>Green months (Jan, Apr) &nbsp;·&nbsp;
+          <span style="display:inline-block; width:10px; height:10px; background:#3B82F6; border-radius:2px; margin-right:5px; vertical-align:-1px"></span>Months with unclosed alerts
+        </div>
+      </div>
+
+      <div class="panel">
+        <h4>Detection Source (YTD)</h4>
+        <div style="font-size:10.5px; color:var(--text-muted); font-weight:600; margin-bottom:4px">108 alerts / 118 total</div>
+        <div class="det-bar">
+          <span class="sm" style="width:91.5%">SM 91.5%</span>
+          <span class="ss" style="width:5.9%">SS</span>
+          <span class="other" style="width:2.6%">Oth</span>
+        </div>
+        <div class="det-legend">
+          <span><span class="swatch" style="background:var(--good)"></span>SM &middot; 108</span>
+          <span><span class="swatch" style="background:var(--warn)"></span>Support Squad &middot; 7</span>
+          <span><span class="swatch" style="background:#9CA3AF"></span>Other &middot; 3</span>
+        </div>
+
+        <div style="margin-top:18px">
+          <div class="imp-row"><div class="imp-key"><span class="dot mon"></span>PROD env</div><div class="imp-val"><b>5 open</b> &middot; 62%</div></div>
+          <div class="imp-row"><div class="imp-key"><span class="dot dtac"></span>UAT env</div><div class="imp-val"><b>2 open</b> &middot; 25%</div></div>
+          <div class="imp-row"><div class="imp-key"><span class="dot other"></span>DR env</div><div class="imp-val"><b>1 open</b> &middot; 13%</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <div>&copy; Ascend Money Co., Ltd. All rights reserved.</div>
+    <div class="brand">ascend<span>money</span></div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const t = btn.dataset.tab;
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b === btn));
+    document.querySelectorAll('.tab-view').forEach(v => v.classList.toggle('on', v.id === 'view-' + t));
+  });
+});
+</script>
+</body>
+</html>

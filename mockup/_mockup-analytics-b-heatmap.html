@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Analytics — Design B: Heatmap Matrix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#F26419;
+  --bg:#F5F6F8; --bg-card:#FFFFFF;
+  --text:#1C1C1E; --text-muted:#767676; --text-dim:#9AA0A6;
+  --border:#E5E5E5; --border-soft:#EEEEEE;
+  --good:#16A34A; --bad:#DC2626; --warn:#F59E0B;
+  --s1:#DC2626; --s2:#F59E0B; --s3:#3B82F6;
+  --font:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--font); font-size:12px}
+.page{max-width:1360px; margin:0 auto; padding:28px 32px 80px}
+
+/* Header */
+.page-head{display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:22px}
+.page-title{font-size:22px; font-weight:800; letter-spacing:-.02em; margin:0}
+.page-title .badge{display:inline-block; margin-left:10px; font-size:9px; font-weight:800; letter-spacing:.14em; padding:3px 8px; border-radius:4px; background:#FFE9DA; color:var(--orange); vertical-align:middle}
+.page-sub{color:var(--text-muted); font-size:12px; margin-top:4px}
+.rangepick{display:flex; align-items:center; gap:8px; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700}
+.rangepick select{border:0; background:transparent; font-family:var(--font); font-weight:700; font-size:11px; outline:0; color:var(--text)}
+
+/* Segmented tabs */
+.tabs{display:inline-flex; gap:0; margin-bottom:20px; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:4px}
+.tabs button{border:0; background:transparent; padding:8px 14px; border-radius:6px; font-family:var(--font); font-weight:700; font-size:11px; color:var(--text-muted); cursor:pointer}
+.tabs button.on{background:var(--text); color:#fff}
+
+/* KPI strip (compact) */
+.kpi-strip{display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:24px}
+.kpi{background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:14px 16px}
+.kpi .lbl{font-size:10px; color:var(--text-muted); font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px}
+.kpi .val{font-size:22px; font-weight:800; letter-spacing:-.02em; line-height:1}
+.kpi .sub{margin-top:6px; font-size:10.5px; color:var(--text-muted); font-weight:600}
+.kpi.good .val{color:var(--good)}
+.kpi.bad  .val{color:var(--bad)}
+.kpi.warn .val{color:var(--warn)}
+.kpi.orange .val{color:var(--orange)}
+
+/* Section title */
+.sec-head{
+  display:flex; align-items:center; justify-content:space-between; margin:8px 0 12px;
+}
+.sec-title{font-size:11px; letter-spacing:.18em; font-weight:800; text-transform:uppercase; color:var(--text)}
+.legend{display:flex; align-items:center; gap:14px; font-size:10px; color:var(--text-muted); font-weight:600}
+.legend .step{display:inline-flex; align-items:center; gap:4px}
+.legend .sw{width:14px; height:14px; border-radius:4px; border:1px solid var(--border-soft)}
+
+/* Heatmap */
+.panel{background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:18px 20px; margin-bottom:22px}
+.heat{
+  display:grid;
+  grid-template-columns:110px repeat(12,1fr) 90px;
+  gap:6px;
+  align-items:center;
+}
+.heat .h-lbl{
+  font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:.1em;
+  padding:4px 6px;
+}
+.heat .h-month{text-align:center; font-size:10.5px; font-weight:800; color:var(--text-muted)}
+.heat .h-rowhead{
+  display:flex; align-items:center; gap:8px; font-size:11px; font-weight:800; padding:4px 6px;
+}
+.heat .chip{width:20px; height:20px; border-radius:5px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:9px; font-weight:800}
+.chip.s1{background:var(--s1)} .chip.s2{background:var(--s2)} .chip.s3{background:var(--s3)}
+.heat .cell{
+  height:52px; border-radius:8px; border:1px solid var(--border-soft);
+  display:flex; align-items:center; justify-content:center; position:relative;
+  font-size:13px; font-weight:800; cursor:pointer;
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+.heat .cell:hover{transform:scale(1.06); box-shadow:0 4px 12px rgba(0,0,0,.08); z-index:2}
+.heat .cell.clean{background:#EAF9EF; color:#0B7A2C; border-color:#BBE7C8}
+.heat .cell.h0{background:#F7F7F7; color:var(--text-dim)}
+.heat .cell.h1{background:#FFE4E4; color:#B01717; border-color:#F6C8C8}
+.heat .cell.h2{background:#FFB4B4; color:#8B0F0F; border-color:#F09090}
+.heat .cell.h3{background:#FF7070; color:#fff; border-color:#EE4A4A}
+.heat .cell.future{background:#FAFAFA; color:var(--text-dim); border-style:dashed}
+.heat .cell .tick{position:absolute; top:4px; right:5px; font-size:8px; font-weight:800; opacity:.7}
+.heat .rowsum{text-align:right; font-size:12px; font-weight:800; padding-right:6px}
+.heat .rowsum small{display:block; font-size:9.5px; font-weight:600; color:var(--text-muted); margin-top:2px; letter-spacing:.06em}
+
+/* Bottom row */
+.bottom{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+.miniheat{display:grid; grid-template-columns:repeat(12,1fr); gap:6px}
+.mh{height:38px; border-radius:6px; border:1px solid var(--border-soft); display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:var(--text-muted)}
+.mh.clean{background:#EAF9EF; color:#0B7A2C; border-color:#BBE7C8}
+.mh.h1{background:#FFE4E4; color:#B01717; border-color:#F6C8C8}
+.mh.h2{background:#FFB4B4; color:#8B0F0F; border-color:#F09090}
+.mh.h3{background:#FF7070; color:#fff; border-color:#EE4A4A}
+.mh.future{background:#FAFAFA; color:var(--text-dim); border-style:dashed}
+.mh b{font-size:12px}
+
+/* Cause list */
+.cause-row{display:flex; align-items:center; justify-content:space-between; padding:10px 4px; border-bottom:1px dashed var(--border-soft); font-size:12px}
+.cause-row:last-child{border-bottom:0}
+.cause-row .k{display:flex; align-items:center; gap:8px; font-weight:800}
+.cause-row .k .dt{width:8px; height:8px; border-radius:50%}
+.cause-row .v{color:var(--text-muted); font-weight:700}
+.cause-row .v b{color:var(--text)}
+
+.subhead{font-size:11px; letter-spacing:.16em; text-transform:uppercase; font-weight:800; color:var(--text); margin:0 0 12px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="page-head">
+    <div>
+      <h1 class="page-title">SM Detection Heatmap Y2026 <span class="badge">GREEN-MONTH</span></h1>
+      <div class="page-sub">รายเดือน &middot; severity &times; month &middot; as of 11 Aug 2026</div>
+    </div>
+    <div class="rangepick">
+      <span>Year</span>
+      <select><option>2026</option><option>2025</option></select>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="on">Server Monitoring</button>
+    <button>Batchfile</button>
+    <button>Monitoring</button>
+  </div>
+
+  <!-- Compact KPI strip -->
+  <div class="kpi-strip">
+    <div class="kpi good">
+      <div class="lbl">SM Detection</div>
+      <div class="val">92.4%</div>
+      <div class="sub">vs OKR 90%</div>
+    </div>
+    <div class="kpi bad">
+      <div class="lbl">SM Missed</div>
+      <div class="val">9</div>
+      <div class="sub">out of 118 tickets</div>
+    </div>
+    <div class="kpi warn">
+      <div class="lbl">Outage Min</div>
+      <div class="val">1,794</div>
+      <div class="sub">YTD (7 months)</div>
+    </div>
+    <div class="kpi good">
+      <div class="lbl">Green Months</div>
+      <div class="val">1<span style="font-size:14px; color:var(--text-muted); font-weight:700">/7</span></div>
+      <div class="sub">Jan &middot; 0 misses</div>
+    </div>
+    <div class="kpi orange">
+      <div class="lbl">Worst Month</div>
+      <div class="val">Mar</div>
+      <div class="sub">781 min &middot; 2 misses</div>
+    </div>
+  </div>
+
+  <!-- Heatmap panel -->
+  <div class="panel">
+    <div class="sec-head">
+      <div class="sec-title">SM Miss Heatmap · Severity × Month</div>
+      <div class="legend">
+        <span class="step"><span class="sw" style="background:#EAF9EF"></span>0 miss</span>
+        <span class="step"><span class="sw" style="background:#FFE4E4"></span>1</span>
+        <span class="step"><span class="sw" style="background:#FFB4B4"></span>2</span>
+        <span class="step"><span class="sw" style="background:#FF7070"></span>3+</span>
+        <span class="step"><span class="sw" style="background:#FAFAFA; border-style:dashed"></span>future</span>
+      </div>
+    </div>
+    <div class="heat">
+      <!-- header row -->
+      <div class="h-lbl">Severity</div>
+      <div class="h-month">Jan</div>
+      <div class="h-month">Feb</div>
+      <div class="h-month">Mar</div>
+      <div class="h-month">Apr</div>
+      <div class="h-month">May</div>
+      <div class="h-month">Jun</div>
+      <div class="h-month">Jul</div>
+      <div class="h-month">Aug</div>
+      <div class="h-month">Sep</div>
+      <div class="h-month">Oct</div>
+      <div class="h-month">Nov</div>
+      <div class="h-month">Dec</div>
+      <div class="h-month">Row Total</div>
+
+      <!-- S1 -->
+      <div class="h-rowhead"><span class="chip s1">S1</span> S1</div>
+      <div class="cell clean">&#10003;</div>
+      <div class="cell h1">1</div>
+      <div class="cell h1">1</div>
+      <div class="cell clean">&#10003;</div>
+      <div class="cell h1">1</div>
+      <div class="cell clean">&#10003;</div>
+      <div class="cell h1">1</div>
+      <div class="cell future">&mdash;</div>
+      <div class="cell future">&mdash;</div>
+      <div class="cell future">&mdash;</div>
+      <div class="cell future">&mdash;</div>
+      <div class="cell future">&mdash;</div>
+      <div class="rowsum">4<small>misses</small></div>
+
+      <!-- S2 -->
+      <div class="h-rowhead"><span class="chip s2">S2</span> S2</div>
+      <div class="cell clean">&#10003;</div>
+      <div class="cell clean">&#10003;</div>
+      <div class="cell h1">1</div>
+      <div class="cell h1">1</div>
+      <div class="cell h2">2</div>
+      <div class="cell h1">1</div>
+      <div class="cell clean">&#10003;</div>
+      <div class="cell future">&mdash;</div>
+      <div class="cell future">&mdash;</div>
+      <div class="cell future">&mdash;</div>
+      <div class="cell future">&mdash;</div>
+      <div class="cell future">&mdash;</div>
+      <div class="rowsum">5<small>misses</small></div>
+
+      <!-- S3 -->
+      <div class="h-rowhead"><span class="chip s3">S3</span> S3</div>
+      <div class="cell clean">&#10003;</div>
+      <div class="cell clean">&#10003;</div>
+      <div class="cell clean">&#10003;</div>
+      <div class="cell clean">&#10003;</div>
+      <div class="cell clean">&#10003;</div>
+      <div class="cell clean">&#10003;</div>
+      <div class="cell clean">&#10003;</div>
+      <div class="cell future">&mdash;</div>
+      <div class="cell future">&mdash;</div>
+      <div class="cell future">&mdash;</div>
+      <div class="cell future">&mdash;</div>
+      <div class="cell future">&mdash;</div>
+      <div class="rowsum">0<small>green</small></div>
+
+      <!-- Column totals -->
+      <div class="h-rowhead" style="color:var(--text-muted)">Col Total</div>
+      <div class="rowsum" style="text-align:center">0</div>
+      <div class="rowsum" style="text-align:center; color:var(--bad)">1</div>
+      <div class="rowsum" style="text-align:center; color:var(--bad)">2</div>
+      <div class="rowsum" style="text-align:center; color:var(--bad)">1</div>
+      <div class="rowsum" style="text-align:center; color:var(--bad)">3</div>
+      <div class="rowsum" style="text-align:center; color:var(--bad)">1</div>
+      <div class="rowsum" style="text-align:center; color:var(--bad)">1</div>
+      <div class="rowsum" style="text-align:center; color:var(--text-dim)">&mdash;</div>
+      <div class="rowsum" style="text-align:center; color:var(--text-dim)">&mdash;</div>
+      <div class="rowsum" style="text-align:center; color:var(--text-dim)">&mdash;</div>
+      <div class="rowsum" style="text-align:center; color:var(--text-dim)">&mdash;</div>
+      <div class="rowsum" style="text-align:center; color:var(--text-dim)">&mdash;</div>
+      <div class="rowsum">9<small>total</small></div>
+    </div>
+  </div>
+
+  <!-- Bottom: outage-min heatstrip + top causes -->
+  <div class="bottom">
+    <div class="panel">
+      <div class="subhead">Outage Minutes · Monthly Heatstrip</div>
+      <div class="miniheat">
+        <div class="mh clean">Jan<b>0</b></div>
+        <div class="mh h2">Feb<b>480</b></div>
+        <div class="mh h3">Mar<b>781</b></div>
+        <div class="mh h1">Apr<b>98</b></div>
+        <div class="mh h1">May<b>216</b></div>
+        <div class="mh h1">Jun<b>103</b></div>
+        <div class="mh h1">Jul<b>116</b></div>
+        <div class="mh future">Aug&mdash;</div>
+        <div class="mh future">Sep&mdash;</div>
+        <div class="mh future">Oct&mdash;</div>
+        <div class="mh future">Nov&mdash;</div>
+        <div class="mh future">Dec&mdash;</div>
+      </div>
+      <div style="margin-top:16px; font-size:10.5px; color:var(--text-muted); font-weight:600">
+        Total <b style="color:var(--text)">1,794 min</b> across 9 SM-missed incidents. Mar peak driven by DTAC + TMN outage compound.
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="subhead">Top Causes YTD</div>
+      <div class="cause-row">
+        <div class="k"><span class="dt" style="background:#E4187C"></span>DTAC upstream</div>
+        <div class="v"><b>4</b> misses &middot; 1,431 min</div>
+      </div>
+      <div class="cause-row">
+        <div class="k"><span class="dt" style="background:#F26419"></span>TRUE upstream</div>
+        <div class="v"><b>2</b> misses &middot; 184 min</div>
+      </div>
+      <div class="cause-row">
+        <div class="k"><span class="dt" style="background:#F5C518"></span>TMN internal</div>
+        <div class="v"><b>3</b> misses &middot; 179 min</div>
+      </div>
+      <div class="cause-row">
+        <div class="k"><span class="dt" style="background:#D9D9D9"></span>Others</div>
+        <div class="v"><b>0</b> misses</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

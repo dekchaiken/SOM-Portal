@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maintenance Mode — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ═════════════════════════════════════════════════════════════════
+       MAINTENANCE — blocks.so-inspired UI
+       Design tokens are the app's own CSS vars (--bg, --border, --text,
+       --orange), layout follows blocks.so patterns: sharp cards, list
+       rows, segmented controls, pill counters, section eyebrows.
+       ═════════════════════════════════════════════════════════════════ */
+
+    :root {
+      --ma-radius:      14px;
+      --ma-radius-sm:   10px;
+      --ma-radius-xs:   7px;
+      --ma-row:         56px;
+      --ma-accent:      #f26419;
+      --ma-warn:        #f59e0b;
+      --ma-danger:      #ef4444;
+      --ma-ok:          #22c55e;
+      --ma-elev:        0 1px 0 rgba(0,0,0,.04), 0 8px 22px -14px rgba(0,0,0,.25);
+    }
+    html[data-theme="dark"] {
+      --ma-elev:        0 1px 0 rgba(255,255,255,.02), 0 12px 32px -18px rgba(0,0,0,.6);
+    }
+
+    /* ── Toolbar / status strip ─────────────────────────────────────── */
+    .ma-toolbar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--ma-radius-sm);
+      margin-bottom: 18px;
+      box-shadow: var(--ma-elev);
+    }
+    .ma-toolbar-left  { display: flex; align-items: center; gap: 10px; }
+    .ma-toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+    .ma-conn-dot     { width: 7px; height: 7px; border-radius: 50%; background: var(--ma-ok);
+                       box-shadow: 0 0 0 0 rgba(34,197,94,.5); animation: ma-pulse-ok 2s ease-in-out infinite; }
+    .ma-conn-dot.stale { background: var(--ma-warn); animation: none; }
+    @keyframes ma-pulse-ok {
+      0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,.35); }
+      55%     { box-shadow: 0 0 0 5px rgba(34,197,94,0); }
+    }
+    .ma-sync-label   { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+    .ma-summary      { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); }
+    .ma-summary strong { color: var(--text); font-weight: 700; }
+    .ma-summary-warn { color: var(--ma-danger); font-weight: 700; display: none; }
+    .ma-summary-warn.show { display: inline-flex; align-items: center; gap: 6px; }
+    .ma-summary-warn::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--ma-danger); animation: ma-blink 1.2s ease-in-out infinite;
+    }
+
+    /* ── Toggle switch (blocks.so tone) ─────────────────────────────── */
+    .ma-toggle {
+      position: relative; display: inline-block;
+      width: 40px; height: 22px; flex-shrink: 0;
+    }
+    .ma-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .ma-slider {
+      position: absolute; inset: 0; border-radius: 22px;
+      background: var(--border); cursor: pointer;
+      transition: background .18s ease;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,.06);
+    }
+    .ma-slider::after {
+      content: '';
+      position: absolute; width: 16px; height: 16px;
+      border-radius: 50%; top: 3px; left: 3px;
+      background: #fff;
+      transition: transform .18s cubic-bezier(.4,0,.2,1), box-shadow .18s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.25), 0 0 0 1px rgba(0,0,0,.04);
+    }
+    .ma-toggle input:checked + .ma-slider {
+      background: var(--ma-accent);
+    }
+    .ma-toggle input:checked + .ma-slider::after {
+      transform: translateX(18px);
+      box-shadow: 0 1px 3px rgba(0,0,0,.25), 0 0 0 1px rgba(242,100,25,.25);
+    }
+    .ma-toggle input:focus-visible + .ma-slider {
+      outline: 2px solid var(--ma-accent);
+      outline-offset: 2px;
+    }
+
+    /* ── Section card (Global / Pages / Tools shell) ────────────────── */
+    .ma-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--ma-radius);
+      box-shadow: var(--ma-elev);
+      margin-bottom: 18px;
+      overflow: hidden;
+      transition: border-color .18s;
+    }
+    .ma-card.is-active-global {
+      border-color: rgba(242,100,25,.45);
+      box-shadow: var(--ma-elev), 0 0 0 3px rgba(242,100,25,.08);
+    }
+    .ma-card-hd {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.02), transparent);
+    }
+    html[data-theme="dark"] .ma-card-hd {
+      background: linear-gradient(180deg, rgba(255,255,255,.015), transparent);
+    }
+    .ma-card-mark {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+      background: var(--bg); border: 1px solid var(--border);
+    }
+    .ma-card-mark.tint-blue   { background: rgba(59,130,246,.10); border-color: rgba(59,130,246,.22); color: #3b82f6; }
+    .ma-card-mark.tint-violet { background: rgba(139,92,246,.10); border-color: rgba(139,92,246,.22); color: #8b5cf6; }
+    .ma-card-mark.tint-orange { background: rgba(242,100,25,.10); border-color: rgba(242,100,25,.22); color: var(--ma-accent); }
+    .ma-card-title  { font-size: 13.5px; font-weight: 700; color: var(--text); letter-spacing: -.005em; }
+    .ma-card-sub    { font-size: 11px;   color: var(--text-muted); margin-top: 2px; }
+
+    .ma-card-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+    /* Count badge — right side of section header */
+    .ma-count-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 10.5px; font-weight: 600;
+      padding: 3px 8px; border-radius: 999px;
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .ma-count-pill.hot {
+      background: rgba(242,100,25,.08);
+      border-color: rgba(242,100,25,.25);
+      color: var(--ma-accent);
+    }
+    .ma-count-pill::before {
+      content: ''; width: 5px; height: 5px; border-radius: 50%;
+      background: currentColor; opacity: .8;
+    }
+
+    /* ── GLOBAL card ────────────────────────────────────────────────── */
+    .g-card { position: relative; }
+    .g-card.is-active-global .ma-card-mark.tint-orange {
+      background: rgba(242,100,25,.16);
+      animation: ma-breath 2.4s ease-in-out infinite;
+    }
+    @keyframes ma-breath {
+      0%,100% { transform: scale(1); }
+      50%     { transform: scale(1.06); }
+    }
+    .g-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      padding: 3px 9px; border-radius: 999px;
+      background: rgba(239,68,68,.10);
+      color: var(--ma-danger);
+      border: 1px solid rgba(239,68,68,.22);
+      opacity: 0; transform: scale(.8);
+      transition: opacity .2s, transform .2s;
+    }
+    .is-active-global .g-badge { opacity: 1; transform: scale(1); }
+    .g-badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--ma-danger);
+                       animation: ma-blink 1.2s ease-in-out infinite; }
+    @keyframes ma-blink { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+
+    .g-body {
+      padding: 16px 18px;
+      display: grid; grid-template-columns: 1fr 220px; gap: 12px;
+      transition: max-height .28s ease, opacity .2s;
+    }
+    .g-body.hidden { display: none; }
+    @media (max-width: 720px) { .g-body { grid-template-columns: 1fr; } }
+
+    .g-field label {
+      display: block;
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--text-muted); margin-bottom: 6px;
+    }
+    .g-field input {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px 12px; font-size: 12.5px;
+      color: var(--text); font-family: var(--font);
+      outline: none; transition: border-color .15s, box-shadow .15s;
+    }
+    .g-field input:focus {
+      border-color: var(--ma-accent);
+      box-shadow: 0 0 0 3px rgba(242,100,25,.12);
+    }
+    .g-footer {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 10.5px; color: var(--text-muted);
+      padding: 10px 18px; border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .g-footer strong { color: var(--text); font-weight: 600; }
+    .g-footer.hidden { display: none; }
+    .g-footer-avatar {
+      width: 18px; height: 18px; border-radius: 999px;
+      background: rgba(242,100,25,.14); color: var(--ma-accent);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; flex-shrink: 0;
+    }
+
+    /* ── PAGES / TOOLS body ─────────────────────────────────────────── */
+    .ma-list-toolbar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .ma-search {
+      position: relative; flex: 1; min-width: 0;
+    }
+    .ma-search input {
+      width: 100%;
+      padding: 8px 10px 8px 32px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      border-radius: 8px;
+      font-size: 12px; color: var(--text); font-family: var(--font);
+      outline: none; transition: border-color .15s, box-shadow .15s;
+    }
+    .ma-search input:focus {
+      border-color: var(--ma-accent);
+      box-shadow: 0 0 0 3px rgba(242,100,25,.10);
+    }
+    .ma-search svg {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      width: 14px; height: 14px; color: var(--text-muted); pointer-events: none;
+    }
+    .ma-search .clear-btn {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      width: 18px; height: 18px; border: none; background: transparent;
+      color: var(--text-muted); cursor: pointer; font-size: 14px;
+      display: none; padding: 0; line-height: 1; border-radius: 4px;
+    }
+    .ma-search .clear-btn:hover { color: var(--text); background: var(--border); }
+    .ma-search.has-value .clear-btn { display: block; }
+
+    /* Segmented filter — blocks.so style */
+    .ma-seg {
+      display: inline-flex;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .ma-seg button {
+      appearance: none; border: none; background: transparent;
+      font-family: var(--font); font-size: 11px; font-weight: 600;
+      color: var(--text-muted);
+      padding: 5px 10px; border-radius: 6px; cursor: pointer;
+      transition: background .15s, color .15s;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .ma-seg button:hover { color: var(--text); }
+    .ma-seg button.active {
+      background: var(--bg);
+      color: var(--text);
+      box-shadow: 0 1px 2px rgba(0,0,0,.06);
+    }
+    html[data-theme="dark"] .ma-seg button.active { background: rgba(255,255,255,.06); }
+    .ma-seg .seg-count {
+      font-size: 9.5px; font-weight: 700; padding: 1px 5px;
+      border-radius: 999px; background: var(--border); color: var(--text-muted);
+      min-width: 14px; text-align: center;
+    }
+    .ma-seg button.active .seg-count {
+      background: rgba(242,100,25,.14); color: var(--ma-accent);
+    }
+
+    /* ── Group heading — sticky eyebrow inside list ─────────────────── */
+    .ma-list-body { padding: 6px 8px 10px; }
+    .ma-group-hd {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 10px 6px;
+      font-size: 10px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--text-muted);
+    }
+    .ma-group-hd::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, var(--border), transparent);
+    }
+    .ma-group-hd .grp-count {
+      font-size: 9.5px; font-weight: 700;
+      padding: 1px 6px; border-radius: 999px;
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text-muted); letter-spacing: 0; text-transform: none;
+      display: none;
+    }
+    .ma-group-hd .grp-count.show { display: inline-block; }
+
+    /* ── Item row ───────────────────────────────────────────────────── */
+    .ma-row {
+      display: grid;
+      grid-template-columns: 34px 1fr 1fr 26px 40px;
+      align-items: center; gap: 12px;
+      padding: 9px 10px;
+      border-radius: var(--ma-radius-sm);
+      border: 1px solid transparent;
+      transition: background .13s, border-color .13s;
+    }
+    .ma-row:hover {
+      background: var(--bg);
+      border-color: var(--border);
+    }
+    .ma-row.active {
+      background: rgba(242,100,25,.05);
+      border-color: rgba(242,100,25,.18);
+    }
+    html[data-theme="dark"] .ma-row.active {
+      background: rgba(242,100,25,.07);
+    }
+
+    .ma-row-icon {
+      width: 34px; height: 34px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      background: var(--bg); border: 1px solid var(--border);
+      transition: background .13s, border-color .13s;
+    }
+    .ma-row.active .ma-row-icon {
+      background: rgba(242,100,25,.12);
+      border-color: rgba(242,100,25,.30);
+    }
+    .ma-row-info { min-width: 0; }
+    .ma-row-title { font-size: 12.5px; font-weight: 600; color: var(--text);
+                    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ma-row-sub   { font-size: 10.5px; color: var(--text-muted); margin-top: 1px;
+                    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+
+    .ma-row-msg {
+      width: 100%; min-width: 0;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 7px; padding: 6px 9px;
+      font-size: 11.5px; color: var(--text); font-family: var(--font);
+      outline: none; transition: border-color .15s, box-shadow .15s;
+    }
+    .ma-row-msg::placeholder { color: var(--text-muted); }
+    .ma-row-msg:focus {
+      border-color: var(--ma-accent);
+      box-shadow: 0 0 0 3px rgba(242,100,25,.10);
+    }
+    .ma-row.active .ma-row-msg {
+      background: var(--bg);
+      border-color: rgba(242,100,25,.28);
+    }
+
+    .ma-row-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border); flex-shrink: 0; justify-self: center;
+      transition: background .18s, transform .18s;
+    }
+    .ma-row.active .ma-row-dot {
+      background: var(--ma-accent);
+      animation: ma-blink 1.2s ease-in-out infinite;
+    }
+
+    @media (max-width: 900px) {
+      .ma-row { grid-template-columns: 34px 1fr 26px 40px; gap: 10px; }
+      .ma-row-msg { grid-column: 1 / -1; margin-top: 4px; }
+    }
+
+    /* ── Empty state ────────────────────────────────────────────────── */
+    .ma-empty {
+      display: none;
+      padding: 44px 24px; text-align: center;
+    }
+    .ma-empty.show { display: block; }
+    .ma-empty-mark {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--bg); border: 1px solid var(--border);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 10px;
+    }
+    .ma-empty-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .ma-empty-sub   { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Access denied fallback (renders before Auth kicks in) ──────── */
+    .ma-denied {
+      max-width: 480px; margin: 12vh auto; padding: 32px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--ma-radius); text-align: center;
+      box-shadow: var(--ma-elev);
+    }
+    .ma-denied h2 { font-size: 15px; margin: 8px 0 4px; }
+    .ma-denied p  { font-size: 12px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="wrench"></i> Maintenance Mode</div>
+        <div class="page-sub">Platform-wide MA controls · Super admin only · Real-time sync every 10s</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadMA()" style="font-size:11px">↺ Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="wrench"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Platform · Super Admin</div>
+          <h1>Maintenance Mode</h1>
+          <p>เปิด / ปิด user access ทั้ง platform, ทีละหน้า หรือทีละ tool — sync ทุก 10 วินาที</p>
+        </div>
+      </section>
+
+      <!-- ── Toolbar / status ── -->
+      <div class="ma-toolbar">
+        <div class="ma-toolbar-left">
+          <div class="ma-conn-dot" id="conn-dot"></div>
+          <span class="ma-sync-label">Real-time</span>
+          <span class="ma-sync-label" id="last-sync">—</span>
+        </div>
+        <div class="ma-toolbar-right">
+          <div class="ma-summary">
+            <span><strong id="tot-pages">0</strong> pages · <strong id="tot-tools">0</strong> tools</span>
+          </div>
+          <span class="ma-summary-warn" id="global-warn">Global MA is ON — all users blocked</span>
+        </div>
+      </div>
+
+      <!-- ═════════════════════════════════════════════════════════════
+           GLOBAL MAINTENANCE
+           ═════════════════════════════════════════════════════════════ -->
+      <div class="ma-card g-card" id="global-card">
+        <div class="ma-card-hd">
+          <div class="ma-card-mark tint-orange"><i data-icon="globe"></i></div>
+          <div>
+            <div class="ma-card-title">Global Maintenance</div>
+            <div class="ma-card-sub">Blocks all non-admin users at login until turned off</div>
+          </div>
+          <div class="ma-card-actions">
+            <span class="g-badge" id="global-badge">Active</span>
+            <label class="ma-toggle" title="Toggle global maintenance">
+              <input type="checkbox" id="global-toggle" onchange="toggleGlobal(this.checked)">
+              <span class="ma-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="g-body" id="global-body">
+          <div class="g-field">
+            <label for="global-msg">Message shown to users</label>
+            <input type="text" id="global-msg"
+                   placeholder="ระบบปิดปรับปรุงชั่วคราว..."
+                   oninput="scheduleGlobalSave()">
+          </div>
+          <div class="g-field">
+            <label for="global-eta">ETA (ISO / local)</label>
+            <input type="datetime-local" id="global-eta" oninput="scheduleGlobalSave()">
+          </div>
+        </div>
+        <div class="g-footer hidden" id="global-footer">
+          <span class="g-footer-avatar" id="global-by-avatar">—</span>
+          Activated by <strong id="global-by-name">—</strong> · <strong id="global-by-at">—</strong>
+        </div>
+      </div>
+
+      <!-- ═════════════════════════════════════════════════════════════
+           PAGE MAINTENANCE
+           ═════════════════════════════════════════════════════════════ -->
+      <div class="ma-card">
+        <div class="ma-card-hd">
+          <div class="ma-card-mark tint-blue"><i data-icon="file"></i></div>
+          <div>
+            <div class="ma-card-title">Page Maintenance</div>
+            <div class="ma-card-sub">Show overlay on specific pages — sidebar stays usable</div>
+          </div>
+          <div class="ma-card-actions">
+            <span class="ma-count-pill" id="pages-count">0 active</span>
+          </div>
+        </div>
+        <div class="ma-list-toolbar">
+          <div class="ma-search" id="pages-search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
+            <input type="text" id="pages-search" placeholder="Search pages by name or file..." oninput="filterList('pages')">
+            <button type="button" class="clear-btn" onclick="clearSearch('pages')">×</button>
+          </div>
+          <div class="ma-seg" role="tablist" aria-label="Filter pages by state">
+            <button type="button" class="active" data-filter="all" onclick="setFilter('pages','all')">All <span class="seg-count" id="pages-all-count">0</span></button>
+            <button type="button" data-filter="active" onclick="setFilter('pages','active')">Active <span class="seg-count" id="pages-active-count">0</span></button>
+            <button type="button" data-filter="inactive" onclick="setFilter('pages','inactive')">Off</button>
+          </div>
+        </div>
+        <div class="ma-list-body" id="pages-body"></div>
+        <div class="ma-empty" id="pages-empty">
+          <div class="ma-empty-mark"><i data-icon="search"></i></div>
+          <div class="ma-empty-title">No pages match your filters</div>
+          <div class="ma-empty-sub">Try clearing the search or switching to "All"</div>
+        </div>
+      </div>
+
+      <!-- ═════════════════════════════════════════════════════════════
+           TOOL MAINTENANCE
+           ═════════════════════════════════════════════════════════════ -->
+      <div class="ma-card">
+        <div class="ma-card-hd">
+          <div class="ma-card-mark tint-violet"><i data-icon="wrench"></i></div>
+          <div>
+            <div class="ma-card-title">Tool Maintenance</div>
+            <div class="ma-card-sub">Disable specific integrations / features across the platform</div>
+          </div>
+          <div class="ma-card-actions">
+            <span class="ma-count-pill" id="tools-count">0 active</span>
+          </div>
+        </div>
+        <div class="ma-list-toolbar">
+          <div class="ma-search" id="tools-search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
+            <input type="text" id="tools-search" placeholder="Search tools by name..." oninput="filterList('tools')">
+            <button type="button" class="clear-btn" onclick="clearSearch('tools')">×</button>
+          </div>
+          <div class="ma-seg" role="tablist" aria-label="Filter tools by state">
+            <button type="button" class="active" data-filter="all" onclick="setFilter('tools','all')">All <span class="seg-count" id="tools-all-count">0</span></button>
+            <button type="button" data-filter="active" onclick="setFilter('tools','active')">Active <span class="seg-count" id="tools-active-count">0</span></button>
+            <button type="button" data-filter="inactive" onclick="setFilter('tools','inactive')">Off</button>
+          </div>
+        </div>
+        <div class="ma-list-body" id="tools-body"></div>
+        <div class="ma-empty" id="tools-empty">
+          <div class="ma-empty-mark"><i data-icon="search"></i></div>
+          <div class="ma-empty-title">No tools match your filters</div>
+          <div class="ma-empty-sub">Try clearing the search or switching to "All"</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+// ── Access gate: super_admin only ─────────────────────────────────────────────
+if (!Auth.requireAdmin()) { /* redirects to /dashboard.html for non-admins */ }
+if (Auth.getUser()?.role !== 'super_admin') {
+  document.body.innerHTML = `
+    <div class="ma-denied">
+      <div style="font-size:32px;margin-bottom:8px"><i data-icon="lock"></i></div>
+      <h2>Restricted to Super Admin</h2>
+      <p>Maintenance mode affects every team on the platform. Only <strong>super_admin</strong> can view or change it.</p>
+      <p style="margin-top:16px"><a href="./index.html" class="btn btn-primary btn-sm">← Back to Admin</a></p>
+    </div>`;
+  throw new Error('super_admin required');
+}
+Layout.render('admin');
+
+// ── Page definitions ──────────────────────────────────────────────────────────
+// Keep in sync with PAGE_FILES in assets/js/maintenance.js
+const PAGES = [
+  // ─── Operations ───────────────────────────────────────────────────────────
+  { _group: 'Operations' },
+  { id: 'board',                icon: '◫',   label: 'Service Board',           sub: 'board.html' },
+  { id: 'jira-templates',       icon: '<i data-icon="zap"></i>',  label: 'Jira Templates',          sub: 'jira-templates.html' },
+  { id: 'send-email',           icon: '◈',   label: 'SMC Ticket',              sub: 'send-email.html' },
+  { id: 'inbox',                icon: '<i data-icon="inbox"></i>',  label: 'Team Inbox',              sub: 'inbox.html' },
+  { id: 'monitoring',           icon: '⊞',   label: 'Monitoring / Jenkins',    sub: 'monitoring.html' },
+  { id: 'batch-monitor',        icon: '<i data-icon="trending-up"></i>',  label: 'Batch Monitor',           sub: 'batch-monitor.html' },
+  { id: 'batch-file-search',    icon: '<i data-icon="search"></i>',  label: 'Batch File Lookup',       sub: 'batch-file-search.html' },
+  { id: 'test-service',         icon: '<i data-icon="test-tube"></i>',  label: 'Test Service',            sub: 'test-service.html' },
+  { id: 'ops-runbook',          icon: '<i data-icon="book-open"></i>',  label: 'Ops Runbook',             sub: 'ops-runbook.html' },
+  { id: 'ma-services',          icon: '🏗️',  label: 'MA Services',             sub: 'ma-services.html' },
+  { id: 'pw-schedule',          icon: '◐',   label: 'PW Schedule',             sub: 'pw-schedule.html' },
+  { id: 'restart-monitor',      icon: '⚓',  label: 'EKS Restart Monitor',     sub: 'restart-monitor.html' },
+  { id: 'service-performance',  icon: '<i data-icon="bar-chart"></i>',  label: 'Service Performance',     sub: 'service-performance.html' },
+  { id: 'alert-monitor',        icon: '<i data-icon="bell"></i>',  label: 'Alert Monitor',           sub: 'alert-monitor.html' },
+  { id: 'grafana-alerts',       icon: '<i data-icon="pause"></i>',   label: 'Paused Alerts',           sub: 'grafana-alerts.html' },
+  { id: 'uptime',               icon: '<i data-icon="circle"></i>',  label: 'Uptime Monitor',          sub: 'uptime.html' },
+  { id: 'syncup',               icon: '<i data-icon="refresh-cw"></i>',  label: 'Daily Sync-up',           sub: 'syncup.html' },
+  { id: 'sms-gateway-switches', icon: '<i data-icon="smartphone"></i>',  label: 'SMS Gateway Switches',    sub: 'sms-gateway-switches.html' },
+  // ─── Analytics & Reports ──────────────────────────────────────────────────
+  { _group: 'Analytics & Reports' },
+  { id: 'dashboard',            icon: '⊟',   label: 'Dashboard',               sub: 'dashboard.html' },
+  { id: 'analytics',            icon: '<i data-icon="trending-up"></i>',  label: 'Analytics',               sub: 'analytics.html' },
+  { id: 'report',               icon: '<i data-icon="clipboard"></i>',  label: 'Report',                  sub: 'report.html' },
+  { id: 'weekly-report',        icon: '<i data-icon="bar-chart"></i>',  label: 'Weekly Report',           sub: 'weekly-report.html, weekly-report-form.html' },
+  // ─── Knowledge & Collaboration ────────────────────────────────────────────
+  { _group: 'Knowledge & Collaboration' },
+  { id: 'knowledge-base',       icon: '<i data-icon="book-open"></i>',  label: 'Knowledge Base',          sub: 'knowledge-base.html' },
+  { id: 'learn',                icon: '<i data-icon="graduation-cap"></i>',  label: 'Learning / Courses',      sub: 'learn.html, learn-course.html, learn-phase.html' },
+  { id: 'exam',                 icon: '<i data-icon="edit"></i>',  label: 'Exams',                   sub: 'exam.html' },
+  { id: 'onboarding',           icon: '<i data-icon="compass"></i>',  label: 'Team Onboarding',         sub: 'onboarding.html' },
+  { id: 'schedule',             icon: '<i data-icon="calendar"></i>',  label: 'Schedule',                sub: 'schedule.html' },
+  { id: 'sheets',               icon: '<i data-icon="bar-chart"></i>',  label: 'Team Docs / Sheets',      sub: 'sheets.html' },
+  { id: 'office',               icon: '<i data-icon="building"></i>',  label: 'Office Tools',            sub: 'office.html' },
+  { id: 'sabai',                icon: '<i data-icon="target"></i>',  label: 'SABai',                   sub: 'sabai.html' },
+  // ─── Others ───────────────────────────────────────────────────────────────
+  { _group: 'Others' },
+  { id: 'presentation',         icon: '📽️',  label: 'Presentation',            sub: 'presentation.html' },
+  { id: 'viewer',               icon: '<i data-icon="eye"></i>',  label: 'Viewer',                  sub: 'viewer.html' },
+  { id: 'profile',              icon: '<i data-icon="user"></i>',  label: 'Profile',                 sub: 'profile.html' },
+  { id: 'fundout-callback',     icon: '<i data-icon="refresh-cw"></i>',  label: 'Fund-out Callback',       sub: 'fundout-callback.html' },
+  { id: 'setup-guide',          icon: '<i data-icon="book-open"></i>',  label: 'Setup Guide',             sub: 'setup-guide.html' },
+];
+
+const TOOLS = [
+  // ─── Integrations ─────────────────────────────────────────────────────────
+  { _group: 'Integrations' },
+  { id: 'jira',           icon: '☁',   label: 'Jira Integration',        sub: 'Create Issue / Templates' },
+  { id: 'jenkins',        icon: '⊞',   label: 'Jenkins Pipelines',       sub: 'Trigger / Monitor runs' },
+  { id: 'n8n-oncall',     icon: '<i data-icon="chip"></i>',  label: 'N8N On-Call',             sub: 'Automated on-call notifications' },
+  { id: 'grafana',        icon: '<i data-icon="bar-chart"></i>',  label: 'Grafana Sources',         sub: 'Dashboard / metrics embed' },
+  // ─── Notifications & Alerts ───────────────────────────────────────────────
+  { _group: 'Notifications & Alerts' },
+  { id: 'google-chat',    icon: '<i data-icon="message-circle"></i>',  label: 'Google Chat Alert',       sub: 'Send notifications to chat' },
+  { id: 'mail',           icon: '<i data-icon="mail"></i>',  label: 'Email Notifications',     sub: 'SMTP alert sending' },
+  { id: 'sms-gateway',    icon: '<i data-icon="smartphone"></i>',  label: 'SMS Gateway',             sub: 'Send SMS alerts' },
+  { id: 'batch-alert',    icon: '<i data-icon="siren"></i>',  label: 'Batch Alert',             sub: 'Batch monitoring alerts' },
+  { id: 'scheduled-noti', icon: '<i data-icon="clock"></i>',  label: 'Scheduled Notifications', sub: 'Auto-send scheduled messages' },
+  // ─── Operations ───────────────────────────────────────────────────────────
+  { _group: 'Operations' },
+  { id: 'reconcile',      icon: '<i data-icon="refresh-cw"></i>',  label: 'Reconcile Status',        sub: 'Cash-out reconciliation check' },
+  { id: 'rundeck',        icon: '<i data-icon="folder"></i>',  label: 'Rundeck sFTP',            sub: 'sFTP file checker' },
+];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let _ma = null;
+let _globalSaveTimer = null;
+let _itemTimers = {};
+const _filters = { pages: 'all', tools: 'all' };
+const _searches = { pages: '', tools: '' };
+
+// ── Load ──────────────────────────────────────────────────────────────────────
+async function loadMA(silent = false) {
+  const res = await API.maintenance.get();
+  if (!res?.ok) { if (!silent) Toast.error('โหลดไม่ได้'); updateStatusBar(false); return; }
+  _ma = res.data.data;
+  renderAll();
+  updateStatusBar(true);
+}
+
+function renderAll() {
+  if (!_ma) return;
+  renderGlobal();
+  renderList('pages', PAGES, 'page', _ma.pages || {});
+  renderList('tools', TOOLS, 'tool', _ma.tools || {});
+  updateCounts();
+}
+
+// ── Global ────────────────────────────────────────────────────────────────────
+function renderGlobal() {
+  const g = _ma?.global || {};
+  const card    = document.getElementById('global-card');
+  const badge   = document.getElementById('global-badge');
+  const body    = document.getElementById('global-body');
+  const footer  = document.getElementById('global-footer');
+  const warn    = document.getElementById('global-warn');
+
+  document.getElementById('global-toggle').checked = !!g.active;
+
+  // Preserve fields the user is currently editing
+  const msgEl = document.getElementById('global-msg');
+  const etaEl = document.getElementById('global-eta');
+  if (document.activeElement !== msgEl) msgEl.value = g.message || '';
+  if (document.activeElement !== etaEl) etaEl.value = g.eta ? g.eta.slice(0, 16) : '';
+
+  card.classList.toggle('is-active-global', !!g.active);
+  body.classList.toggle('hidden', !g.active);
+  warn.classList.toggle('show', !!g.active);
+
+  if (g.by_name && g.at) {
+    document.getElementById('global-by-name').textContent  = g.by_name;
+    document.getElementById('global-by-at').textContent    = fmtDt(g.at);
+    document.getElementById('global-by-avatar').textContent = initials(g.by_name);
+    footer.classList.remove('hidden');
+  } else {
+    footer.classList.add('hidden');
+  }
+}
+
+async function toggleGlobal(active) {
+  const msg = document.getElementById('global-msg').value.trim() || 'ระบบปิดปรับปรุงชั่วคราว';
+  const eta = document.getElementById('global-eta').value || null;
+  const res = await API.maintenance.update({ scope: 'global', active, message: msg, eta });
+  if (!res?.ok) { Toast.error('บันทึกไม่ได้'); loadMA(true); return; }
+  _ma = res.data.data;
+  renderAll();
+  Toast.success(active ? '<i data-icon="alert-triangle"></i> Global MA เปิดแล้ว — users ถูก block' : 'Global MA ปิดแล้ว <i data-icon="check"></i>');
+}
+
+function scheduleGlobalSave() {
+  clearTimeout(_globalSaveTimer);
+  _globalSaveTimer = setTimeout(saveGlobal, 800);
+}
+
+async function saveGlobal() {
+  const active = document.getElementById('global-toggle').checked;
+  const msg = document.getElementById('global-msg').value.trim() || 'ระบบปิดปรับปรุงชั่วคราว';
+  const eta = document.getElementById('global-eta').value || null;
+  const res = await API.maintenance.update({ scope: 'global', active, message: msg, eta });
+  if (res?.ok) { _ma = res.data.data; updateCounts(); }
+}
+
+// ── List (pages / tools) ──────────────────────────────────────────────────────
+function renderList(kind, defs, scope, state) {
+  const body = document.getElementById(`${kind}-body`);
+  const q    = _searches[kind].toLowerCase();
+  const filt = _filters[kind];
+
+  const rowsHtml = [];
+  let currentGroupHtml = null;
+  let currentGroupItems = 0;
+
+  const flush = () => {
+    if (currentGroupHtml && currentGroupItems > 0) {
+      rowsHtml.push(currentGroupHtml.replace('__COUNT__', currentGroupItems));
+    }
+    currentGroupHtml = null;
+    currentGroupItems = 0;
+  };
+
+  defs.forEach(d => {
+    if (d._group) {
+      flush();
+      currentGroupHtml = `<div class="ma-group-hd" data-group="${escHtml(d._group)}">
+        <span>${escHtml(d._group)}</span>
+        <span class="grp-count show">__COUNT__</span>
+      </div>__ROWS__`;
+      currentGroupItems = 0;
+      currentGroupHtml = currentGroupHtml.replace('__ROWS__', '');
+      return;
+    }
+    const s = state[d.id] || { active: false, message: '' };
+
+    // Filter: state
+    if (filt === 'active'   && !s.active) return;
+    if (filt === 'inactive' &&  s.active) return;
+
+    // Filter: search
+    if (q) {
+      const hay = `${d.label} ${d.sub} ${d.id}`.toLowerCase();
+      if (!hay.includes(q)) return;
+    }
+
+    const rowHtml = `
+      <div class="ma-row${s.active ? ' active' : ''}" id="row-${scope}-${d.id}">
+        <div class="ma-row-icon">${d.icon}</div>
+        <div class="ma-row-info">
+          <div class="ma-row-title">${escHtml(d.label)}</div>
+          <div class="ma-row-sub">${escHtml(d.sub)}</div>
+        </div>
+        <input class="ma-row-msg" type="text"
+          id="msg-${scope}-${d.id}"
+          placeholder="Custom message (optional)..."
+          value="${escHtml(s.message || '')}"
+          oninput="scheduleItemSave('${scope}','${d.id}')">
+        <div class="ma-row-dot"></div>
+        <label class="ma-toggle" title="${s.active ? 'Turn off' : 'Turn on'} MA for ${escHtml(d.label)}">
+          <input type="checkbox" ${s.active ? 'checked' : ''}
+            onchange="toggleItem('${scope}','${d.id}',this.checked)">
+          <span class="ma-slider"></span>
+        </label>
+      </div>`;
+
+    if (currentGroupHtml !== null) {
+      currentGroupHtml += rowHtml;
+      currentGroupItems++;
+    } else {
+      rowsHtml.push(rowHtml);
+    }
+  });
+  flush();
+
+  body.innerHTML = rowsHtml.join('');
+
+  // Empty state
+  const hasItems = body.querySelector('.ma-row');
+  document.getElementById(`${kind}-empty`).classList.toggle('show', !hasItems);
+}
+
+async function toggleItem(scope, id, active) {
+  const msg = (document.getElementById(`msg-${scope}-${id}`)?.value || '').trim();
+  const res = await API.maintenance.update({ scope, id, active, message: msg });
+  if (!res?.ok) { Toast.error('บันทึกไม่ได้'); loadMA(true); return; }
+  _ma = res.data.data;
+  const row = document.getElementById(`row-${scope}-${id}`);
+  if (row) row.classList.toggle('active', active);
+  updateCounts();
+  Toast.success(active ? `<i data-icon="circle"></i> ${id} MA เปิดแล้ว` : `<i data-icon="check"></i> ${id} MA ปิดแล้ว`);
+}
+
+function scheduleItemSave(scope, id) {
+  const key = `${scope}-${id}`;
+  clearTimeout(_itemTimers[key]);
+  _itemTimers[key] = setTimeout(() => saveItem(scope, id), 900);
+}
+
+async function saveItem(scope, id) {
+  const row = document.getElementById(`row-${scope}-${id}`);
+  if (!row) return;
+  const active = row.querySelector('input[type=checkbox]').checked;
+  if (!active) return;
+  const msg = (document.getElementById(`msg-${scope}-${id}`)?.value || '').trim();
+  const res = await API.maintenance.update({ scope, id, active, message: msg });
+  if (res?.ok) _ma = res.data.data;
+}
+
+// ── Search / filter ───────────────────────────────────────────────────────────
+function filterList(kind) {
+  const input = document.getElementById(`${kind}-search`);
+  _searches[kind] = (input.value || '').trim();
+  document.getElementById(`${kind}-search-wrap`).classList.toggle('has-value', !!_searches[kind]);
+  const defs  = kind === 'pages' ? PAGES : TOOLS;
+  const scope = kind === 'pages' ? 'page' : 'tool';
+  renderList(kind, defs, scope, _ma?.[kind] || {});
+}
+
+function clearSearch(kind) {
+  document.getElementById(`${kind}-search`).value = '';
+  filterList(kind);
+}
+
+function setFilter(kind, filter) {
+  _filters[kind] = filter;
+  const seg = document.querySelector(`#${kind}-body`).parentElement.querySelector('.ma-seg');
+  seg?.querySelectorAll('button').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === filter);
+  });
+  const defs  = kind === 'pages' ? PAGES : TOOLS;
+  const scope = kind === 'pages' ? 'page' : 'tool';
+  renderList(kind, defs, scope, _ma?.[kind] || {});
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function updateCounts() {
+  const pages = _ma?.pages || {};
+  const tools = _ma?.tools || {};
+
+  const knownPages = PAGES.filter(p => p.id);
+  const knownTools = TOOLS.filter(t => t.id);
+  const pTotal = knownPages.length;
+  const tTotal = knownTools.length;
+  const pActive = knownPages.filter(p => pages[p.id]?.active).length;
+  const tActive = knownTools.filter(t => tools[t.id]?.active).length;
+
+  // Card corner counts
+  const pc = document.getElementById('pages-count');
+  pc.textContent = `${pActive} active`;
+  pc.classList.toggle('hot', pActive > 0);
+
+  const tc = document.getElementById('tools-count');
+  tc.textContent = `${tActive} active`;
+  tc.classList.toggle('hot', tActive > 0);
+
+  // Segmented filter counts
+  document.getElementById('pages-all-count').textContent    = pTotal;
+  document.getElementById('pages-active-count').textContent = pActive;
+  document.getElementById('tools-all-count').textContent    = tTotal;
+  document.getElementById('tools-active-count').textContent = tActive;
+
+  // Top summary
+  document.getElementById('tot-pages').textContent = pActive;
+  document.getElementById('tot-tools').textContent = tActive;
+}
+
+function updateStatusBar(ok) {
+  const dot = document.getElementById('conn-dot');
+  dot.classList.toggle('stale', !ok);
+  document.getElementById('last-sync').textContent = ok
+    ? `synced ${new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+    : 'sync failed';
+}
+
+function fmtDt(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('th-TH', { day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function initials(name) {
+  if (!name) return '—';
+  const parts = String(name).trim().split(/\s+/);
+  return (parts[0]?.[0] || '') + (parts[1]?.[0] || '');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Auto-poll ─────────────────────────────────────────────────────────────────
+loadMA();
+setInterval(() => loadMA(true), 10_000);
+</script>
+
+</body>
+</html>

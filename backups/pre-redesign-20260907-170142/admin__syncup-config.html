@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Sync-up Config — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ── Config card ── */
+    .cfg-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden; margin-bottom: 16px;
+    }
+    .cfg-hd {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap;
+    }
+    .cfg-hd-left { display: flex; align-items: center; gap: 10px; }
+    .cfg-icon {
+      width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .icon-morning { background: rgba(242,100,25,.1); }
+    .icon-evening { background: rgba(99,102,241,.1); }
+    .cfg-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .cfg-sub   { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+    .cfg-body  { padding: 20px; }
+
+    /* ── Form ── */
+    .f-row   { margin-bottom: 16px; }
+    .f-label {
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px;
+    }
+    .f-input {
+      width: 100%; padding: 8px 11px; border-radius: 9px;
+      border: 1px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 13px; font-family: inherit; box-sizing: border-box;
+    }
+    .f-input:focus { outline: none; border-color: var(--orange); }
+    textarea.f-input { resize: vertical; min-height: 72px; }
+
+    /* ── Toggle ── */
+    .tog { position: relative; width: 34px; height: 19px; flex-shrink: 0; display: inline-block; }
+    .tog input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .tog-slider {
+      position: absolute; inset: 0; border-radius: 19px; cursor: pointer;
+      background: var(--border); transition: background .2s;
+    }
+    .tog-slider:before {
+      content: ''; position: absolute; left: 3px; top: 3px;
+      width: 13px; height: 13px; border-radius: 50%; background: #fff;
+      transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.15);
+    }
+    .tog input:checked + .tog-slider { background: var(--orange); }
+    .tog input:checked + .tog-slider:before { transform: translateX(15px); }
+    .tog-row { display: flex; align-items: center; gap: 10px; }
+    .tog-label { font-size: 12px; color: var(--text-muted); }
+
+    /* ── Day pills ── */
+    .day-sel { display: flex; gap: 5px; flex-wrap: wrap; }
+    .day-pill {
+      padding: 4px 10px; border-radius: 7px; font-size: 10px; font-weight: 700;
+      border: 1px solid var(--border); color: var(--text-muted);
+      cursor: pointer; transition: all .12s; user-select: none;
+    }
+    .day-pill.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+    .day-pill.all-pill.active { background: #6366f1; border-color: #6366f1; }
+
+    /* ── Webhooks ── */
+    .webhook-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+    .btn-wh-remove {
+      padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;
+      border: 1px solid rgba(220,38,38,.3); background: transparent;
+      color: #dc2626; cursor: pointer; flex-shrink: 0;
+    }
+    .btn-wh-remove:hover { background: rgba(220,38,38,.08); }
+    .btn-add-wh {
+      display: inline-block; margin-top: 4px; padding: 5px 12px; border-radius: 7px;
+      font-size: 10px; font-weight: 700; border: 1px dashed var(--border);
+      background: transparent; color: var(--text-muted); cursor: pointer;
+    }
+    .btn-add-wh:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* ── Test / save buttons ── */
+    .card-actions {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      padding: 14px 20px; border-top: 1px solid var(--border);
+      justify-content: flex-end;
+    }
+    .btn-test {
+      padding: 7px 16px; border-radius: 9px; font-size: 11px; font-weight: 700;
+      border: 1px solid rgba(66,133,244,.35); background: transparent; color: #4285f4; cursor: pointer;
+    }
+    .btn-test:hover { background: rgba(66,133,244,.08); }
+    .btn-test:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-save-shift {
+      padding: 7px 20px; border-radius: 9px; font-size: 11px; font-weight: 700;
+      border: none; background: var(--orange); color: #fff; cursor: pointer;
+    }
+    .btn-save-shift:hover { filter: brightness(1.08); }
+    .btn-save-shift:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Log card ── */
+    .log-tbl { border-collapse: collapse; width: 100%; font-size: 11px; }
+    .log-tbl thead th {
+      background: var(--bg); color: var(--text-muted); font-size: 10px; font-weight: 600;
+      padding: 8px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .log-tbl tbody td { padding: 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .log-tbl tbody tr:last-child td { border-bottom: none; }
+    .td-p { padding: 8px 14px; }
+
+    .thumb-sm {
+      width: 52px; height: 38px; border-radius: 6px; overflow: hidden;
+      background: var(--bg); border: 1px solid var(--border); cursor: pointer;
+    }
+    .thumb-sm img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .shift-chip {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 2px 8px; border-radius: 5px; font-size: 9px; font-weight: 700;
+    }
+    .chip-m { background: rgba(242,100,25,.1); color: var(--orange); }
+    .chip-e { background: rgba(99,102,241,.1); color: #6366f1; }
+
+    .log-empty { text-align: center; padding: 32px; font-size: 12px; color: var(--text-muted); }
+
+    /* ── Lightbox ── */
+    .lb-wrap {
+      display: none; position: fixed; inset: 0; z-index: 9000;
+      background: rgba(0,0,0,.75); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .lb-wrap.open { display: flex; }
+    .lb-wrap img { max-width: 100%; max-height: 90vh; border-radius: 12px; }
+    .lb-close {
+      position: fixed; top: 16px; right: 16px;
+      background: rgba(255,255,255,.15); color: #fff; border: none;
+      border-radius: 50%; width: 36px; height: 36px; font-size: 18px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Section grid ── */
+    .shifts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    @media (max-width: 900px) { .shifts-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="camera"></i> Daily Sync-up Config</div>
+        <div class="page-sub">ตั้งเวลา ข้อความ และ Webhook ของแต่ละกะ</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="./index.html" class="btn btn-ghost" style="font-size:11px">← Admin Panel</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="camera"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Daily Sync-up Config</h1>
+          <p>ตั้งเวลา ข้อความ และ Webhook ของแต่ละกะ — Morning / Afternoon / Night sync-up</p>
+        </div>
+      </section>
+
+      <!-- ── Shift config cards ── -->
+      <div class="shifts-grid">
+        <!-- Morning -->
+        <div class="cfg-card" id="cfg-morning">
+          <div class="cfg-hd">
+            <div class="cfg-hd-left">
+              <div class="cfg-icon icon-morning"><i data-icon="sunrise"></i></div>
+              <div>
+                <div class="cfg-title">กะเช้า</div>
+                <div class="cfg-sub" id="sub-morning">กำลังโหลด…</div>
+              </div>
+            </div>
+            <div class="tog-row" style="margin-left:auto">
+              <label class="tog">
+                <input type="checkbox" id="enabled-morning" onchange="onToggle('morning',this)">
+                <span class="tog-slider"></span>
+              </label>
+              <span class="tog-label" id="tog-lbl-morning">ปิด</span>
+            </div>
+          </div>
+          <div class="cfg-body">
+            <div class="f-row">
+              <div class="f-label">เวลา (HH:MM) *</div>
+              <input type="time" id="time-morning" class="f-input" style="width:140px">
+            </div>
+            <div class="f-row">
+              <div class="f-label">วันที่แจ้งเตือน *</div>
+              <div class="day-sel" id="days-morning">
+                <span class="day-pill all-pill" data-v="all">ทุกวัน</span>
+                <span class="day-pill" data-v="mon">จ</span>
+                <span class="day-pill" data-v="tue">อ</span>
+                <span class="day-pill" data-v="wed">พ</span>
+                <span class="day-pill" data-v="thu">พฤ</span>
+                <span class="day-pill" data-v="fri">ศ</span>
+                <span class="day-pill" data-v="sat">ส</span>
+                <span class="day-pill" data-v="sun">อา</span>
+              </div>
+            </div>
+            <div class="f-row">
+              <div class="f-label">ข้อความ popup</div>
+              <textarea id="msg-morning" class="f-input"
+                placeholder="ข้อความที่จะขึ้น popup ในระบบ (ถ้าว่างจะใช้ค่าตั้งต้น)"></textarea>
+            </div>
+            <div class="f-row">
+              <div class="f-label">Google Chat Webhook URLs</div>
+              <div id="webhooks-morning"></div>
+              <button type="button" class="btn-add-wh" onclick="addWebhook('morning')">+ เพิ่ม Webhook</button>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:6px">
+                ส่ง announcement card ตอน notify · รูปที่ user อัปโหลดจะต่อใน thread เดิมอัตโนมัติ
+              </div>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-test" id="test-morning" onclick="testNotify('morning')"><i data-icon="message-circle"></i> ทดสอบ Chat</button>
+            <button class="btn-save-shift" onclick="saveShift('morning')"><i data-icon="save"></i> บันทึกกะเช้า</button>
+          </div>
+        </div>
+
+        <!-- Evening -->
+        <div class="cfg-card" id="cfg-evening">
+          <div class="cfg-hd">
+            <div class="cfg-hd-left">
+              <div class="cfg-icon icon-evening"><i data-icon="moon"></i></div>
+              <div>
+                <div class="cfg-title">กะเย็น</div>
+                <div class="cfg-sub" id="sub-evening">กำลังโหลด…</div>
+              </div>
+            </div>
+            <div class="tog-row" style="margin-left:auto">
+              <label class="tog">
+                <input type="checkbox" id="enabled-evening" onchange="onToggle('evening',this)">
+                <span class="tog-slider"></span>
+              </label>
+              <span class="tog-label" id="tog-lbl-evening">ปิด</span>
+            </div>
+          </div>
+          <div class="cfg-body">
+            <div class="f-row">
+              <div class="f-label">เวลา (HH:MM) *</div>
+              <input type="time" id="time-evening" class="f-input" style="width:140px">
+            </div>
+            <div class="f-row">
+              <div class="f-label">วันที่แจ้งเตือน *</div>
+              <div class="day-sel" id="days-evening">
+                <span class="day-pill all-pill" data-v="all">ทุกวัน</span>
+                <span class="day-pill" data-v="mon">จ</span>
+                <span class="day-pill" data-v="tue">อ</span>
+                <span class="day-pill" data-v="wed">พ</span>
+                <span class="day-pill" data-v="thu">พฤ</span>
+                <span class="day-pill" data-v="fri">ศ</span>
+                <span class="day-pill" data-v="sat">ส</span>
+                <span class="day-pill" data-v="sun">อา</span>
+              </div>
+            </div>
+            <div class="f-row">
+              <div class="f-label">ข้อความ popup</div>
+              <textarea id="msg-evening" class="f-input"
+                placeholder="ข้อความที่จะขึ้น popup ในระบบ (ถ้าว่างจะใช้ค่าตั้งต้น)"></textarea>
+            </div>
+            <div class="f-row">
+              <div class="f-label">Google Chat Webhook URLs</div>
+              <div id="webhooks-evening"></div>
+              <button type="button" class="btn-add-wh" onclick="addWebhook('evening')">+ เพิ่ม Webhook</button>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:6px">
+                ส่ง announcement card ตอน notify · รูปที่ user อัปโหลดจะต่อใน thread เดิมอัตโนมัติ
+              </div>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-test" id="test-evening" onclick="testNotify('evening')"><i data-icon="message-circle"></i> ทดสอบ Chat</button>
+            <button class="btn-save-shift" onclick="saveShift('evening')"><i data-icon="save"></i> บันทึกกะเย็น</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Upload log ── -->
+      <div class="cfg-card">
+        <div class="cfg-hd">
+          <div class="cfg-hd-left">
+            <div class="cfg-icon" style="background:rgba(99,102,241,.1);color:#6366f1"><i data-icon="clipboard"></i></div>
+            <div>
+              <div class="cfg-title">Log การอัปโหลด (14 วันย้อนหลัง)</div>
+              <div class="cfg-sub" id="log-count">กำลังโหลด…</div>
+            </div>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="log-tbl">
+            <thead>
+              <tr>
+                <th style="width:110px">วันที่</th>
+                <th style="width:70px">กะ</th>
+                <th style="width:80px">รูป</th>
+                <th>อัปโหลดโดย</th>
+                <th style="width:130px">เวลา</th>
+                <th style="width:60px">ขนาด</th>
+                <th style="width:60px"></th>
+              </tr>
+            </thead>
+            <tbody id="log-tbody">
+              <tr><td colspan="7" class="log-empty">
+                <div class="spinner" style="display:inline-block;margin-right:6px"></div>กำลังโหลด…
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lb-wrap" id="lb-wrap" onclick="closeLb()">
+  <button class="lb-close"><i data-icon="x"></i></button>
+  <img id="lb-img" src="" alt="">
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAdmin()) {}
+Layout.render('admin');
+
+// ── Local config state ────────────────────────────────────────────
+let cfg = { morning: {}, evening: {} };
+
+const DAY_KEYS = ['all','mon','tue','wed','thu','fri','sat','sun'];
+let selDays = { morning: ['mon','tue','wed','thu','fri'], evening: ['mon','tue','wed','thu','fri'] };
+
+// ── Load config ───────────────────────────────────────────────────
+async function loadConfig() {
+  const res = await API.syncup.getConfig();
+  if (!res?.ok) { Toast.error('โหลด config ไม่สำเร็จ'); return; }
+  cfg = res.data?.data ?? { morning: {}, evening: {} };
+  populateForm('morning', cfg.morning ?? {});
+  populateForm('evening', cfg.evening ?? {});
+}
+
+function populateForm(shift, s) {
+  document.getElementById(`time-${shift}`).value    = s.time    ?? (shift === 'morning' ? '08:45' : '20:45');
+  document.getElementById(`msg-${shift}`).value     = s.popup_message ?? '';
+  const enabled = !!s.enabled;
+  document.getElementById(`enabled-${shift}`).checked = enabled;
+  document.getElementById(`tog-lbl-${shift}`).textContent = enabled ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+  document.getElementById(`sub-${shift}`).textContent =
+    `${s.time ?? '—'} น. · ${enabled ? 'เปิด' : 'ปิด'}`;
+
+  // Days
+  const days = Array.isArray(s.days) ? s.days : ['mon','tue','wed','thu','fri'];
+  selDays[shift] = days;
+  renderDayPills(shift, days);
+
+  // Webhooks
+  renderWebhooks(shift, s.google_chat_webhooks ?? []);
+}
+
+// ── Day pills ─────────────────────────────────────────────────────
+function renderDayPills(shift, days) {
+  const isAll = days.includes('all');
+  document.querySelectorAll(`#days-${shift} .day-pill`).forEach(p => {
+    const v = p.dataset.v;
+    p.classList.toggle('active', v === 'all' ? isAll : (!isAll && days.includes(v)));
+  });
+}
+
+['morning','evening'].forEach(shift => {
+  document.getElementById(`days-${shift}`).addEventListener('click', e => {
+    const pill = e.target.closest('.day-pill');
+    if (!pill) return;
+    const v = pill.dataset.v;
+    if (v === 'all') {
+      const isNowAll = !pill.classList.contains('active');
+      document.querySelectorAll(`#days-${shift} .day-pill`).forEach(p => p.classList.remove('active'));
+      if (isNowAll) { pill.classList.add('active'); selDays[shift] = ['all']; }
+      else selDays[shift] = [];
+    } else {
+      document.querySelector(`#days-${shift} .all-pill`).classList.remove('active');
+      pill.classList.toggle('active');
+      selDays[shift] = Array.from(document.querySelectorAll(`#days-${shift} .day-pill.active`))
+        .map(p => p.dataset.v).filter(x => x !== 'all');
+    }
+  });
+});
+
+// ── Toggle ────────────────────────────────────────────────────────
+function onToggle(shift, el) {
+  document.getElementById(`tog-lbl-${shift}`).textContent = el.checked ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+}
+
+// ── Webhooks ──────────────────────────────────────────────────────
+function renderWebhooks(shift, urls) {
+  if (!Array.isArray(urls) || !urls.length) urls = [''];
+  document.getElementById(`webhooks-${shift}`).innerHTML = urls.map((url, i) => `
+    <div class="webhook-row">
+      <input type="url" class="f-input wh-input" data-shift="${shift}"
+        placeholder="https://chat.googleapis.com/v1/spaces/…"
+        value="${escHtml(url)}" style="flex:1">
+      ${urls.length > 1
+        ? `<button type="button" class="btn-wh-remove" onclick="removeWebhook(this)">✕</button>`
+        : ''}
+    </div>
+  `).join('');
+}
+
+function addWebhook(shift) {
+  const cur = Array.from(document.querySelectorAll(`#webhooks-${shift} .wh-input`)).map(i => i.value);
+  cur.push('');
+  renderWebhooks(shift, cur);
+}
+
+function removeWebhook(btn) {
+  const row   = btn.closest('.webhook-row');
+  const wrap  = row.parentElement;
+  const shift = row.querySelector('.wh-input').dataset.shift;
+  row.remove();
+  const remaining = Array.from(wrap.querySelectorAll('.wh-input')).map(i => i.value);
+  if (!remaining.length) renderWebhooks(shift, ['']);
+  else if (remaining.length === 1) renderWebhooks(shift, remaining);
+}
+
+function getWebhooks(shift) {
+  return Array.from(document.querySelectorAll(`#webhooks-${shift} .wh-input`))
+    .map(i => i.value.trim()).filter(Boolean);
+}
+
+// ── Save shift ────────────────────────────────────────────────────
+async function saveShift(shift) {
+  if (!selDays[shift].length) { Toast.warning('กรุณาเลือกอย่างน้อย 1 วัน'); return; }
+  const time = document.getElementById(`time-${shift}`).value;
+  if (!time) { Toast.warning('กรุณาระบุเวลา'); return; }
+
+  const payload = {
+    [shift]: {
+      time,
+      days:                 selDays[shift],
+      enabled:              document.getElementById(`enabled-${shift}`).checked,
+      popup_message:        document.getElementById(`msg-${shift}`).value.trim(),
+      google_chat_webhooks: getWebhooks(shift),
+    }
+  };
+
+  const res = await API.syncup.saveConfig(payload);
+  if (res?.ok) {
+    cfg[shift] = res.data?.data?.[shift] ?? cfg[shift];
+    document.getElementById(`sub-${shift}`).textContent =
+      `${time} น. · ${payload[shift].enabled ? 'เปิด' : 'ปิด'}`;
+    Toast.success('บันทึกแล้ว <i data-icon="check-circle"></i>');
+  } else {
+    Toast.error(res?.data?.message || 'บันทึกไม่สำเร็จ');
+  }
+}
+
+// ── Test notify ───────────────────────────────────────────────────
+async function testNotify(shift) {
+  const btn = document.getElementById(`test-${shift}`);
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    const res = await API.syncup.testNotify(shift);
+    if (res?.ok) Toast.success('ส่ง test สำเร็จ <i data-icon="sparkles"></i>');
+    else Toast.error(res?.data?.message || 'ส่งไม่สำเร็จ');
+  } catch { Toast.error('เกิดข้อผิดพลาด'); }
+  finally { btn.disabled = false; btn.innerHTML = '<i data-icon="message-circle"></i> ทดสอบ Chat'; }
+}
+
+// ── Load log ──────────────────────────────────────────────────────
+async function loadLog() {
+  const res   = await API.syncup.getRange(14);
+  const tbody = document.getElementById('log-tbody');
+
+  if (!res?.ok) {
+    tbody.innerHTML = `<tr><td colspan="7" class="log-empty">โหลดไม่สำเร็จ</td></tr>`;
+    return;
+  }
+
+  const map  = res.data?.data ?? {};
+  const rows = [];
+
+  for (let i = 0; i < 14; i++) {
+    const d   = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const rec = map[key];
+    ['morning','evening'].forEach(shift => {
+      const e = rec?.[shift];
+      if (e) rows.push({ date: key, shift, entry: e });
+    });
+  }
+
+  document.getElementById('log-count').textContent =
+    rows.length ? `${rows.length} รายการ` : '0 รายการ';
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="log-empty">ยังไม่มีประวัติ</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const { date, shift, entry } = r;
+    const ts  = new Date(entry.uploaded_at);
+    const tim = `${String(ts.getHours()).padStart(2,'0')}:${String(ts.getMinutes()).padStart(2,'0')} น.`;
+    const chip = shift === 'morning'
+      ? `<span class="shift-chip chip-m"><i data-icon="sunrise"></i> เช้า</span>`
+      : `<span class="shift-chip chip-e"><i data-icon="moon"></i> เย็น</span>`;
+
+    return `<tr>
+      <td class="td-p">${date}</td>
+      <td class="td-p">${chip}</td>
+      <td class="td-p">
+        <div class="thumb-sm" onclick="openLb('${escHtml(entry.image_url)}')">
+          <img src="${escHtml(entry.image_url)}" alt="">
+        </div>
+      </td>
+      <td class="td-p" style="color:var(--text)">${escHtml(entry.uploaded_by_name)}</td>
+      <td class="td-p">${tim}</td>
+      <td class="td-p">${entry.file_size_kb ?? '?'} KB</td>
+      <td class="td-p">
+        <button class="btn btn-ghost" style="font-size:9px;padding:2px 8px;color:#dc2626"
+          onclick="delRecord('${date}','${shift}')">ลบ</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function delRecord(date, shift) {
+  if (!confirm(`ลบรูป ${shift} วันที่ ${date}?`)) return;
+  const res = await API.syncup.deleteRecord(date, shift);
+  if (res?.ok) { Toast.success('ลบแล้ว'); loadLog(); }
+  else Toast.error(res?.data?.message || 'ลบไม่ได้');
+}
+
+// ── Lightbox ──────────────────────────────────────────────────────
+function openLb(src) {
+  document.getElementById('lb-img').src = src;
+  document.getElementById('lb-wrap').classList.add('open');
+}
+function closeLb() { document.getElementById('lb-wrap').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLb(); });
+
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+loadConfig();
+loadLog();
+</script>
+</body>
+</html>

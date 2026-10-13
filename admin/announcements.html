@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Announcements — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/announcements/announcements.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="megaphone"></i> Announcements</div>
+        <div class="page-sub">ประกาศบน Dashboard — แสดงทันทีที่ login เข้ามา</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadList()" style="font-size:11px">↺ Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="megaphone"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Announcements</h1>
+          <p>ประกาศบน Dashboard — แสดงทันทีที่ user login เข้ามา · กำหนดวันหมดอายุ และระดับความสำคัญ</p>
+        </div>
+      </section>
+
+      <div class="ann-layout">
+
+        <!-- ── LEFT: Form + Preview ── -->
+        <div class="ann-left">
+
+          <!-- Form -->
+          <div class="form-card">
+            <div class="form-card-hd">New Announcement</div>
+            <div class="form-card-body">
+
+              <!-- Type -->
+              <div>
+                <div class="f-label">Type</div>
+                <div class="type-row" id="type-row"></div>
+              </div>
+
+              <!-- Title -->
+              <div>
+                <div class="f-label">Title <span style="opacity:.5;font-weight:400;text-transform:none">(short summary)</span></div>
+                <input class="f-input" id="f-title" type="text"
+                  placeholder="e.g. Jenkins Batch Down"
+                  oninput="updatePreview()">
+              </div>
+
+              <!-- Message -->
+              <div>
+                <div class="f-label">Message</div>
+                <textarea class="f-ta" id="f-msg"
+                  placeholder="รายละเอียดประกาศ..."
+                  oninput="updatePreview()"></textarea>
+              </div>
+
+              <!-- Display mode -->
+              <div>
+                <div class="f-label">แสดงที่ไหน</div>
+                <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px" id="display-row">
+                  <button class="type-btn" id="disp-both"   onclick="selectDisplay('both')"   style="--tc:#f26419;--tb:rgba(242,100,25,.14)">
+                    <span class="tb-symbol">⊞</span>ทั้งคู่
+                  </button>
+                  <button class="type-btn" id="disp-ticker" onclick="selectDisplay('ticker')" style="--tc:#38bdf8;--tb:rgba(56,189,248,.14)">
+                    <span class="tb-symbol"><i data-icon="play"></i></span>Ticker
+                  </button>
+                  <button class="type-btn" id="disp-card"   onclick="selectDisplay('card')"   style="--tc:#22c55e;--tb:rgba(34,197,94,.14)">
+                    <span class="tb-symbol">▣</span>Card
+                  </button>
+                  <button class="type-btn" id="disp-popup"  onclick="selectDisplay('popup')"  style="--tc:#a855f7;--tb:rgba(168,85,247,.14)">
+                    <span class="tb-symbol"><i data-icon="circle"></i></span>Popup
+                  </button>
+                  <button class="type-btn" id="disp-promo"  onclick="selectDisplay('promo')"  style="--tc:#f26419;--tb:rgba(242,100,25,.14)">
+                    <span class="tb-symbol">◈</span>Promo
+                  </button>
+                  <button class="type-btn" id="disp-all"    onclick="selectDisplay('all')"    style="--tc:#ec4899;--tb:rgba(236,72,153,.14)">
+                    <span class="tb-symbol"><i data-icon="sparkles"></i></span>All
+                  </button>
+                </div>
+              </div>
+
+              <!-- Popup CTA (shown only when display includes popup) -->
+              <div id="popup-cta-wrap" style="display:none;border:1px dashed var(--border);border-radius:10px;padding:11px 13px;display:flex;flex-direction:column;gap:10px;background:rgba(168,85,247,.04)">
+                <div style="font-size:9.5px;font-weight:800;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase"><i data-icon="circle"></i> Popup Settings <span style="opacity:.5;font-weight:400;text-transform:none;letter-spacing:0">— optional CTA</span></div>
+                <div>
+                  <div class="f-label">CTA Label</div>
+                  <input class="f-input" id="f-cta-label" type="text" placeholder="เช่น เริ่มใช้งาน, ดูเพิ่มเติม" oninput="updatePreview()">
+                </div>
+                <div>
+                  <div class="f-label">CTA URL</div>
+                  <input class="f-input" id="f-cta-url" type="url" placeholder="https://... หรือ ./analytics.html" oninput="updatePreview()">
+                </div>
+              </div>
+
+              <!-- Promo card fields (shown only when display = promo / all) -->
+              <div id="promo-fields" style="display:none;border:1px dashed var(--border);border-radius:10px;padding:11px 13px;flex-direction:column;gap:10px;background:rgba(242,100,25,.04)">
+                <div style="font-size:9.5px;font-weight:800;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase">◈ Promo card <span style="opacity:.5;font-weight:400;text-transform:none;letter-spacing:0">— แถบ carousel บน Dashboard · ใช้ปุ่มจาก CTA ด้านบน</span></div>
+                <div style="display:flex;gap:10px">
+                  <div style="width:96px"><div class="f-label">Icon (emoji)</div><input class="f-input" id="f-icon" type="text" maxlength="4" placeholder="📈" oninput="updatePreview()"></div>
+                  <div style="flex:1"><div class="f-label">Badge <span style="opacity:.5;font-weight:400;text-transform:none">(optional)</span></div><input class="f-input" id="f-badge" type="text" placeholder="ใหม่" oninput="updatePreview()"></div>
+                </div>
+              </div>
+
+              <!-- Options row -->
+              <div>
+                <div class="f-label">Expires at <span style="opacity:.5;font-weight:400;text-transform:none">(optional)</span></div>
+                <input class="f-input" id="f-expires" type="datetime-local">
+              </div>
+
+              <!-- Submit -->
+              <button class="btn btn-primary" onclick="submitAnn()" id="submit-btn"
+                style="font-size:11.5px;font-weight:700">
+                <i data-icon="megaphone"></i> Broadcast
+              </button>
+
+            </div>
+          </div>
+
+          <!-- Live preview -->
+          <div class="preview-card">
+            <div class="preview-hd">Live Preview — ที่ user จะเห็นบน Dashboard</div>
+
+            <!-- Ticker preview -->
+            <div class="prev-ticker">
+              <div class="prev-ticker-label">
+                <div class="prev-ticker-blink"></div>
+                BROADCAST
+                <span class="prev-ticker-count" id="prev-ticker-count">1</span>
+              </div>
+              <div class="prev-ticker-body">
+                <span id="prev-type-tag" class="prev-type-tag">◆ INFO</span>
+                <span class="prev-ticker-sep">◆</span>
+                <span class="prev-ticker-text" id="prev-ticker-text">ชื่อประกาศจะปรากฏที่นี่...</span>
+              </div>
+              <div class="prev-ticker-ts" id="prev-clock">--:--:--</div>
+            </div>
+
+            <!-- Terminal card preview (shown when display=card or both) -->
+            <div id="prev-card-wrap">
+              <div class="prev-card-inner">
+                <div class="prev-card-chrome">
+                  <div class="prev-chrome-dots">
+                    <div class="prev-chrome-dot r"></div>
+                    <div class="prev-chrome-dot y"></div>
+                    <div class="prev-chrome-dot g"></div>
+                  </div>
+                  <div class="prev-chrome-label">SYSTEM BROADCAST</div>
+                  <div class="prev-live"><div class="prev-live-dot"></div>LIVE</div>
+                </div>
+                <div class="prev-terminal">
+                  <div class="prev-term-line">
+                    <span class="prev-term-prompt">~/ann $</span>
+                    <span class="prev-term-badge" id="prev-term-badge">◆ INFO</span>
+                    <span id="prev-term-text" style="flex:1">ข้อความจะพิมพ์ออกมาแบบ typewriter...</span>
+                    <span class="prev-cursor"></span>
+                  </div>
+                </div>
+                <div class="prev-footer">
+                  <span class="prev-footer-path">~/centralize-sm</span>
+                  <span class="prev-footer-cmd">tail -f announcements.log</span>
+                  <span class="prev-cursor"></span>
+                </div>
+              </div>
+            </div>
+            <div id="prev-no-pin" style="padding:12px 16px;font-size:10.5px;color:var(--text-muted);text-align:center;display:none">
+              เลือก <strong>Card</strong>, <strong>ทั้งคู่</strong> หรือ <strong>All</strong> เพื่อแสดง terminal card บน Dashboard
+            </div>
+
+            <!-- Popup preview (white/orange minimal — with mini mascot) -->
+            <div id="prev-popup-wrap" style="display:none;padding:12px 14px 16px;border-top:1px solid var(--border);background:repeating-linear-gradient(45deg,rgba(255,255,255,.015),rgba(255,255,255,.015) 6px,transparent 6px,transparent 12px)">
+              <div style="font-size:9px;font-weight:800;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;text-align:center"><i data-icon="circle"></i> Popup overlay preview</div>
+              <div id="prev-popup-box" style="position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,.25),0 0 0 1px rgba(242,100,25,.08);max-width:340px;margin:0 auto">
+                <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#f26419,#f59e0b,#f26419);background-size:200% 100%;animation:ann-pop-shimmer 3s ease-in-out infinite"></div>
+                <div style="position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:radial-gradient(circle,rgba(242,100,25,.16) 0%,transparent 70%);pointer-events:none"></div>
+                <div style="position:absolute;top:8px;right:10px;width:22px;height:22px;border-radius:6px;color:var(--text-muted);font-size:13px;display:flex;align-items:center;justify-content:center;z-index:3"><i data-icon="x"></i></div>
+                <div style="padding:22px 22px 14px;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;z-index:2">
+                  <div id="prev-popup-mascot" style="width:74px;height:74px;margin-bottom:10px"></div>
+                  <div id="prev-popup-tag" style="font-size:8.5px;font-weight:900;letter-spacing:.12em;padding:2.5px 8px;border-radius:4px;margin-bottom:8px;font-family:'JetBrains Mono',monospace;border:1px solid">◆ INFO</div>
+                  <div id="prev-popup-title" style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:6px;line-height:1.35;word-break:break-word">ชื่อประกาศจะปรากฏที่นี่</div>
+                  <div id="prev-popup-msg" style="font-size:11.5px;color:var(--text-muted);line-height:1.6;white-space:pre-wrap;word-break:break-word;max-height:100px;overflow:hidden">ข้อความ popup จะแสดงที่นี่...</div>
+                </div>
+                <div id="prev-popup-cta-wrap" style="display:none;padding:2px 22px 14px;position:relative;z-index:2">
+                  <div id="prev-popup-cta" style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px 14px;background:linear-gradient(135deg,#f26419 0%,#f59e0b 100%);color:#fff;border-radius:10px;font-size:11.5px;font-weight:800;box-shadow:0 3px 10px rgba(242,100,25,.3)">เริ่มใช้งาน <span style="font-size:13px">→</span></div>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 16px 12px;border-top:1px solid var(--border);background:var(--bg);font-size:10px;color:var(--text-muted);position:relative;z-index:2">
+                  <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:11px;height:11px;border:1.5px solid var(--text-muted);border-radius:3px"></span>ไม่ต้องแสดงอีกในวันนี้</span>
+                  <span style="color:var(--text-muted);font-weight:600">ปิด</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Promo preview (dashboard carousel card) -->
+            <div id="prev-promo-wrap" style="display:none;padding:12px 14px 16px;border-top:1px solid var(--border)">
+              <div style="font-size:9px;font-weight:800;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;text-align:center">◈ Dashboard promo preview</div>
+              <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:1.5px solid rgba(242,100,25,.3);background:linear-gradient(135deg,rgba(242,100,25,.14),rgba(251,191,36,.09) 55%,rgba(242,100,25,.05))">
+                <div id="prev-promo-icon" style="width:44px;height:44px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(255,255,255,.5);border:1px solid rgba(242,100,25,.25)"><i data-icon="trending-up"></i></div>
+                <div style="flex:1;min-width:0">
+                  <span id="prev-promo-badge" style="display:none;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#f26419;background:rgba(242,100,25,.12);padding:2px 8px;border-radius:999px"></span>
+                  <div id="prev-promo-title" style="font-size:14px;font-weight:800;color:var(--text);margin-top:3px">ชื่อ promo</div>
+                  <div id="prev-promo-msg" style="font-size:11.5px;color:var(--text-muted);margin-top:2px;line-height:1.5">ข้อความ...</div>
+                </div>
+                <div id="prev-promo-cta" style="flex-shrink:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(135deg,#f26419,#fb923c);white-space:nowrap">เปิด →</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── RIGHT: List ── -->
+        <div class="ann-right">
+          <div class="list-hd">
+            <div class="list-title">Active · <span id="ann-count">—</span></div>
+            <label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="show-all" onchange="loadList()" style="accent-color:var(--orange)">
+              Show all (incl. expired)
+            </label>
+          </div>
+          <div class="ann-list" id="ann-list">
+            <div style="text-align:center;padding:40px;color:var(--text-muted);font-size:11px">Loading...</div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);align-items:center;justify-content:center">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;width:460px;max-width:94vw;box-shadow:0 24px 64px rgba(0,0,0,.5)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--border)">
+      <span style="font-size:11.5px;font-weight:700;color:var(--text)">Edit Announcement</span>
+      <button onclick="closeEdit()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;line-height:1"><i data-icon="x"></i></button>
+    </div>
+    <div style="padding:18px;display:flex;flex-direction:column;gap:13px">
+      <input type="hidden" id="edit-id">
+      <div>
+        <div class="f-label">Type</div>
+        <div class="type-row" id="edit-type-row"></div>
+      </div>
+      <div>
+        <div class="f-label">แสดงที่ไหน</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px">
+          <button class="type-btn" id="edit-disp-both"   onclick="selectDisplay('both',true)"   style="--tc:#f26419;--tb:rgba(242,100,25,.14)"><span class="tb-symbol">⊞</span>ทั้งคู่</button>
+          <button class="type-btn" id="edit-disp-ticker" onclick="selectDisplay('ticker',true)" style="--tc:#38bdf8;--tb:rgba(56,189,248,.14)"><span class="tb-symbol"><i data-icon="play"></i></span>Ticker</button>
+          <button class="type-btn" id="edit-disp-card"   onclick="selectDisplay('card',true)"   style="--tc:#22c55e;--tb:rgba(34,197,94,.14)"><span class="tb-symbol">▣</span>Card</button>
+          <button class="type-btn" id="edit-disp-popup"  onclick="selectDisplay('popup',true)"  style="--tc:#a855f7;--tb:rgba(168,85,247,.14)"><span class="tb-symbol"><i data-icon="circle"></i></span>Popup</button>
+          <button class="type-btn" id="edit-disp-promo"  onclick="selectDisplay('promo',true)"  style="--tc:#f26419;--tb:rgba(242,100,25,.14)"><span class="tb-symbol">◈</span>Promo</button>
+          <button class="type-btn" id="edit-disp-all"    onclick="selectDisplay('all',true)"    style="--tc:#ec4899;--tb:rgba(236,72,153,.14)"><span class="tb-symbol"><i data-icon="sparkles"></i></span>All</button>
+        </div>
+      </div>
+      <div id="edit-popup-cta-wrap" style="display:none;border:1px dashed var(--border);border-radius:10px;padding:11px 13px;flex-direction:column;gap:10px;background:rgba(168,85,247,.04)">
+        <div style="font-size:9.5px;font-weight:800;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase"><i data-icon="circle"></i> Popup CTA</div>
+        <div>
+          <div class="f-label">CTA Label</div>
+          <input class="f-input" id="edit-cta-label" type="text" placeholder="เช่น เริ่มใช้งาน">
+        </div>
+        <div>
+          <div class="f-label">CTA URL</div>
+          <input class="f-input" id="edit-cta-url" type="url" placeholder="https://... หรือ ./analytics.html">
+        </div>
+      </div>
+      <div id="edit-promo-fields" style="display:none;border:1px dashed var(--border);border-radius:10px;padding:11px 13px;flex-direction:column;gap:10px;background:rgba(242,100,25,.04)">
+        <div style="font-size:9.5px;font-weight:800;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase">◈ Promo card — ใช้ปุ่มจาก CTA ด้านบน</div>
+        <div style="display:flex;gap:10px">
+          <div style="width:96px"><div class="f-label">Icon</div><input class="f-input" id="edit-icon" type="text" maxlength="4" placeholder="📈"></div>
+          <div style="flex:1"><div class="f-label">Badge</div><input class="f-input" id="edit-badge" type="text" placeholder="ใหม่"></div>
+        </div>
+      </div>
+      <div>
+        <div class="f-label">Title</div>
+        <input class="f-input" id="edit-title" type="text">
+      </div>
+      <div>
+        <div class="f-label">Message</div>
+        <textarea class="f-ta" id="edit-msg" style="min-height:80px"></textarea>
+      </div>
+      <div>
+        <div class="f-label">Expires at</div>
+        <input class="f-input" id="edit-expires" type="datetime-local">
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:2px">
+        <button class="btn btn-ghost btn-sm" onclick="closeEdit()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveEdit()">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/announcements/announcements-page.js"></script>
+
+</body>
+</html>

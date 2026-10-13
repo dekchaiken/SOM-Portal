@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SO Jenkins — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/so-jenkins/so-jenkins.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content" style="display:flex;flex-direction:column">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">🚀 SO Jenkins</div>
+        <div class="page-sub" id="sj-page-sub">CLT RAG Service Pipeline — Production</div>
+      </div>
+    </header>
+
+    <div class="sj-wrap" id="sj-wrap">
+      <div class="sj-loading" id="sj-loading">กำลังโหลด...</div>
+
+      <div id="sj-body" style="display:none">
+        <!-- Admin banner -->
+        <div class="sj-banner" id="sj-admin-banner" style="display:none">
+          👑 คุณเป็น <b>Admin</b> — จัดการผู้ใช้ได้จากเมนู "SO Jenkins Admin"
+        </div>
+
+        <!-- ── Status cards ──────────────────────────── -->
+        <div class="sj-status-grid">
+          <div class="sj-status-card">
+            <div class="sj-status-icon">🖥️</div>
+            <div>
+              <div class="sj-status-label">Jenkins Status</div>
+              <div class="sj-status-value" id="sj-jenkins-status">Checking...</div>
+            </div>
+          </div>
+          <div class="sj-status-card">
+            <div class="sj-status-icon">🔢</div>
+            <div>
+              <div class="sj-status-label">Last Build</div>
+              <div class="sj-status-value" id="sj-last-build">—</div>
+            </div>
+          </div>
+          <div class="sj-status-card">
+            <div class="sj-status-icon">📈</div>
+            <div>
+              <div class="sj-status-label">Success Rate (50 ล่าสุด)</div>
+              <div class="sj-status-value" id="sj-success-rate">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Actions toolbar (History always visible, Admin admin-only) ─── -->
+        <div class="sj-toolbar">
+          <span class="sj-server-pill" id="sj-toolbar-server"></span>
+          <button class="sj-refresh-btn" id="sj-btn-history" style="margin-left:auto">📜 History</button>
+          <button class="sj-refresh-btn" id="sj-btn-admin" style="display:none;margin-left:0">🛠 Admin</button>
+          <button class="sj-refresh-btn" id="sj-refresh-btn" style="margin-left:0">↻ Refresh</button>
+        </div>
+
+        <!-- ── Trigger form (always visible unless a panel is open) ─── -->
+        <div id="sj-panel-trigger">
+          <div class="sj-card">
+            <div class="sj-card-title">⚡ Trigger Jenkins Build</div>
+            <div class="sj-card-sub" id="sj-form-desc"></div>
+            <div class="sj-info-box">
+              <span class="sj-ib-icon">ℹ️</span>
+              <div><strong>No Parameters Required</strong> — job นี้รันด้วยค่า default configuration กดปุ่มด้านล่างเพื่อเริ่ม build</div>
+            </div>
+            <button class="sj-submit" id="sj-trigger-btn">
+              <span>🚀</span> Trigger Build Now
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Slide-in panels (History / Admin) ────────── -->
+        <div class="sj-checker-panels" id="sj-panels">
+          <!-- History (merged Build History + Build Logs) -->
+          <div id="sj-panel-history" style="display:none">
+            <button class="sj-panel-back" onclick="backToTrigger()">← กลับหน้า Trigger</button>
+            <div class="sj-card">
+              <div class="sj-card-title">📜 Build History <span class="sj-count" id="sj-history-count">0</span></div>
+              <div class="sj-card-sub">ประวัติการ Build ทั้งหมด — สถานะ update อัตโนมัติ (refresh ทุก 30 วิ)</div>
+              <div class="sj-toolbar-row">
+                <select id="sj-hist-filter">
+                  <option value="all">ทั้งหมด</option>
+                  <option value="success">สำเร็จ</option>
+                  <option value="failed">ล้มเหลว</option>
+                  <option value="today">วันนี้</option>
+                </select>
+                <input type="text" id="sj-hist-search" placeholder="ค้นหา (User / Build #)...">
+                <button class="sj-btn sj-btn-danger" id="sj-hist-clear" style="display:none">🗑 ล้าง</button>
+                <button class="sj-btn" id="sj-hist-export" style="display:none">⬇ Export</button>
+              </div>
+              <div style="overflow-x:auto">
+                <table class="sj-table">
+                  <thead>
+                    <tr><th>Build #</th><th>Time</th><th>Status / Result</th><th>Triggered By</th><th>Duration</th></tr>
+                  </thead>
+                  <tbody id="sj-history-body">
+                    <tr><td colspan="5" class="sj-empty">ยังไม่มีประวัติ</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin -->
+          <div id="sj-panel-admin" style="display:none">
+            <button class="sj-panel-back" onclick="backToTrigger()">← กลับหน้า Trigger</button>
+            <div class="sj-card">
+              <div class="sj-card-title">🛠 SO Jenkins Admin</div>
+              <div class="sj-card-sub">จัดการ SO Jenkins Portal — เฉพาะ Admin</div>
+              <div class="sja-tabs">
+                <button class="sja-tab active" data-tab="users">👥 ผู้ใช้</button>
+                <button class="sja-tab" data-tab="settings">⚙️ Settings</button>
+              </div>
+
+              <div class="sja-panel active" id="sja-panel-users">
+                <div class="sja-grid">
+                  <div class="sja-field">
+                    <label>Username</label>
+                    <input type="text" id="sja-user-username" placeholder="e.g. somchai.jai">
+                  </div>
+                  <div class="sja-field">
+                    <label>Email</label>
+                    <input type="text" id="sja-user-email" placeholder="name@ascendcorp.com">
+                  </div>
+                  <div class="sja-field">
+                    <label>Role</label>
+                    <select id="sja-user-role">
+                      <option value="user">user</option>
+                      <option value="admin">admin</option>
+                    </select>
+                  </div>
+                  <div class="sja-field" style="display:flex;align-items:flex-end">
+                    <button class="sj-btn" id="sja-user-add" style="width:100%;background:var(--orange, #f26419);color:#fff;border-color:transparent">＋ สร้างผู้ใช้</button>
+                  </div>
+                </div>
+                <div style="overflow-x:auto">
+                  <table class="sj-table">
+                    <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="sja-user-body"><tr><td colspan="5" class="sj-empty">ยังไม่มีผู้ใช้</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="sja-panel" id="sja-panel-settings">
+                <div class="sja-kv" id="sja-me-kv" style="margin-bottom:16px"></div>
+                <div class="sja-note">💡 เปลี่ยนรหัสผ่านได้ที่เมนู <b>เปลี่ยนรหัสผ่าน</b> (ด้านล่างซ้ายของ sidebar)</div>
+                <hr style="border:none;border-top:1px solid var(--border);margin:18px 0">
+                <div style="font-size:12.5px;font-weight:800;color:var(--text);margin-bottom:12px">🔗 Jenkins Server &amp; Job</div>
+                <div class="sja-kv" id="sja-server-kv"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress modal -->
+<div class="sj-modal-overlay" id="sj-progress-modal">
+  <div class="sj-modal">
+    <h3 id="sj-modal-title">Executing Pipeline</h3>
+    <div class="sj-modal-sub" id="sj-modal-status">Waiting in Jenkins queue...</div>
+    <div class="sj-progress-track"><div class="sj-progress-bar" id="sj-progress-bar"></div></div>
+    <div class="sj-progress-pct" id="sj-progress-pct">0%</div>
+    <div class="sj-modal-result" id="sj-modal-result"></div>
+    <button class="sj-submit" id="sj-modal-close" style="display:none">ปิด</button>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="./assets/pages/so-jenkins/so-jenkins.js"></script>
+</body>
+</html>

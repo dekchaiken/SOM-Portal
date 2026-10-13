@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Schedule — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+  /* ═══════════════════════════════════════════════════════
+     SCHEDULE ADMIN  —  complete design system
+  ═══════════════════════════════════════════════════════ */
+
+  /* Prevent page-level zoom from wide calendar table */
+  .main-content { min-width: 0; overflow-x: hidden; }
+  .page-content { min-width: 0; overflow-x: hidden; }
+
+  /* Page wrap */
+  .sch-page { display: flex; flex-direction: column; gap: 22px; }
+
+  /* ── Month navigator ─────────────────────────────── */
+  .mnav {
+    display: flex; align-items: center; gap: 0;
+    background: white; border: 1.5px solid #e8e8e8;
+    border-radius: 14px; padding: 12px 16px;
+    justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .mnav-left  { display: flex; align-items: center; gap: 11px; }
+  .mnav-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  .mnav-arrow {
+    width: 36px; height: 36px; border-radius: 9px; cursor: pointer;
+    background: #fafafa; border: 1.5px solid #e8e8e8;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: #999; transition: all .16s;
+    font-weight: 700;
+  }
+  .mnav-arrow:hover {
+    background: var(--orange); color: #fff; border-color: var(--orange);
+    box-shadow: 0 4px 12px rgba(242,100,25,.18);
+  }
+
+  .mnav-title {
+    font-size: 17px; font-weight: 800; color: #1c1c1e;
+    letter-spacing: -.01em; min-width: 165px;
+  }
+
+  .mnav-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 12px; border-radius: 8px;
+    font-size: 11px; font-weight: 600; color: #666;
+    background: #fafafa; border: 1.5px solid #e8e8e8;
+    transition: all .12s;
+  }
+  .mnav-chip:hover { border-color: #ddd; background: #f5f5f5; }
+  .mnav-chip strong { color: #1c1c1e; font-weight: 700; }
+
+  /* ── Edit hint ───────────────────────────────────── */
+  .edit-hint {
+    font-size: 11px; color: #666;
+    display: flex; align-items: center; gap: 7px;
+    padding: 10px 14px; background: rgba(242,100,25,.08);
+    border: 1.5px solid rgba(242,100,25,.15); border-radius: 10px;
+    font-weight: 500; line-height: 1.5;
+  }
+  .edit-hint span { color: var(--orange); font-weight: 800; }
+
+  /* ── Calendar card ───────────────────────────────── */
+  .cal-card {
+    background: white; border: 1.5px solid #e8e8e8;
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  }
+  .cal-scroll {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #ddd transparent;
+  }
+  .cal-scroll::-webkit-scrollbar { height: 8px; }
+  .cal-scroll::-webkit-scrollbar-track { background: transparent; }
+  .cal-scroll::-webkit-scrollbar-thumb {
+    background: #ddd; border-radius: 4px;
+  }
+  .cal-scroll::-webkit-scrollbar-thumb:hover {
+    background: #bbb;
+  }
+
+  /* Table */
+  .cal-tbl { border-collapse: collapse; width: 100%; table-layout: fixed; background: white; }
+  .cal-tbl td, .cal-tbl th {
+    border-right: 1px solid rgba(255,255,255,.05);
+    border-bottom: 1px solid rgba(255,255,255,.05);
+  }
+  .cal-tbl td:last-child, .cal-tbl th:last-child { border-right: none; }
+  .cal-tbl tr:last-child td { border-bottom: none; }
+
+  /* Sticky label */
+  .c-sticky {
+    position: sticky; left: 0; z-index: 10;
+    background: linear-gradient(90deg, white 0%, rgba(255,255,255,.95) 100%);
+    width: 85px; min-width: 85px; max-width: 85px;
+    border-right: 1.5px solid #f0f0f0 !important;
+  }
+  .c-sticky-head { position: sticky; left: 0; z-index: 11; background: white; border-right: 1.5px solid #f0f0f0; }
+
+  /* Day header */
+  .th-day {
+    min-width: 40px; width: 40px; max-width: 40px;
+    text-align: center; padding: 7px 2px 5px;
+    background: #fafafa;
+    position: relative; cursor: default;
+    transition: background .12s;
+    border-bottom: 1.5px solid #f0f0f0;
+  }
+  .th-day .d-name {
+    display: block; font-size: 7px; font-weight: 700;
+    color: #999; letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .th-day .d-num {
+    display: block; font-size: 12px; font-weight: 900;
+    color: #1c1c1e; margin-top: 1px; line-height: 1.1;
+  }
+  .th-day.is-today { background: rgba(242,100,25,.07); }
+  .th-day.is-today .d-num { color: var(--orange); }
+  .th-day.is-today::after {
+    content: ''; position: absolute; bottom: 0; left: 10px; right: 10px;
+    height: 2px; background: var(--orange); border-radius: 1px;
+  }
+  .th-day.is-weekend .d-num { color: #ccc; }
+  .th-day.is-weekend { background: #f9f9f9; }
+  .th-day.is-holiday { background: #fffbeb; border-bottom-color: #f59e0b; cursor: help; }
+  .th-day.is-holiday .d-num { color: #b45309; }
+  .th-day.is-holiday::after {
+    content: ''; position: absolute; bottom: 0; left: 10px; right: 10px;
+    height: 2px; background: #f59e0b; border-radius: 1px;
+  }
+  .cal-cell.col-holiday { background: #fffdf0; }
+
+  .clear-btn {
+    display: none;
+    position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+    font-size: 7px; font-weight: 800; letter-spacing: .04em;
+    padding: 1px 6px; border-radius: 3px; cursor: pointer;
+    background: rgba(239,68,68,.12); color: #ef4444;
+    border: 1px solid rgba(239,68,68,.18);
+    font-family: var(--font); white-space: nowrap;
+  }
+  .th-day:hover .clear-btn { display: block; }
+  .th-day:hover .d-num { margin-bottom: 14px; }
+
+  /* ── Section header rows ─────────────────────────── */
+  .row-sec td {
+    padding: 0;
+    border-bottom: 1.5px solid #f0f0f0 !important;
+    border-top: 1px solid #f0f0f0 !important;
+    background: #fafafa;
+  }
+  .sec-label-cell {
+    display: flex; align-items: center; gap: 7px;
+    padding: 7px 12px; height: 100%;
+  }
+  .sec-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .sec-name { font-size: 8px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: #666; }
+  .sec-time { font-size: 7px; font-weight: 600; opacity: .7; margin-left: 4px; color: #999; }
+  .sec-fill {
+    font-size: 8px; color: #ddd; text-align: center;
+    letter-spacing: .04em; font-weight: 500;
+  }
+
+  /* ── Data row labels ─────────────────────────────── */
+  .row-lbl-cell {
+    padding: 0 9px; vertical-align: middle; height: 100%;
+    display: flex; align-items: center; gap: 5px;
+    border-right: 1.5px solid #f0f0f0;
+  }
+  .lbl-bar { width: 2px; height: 12px; border-radius: 1px; flex-shrink: 0; }
+  .lbl-text { font-size: 8px; font-weight: 700; letter-spacing: .02em; color: #666; }
+
+  /* ── Data cells ──────────────────────────────────── */
+  .cal-cell {
+    vertical-align: top; padding: 3px 2px;
+    min-height: 38px; height: 38px;
+    cursor: pointer; position: relative;
+    transition: background .1s;
+    background: white;
+  }
+  .cal-cell:hover { background: #fffbf7 !important; }
+  .cal-cell:hover::before {
+    content: '+'; position: absolute; bottom: 2px; right: 2px;
+    font-size: 8px; font-weight: 900; color: rgba(242,100,25,.3);
+    line-height: 1; pointer-events: none;
+  }
+  .cal-cell.col-today { background: #fff8f0; }
+  .cal-cell.col-weekend { background: #fafafa; }
+  .cal-cell.cell-oc { vertical-align: middle; text-align: center; min-height: 28px; height: 28px; }
+  .cal-cell.cell-ev { vertical-align: top; padding: 3px 3px; min-height: 28px; height: 28px; }
+
+  /* Member chips */
+  .chips { display: flex; flex-direction: column; gap: 1px; padding: 1px 1px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 2px;
+    font-size: 7px; font-weight: 700;
+    padding: 2px 5px; border-radius: 3px;
+    white-space: nowrap; line-height: 1.4;
+    border: 1px solid rgba(242,100,25,.15);
+    background: rgba(242,100,25,.06);
+    color: #1c1c1e;
+  }
+  .chip:hover {
+    background: rgba(242,100,25,.12);
+    border-color: rgba(242,100,25,.25);
+  }
+  .chip-dot { width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; }
+
+  /* On-call */
+  .oc-val {
+    font-size: 6.5px; font-weight: 800; letter-spacing: .05em;
+    color: #f59e0b; text-transform: uppercase;
+    background: rgba(245,158,11,.08); padding: 1px 5px; border-radius: 3px;
+    border: 1px solid rgba(245,158,11,.15);
+  }
+
+  /* Events */
+  .ev-txt {
+    font-size: 6px; color: #3b82f6;
+    line-height: 1.3; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: rgba(59,130,246,.08); padding: 1px 3px;
+    border-radius: 2px; display: inline-block;
+    border: 1px solid rgba(59,130,246,.15);
+  }
+
+  /* ── Stats panel ─────────────────────────────────── */
+  .stat-card {
+    background: white; border: 1.5px solid #e8e8e8;
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  }
+  .panel-hd {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1.5px solid #f0f0f0;
+    background: linear-gradient(135deg, #fff8f0 0%, white 100%);
+  }
+  .panel-hd-l { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: #666; letter-spacing: .06em; text-transform: uppercase; }
+  .panel-hd-l strong { color: #1c1c1e; text-transform: none; letter-spacing: 0; font-size: 12px; }
+
+  .stat-tbl { width: 100%; border-collapse: collapse; font-size: 11px; background: white; }
+  .stat-tbl th {
+    padding: 12px 16px; text-align: left; font-size: 8px; font-weight: 700;
+    letter-spacing: .07em; color: #999; text-transform: uppercase;
+    border-bottom: 1.5px solid #f0f0f0; background: #fafafa;
+  }
+  .stat-tbl th.c { text-align: center; }
+  .stat-tbl td { padding: 10px 16px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; color: #1c1c1e; }
+  .stat-tbl td.c { text-align: center; }
+  .stat-tbl tr:last-child td { border-bottom: none; }
+  .stat-tbl tr:hover td { background: rgba(242,100,25,.04); }
+  .sbadge {
+    display: inline-block; min-width: 36px; text-align: center;
+    padding: 4px 10px; border-radius: 6px;
+    font-size: 10px; font-weight: 800; letter-spacing: .04em;
+  }
+
+  /* ── Vacation Quota panel ────────────────────────── */
+  .quota-card {
+    background: white; border: 1.5px solid #e8e8e8;
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  }
+  .quota-tbl { width: 100%; border-collapse: collapse; font-size: 11px; background: white; }
+  .quota-tbl th {
+    background: white; padding: 12px 16px;
+    font-weight: 700; color: #666; letter-spacing: .04em;
+    border-bottom: 1.5px solid #f0f0f0; font-size: 9px; text-transform: uppercase;
+  }
+  .quota-tbl th.c { text-align: center; }
+  .quota-tbl td { padding: 10px 16px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+  .quota-tbl td.c { text-align: center; }
+  .quota-tbl tr:last-child td { border-bottom: none; }
+  .quota-tbl tr:hover td { background: #fafafa; }
+  .quota-input {
+    width: 60px; padding: 6px 8px; border: 1.5px solid #e8e8e8;
+    border-radius: 8px; font-size: 12px; font-weight: 700;
+    text-align: center; color: #1c1c1e;
+    font-family: inherit; outline: none;
+    transition: all .15s;
+  }
+  .quota-input:hover { border-color: #ddd; }
+  .quota-input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(242,100,25,.1); }
+  .quota-label { font-weight: 700; color: #1c1c1e; display: flex; align-items: center; gap: 8px; }
+  .quota-label .qlb-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Cell edit modal ─────────────────────────────── */
+  .modal-bg {
+    position: fixed; inset: 0; z-index: 9000;
+    background: rgba(0,0,0,.4); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .22s;
+  }
+  .modal-bg.open { opacity: 1; pointer-events: all; }
+  .modal-box {
+    background: white; border: none;
+    border-radius: 16px; width: 540px; max-width: 96vw;
+    max-height: 88vh; display: flex; flex-direction: column;
+    box-shadow: 0 32px 80px rgba(0,0,0,.15); overflow: hidden;
+    animation: modalSlideUp .28s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes modalSlideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal-box.wide { width: 600px; }
+  .mhd {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 24px; border-bottom: 1.5px solid #f0f0f0;
+    gap: 12px; flex-shrink: 0;
+    background: linear-gradient(135deg, #fff8f0 0%, white 100%);
+  }
+  .mhd-info { display: flex; flex-direction: column; gap: 3px; }
+  .mhd-title { font-size: 15px; font-weight: 800; color: #1c1c1e; }
+  .mhd-sub   { font-size: 11px; color: #999; font-weight: 600; }
+  .mhd-close {
+    background: none; border: none; font-size: 18px; color: #999;
+    cursor: pointer; transition: all .13s; flex-shrink: 0;
+    padding: 4px; border-radius: 8px; display: flex; align-items: center;
+    justify-content: center;
+  }
+  .mhd-close:hover { color: #1c1c1e; background: #f5f5f5; }
+  .mbody { overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; background: white; }
+  .mfoot {
+    display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+    padding: 14px 24px; border-top: 1.5px solid #f0f0f0;
+    background: #fafafa; flex-shrink: 0;
+  }
+
+  /* Conflict warning */
+  .conflict-box {
+    background: rgba(239,68,68,.08); border: 1.5px solid rgba(239,68,68,.15);
+    border-radius: 10px; padding: 12px 14px;
+    font-size: 11px; font-weight: 600; color: #ef4444;
+    display: none;
+  }
+  .conflict-box.show { display: flex; align-items: center; gap: 8px; }
+
+  /* User checklist */
+  .uclist { display: flex; flex-direction: column; gap: 6px; }
+  .ucrow {
+    display: flex; align-items: center; gap: 11px;
+    padding: 10px 13px; border-radius: 10px; cursor: pointer;
+    border: 1.5px solid #e8e8e8; background: white;
+    transition: all .14s; user-select: none;
+  }
+  .ucrow:hover:not(.disabled) { border-color: #ddd; background: #fafafa; }
+  .ucrow.sel { border-color: var(--uc); background: var(--ub); }
+  .ucrow.disabled { opacity: .42; cursor: not-allowed; }
+  .ucrow-check {
+    width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+    border: 1.5px solid #ddd; background: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 900; color: #fff; transition: all .12s;
+  }
+  .ucrow.sel .ucrow-check { background: var(--uc); border-color: var(--uc); }
+  .ucrow-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .ucrow-name { flex: 1; font-size: 12px; font-weight: 700; color: #1c1c1e; }
+  .leave-pill {
+    font-size: 8px; font-weight: 800; padding: 4px 8px; border-radius: 5px;
+    background: rgba(239,68,68,.12); color: #ef4444;
+    border: 1px solid rgba(239,68,68,.2);
+  }
+
+  /* Form inputs */
+  .f-lbl {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: #999; margin-bottom: 7px; display: block;
+  }
+  .f-in, .f-ta {
+    width: 100%; background: white; border: 1.5px solid #e8e8e8;
+    border-radius: 10px; padding: 11px 14px; font-size: 13px;
+    color: #1c1c1e; font-family: var(--font); outline: none; transition: all .16s;
+  }
+  .f-in:hover, .f-ta:hover { border-color: #ddd; }
+  .f-in:focus, .f-ta:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(242,100,25,.1); }
+  .f-ta { resize: vertical; min-height: 80px; }
+
+  /* Event tags */
+  .etags {
+    display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; min-height: 32px;
+    align-items: center;
+  }
+  .etag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 8px;
+    background: rgba(59,130,246,.08); border: 1.5px solid rgba(59,130,246,.15);
+    font-size: 11px; color: #3b82f6; font-weight: 600;
+  }
+  .etag-x { cursor: pointer; opacity: .6; font-size: 10px; transition: opacity .12s; }
+  .etag-x:hover { opacity: 1; }
+  .eadd-row { display: flex; gap: 8px; }
+
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="calendar"></i> จัดการตารางเวร</div>
+        <div class="page-sub">SM Team Monthly Schedule</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="leave-approval.html" class="btn btn-ghost btn-sm" id="leave-btn" style="font-size:11px;text-decoration:none"><i data-icon="clipboard"></i> คำขอลา</a>
+        <button class="btn btn-ghost btn-sm" onclick="loadAll()" style="font-size:11px">↺ รีเฟรช</button>
+      </div>
+    </header>
+    <nav id="admin-nav-mount"></nav>
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="calendar"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Schedule Management</h1>
+          <p>จัดการตารางเวรของทีม SM รายเดือน — Shift, On-call, WFH, TDPK · sync กับ leave + holiday plans</p>
+        </div>
+      </section>
+
+      <div class="sch-page">
+
+        <!-- Month navigator -->
+        <div class="mnav">
+          <div class="mnav-left">
+            <button class="mnav-arrow" onclick="changeMonth(-1)">←</button>
+            <div class="mnav-title" id="month-title">กำลังโหลด...</div>
+            <button class="mnav-arrow" onclick="changeMonth(1)">→</button>
+            <button class="btn btn-ghost btn-sm" onclick="goToday()" style="font-size:11px">วันนี้</button>
+          </div>
+          <div class="mnav-right" id="mnav-chips"></div>
+        </div>
+
+        <!-- Edit hint -->
+        <div class="edit-hint">
+          <span><i data-icon="pencil"></i></span>
+          คลิกช่องในตารางเพื่อแก้ไข &nbsp;·&nbsp; Hover วันที่ในหัวตารางเพื่อล้างทั้งวัน
+        </div>
+
+        <!-- Calendar -->
+        <div class="cal-card">
+          <div class="cal-scroll">
+            <table class="cal-tbl" id="cal-table">
+              <thead id="cal-head"></thead>
+              <tbody id="cal-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-card">
+          <div class="panel-hd">
+            <div class="panel-hd-l"><i data-icon="bar-chart"></i> สถิติรายบุคคล &nbsp;—&nbsp; <strong id="stats-label"></strong></div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="stat-tbl">
+              <thead>
+                <tr>
+                  <th style="min-width:160px">ชื่อ</th>
+                  <th class="c">S1&nbsp;TDPK</th>
+                  <th class="c">S1&nbsp;W@H</th>
+                  <th class="c">S2&nbsp;W@H</th>
+                  <th class="c">รวมเวร</th>
+                  <th class="c">วันลาทั้งหมด</th>
+                  <th class="c">วันลา</th>
+                  <th class="c">ลาป่วย</th>
+                  <th class="c">ลากิจ</th>
+                </tr>
+              </thead>
+              <tbody id="stats-body">
+                <tr><td colspan="9" style="text-align:center;padding:28px;color:var(--text-muted);font-size:12px">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Vacation Quota -->
+        <div class="quota-card">
+          <div class="panel-hd">
+            <div class="panel-hd-l"><i data-icon="calendar"></i> ตั้งค่าวันลาพักร้อน (ประจำปี 2026)</div>
+            <button class="btn btn-primary btn-sm" onclick="saveAllQuotas()" id="quota-save-btn" style="font-size:10px;display:none"><i data-icon="save"></i> บันทึก</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="quota-tbl">
+              <thead>
+                <tr>
+                  <th style="min-width:160px">ชื่อ</th>
+                  <th class="c">โควต้าทั้งหมด</th>
+                  <th class="c">ลาไปแล้ว</th>
+                  <th class="c">คงเหลือ</th>
+                </tr>
+              </thead>
+              <tbody id="quota-body">
+                <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- User Color Settings -->
+        <div class="quota-card">
+          <div class="panel-hd">
+            <div class="panel-hd-l"><i data-icon="palette"></i> สีพื้นหลังชื่อในตาราง</div>
+            <button class="btn btn-primary btn-sm" onclick="saveAllColors()" id="color-save-btn" style="font-size:10px;display:none"><i data-icon="save"></i> บันทึกสี</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="quota-tbl">
+              <thead>
+                <tr>
+                  <th style="min-width:160px">ชื่อ</th>
+                  <th class="c">ตัวอย่าง</th>
+                  <th class="c">เลือกสี</th>
+                  <th class="c">รีเซ็ต</th>
+                </tr>
+              </thead>
+              <tbody id="color-body">
+                <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Holiday Management -->
+        <div class="quota-card" id="holiday-card">
+          <div class="panel-hd">
+            <div class="panel-hd-l"><i data-icon="flag"></i> จัดการวันหยุดนักขัตฤกษ์</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <select id="hol-year-filter" class="f-in" style="width:110px;font-size:11px;padding:5px 8px" onchange="renderHolidays()">
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="openHolModal()" style="font-size:10px">+ เพิ่มวันหยุด</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="quota-tbl">
+              <thead>
+                <tr>
+                  <th style="min-width:130px">วันที่</th>
+                  <th style="min-width:240px;text-align:left;padding-left:12px">ชื่อวันหยุด</th>
+                  <th class="c" style="width:90px">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="holiday-body">
+                <tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ── Holiday modal ─────────────────────────────────────────────────────── -->
+<div class="modal-bg" id="hol-modal">
+  <div class="modal-box" style="max-width:420px">
+    <div class="mhd">
+      <div class="mhd-title" id="hol-modal-title">เพิ่มวันหยุด</div>
+      <button class="modal-close" onclick="closeHolModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="mbody" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="f-lbl">วันที่ <span style="color:#ef4444">*</span></label>
+        <input type="date" id="hol-date" class="f-in" style="width:100%">
+      </div>
+      <div>
+        <label class="f-lbl">ชื่อวันหยุด <span style="color:#ef4444">*</span></label>
+        <input type="text" id="hol-name" class="f-in" style="width:100%" placeholder="เช่น วันขึ้นปีใหม่" maxlength="100">
+      </div>
+    </div>
+    <div class="mfoot" style="padding:12px 20px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid #f0f0f0">
+      <button class="btn btn-ghost btn-sm" onclick="closeHolModal()">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" id="hol-save-btn" onclick="saveHoliday()"><i data-icon="save"></i> บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Cell edit modal ──────────────────────────────────────────────────── -->
+<div class="modal-bg" id="cell-modal">
+  <div class="modal-box">
+    <div class="mhd">
+      <div class="mhd-info">
+        <div class="mhd-title" id="cm-title"></div>
+        <div class="mhd-sub"   id="cm-sub"></div>
+      </div>
+      <button class="mhd-close" onclick="closeCellModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="mbody" id="cm-body"></div>
+    <div class="mfoot">
+      <button class="btn btn-ghost btn-sm" onclick="closeCellModal()" style="font-size:11px">ยกเลิก</button>
+      <button class="btn btn-primary btn-sm" id="cm-save" onclick="saveCellModal()" style="font-size:11px;font-weight:700"><i data-icon="save"></i> บันทึก</button>
+    </div>
+  </div>
+</div>
+
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAuth()) {}
+Layout.render('admin-schedule');
+
+/* ═══════════════════════════════════════════════════
+   Config
+═══════════════════════════════════════════════════ */
+const COLORS = [
+  ['#f26419','rgba(242,100,25,.15)'],['#3b82f6','rgba(59,130,246,.15)'],
+  ['#22c55e','rgba(34,197,94,.15)'], ['#f59e0b','rgba(245,158,11,.15)'],
+  ['#8b5cf6','rgba(139,92,246,.15)'],['#ec4899','rgba(236,72,153,.15)'],
+  ['#14b8a6','rgba(20,184,166,.15)'],['#ef4444','rgba(239,68,68,.15)'],
+  ['#06b6d4','rgba(6,182,212,.15)'], ['#a855f7','rgba(168,85,247,.15)'],
+  ['#84cc16','rgba(132,204,22,.15)'],['#f97316','rgba(249,115,22,.15)'],
+  ['#10b981','rgba(16,185,129,.15)'],['#6366f1','rgba(99,102,241,.15)'],
+  ['#64748b','rgba(100,116,139,.15)'],
+];
+
+const ROWS = [
+  { id:'s1hd',  type:'section', label:'Shift#1',    time:'09:00–21:00', color:'#f26419' },
+  { id:'s1t',   type:'members', label:'TDPK',        slot:'shift1_tdpk', lcolor:'#f26419' },
+  { id:'s1w',   type:'members', label:'W@H',         slot:'shift1_wah',  lcolor:'#f26419' },
+  { id:'s1oc',  type:'oncall',  label:'On Call',     slot:'shift1_oncall',lcolor:'#f59e0b' },
+  { id:'s2hd',  type:'section', label:'Shift#2',    time:'21:00–09:00', color:'#8b5cf6' },
+  { id:'s2w',   type:'members', label:'W@H',         slot:'shift2_wah',  lcolor:'#8b5cf6' },
+  { id:'s2oc',  type:'oncall',  label:'On Call',     slot:'shift2_oncall',lcolor:'#f59e0b' },
+  { id:'vac',   type:'members', label:'Vacation',       slot:'vacation',       lcolor:'#22c55e' },
+  { id:'sick',  type:'members', label:'Sick Leave',    slot:'sick',           lcolor:'#ef4444' },
+  { id:'biz',   type:'members', label:'Business Leave',slot:'business_leave', lcolor:'#7c3aed' },
+  { id:'evt',   type:'events',  label:'Event',         slot:'events',         lcolor:'#38bdf8' },
+];
+
+const DAY_TH    = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+const MONTH_TH  = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const MONTH_FULL= ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                   'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+let curYear  = new Date().getFullYear();
+let curMonth = new Date().getMonth() + 1;
+let schedData = {}, usersData = [], leaveData = [], quotaData = {}, userColorsData = {};
+let fullYearScheduleData = {}; // all months of curYear, for accurate quota calculation
+let _fullYearLoadedFor = null; // track which year was loaded
+const _cm = {}; // color map uid → idx
+
+/* ═══════════════════════════════════════════════════
+   Helpers
+═══════════════════════════════════════════════════ */
+const pad    = n => String(n).padStart(2,'0');
+const esc    = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const today  = () => { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function buildColorMap(users) {
+  users.forEach((u,i) => _cm[u.id] = COLORS[i % COLORS.length]);
+}
+function ucolor(uid) {
+  if (!_cm[uid]) _cm[uid] = COLORS[Object.keys(_cm).length % COLORS.length];
+  const custom = userColorsData[uid];
+  if (custom) return [custom, hexToRgba(custom, .15)];
+  return _cm[uid];
+}
+function uname(uid) {
+  const u = usersData.find(u => u.id === uid);
+  if (!u) return uid;
+  return u.nickname || u.name.split(' ')[0] || u.name;
+}
+
+function chipHtml(uid) {
+  const [fc,bg] = ucolor(uid);
+  return `<div class="chip" style="color:#1c1c1e;background:${bg};border-color:${fc}40">
+    <div class="chip-dot" style="background:${fc}"></div>${esc(uname(uid))}
+  </div>`;
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y,m,day] = d.split('-');
+  return `${parseInt(day)} ${MONTH_TH[parseInt(m)]} ${parseInt(y)+543}`;
+}
+function fmtDT(s) {
+  if (!s) return '—';
+  const d = new Date(s);
+  return `${d.getDate()} ${MONTH_TH[d.getMonth()+1]} ${d.getFullYear()+543} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function daysBetween(a,b) {
+  return Math.max(1, Math.round((new Date(b)-new Date(a))/86400000)+1);
+}
+
+// Supports dates[] (new) and legacy start_date/end_date range
+function isOnLeaveDate(leave, ds) {
+  if (leave.dates && Array.isArray(leave.dates)) return leave.dates.includes(ds);
+  return leave.start_date <= ds && leave.end_date >= ds;
+}
+function leaveDayCount(leave) {
+  if (leave.dates && Array.isArray(leave.dates)) return leave.dates.length;
+  return daysBetween(leave.start_date, leave.end_date);
+}
+
+/* ── Holidays from API (holidayData) ────────────────── */
+function getThaiHolidays(year) {
+  const h = new Map();
+  const prefix = `${year}-`;
+  (holidayData || []).forEach(hol => {
+    if (hol.date && hol.date.startsWith(prefix)) h.set(hol.date, hol.name);
+  });
+  return h;
+}
+
+/* ═══════════════════════════════════════════════════
+   Calendar render
+═══════════════════════════════════════════════════ */
+function renderCalendar() {
+  const tod = today();
+  const dim = new Date(curYear, curMonth, 0).getDate();
+
+  document.getElementById('month-title').textContent = `${MONTH_FULL[curMonth]} ${curYear+543}`;
+  document.getElementById('stats-label').textContent  = `${MONTH_TH[curMonth]} ${curYear+543}`;
+
+  /* ── Header ── */
+  const holidays = getThaiHolidays(curYear);
+  const head  = document.getElementById('cal-head');
+  head.innerHTML = '';
+  const trH = document.createElement('tr');
+
+  const thL = document.createElement('th');
+  thL.className = 'th-day c-sticky-head';
+  thL.style.cssText = 'padding:10px 12px;text-align:left;font-size:8.5px;font-weight:700;letter-spacing:.09em;color:rgba(255,255,255,.25);white-space:nowrap';
+  thL.textContent = 'SECTION / ROW';
+  trH.appendChild(thL);
+
+  for (let d = 1; d <= dim; d++) {
+    const ds   = `${curYear}-${pad(curMonth)}-${pad(d)}`;
+    const date = new Date(curYear, curMonth-1, d);
+    const dow  = date.getDay();
+    const isT  = ds === tod;
+    const isW  = dow===0||dow===6;
+    const holidayName = holidays.get(ds);
+    const isH  = !!holidayName && !isT;
+    const th   = document.createElement('th');
+    th.className = 'th-day' + (isT?' is-today':'') + (isW?' is-weekend':'') + (isH?' is-holiday':'');
+    if (holidayName) th.dataset.holiday = holidayName;
+    th.innerHTML = `
+      <span class="d-name">${DAY_TH[dow]}</span>
+      <span class="d-num">${d}</span>
+      <button class="clear-btn" onclick="clearDay('${ds}',event)">ล้าง</button>`;
+    trH.appendChild(th);
+  }
+  head.appendChild(trH);
+
+  /* ── Body ── */
+  const body = document.getElementById('cal-body');
+  body.innerHTML = '';
+
+  ROWS.forEach(row => {
+    const tr = document.createElement('tr');
+
+    if (row.type === 'section') {
+      tr.className = 'row-sec';
+      const tdL = document.createElement('td');
+      tdL.className = 'c-sticky';
+      tdL.style.background = `linear-gradient(to right, ${row.color}12, transparent)`;
+      tdL.innerHTML = `<div class="sec-label-cell">
+        <div class="sec-dot" style="background:${row.color}"></div>
+        <span class="sec-name" style="color:${row.color}">${row.label}</span>
+        <span class="sec-time">${row.time}</span>
+      </div>`;
+      tr.appendChild(tdL);
+      for (let d=1;d<=dim;d++) {
+        const td = document.createElement('td');
+        td.style.background = `${row.color}05`;
+        td.innerHTML = `<div class="sec-fill">·</div>`;
+        tr.appendChild(td);
+      }
+      body.appendChild(tr);
+      return;
+    }
+
+    /* data row */
+    const tdL = document.createElement('td');
+    tdL.className = 'c-sticky';
+    tdL.innerHTML = `<div class="row-lbl-cell">
+      <div class="lbl-bar" style="background:${row.lcolor}"></div>
+      <span class="lbl-text" style="color:${row.lcolor}">${row.label}</span>
+    </div>`;
+    tr.appendChild(tdL);
+
+    for (let d=1;d<=dim;d++) {
+      const ds    = `${curYear}-${pad(curMonth)}-${pad(d)}`;
+      const date  = new Date(curYear, curMonth-1, d);
+      const dow   = date.getDay();
+      const isT   = ds === tod;
+      const isW   = dow===0||dow===6;
+      const entry = schedData[ds] || {};
+      
+      // Check if there are approved leaves for this date (supports dates[] and legacy range)
+      const hasApprovedLeaves = leaveData.some(l => l.status === 'approved' && isOnLeaveDate(l, ds));
+      
+      // Only block editing for vacation/sick rows if there are approved leaves
+      // Other rows (TDPK, W@H, On Call, Events) should remain editable
+      const shouldBlockEdit = hasApprovedLeaves && (row.slot === 'vacation' || row.slot === 'sick' || row.slot === 'business_leave');
+
+      const isH2 = holidays.has(ds) && !isT;
+      const td = document.createElement('td');
+      td.className = 'cal-cell' +
+        (isT  ? ' col-today'   : '') +
+        (isW  ? ' col-weekend' : '') +
+        (isH2 ? ' col-holiday' : '') +
+        (row.type==='oncall' ? ' cell-oc' : '') +
+        (row.type==='events' ? ' cell-ev' : '');
+      td.innerHTML = cellHtml(row, entry);
+      
+      if (!shouldBlockEdit) {
+        td.onclick   = () => openCellModal(row, ds);
+        td.style.cursor = 'pointer';
+      } else {
+        td.style.opacity = '0.6';
+        td.style.cursor = 'not-allowed';
+        td.title = 'มีการลาที่อนุมัติในวันนี้';
+      }
+      tr.appendChild(td);
+    }
+    body.appendChild(tr);
+  });
+
+  renderStats();
+  renderChips();
+}
+
+function cellHtml(row, entry) {
+  if (row.type === 'members') {
+    const raw = entry[row.slot] || [];
+    if (!raw.length) return '';
+    // entry may be a plain uid string or {user_id, days, period} object (half-day)
+    return `<div class="chips">${raw.map(e => {
+      const uid = typeof e === 'object' ? e.user_id : e;
+      return chipHtml(uid);
+    }).join('')}</div>`;
+  }
+  if (row.type === 'oncall') {
+    const v = entry[row.slot] || '';
+    return v ? `<span class="oc-val">${esc(uname(v))}</span>` : '';
+  }
+  if (row.type === 'events') {
+    const arr = entry[row.slot] || [];
+    return arr.map(e => `<div class="ev-txt">${esc(e)}</div>`).join('');
+  }
+  return '';
+}
+
+/* ── Stats ── */
+function renderStats() {
+  const c = {};
+  // Initialize all users with 0 counts
+  usersData.forEach(u => {
+    c[u.id] = {tdpk:0, wah1:0, wah2:0, vac:0, sick:0, biz:0};
+  });
+  // Count from schedule data
+  Object.values(schedData).forEach(e => {
+    [['tdpk',e.shift1_tdpk],['wah1',e.shift1_wah],['wah2',e.shift2_wah],
+     ['vac',e.vacation],['sick',e.sick],['biz',e.business_leave]].forEach(([k,ids]) => {
+      (ids||[]).forEach(raw => {
+        const id = typeof raw === 'object' ? raw.user_id : raw;
+        if (c[id]) c[id][k]++;
+      });
+    });
+  });
+  const uids = Object.keys(c).sort((a,b)=>{
+    const ta=c[a].tdpk+c[a].wah1+c[a].wah2;
+    const tb=c[b].tdpk+c[b].wah1+c[b].wah2;
+    return tb-ta;
+  });
+  const tbody = document.getElementById('stats-body');
+  if (!uids.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text-muted);font-size:12px">ไม่มีสมาชิก</td></tr>';
+    return;
+  }
+  tbody.innerHTML = uids.map(uid => {
+    const r = c[uid];
+    const tot = r.tdpk+r.wah1+r.wah2;
+    const [fc] = ucolor(uid);
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div style="width:9px;height:9px;border-radius:50%;background:${fc};flex-shrink:0"></div>
+        <span style="font-weight:700;font-size:12px">${esc(uname(uid))}</span>
+      </div></td>
+      <td class="c"><span class="sbadge" style="background:rgba(242,100,25,.12);color:var(--orange)">${r.tdpk}</span></td>
+      <td class="c"><span class="sbadge" style="background:rgba(59,130,246,.12);color:#3b82f6">${r.wah1}</span></td>
+      <td class="c"><span class="sbadge" style="background:rgba(139,92,246,.12);color:#8b5cf6">${r.wah2}</span></td>
+      <td class="c"><span style="font-weight:800;font-size:13px;color:var(--text)">${tot}</span></td>
+      <td class="c"><span style="font-weight:700;color:var(--orange)">${quotaData[uid] || 0}</span> / <span style="font-weight:700;color:#999">${r.vac}</span></td>
+      <td class="c"><span class="sbadge" style="background:rgba(34,197,94,.12);color:#22c55e">${r.vac}</span></td>
+      <td class="c"><span class="sbadge" style="background:rgba(239,68,68,.12);color:#ef4444">${r.sick}</span></td>
+      <td class="c"><span class="sbadge" style="background:rgba(124,58,237,.12);color:#7c3aed">${r.biz}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderChips() {
+  const dim = new Date(curYear, curMonth, 0).getDate();
+  const tod = today();
+  const te  = schedData[tod] || {};
+  const onLeaveToday = (te.vacation||[]).length + (te.sick||[]).length + (te.business_leave||[]).length;
+  document.getElementById('mnav-chips').innerHTML = `
+    <div class="mnav-chip"><i data-icon="calendar"></i> <strong>${dim}</strong> วัน</div>
+    ${onLeaveToday ? `<div class="mnav-chip">🏖 <strong>${onLeaveToday}</strong> คนลาวันนี้</div>` : ''}
+    <div class="mnav-chip"><i data-icon="clock"></i> S1 <strong>09:00–21:00</strong></div>
+    <div class="mnav-chip"><i data-icon="moon"></i> S2 <strong>21:00–09:00</strong></div>
+  `;
+}
+
+/* ═══════════════════════════════════════════════════
+   Month nav / data loading
+═══════════════════════════════════════════════════ */
+function changeMonth(d) {
+  const prevYear = curYear;
+  curMonth += d;
+  if (curMonth>12){curMonth=1;curYear++;}
+  if (curMonth<1) {curMonth=12;curYear--;}
+  // If year changed, reload full year data
+  if (curYear !== prevYear) {
+    _fullYearLoadedFor = null;
+    fullYearScheduleData = {};
+    loadSchedule().then(() => loadFullYearSchedule());
+  } else {
+    loadSchedule();
+  }
+}
+function goToday() {
+  const n = new Date();
+  curYear=n.getFullYear(); curMonth=n.getMonth()+1;
+  loadSchedule();
+}
+
+async function loadSchedule() {
+  const r = await API.schedule.get(curYear, curMonth);
+  schedData = r?.ok ? (r.data.data||{}) : {};
+  // Merge into year cache
+  Object.assign(fullYearScheduleData, schedData);
+  renderCalendar();
+}
+
+async function loadFullYearSchedule() {
+  if (_fullYearLoadedFor === curYear) return; // already loaded
+  _fullYearLoadedFor = curYear;
+  fullYearScheduleData = {};
+  const results = await Promise.all(
+    Array.from({length: 12}, (_, i) => API.schedule.get(curYear, i + 1))
+  );
+  results.forEach(r => {
+    if (r?.ok) Object.assign(fullYearScheduleData, r.data.data || {});
+  });
+  renderQuotas(); // refresh once full year is loaded
+}
+async function loadUsers() {
+  const r = await API.users.list();
+  usersData = (r?.ok ? (r.data.data||[]) : []).filter(u => u.schedule_include !== false);
+  buildColorMap(usersData);
+}
+async function loadLeaves() {
+  const r = await API.leave.list({ admin: true });
+  leaveData = r?.ok ? (r.data.data||[]) : [];
+  const pending = leaveData.filter(l => l.status === 'pending').length;
+  const btn = document.getElementById('leave-btn');
+  if (btn) btn.innerHTML = pending > 0 ? `<i data-icon="clipboard"></i> คำขอลา (${pending})` : '<i data-icon="clipboard"></i> คำขอลา';
+}
+async function loadUserColors() {
+  const r = await API.userColors.get();
+  userColorsData = r?.ok ? (r.data.data || {}) : {};
+}
+async function loadAll() {
+  await Promise.all([loadUsers(), loadUserColors(), loadHolidays()]);
+  await Promise.all([loadSchedule(), loadLeaves(), loadQuotas()]);
+  renderStats();
+  renderQuotas();
+  renderColorSettings();
+  // Load full year in background for accurate yearly quota
+  loadFullYearSchedule();
+}
+
+/* ═══════════════════════════════════════════════════
+   Vacation Quota Management
+═══════════════════════════════════════════════════ */
+async function loadQuotas() {
+  const r = await API.vacation.getQuotas();
+  quotaData = r?.ok ? (r.data.data || {}) : {};
+}
+
+function renderQuotas() {
+  const tbody = document.getElementById('quota-body');
+  const rows = usersData.map(u => {
+    const quota = parseFloat(quotaData[u.id]) || 0;
+    // Count approved vacation leave requests and track which dates they cover
+    const yearStr = String(curYear);
+    const covDates = new Set();
+    const usedFromLeaves = (leaveData || []).reduce((sum, leave) => {
+      if (leave.user_id !== u.id || leave.status !== 'approved' || leave.type !== 'vacation') return sum;
+      let yearDates = [];
+      if (leave.dates?.length) {
+        yearDates = leave.dates.filter(d => d.startsWith(yearStr));
+      } else if (leave.start_date && leave.end_date) {
+        for (let d = new Date(leave.start_date); d <= new Date(leave.end_date); d.setDate(d.getDate()+1)) {
+          const ds = d.toISOString().slice(0,10);
+          if (ds.startsWith(yearStr)) yearDates.push(ds);
+        }
+      }
+      yearDates.forEach(d => covDates.add(d));
+      if (!yearDates.length) return sum;
+      return sum + (leave.duration === 'half' ? yearDates.length * 0.5 : yearDates.length);
+    }, 0);
+    // Count schedule vacation entries (full year) not already covered by leave requests
+    const usedFromSchedule = Object.entries(fullYearScheduleData).reduce((sum, [date, day]) => {
+      if (!date.startsWith(yearStr) || covDates.has(date)) return sum;
+      return sum + ((day.vacation || []).reduce((s, v) => {
+        if (typeof v === 'object' && v.user_id === u.id) return s + (v.days || 1);
+        if (v === u.id) return s + 1;
+        return s;
+      }, 0));
+    }, 0);
+    const used = usedFromLeaves + usedFromSchedule;
+    const remaining = quota - used;
+    const [fc] = ucolor(u.id);
+    const quotaDisplay = quota % 1 === 0 ? quota : quota.toFixed(1);
+    const usedDisplay = used % 1 === 0 ? used : used.toFixed(1);
+    const remainingDisplay = remaining % 1 === 0 ? remaining : remaining.toFixed(1);
+    return `<tr>
+      <td><div class="quota-label">
+        <div class="qlb-dot" style="background:${fc}"></div>
+        <span>${esc(u.name)}</span>
+      </div></td>
+      <td class="c"><input class="quota-input" type="number" min="0" max="30" step="0.5" value="${quota}" data-uid="${u.id}" onchange="markQuotaDirty()"></td>
+      <td class="c"><span style="font-weight:700;color:var(--text)">${usedDisplay}</span> วัน</td>
+      <td class="c"><span style="font-weight:700;color:${remaining < 0 ? '#ef4444' : '#22c55e'}">${Math.max(0, remainingDisplay)}</span> วัน</td>
+    </tr>`;
+  }).join('');
+  
+  tbody.innerHTML = rows || '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">ไม่มีสมาชิก</td></tr>';
+}
+
+function markQuotaDirty() {
+  document.getElementById('quota-save-btn').style.display = '';
+}
+
+async function saveAllQuotas() {
+  const inputs = document.querySelectorAll('.quota-input');
+  const data = {};
+  inputs.forEach(inp => {
+    const uid = inp.dataset.uid;
+    const val = parseFloat(inp.value) || 0;
+    data[uid] = val;
+  });
+  
+  const btn = document.getElementById('quota-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึก...';
+  
+  const r = await API.vacation.setQuotas(data);
+  btn.disabled = false;
+  btn.innerHTML = '<i data-icon="save"></i> บันทึก';
+  
+  if (!r?.ok) { Toast.error(r?.data?.message || 'บันทึกไม่ได้'); return; }
+  
+  quotaData = data;
+  Toast.success('บันทึกแล้ว <i data-icon="check"></i>');
+  btn.style.display = 'none';
+  renderStats();
+  renderQuotas();
+}
+
+
+/* ═══════════════════════════════════════════════════
+   User Color Settings
+═══════════════════════════════════════════════════ */
+function renderColorSettings() {
+  const tbody = document.getElementById('color-body');
+  if (!usersData.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">ไม่มีสมาชิก</td></tr>';
+    return;
+  }
+  tbody.innerHTML = usersData.map(u => {
+    const [fc, bg] = ucolor(u.id);
+    const customColor = userColorsData[u.id] || fc;
+    return `<tr>
+      <td><div class="quota-label">
+        <div class="qlb-dot" style="background:${fc}"></div>
+        <span>${esc(u.name)}${u.nickname ? ` <span style="color:var(--text-muted);font-size:10px">(${esc(u.nickname)})</span>` : ''}</span>
+      </div></td>
+      <td class="c">
+        <div class="chip" id="color-preview-${u.id}" style="color:#1c1c1e;background:${hexToRgba(customColor,.15)};border-color:${customColor}40;display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;border:1px solid">
+          <div style="width:7px;height:7px;border-radius:50%;background:${customColor}"></div>
+          ${esc(u.nickname || u.name.split(' ')[0] || u.name)}
+        </div>
+      </td>
+      <td class="c">
+        <input type="color" value="${customColor}" data-uid="${u.id}"
+          style="width:40px;height:32px;border:1.5px solid #e8e8e8;border-radius:8px;cursor:pointer;padding:2px"
+          oninput="previewColor('${u.id}', this.value)" onchange="markColorDirty()">
+      </td>
+      <td class="c">
+        <button class="btn btn-ghost btn-sm" onclick="resetColor('${u.id}')" style="font-size:10px;color:#999">↺ ค่าเริ่ม</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function previewColor(uid, color) {
+  const preview = document.getElementById(`color-preview-${uid}`);
+  if (!preview) return;
+  preview.style.background = hexToRgba(color, .15);
+  preview.style.borderColor = color + '40';
+  preview.querySelector('div').style.background = color;
+}
+
+function markColorDirty() {
+  document.getElementById('color-save-btn').style.display = '';
+}
+
+function resetColor(uid) {
+  // Remove custom color, revert to auto-assigned
+  const [fc] = _cm[uid] || COLORS[0];
+  const input = document.querySelector(`input[data-uid="${uid}"]`);
+  if (input) { input.value = fc; previewColor(uid, fc); }
+  markColorDirty();
+}
+
+async function saveAllColors() {
+  const inputs = document.querySelectorAll('#color-body input[type="color"]');
+  const data = {};
+  inputs.forEach(inp => {
+    const uid = inp.dataset.uid;
+    const autoColor = (_cm[uid] || COLORS[0])[0];
+    // Only save if different from auto-assigned (or always save custom)
+    data[uid] = inp.value;
+  });
+
+  const btn = document.getElementById('color-save-btn');
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+
+  const r = await API.userColors.set(data);
+  btn.disabled = false; btn.innerHTML = '<i data-icon="save"></i> บันทึกสี';
+
+  if (!r?.ok) { Toast.error(r?.data?.message || 'บันทึกไม่ได้'); return; }
+
+  userColorsData = data;
+  Toast.success('บันทึกสีแล้ว <i data-icon="check"></i>');
+  btn.style.display = 'none';
+  renderCalendar();
+  renderColorSettings();
+}
+
+async function clearDay(date, evt) {
+  evt.stopPropagation();
+  if (!confirm(`ล้างข้อมูลทั้งหมดของ ${fmtDate(date)}?`)) return;
+  const r = await API.schedule.clearDay(date);
+  if (!r?.ok) { Toast.error(r?.data?.message||'ล้างไม่ได้'); return; }
+  Toast.success('ล้างเรียบร้อยแล้ว');
+  delete schedData[date];
+  renderCalendar();
+}
+
+/* ═══════════════════════════════════════════════════
+   Cell modal
+═══════════════════════════════════════════════════ */
+let _cRow=null, _cDate='', _evList=[];
+
+const SLOT_LABEL = {
+  shift1_tdpk:'Shift#1 · TDPK', shift1_wah:'Shift#1 · W@H', shift1_oncall:'Shift#1 · On Call',
+  shift2_wah:'Shift#2 · W@H',   shift2_oncall:'Shift#2 · On Call',
+  vacation:'Vacation',           sick:'Sick Leave', business_leave:'Business Leave', events:'Events',
+};
+
+function openCellModal(row, ds) {
+  _cRow=row; _cDate=ds;
+  const entry = schedData[ds]||{};
+  const [,dm,dd] = ds.split('-');
+  const dow = new Date(ds+'T00:00:00').getDay();
+
+  document.getElementById('cm-title').textContent = SLOT_LABEL[row.slot]||row.label;
+  document.getElementById('cm-sub').textContent   = `${DAY_TH[dow]} ที่ ${parseInt(dd)} ${MONTH_TH[parseInt(dm)]} ${parseInt(ds.split('-')[0])+543}`;
+
+  const body = document.getElementById('cm-body');
+  body.innerHTML = '';
+
+  if (row.type==='members')     body.appendChild(buildChecklist(row, ds, entry[row.slot]||[]));
+  else if (row.type==='oncall') body.appendChild(buildOncall(entry[row.slot]||''));
+  else if (row.type==='events') { _evList=[...(entry[row.slot]||[])]; body.appendChild(buildEvents()); }
+
+  document.getElementById('cell-modal').classList.add('open');
+}
+function closeCellModal() {
+  document.getElementById('cell-modal').classList.remove('open');
+  _cRow=null; _cDate='';
+}
+
+/* Checklist */
+function buildChecklist(row, ds, selected) {
+  const onLeave = new Set(
+    leaveData.filter(l=>l.status==='approved'&&isOnLeaveDate(l,ds)).map(l=>l.user_id)
+  );
+  // Normalize: selected may contain plain uid strings or {user_id,...} objects
+  const selectedIds = selected.map(e => typeof e === 'object' ? e.user_id : e);
+
+  const wrap = document.createElement('div');
+
+  const warn = document.createElement('div');
+  warn.className='conflict-box'; warn.id='conflict-warn';
+  warn.innerHTML = '<span><i data-icon="alert-triangle"></i></span><span id="conflict-msg"></span>';
+  wrap.appendChild(warn);
+
+  const list = document.createElement('div');
+  list.className='uclist';
+  [...usersData].sort((a,b) => a.name.localeCompare(b.name,'th')).forEach(u => {
+    const [fc,bg] = ucolor(u.id);
+    const isChk   = selectedIds.includes(u.id);
+    const isOL    = onLeave.has(u.id);
+    const isLeaveSlot = ['vacation', 'sick', 'business_leave'].includes(row.slot);
+    const shouldDisable = isOL && !isLeaveSlot;
+    const el      = document.createElement('div');
+    el.className  = 'ucrow'+(isChk?' sel':'')+(shouldDisable?' disabled':'');
+    el.style.cssText = `--uc:${fc};--ub:${bg}`;
+    el.dataset.uid = u.id;
+    el.innerHTML = `
+      <div class="ucrow-check">${isChk?'✓':''}</div>
+      <div class="ucrow-dot" style="background:${fc}"></div>
+      <div class="ucrow-name">${esc(u.name)}${u.nickname ? `<span style="color:var(--text-muted);font-size:10px;margin-left:4px">(${esc(u.nickname)})</span>` : ''}</div>
+      ${isOL?`<span class="leave-pill">🏖 ลา</span>`:''}
+    `;
+    if (!shouldDisable) el.onclick = () => {
+      el.classList.toggle('sel');
+      el.querySelector('.ucrow-check').innerHTML = el.classList.contains('sel')?'<i data-icon="check"></i>':'';
+      updateConflict(ds);
+    };
+    list.appendChild(el);
+  });
+  if (!usersData.length) list.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px">ไม่มีสมาชิก</div>';
+  wrap.appendChild(list);
+  setTimeout(()=>updateConflict(ds),0);
+  return wrap;
+}
+
+function updateConflict(ds) {
+  const warn = document.getElementById('conflict-warn');
+  const msg  = document.getElementById('conflict-msg');
+  if (!warn) return;
+  const onLeave = new Set(leaveData.filter(l=>l.status==='approved'&&l.start_date<=ds&&l.end_date>=ds).map(l=>l.user_id));
+  const badOnes = [...document.querySelectorAll('#cm-body .ucrow.sel')].map(e=>e.dataset.uid).filter(id=>onLeave.has(id));
+  if (badOnes.length) {
+    msg.textContent = `${badOnes.map(uname).join(', ')} มีการลาที่อนุมัติในวันนี้`;
+    warn.classList.add('show');
+  } else warn.classList.remove('show');
+}
+
+/* Oncall */
+function buildOncall(val) {
+  const wrap = document.createElement('div');
+  
+  const lbl = document.createElement('div');
+  lbl.className = 'f-lbl';
+  lbl.textContent = 'On-Call';
+  wrap.appendChild(lbl);
+  
+  const list = document.createElement('div');
+  list.className = 'uclist';
+  list.style.maxHeight = '280px';
+  list.style.overflowY = 'auto';
+  
+  // Add "ไม่มี" option
+  const noneEl = document.createElement('div');
+  noneEl.className = 'ucrow' + (val === '' ? ' sel' : '');
+  noneEl.innerHTML = `
+    <div class="ucrow-check" style="position:relative;width:18px;height:18px;border:2px solid #e8e8e8;border-radius:50%">
+      ${val === '' ? '<div style="position:absolute;width:8px;height:8px;background:#1c1c1e;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%)"></div>' : ''}
+    </div>
+    <div class="ucrow-name" style="flex:1">ไม่มี On-Call</div>
+  `;
+  noneEl.style.cursor = 'pointer';
+  noneEl.onclick = () => selectOncallPerson('');
+  list.appendChild(noneEl);
+  
+  // Add users
+  [...usersData].sort((a,b) => a.name.localeCompare(b.name,'th')).forEach(u => {
+    const [fc, bg] = ucolor(u.id);
+    const isSelected = val === u.id;
+    const el = document.createElement('div');
+    el.className = 'ucrow' + (isSelected ? ' sel' : '');
+    el.style.cssText = `--uc:${fc};--ub:${bg}`;
+    el.dataset.uid = u.id;
+    el.innerHTML = `
+      <div class="ucrow-check" style="position:relative;width:18px;height:18px;border:2px solid #e8e8e8;border-radius:50%;background:${isSelected ? fc : 'transparent'}">
+        ${isSelected ? '<div style="position:absolute;width:6px;height:6px;background:white;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%)"></div>' : ''}
+      </div>
+      <div class="ucrow-dot" style="background:${fc}"></div>
+      <div class="ucrow-name" style="flex:1">${esc(u.name)}${u.nickname ? `<span style="color:var(--text-muted);font-size:10px;margin-left:4px">(${esc(u.nickname)})</span>` : ''}</div>
+    `;
+    el.style.cursor = 'pointer';
+    el.onclick = () => selectOncallPerson(u.id);
+    list.appendChild(el);
+  });
+  
+  if (!usersData.length) list.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px">ไม่มีสมาชิก</div>';
+  wrap.appendChild(list);
+  return wrap;
+}
+
+function selectOncallPerson(uid) {
+  const rows = document.querySelectorAll('#cm-body .ucrow');
+  rows.forEach(r => {
+    const isMatch = (uid === '' && !r.dataset.uid) || (uid !== '' && r.dataset.uid === uid);
+    if (isMatch) {
+      r.classList.add('sel');
+      const check = r.querySelector('.ucrow-check');
+      if (uid === '') {
+        check.innerHTML = '<div style="position:absolute;width:8px;height:8px;background:#1c1c1e;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%)"></div>';
+      } else {
+        const [fc] = ucolor(uid);
+        check.style.background = fc;
+        check.innerHTML = '<div style="position:absolute;width:6px;height:6px;background:white;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%)"></div>';
+      }
+    } else {
+      r.classList.remove('sel');
+      r.querySelector('.ucrow-check').innerHTML = '';
+      r.querySelector('.ucrow-check').style.background = 'transparent';
+    }
+  });
+}
+
+/* Events */
+function buildEvents() {
+  const d = document.createElement('div');
+  d.id = 'ev-editor';
+  refreshEvents(d);
+  return d;
+}
+function refreshEvents(container) {
+  if (!container) container=document.getElementById('ev-editor');
+  if (!container) return;
+  container.innerHTML = `
+    <div class="f-lbl">Events ประจำวัน</div>
+    <div class="etags">
+      ${_evList.map((e,i)=>`<div class="etag"><span>${esc(e)}</span><span class="etag-x" onclick="rmEv(${i})">✕</span></div>`).join('')}
+      ${!_evList.length?'<span style="font-size:11px;color:var(--text-muted);opacity:.6">ยังไม่มี event</span>':''}
+    </div>
+    <div class="eadd-row">
+      <input class="f-in" id="ev-in" placeholder="พิมพ์ event แล้วกด Enter หรือ +"
+        style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addEv();}">
+      <button class="btn btn-ghost btn-sm" onclick="addEv()" style="font-size:11px">+ เพิ่ม</button>
+    </div>
+  `;
+}
+function addEv() { const v=document.getElementById('ev-in').value.trim(); if(!v)return; _evList.push(v); document.getElementById('ev-in').value=''; refreshEvents(); }
+function rmEv(i) { _evList.splice(i,1); refreshEvents(); }
+
+/* Save */
+async function saveCellModal() {
+  if (!_cRow||!_cDate) return;
+  const btn=document.getElementById('cm-save');
+  btn.disabled=true; btn.textContent='กำลังบันทึก...';
+  let val;
+  if (_cRow.type==='members') val=[...(document.querySelectorAll('#cm-body .ucrow.sel'))].map(e=>e.dataset.uid);
+  else if (_cRow.type==='oncall') {
+    const selected = document.querySelector('#cm-body .ucrow.sel');
+    val = selected?.dataset?.uid || '';
+  }
+  else val=_evList;
+
+  const r = await API.schedule.setSlot({date:_cDate, slot:_cRow.slot, value:val});
+  btn.disabled=false; btn.innerHTML='<i data-icon="save"></i> บันทึก';
+  if (!r?.ok) { Toast.error(r?.data?.message||'บันทึกไม่ได้'); return; }
+
+  if (!schedData[_cDate]) schedData[_cDate]={};
+  const empty = val===''||(Array.isArray(val)&&!val.length);
+  if (empty) {
+    delete schedData[_cDate][_cRow.slot];
+    if (!Object.keys(schedData[_cDate]).length) delete schedData[_cDate];
+  } else schedData[_cDate][_cRow.slot]=val;
+
+  // Keep fullYearScheduleData in sync
+  if (empty) {
+    if (fullYearScheduleData[_cDate]) {
+      delete fullYearScheduleData[_cDate][_cRow.slot];
+      if (!Object.keys(fullYearScheduleData[_cDate]).length) delete fullYearScheduleData[_cDate];
+    }
+  } else {
+    if (!fullYearScheduleData[_cDate]) fullYearScheduleData[_cDate] = {};
+    fullYearScheduleData[_cDate][_cRow.slot] = val;
+  }
+
+  Toast.success('บันทึกแล้ว <i data-icon="check"></i>');
+  closeCellModal();
+  renderCalendar();
+  renderQuotas();
+}
+
+document.getElementById('cell-modal').addEventListener('click',e=>{ if(e.target===document.getElementById('cell-modal'))closeCellModal(); });
+document.getElementById('hol-modal').addEventListener('click',e=>{ if(e.target===document.getElementById('hol-modal'))closeHolModal(); });
+
+/* ═══════════════════════════════════════════════════
+   Holiday Management
+═══════════════════════════════════════════════════ */
+let holidayData = [];
+let _holEditId  = null;
+
+async function loadHolidays() {
+  const r = await API.holidays.list();
+  holidayData = r?.ok ? (r.data.data || []) : [];
+  renderHolidays();
+  renderCalendar();
+}
+
+function renderHolidays() {
+  const year = parseInt(document.getElementById('hol-year-filter')?.value || curYear);
+  const filtered = holidayData.filter(h => h.date && h.date.startsWith(`${year}-`));
+  const tbody = document.getElementById('holiday-body');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">ไม่มีวันหยุดในปีนี้</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(h => `
+    <tr>
+      <td style="padding:10px 12px;font-size:12px;font-weight:600;color:#92400e;white-space:nowrap">
+        <span style="background:#fef3c7;padding:3px 8px;border-radius:6px;border:1px solid #fcd34d">${fmtDate(h.date)}</span>
+      </td>
+      <td style="padding:10px 12px;font-size:13px;color:var(--text)">${esc(h.name)}</td>
+      <td style="padding:10px 12px;text-align:center;white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" data-hid="${esc(h.id)}" data-hdate="${esc(h.date)}" data-hname="${esc(h.name).replace(/"/g,'&quot;')}" onclick="openHolModalFromBtn(this)" style="font-size:10px;margin-right:4px">✎ แก้ไข</button>
+        <button class="btn btn-sm" data-hid="${esc(h.id)}" data-hname="${esc(h.name).replace(/"/g,'&quot;')}" onclick="deleteHolFromBtn(this)" style="font-size:10px;background:#fef2f2;color:#ef4444;border-color:#fecaca"><i data-icon="x"></i></button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openHolModalFromBtn(btn) { openHolModal(btn.dataset.hid, btn.dataset.hdate, btn.dataset.hname); }
+function deleteHolFromBtn(btn)   { deleteHoliday(btn.dataset.hid, btn.dataset.hname); }
+
+function openHolModal(id, date, name) {
+  _holEditId = id || null;
+  document.getElementById('hol-modal-title').textContent = id ? 'แก้ไขวันหยุด' : 'เพิ่มวันหยุด';
+  document.getElementById('hol-date').value = date || '';
+  document.getElementById('hol-name').value = name || '';
+  document.getElementById('hol-modal').classList.add('open');
+  setTimeout(() => document.getElementById('hol-name').focus(), 80);
+}
+function closeHolModal() {
+  document.getElementById('hol-modal').classList.remove('open');
+  _holEditId = null;
+}
+
+async function saveHoliday() {
+  const date = document.getElementById('hol-date').value.trim();
+  const name = document.getElementById('hol-name').value.trim();
+  if (!date || !name) { Toast.error('กรุณากรอกวันที่และชื่อวันหยุด'); return; }
+
+  const btn = document.getElementById('hol-save-btn');
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+
+  let r;
+  if (_holEditId) {
+    r = await API.holidays.update(_holEditId, { date, name });
+  } else {
+    r = await API.holidays.add({ date, name });
+  }
+
+  btn.disabled = false; btn.innerHTML = '<i data-icon="save"></i> บันทึก';
+  if (!r?.ok) { Toast.error(r?.data?.message || 'บันทึกไม่ได้'); return; }
+  Toast.success(r.data?.message || 'บันทึกแล้ว <i data-icon="check"></i>');
+  closeHolModal();
+  await loadHolidays();
+}
+
+async function deleteHoliday(id, name) {
+  if (!confirm(`ลบวันหยุด "${name}" ?\nการดำเนินการนี้ไม่สามารถย้อนกลับได้`)) return;
+  const r = await API.holidays.delete(id);
+  if (!r?.ok) { Toast.error(r?.data?.message || 'ลบไม่ได้'); return; }
+  Toast.success('ลบวันหยุดแล้ว');
+  await loadHolidays();
+}
+
+loadAll();
+
+// ── Holiday tooltip ──────────────────────────────────────────────────────────
+(function () {
+  const tip = document.createElement('div');
+  tip.style.cssText = 'position:fixed;z-index:99999;background:#1c1c1e;color:#fff;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:500;line-height:1.5;max-width:260px;pointer-events:none;box-shadow:0 8px 28px rgba(0,0,0,.28);opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;white-space:pre-wrap;word-break:break-word;';
+  document.body.appendChild(tip);
+
+  let hideTimer;
+
+  function show(text, e) {
+    clearTimeout(hideTimer);
+    tip.textContent = text;
+    tip.style.opacity = '1'; tip.style.transform = 'translateY(0)';
+    move(e);
+  }
+  function move(e) {
+    const pad = 12, tw = tip.offsetWidth, th = tip.offsetHeight;
+    let x = e.clientX + pad, y = e.clientY + pad;
+    if (x + tw > window.innerWidth  - pad) x = e.clientX - tw - pad;
+    if (y + th > window.innerHeight - pad) y = e.clientY - th - pad;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  function hide() {
+    hideTimer = setTimeout(() => { tip.style.opacity = '0'; tip.style.transform = 'translateY(4px)'; }, 80);
+  }
+
+  document.getElementById('cal-table').addEventListener('mouseover', e => {
+    const hd = e.target.closest('.th-day.is-holiday');
+    if (hd?.dataset.holiday) show(hd.dataset.holiday, e);
+  });
+  document.getElementById('cal-table').addEventListener('mousemove', e => {
+    if (parseFloat(tip.style.opacity) > 0) move(e);
+  });
+  document.getElementById('cal-table').addEventListener('mouseout', e => {
+    if (e.target.closest('.th-day.is-holiday')) hide();
+  });
+})();
+</script>
+</body>
+</html>

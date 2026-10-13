@@ -1,0 +1,645 @@
+{
+  "n": 16,
+  "title": "7-Eleven · Health · ALB & P95/P99",
+  "refresh": "1m",
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน request ทั้งหมดที่เข้ามาที่ entry point แยก POS Counter (seven-custom-in-gateway) กับ POS Online (B2B Gateway)\n\nดูยังไง: ถ้า count drop กะทันหันหมายความว่า 7-11 หยุดส่ง request อาจเป็น network หรือ DNS\n\nเป็น first check — ถ้า traffic ไม่เข้ามาเลย ปัญหาอยู่ภายนอก TMN",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 453
+      },
+      "id": 9039,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(rate(http_server_requests_seconds_count{app_name=~\"seven-custom-in-gateway|acm-b2b-gateway\"}[5m]))",
+          "legendFormat": "POS Counter (seven-custom-in-gateway)",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(B2B_IN_GATEWAY_transaction_total{}[1m]))",
+          "legendFormat": "POS Online (B2B In Gateway)",
+          "refId": "B"
+        }
+      ],
+      "title": "ALB — Inbound Request Count (all HTTP)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "req/min",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "จำนวน HTTP 5xx error ที่เกิดใน application layer\n\nดูยังไง: 500 = application error, 502 = bad gateway, 503 = service unavailable (pod ล่ม), 504 = upstream timeout\n\nถ้า 503 spike ให้ตรวจ pod status ใน EKS ก่อน",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 453
+      },
+      "id": 9040,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(http_server_requests_seconds_count{app_name=\"seven-custom-in-gateway\",status=~\"5..\"}[1m])) by (status)",
+          "legendFormat": "{{status}} seven-custom-in-gateway",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(increase(http_server_requests_seconds_count{app_name=\"retail-seven-composite\",status=~\"5..\"}[1m])) by (status)",
+          "legendFormat": "{{status}} retail-seven-composite",
+          "refId": "B"
+        }
+      ],
+      "title": "ALB — 5xx Error Count",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "errors/min",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "Average processing time ของ Gateway แยกตาม operation\n\nดูยังไง: ค่าปกติ ~300-600ms ถ้าเกิน 1,000ms ให้ตรวจ SoF upstream\n\nดู P99 ใน Section C เพิ่มเติมเพราะ avg อาจ hide tail latency",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 461
+      },
+      "id": 9041,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_sum{service=\"CHARGE\"}[1m])) / sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_count{service=\"CHARGE\"}[1m]))",
+          "legendFormat": "CHARGE avg (s)",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_sum{service=\"CANCEL\"}[1m])) / sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_count{service=\"CANCEL\"}[1m]))",
+          "legendFormat": "CANCEL avg (s)",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_sum{service=\"REFUNDS\"}[1m])) / sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_count{service=\"REFUNDS\"}[1m]))",
+          "legendFormat": "REFUNDS avg (s)",
+          "refId": "C"
+        }
+      ],
+      "title": "ALB — Response Time (avg) — seven-custom-in-gateway",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "seconds",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "ประมาณ concurrent request ที่กำลัง active อยู่ (คำนวณจาก delta)\n\nดูยังไง: ถ้าสูงผิดปกติอาจมี connection leak หรือ traffic spike\n\nหมายเหตุ: เป็นค่าประมาณ ไม่ใช่ exact connection count จาก ALB โดยตรง",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 8,
+            "lineWidth": 2
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 461
+      },
+      "id": 9042,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(http_server_requests_seconds_count{app_name=\"seven-custom-in-gateway\"}) - sum(http_server_requests_seconds_count{app_name=\"seven-custom-in-gateway\"} offset 1m)",
+          "legendFormat": "Active delta (proxy)",
+          "refId": "A"
+        }
+      ],
+      "title": "ALB — Active Connections / Concurrent Requests",
+      "type": "timeseries"
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "Tail latency ของ Gateway สำหรับ CHARGE operation\n\nดูยังไง: P99 = 99% ของ request ใช้เวลาน้อยกว่าค่านี้ ถ้า P99 ขึ้นไปใกล้ 12s จะเริ่มมี session timeout ฝั่ง 7-11\n\nสำคัญ: avg อาจดูปกติแต่ P99 สูง = มีบาง request ที่ช้ามากทำให้ลูกค้า timeout",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 503
+      },
+      "id": 9014,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "histogram_quantile(0.95, sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_bucket{service=\"CHARGE\"}[5m])) by (le))",
+          "legendFormat": "P95",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_bucket{service=\"CHARGE\"}[5m])) by (le))",
+          "legendFormat": "P99",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_sum{service=\"CHARGE\"}[5m])) / sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_count{service=\"CHARGE\"}[5m]))",
+          "legendFormat": "avg",
+          "refId": "C"
+        }
+      ],
+      "title": "Gateway — P95/P99 Processing Time  (CHARGE)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "seconds",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "Tail latency ของ retail-seven-composite แยกตาม SoF type\n\nดูยังไง: SoF ที่ P99 สูงกว่าตัวอื่นชัดเจนคือตัวที่ทำให้ระบบช้า ให้ไป drill down ที่ SoF section นั้น\n\nเกี่ยวกับ: Case #1 — ใช้ panel นี้ระบุว่า SoF ไหนเป็นต้นเหตุ",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 503
+      },
+      "id": 9015,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "histogram_quantile(0.95, sum(rate(retail_seven_composite_requests_seconds_bucket{status=\"200\"}[5m])) by (le, sof_code))",
+          "legendFormat": "P95 {{sof_code}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(retail_seven_composite_requests_seconds_bucket{status=\"200\"}[5m])) by (le, sof_code))",
+          "legendFormat": "P99 {{sof_code}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Seven-Composite — P95/P99 per SoF Type",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "seconds",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "Tail latency ของ Omise/OPN Gateway แยก KTC กับ BAY (Krungsri Cybersource)\n\nดูยังไง: ใช้ quantile_over_time แทน histogram เพราะ metric เป็น gauge\n\nถ้า KTC P99 สูงกว่า BAY มาก และ fail เกิน 15 นาที ให้ switch gateway ไป BAY",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 511
+      },
+      "id": 9016,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "quantile_over_time(0.95, omise_gateway_processing_time{service=\"charge\",mcc=\"711\",backend=\"ktc_v2\",status_code=\"SUCCESS\"}[5m])",
+          "legendFormat": "KTC P95",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "quantile_over_time(0.99, omise_gateway_processing_time{service=\"charge\",mcc=\"711\",backend=\"ktc_v2\",status_code=\"SUCCESS\"}[5m])",
+          "legendFormat": "KTC P99",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "quantile_over_time(0.95, omise_gateway_processing_time{service=\"charge\",mcc=\"711\",backend=\"krungsri_cybersource\",status_code=\"SUCCESS\"}[5m])",
+          "legendFormat": "BAY P95",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "quantile_over_time(0.99, omise_gateway_processing_time{service=\"charge\",mcc=\"711\",backend=\"krungsri_cybersource\",status_code=\"SUCCESS\"}[5m])",
+          "legendFormat": "BAY P99",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "max by (backend) (omise_gateway_processing_time{service=\"charge\",mcc=\"711\",status_code=\"SUCCESS\",backend=~\"ktc_v2|krungsri_cybersource\"})",
+          "legendFormat": "{{backend}} max",
+          "refId": "E"
+        }
+      ],
+      "title": "Omise/OPN Gateway — P95/P99 Processing Time  (KTC vs BAY)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "seconds",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "Tail latency ของ Acquiring Service แยกตาม payment_method\n\nดูยังไง: ใช้ quantile_over_time กับ gauge metric acquiring_service_time_payment_payment_method_transaction\n\nถ้า SoF ใด P99 สูงผิดปกติให้ตรวจ upstream ของ SoF นั้น",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 511
+      },
+      "id": 9017,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "quantile_over_time(0.95, acquiring_service_time_payment_payment_method_transaction{status_code=\"200\",payment_method=\"Card\"}[5m])",
+          "legendFormat": "Card P95",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "quantile_over_time(0.99, acquiring_service_time_payment_payment_method_transaction{status_code=\"200\",payment_method=\"Card\"}[5m])",
+          "legendFormat": "Card P99",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "quantile_over_time(0.95, acquiring_service_time_payment_payment_method_transaction{status_code=\"200\",payment_method=\"Balance\"}[5m])",
+          "legendFormat": "Balance P95",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "quantile_over_time(0.99, acquiring_service_time_payment_payment_method_transaction{status_code=\"200\",payment_method=\"Balance\"}[5m])",
+          "legendFormat": "Balance P99",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "quantile_over_time(0.95, acquiring_service_time_payment_payment_method_transaction{status_code=\"200\",payment_method=\"Bank\"}[5m])",
+          "legendFormat": "Bank P95",
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "quantile_over_time(0.99, acquiring_service_time_payment_payment_method_transaction{status_code=\"200\",payment_method=\"Bank\"}[5m])",
+          "legendFormat": "Bank P99",
+          "refId": "F"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "quantile_over_time(0.99, acquiring_service_time_payment_payment_method_transaction{status_code=\"200\",payment_method=\"PayNext\"}[5m])",
+          "legendFormat": "PayNext P99",
+          "refId": "G"
+        }
+      ],
+      "title": "Acquiring — P95/P99 Processing Time  by SoF Type",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "seconds",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "Tail latency ของ Direct Debit แยกรายธนาคาร\n\nดูยังไง: bank ที่ P99 สูงกว่าปกติหมายความว่า bank นั้น respond ช้า ให้ escalate ไปที่ bank โดยตรง",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 519
+      },
+      "id": 9018,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "histogram_quantile(0.95, sum(rate(retail_seven_composite_requests_seconds_bucket{status=\"200\",sof_type=\"BANK\"}[5m])) by (le, sof_code))",
+          "legendFormat": "P95 {{sof_code}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(retail_seven_composite_requests_seconds_bucket{status=\"200\",sof_type=\"BANK\"}[5m])) by (le, sof_code))",
+          "legendFormat": "P99 {{sof_code}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Bank Gateway — P95/P99 per Bank",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "seconds",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    },
+    {
+      "bars": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "wFXCXqVSk"
+      },
+      "description": "Tail latency ของ PayNext และ PayNext Extra ผ่าน Nano Gateway\n\nดูยังไง: ถ้า P99 ขึ้นสูงพร้อมกันทั้งคู่ ปัญหาอยู่ที่ Nano Gateway หรือ MAMBU Backend",
+      "fill": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 519
+      },
+      "id": 9019,
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "stack": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "histogram_quantile(0.95, sum(rate(retail_seven_composite_requests_seconds_bucket{status=\"200\",sof_code=~\"PAY_NEXT|PAY_NEXT_EXTRA\"}[5m])) by (le, sof_code))",
+          "legendFormat": "P95 {{sof_code}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "wFXCXqVSk"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(retail_seven_composite_requests_seconds_bucket{status=\"200\",sof_code=~\"PAY_NEXT|PAY_NEXT_EXTRA\"}[5m])) by (le, sof_code))",
+          "legendFormat": "P99 {{sof_code}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Nano Gateway — P95/P99  (PayNext / PayNext Extra)",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "seconds",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "show": true
+        }
+      ]
+    }
+  ]
+}

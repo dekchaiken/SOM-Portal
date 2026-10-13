@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MA Status Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    :root {
+      --ok:  #10b981; --ok-bg:  rgba(16,185,129,.10);
+      --bad: #ef4444; --bad-bg: rgba(239,68,68,.10);
+      --warn:#f59e0b; --warn-bg:rgba(245,158,11,.10);
+    }
+    .msta { padding: 24px 28px 60px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Tabs */
+    .msta-tabs {
+      display: inline-flex; gap: 4px; padding: 4px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; box-shadow: var(--shadow-sm);
+      align-self: flex-start;
+    }
+    .msta-tab {
+      padding: 8px 18px; border-radius: 8px;
+      border: none; background: transparent;
+      color: var(--text-muted); font-size: 12.5px; font-weight: 700;
+      cursor: pointer; transition: all .14s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .msta-tab:hover { color: var(--text); background: var(--bg); }
+    .msta-tab.active {
+      background: var(--text); color: var(--bg-card);
+      box-shadow: 0 1px 3px rgba(0,0,0,.15);
+    }
+    .msta-tab .count {
+      padding: 1px 8px; background: rgba(148,163,184,.2);
+      border-radius: 999px; font-size: 10px;
+    }
+    .msta-tab.active .count { background: rgba(255,255,255,.22); }
+
+    /* Panel */
+    .msta-panel {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px 22px 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .msta-panel-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 14px; margin-bottom: 16px; flex-wrap: wrap;
+      padding-bottom: 14px; border-bottom: 1px solid var(--border);
+    }
+    .msta-panel-title { font-size: 15px; font-weight: 800; color: var(--text); }
+    .msta-panel-actions { display: flex; align-items: center; gap: 8px; }
+
+    /* Info bar */
+    .msta-info {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 10px 14px;
+      background: rgba(245,158,11,.06);
+      border: 1px solid rgba(245,158,11,.24);
+      border-radius: 10px;
+      font-size: 11.5px; color: var(--text); line-height: 1.6;
+    }
+    .msta-info b { color: var(--warn); }
+
+    /* Table */
+    .msta-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .msta-tbl th, .msta-tbl td {
+      padding: 10px 12px; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .msta-tbl th {
+      font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--text-muted); font-weight: 700; background: var(--bg);
+      position: sticky; top: 0;
+    }
+    .msta-tbl tr:hover td { background: var(--bg); }
+    .msta-tbl .mono { font-family: var(--font, monospace); font-size: 11px; color: var(--text-muted); }
+    .msta-tbl .actions { text-align: right; white-space: nowrap; }
+    .msta-tbl .actions button {
+      padding: 4px 10px; margin-left: 4px; border-radius: 6px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); font-size: 11px; font-weight: 600;
+      cursor: pointer; transition: all .14s;
+    }
+    .msta-tbl .actions button:hover { color: var(--text); border-color: var(--text-muted); }
+    .msta-tbl .actions button.danger:hover { color: var(--bad); border-color: var(--bad); }
+
+    .msta-empty { padding: 40px; text-align: center; color: var(--text-muted); font-size: 12px; }
+
+    /* Chips inline in table */
+    .chip {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      background: var(--bg); border: 1px solid var(--border);
+      font-size: 10px; font-weight: 700; letter-spacing: .04em;
+      color: var(--text-muted); margin-right: 4px;
+    }
+    .chip.crit { background: var(--warn-bg); color: var(--warn); border-color: rgba(245,158,11,.4); }
+    .chip.src  { background: var(--bg-input); color: var(--text); }
+
+    /* Modal (matches admin/jenkins-servers pattern) */
+    .msta-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.5); z-index: 1100;
+      align-items: center; justify-content: center;
+    }
+    .msta-overlay.open { display: flex; }
+    .msta-modal {
+      background: var(--bg-card); border-radius: 16px;
+      width: 640px; max-width: 95vw; max-height: 90vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+      border: 1px solid var(--border);
+    }
+    .msta-modal-head {
+      padding: 16px 20px 14px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .msta-modal-title { font-size: 14px; font-weight: 800; color: var(--text); }
+    .msta-modal-close {
+      background: none; border: none; font-size: 20px;
+      color: var(--text-muted); cursor: pointer;
+    }
+    .msta-modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .msta-modal-foot {
+      padding: 14px 20px; border-top: 1px solid var(--border);
+      display: flex; gap: 8px; justify-content: flex-end;
+    }
+
+    .fld { margin-bottom: 14px; }
+    .fld-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .fld label {
+      display: block; font-size: 10.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--text-muted); margin-bottom: 5px;
+    }
+    .fld input, .fld select, .fld textarea {
+      width: 100%; padding: 8px 10px; box-sizing: border-box;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-input); color: var(--text);
+      font-family: var(--font); font-size: 12px;
+    }
+    .fld input:focus, .fld select:focus, .fld textarea:focus {
+      outline: none; border-color: var(--orange);
+    }
+    .fld .hint { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; }
+    .fld-check {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--text); cursor: pointer;
+    }
+    .fld-check input { width: auto; }
+
+    /* Backoffice mapping */
+    .map-wrap {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    @media (max-width: 900px) { .map-wrap { grid-template-columns: 1fr; } }
+    .map-col {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 16px;
+      min-height: 400px;
+    }
+    .map-col h4 {
+      margin: 0 0 12px; font-size: 12.5px; font-weight: 800; color: var(--text);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .map-col h4 .cnt {
+      padding: 2px 9px; border-radius: 999px; background: var(--bg-card);
+      border: 1px solid var(--border); font-size: 10.5px; color: var(--text-muted);
+    }
+    .map-search {
+      width: 100%; padding: 8px 10px; box-sizing: border-box;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-card); font-size: 12px; margin-bottom: 10px;
+    }
+    .map-list {
+      display: flex; flex-direction: column; gap: 4px;
+      max-height: 480px; overflow: auto;
+      padding-right: 4px;
+    }
+    .map-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      cursor: pointer; transition: all .14s;
+      font-size: 12px;
+    }
+    .map-row:hover {
+      border-color: var(--text-muted);
+      background: var(--bg-input);
+    }
+    .map-row.selected {
+      border-color: var(--orange);
+      background: rgba(242,100,25,.06);
+    }
+    .map-row.linked {
+      background: var(--ok-bg); border-color: rgba(16,185,129,.3);
+    }
+    .map-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+    .map-row-meta { font-size: 10px; color: var(--text-muted); font-family: var(--font, monospace); flex-shrink: 0; }
+    .map-row-badge {
+      font-size: 9px; padding: 1px 5px; border-radius: 3px;
+      background: var(--border); color: var(--text-muted);
+      font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .map-row-badge.link { background: var(--ok-bg); color: var(--ok); }
+
+    .map-action-bar {
+      grid-column: 1 / -1;
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; padding: 12px;
+      background: var(--bg); border: 1px dashed var(--border);
+      border-radius: 10px;
+      font-size: 12px; color: var(--text-muted);
+    }
+    .map-action-bar .sel-chip {
+      padding: 3px 9px; border-radius: 5px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      font-weight: 600; color: var(--text);
+    }
+    .map-action-bar button {
+      padding: 6px 14px; border-radius: 8px;
+      background: var(--orange); color: #fff;
+      border: none; font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .map-action-bar button:disabled {
+      background: var(--border); color: var(--text-muted); cursor: not-allowed;
+    }
+    .map-action-bar button.unlink { background: var(--bad); }
+
+    /* ── Hide Items panel ─────────────────────────────────────── */
+    .hide-src-picker {
+      display: inline-flex; gap: 4px; padding: 4px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .hide-src {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 7px;
+      border: none; background: transparent;
+      color: var(--text-muted); font-size: 12px; font-weight: 700;
+      cursor: pointer; transition: all .12s;
+    }
+    .hide-src:hover { color: var(--text); background: var(--bg-card); }
+    .hide-src.active { background: var(--text); color: var(--bg-card); }
+    .hide-src .cnt {
+      padding: 1px 7px; border-radius: 999px;
+      background: rgba(148,163,184,.22);
+      font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums;
+    }
+    .hide-src.active .cnt { background: rgba(255,255,255,.22); }
+
+    .hide-list {
+      display: grid; gap: 4px;
+      max-height: 640px; overflow: auto;
+      padding-right: 4px;
+    }
+    .hide-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      font-size: 12px; transition: all .1s;
+    }
+    .hide-row:hover { border-color: var(--text-muted); background: var(--bg-input); }
+    .hide-row.is-hidden { opacity: .55; background: var(--bg); }
+    .hide-toggle {
+      position: relative; width: 34px; height: 20px;
+      background: var(--ok); border-radius: 999px;
+      cursor: pointer; flex-shrink: 0;
+      transition: background .15s;
+    }
+    .hide-toggle::after {
+      content: ''; position: absolute; top: 2px; left: 16px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #fff; transition: left .15s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .hide-toggle.off { background: var(--border); }
+    .hide-toggle.off::after { left: 2px; }
+    .hide-row-status {
+      font-size: 9px; font-weight: 800; letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 2px 6px; border-radius: 4px;
+      background: var(--ok-bg); color: var(--ok);
+      flex-shrink: 0;
+    }
+    .hide-row-status.closed { background: var(--bad-bg); color: var(--bad); }
+    .hide-row-status.unknown { background: var(--bg); color: var(--text-muted); }
+    .hide-row-name { flex: 1; min-width: 0; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hide-row-meta { font-size: 10.5px; color: var(--text-muted); font-family: var(--font, monospace); flex-shrink: 0; }
+    .hide-row-badge {
+      font-size: 9px; padding: 1px 6px; border-radius: 4px;
+      background: var(--warn-bg); color: var(--warn);
+      font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    /* Toast */
+    .msta-toast {
+      position: fixed; bottom: 24px; right: 24px;
+      padding: 12px 18px; border-radius: 10px;
+      background: var(--text); color: var(--bg-card);
+      font-size: 12.5px; font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,.2);
+      z-index: 2000; opacity: 0; transform: translateY(10px);
+      transition: all .2s;
+      pointer-events: none;
+    }
+    .msta-toast.show { opacity: 1; transform: translateY(0); }
+    .msta-toast.err  { background: var(--bad); }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">🩺 MA Status Admin</div>
+        <div class="page-sub">Manage Jenkins jobs & Backoffice mappings</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="../ma-status.html" class="btn btn-sm btn-ghost" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+          View Dashboard
+        </a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="msta">
+
+        <!-- Tabs -->
+        <div class="msta-tabs">
+          <button class="msta-tab active" data-tab="jobs" onclick="AdminMA.switchTab('jobs')">
+            <i data-icon="wrench"></i> Jenkins Jobs <span class="count" id="tab-jobs-cnt">0</span>
+          </button>
+          <button class="msta-tab" data-tab="map" onclick="AdminMA.switchTab('map')">
+            <i data-icon="link"></i> Backoffice Mapping <span class="count" id="tab-map-cnt">0</span>
+          </button>
+          <button class="msta-tab" data-tab="hide" onclick="AdminMA.switchTab('hide')">
+            <i data-icon="ban"></i> Hide Items <span class="count" id="tab-hide-cnt">0</span>
+          </button>
+        </div>
+
+        <!-- TAB: Jenkins Jobs -->
+        <div class="msta-panel" id="panel-jobs">
+          <div class="msta-panel-head">
+            <div class="msta-panel-title">Jenkins Jobs to Monitor</div>
+            <div class="msta-panel-actions">
+              <span id="jobs-source-badge" style="font-size:10.5px;color:var(--text-muted)"></span>
+              <button class="btn btn-sm btn-ghost" onclick="AdminMA.resetJobs()" title="Delete overrides and revert to hardcoded defaults">↺ Reset to defaults</button>
+              <button class="btn btn-sm btn-primary" onclick="AdminMA.openJobModal(null)">+ Add Job</button>
+            </div>
+          </div>
+
+          <div class="msta-info" style="margin-bottom:14px">
+            <span><i data-icon="info"></i></span>
+            <span>
+              Jobs listed here are polled every 15s (server cache) by <code>/api/ma-status/</code>. Each job's <b>state_param</b> is read from its lastBuild — if the value matches any <b>on_values</b>, the service shows as <b>In Maintenance</b>.
+              Server names must match a <code>display</code> in <a href="./jenkins-servers.html" style="color:var(--orange)">Jenkins Servers</a>.
+            </span>
+          </div>
+
+          <div style="overflow-x:auto">
+            <table class="msta-tbl">
+              <thead>
+                <tr>
+                  <th style="width:32%">Label</th>
+                  <th style="width:14%">Server</th>
+                  <th>Path</th>
+                  <th style="width:14%">State param</th>
+                  <th style="width:14%">On values</th>
+                  <th style="width:10%">Flags</th>
+                  <th style="width:100px" class="actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="jobs-tbody">
+                <tr><td colspan="7" class="msta-empty">loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB: Backoffice Mapping -->
+        <div class="msta-panel" id="panel-map" style="display:none">
+          <div class="msta-panel-head">
+            <div class="msta-panel-title">Link MA Services ↔ Backoffice use_case_id</div>
+            <div class="msta-panel-actions">
+              <button class="btn btn-sm btn-ghost" onclick="AdminMA.loadMap()">↻ Refresh</button>
+            </div>
+          </div>
+
+          <div class="msta-info" style="margin-bottom:14px">
+            <span><i data-icon="info"></i></span>
+            <span>
+              Pick a service from the left, then a Backoffice item from the right → click <b>Link</b>. Once linked, the dashboard shows that service's live status via <code>backoffice_use_case_id</code>. Fuzzy-name match still runs for unmapped rows but is unreliable — mapping by ID is authoritative.
+            </span>
+          </div>
+
+          <div class="map-wrap">
+            <!-- LEFT: ma-services -->
+            <div class="map-col">
+              <h4>
+                <span>MA Services (Admin Portal type)</span>
+                <span class="cnt" id="ma-svc-cnt">—</span>
+              </h4>
+              <input class="map-search" id="svc-search" placeholder="Search service name…" oninput="AdminMA.filterSvc()">
+              <div class="map-list" id="svc-list"><div class="msta-empty">loading…</div></div>
+            </div>
+
+            <!-- RIGHT: backoffice -->
+            <div class="map-col">
+              <h4>
+                <span>Backoffice Use Cases</span>
+                <span class="cnt" id="bo-cnt">—</span>
+              </h4>
+              <input class="map-search" id="bo-search" placeholder="Search by name or ID…" oninput="AdminMA.filterBo()">
+              <div class="map-list" id="bo-list"><div class="msta-empty">loading…</div></div>
+            </div>
+
+            <!-- Action bar -->
+            <div class="map-action-bar" id="map-action-bar">
+              <span>Selected:</span>
+              <span class="sel-chip" id="sel-svc">— (pick a service)</span>
+              <span>↔</span>
+              <span class="sel-chip" id="sel-bo">— (pick a backoffice item)</span>
+              <button id="btn-link"   onclick="AdminMA.doLink()" disabled><i data-icon="link"></i> Link</button>
+              <button id="btn-unlink" class="unlink" onclick="AdminMA.doUnlink()" disabled>Unlink</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: Hide Items ─────────────────────────────────── -->
+        <div class="msta-panel" id="panel-hide" style="display:none">
+          <div class="msta-panel-head">
+            <div class="msta-panel-title">Hide Items from Dashboard</div>
+            <div class="msta-panel-actions">
+              <span id="hide-dirty-badge" style="font-size:10.5px;color:var(--warn);display:none">● unsaved changes</span>
+              <button class="btn btn-sm btn-ghost" onclick="AdminMA.loadHide()">↻ Refresh</button>
+              <button class="btn btn-sm btn-ghost" onclick="AdminMA.clearHideCurrentSource()" title="Show all items in this source">Unhide all</button>
+              <button class="btn btn-sm btn-primary" onclick="AdminMA.saveHide()"><i data-icon="save"></i> Save</button>
+            </div>
+          </div>
+
+          <div class="msta-info" style="margin-bottom:14px">
+            <span><i data-icon="info"></i></span>
+            <span>
+              Toggle items OFF to hide them from the MA Status dashboard (all users, this team). Hidden items are still fetched from upstream — they just don't render. Useful for silencing deprecated or noisy items.
+            </span>
+          </div>
+
+          <div class="hide-src-picker">
+            <button class="hide-src active" data-src="nano"           onclick="AdminMA.pickHideSrc('nano')">🅝 NANO <span class="cnt" id="hs-nano">0</span></button>
+            <button class="hide-src"        data-src="tmn_jenkins"    onclick="AdminMA.pickHideSrc('tmn_jenkins')">🅟 Jenkins <span class="cnt" id="hs-tmn_jenkins">0</span></button>
+            <button class="hide-src"        data-src="tmn_features"   onclick="AdminMA.pickHideSrc('tmn_features')">🅕 Features <span class="cnt" id="hs-tmn_features">0</span></button>
+            <button class="hide-src"        data-src="tmn_backoffice" onclick="AdminMA.pickHideSrc('tmn_backoffice')">🅑 Admin Portal <span class="cnt" id="hs-tmn_backoffice">0</span></button>
+          </div>
+
+          <input class="map-search" id="hide-search" placeholder="Search items…" oninput="AdminMA.renderHideList()" style="margin-bottom:10px">
+
+          <div class="hide-list" id="hide-list"><div class="msta-empty">loading…</div></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ═══ Job Add/Edit Modal ═══ -->
+<div class="msta-overlay" id="job-modal">
+  <div class="msta-modal">
+    <div class="msta-modal-head">
+      <span class="msta-modal-title" id="job-modal-title">Add Jenkins Job</span>
+      <button class="msta-modal-close" onclick="AdminMA.closeJobModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="msta-modal-body">
+      <div class="fld">
+        <label>Label *</label>
+        <input id="jm-label" type="text" placeholder="เช่น Wallet Login MA">
+      </div>
+      <div class="fld fld-2">
+        <div>
+          <label>Server *</label>
+          <select id="jm-server"></select>
+          <div class="hint">Must match a Jenkins server "display" name</div>
+        </div>
+        <div>
+          <label>State param *</label>
+          <input id="jm-state-param" type="text" placeholder="IS_MAINTENANCE">
+        </div>
+      </div>
+      <div class="fld">
+        <label>Path *</label>
+        <input id="jm-path" type="text" placeholder="/view/V1%20Maintenance%20page/job/xxx" style="font-family:var(--font,monospace);font-size:11.5px">
+        <div class="hint">Job path relative to server base URL (URL-encoded)</div>
+      </div>
+      <div class="fld">
+        <label>On values * (comma-separated)</label>
+        <input id="jm-on-values" type="text" placeholder="1, true, True">
+        <div class="hint">Parameter values that mean "MA is on" (service closed)</div>
+      </div>
+      <div class="fld fld-2">
+        <div>
+          <label>Extra param (optional)</label>
+          <input id="jm-extra-param" type="text" placeholder="feature_name">
+          <div class="hint">Shown in card label as suffix (e.g. feature toggles)</div>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <label class="fld-check" style="padding-top:8px">
+            <input id="jm-critical" type="checkbox">
+            <span><i data-icon="star"></i> Critical — pin to top of dashboard</span>
+          </label>
+        </div>
+      </div>
+      <div class="fld">
+        <label>Note (optional)</label>
+        <textarea id="jm-note" rows="2" placeholder="Extra context shown in the card"></textarea>
+      </div>
+    </div>
+    <div class="msta-modal-foot">
+      <button class="btn btn-ghost" onclick="AdminMA.closeJobModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="AdminMA.saveJob()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="msta-toast"></div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+  if (!Auth.requireAdmin()) {}
+  Layout.render('admin-ma-status');
+
+  const AdminMA = {
+    jobs: [],
+    jobsSource: 'default',
+    servers: [],
+    editingIdx: -1,
+
+    // Mapping state
+    services: [],       // ma-services rows (Admin Portal type)
+    backoffice: [],     // all backoffice items (matched + unmapped)
+    boById: {},
+    selectedSvcId: null,
+    selectedUseCaseId: null,
+
+    // Hide-items state
+    hideMap:      { nano: [], tmn_jenkins: [], tmn_features: [], tmn_backoffice: [] },
+    hideMapSaved: { nano: [], tmn_jenkins: [], tmn_features: [], tmn_backoffice: [] },
+    hideSrcItems: { nano: [], tmn_jenkins: [], tmn_features: [], tmn_backoffice: [] },
+    hideSrc: 'nano',
+    hideDirty: false,
+
+    init() {
+      this.loadJobs();
+      this.loadMap();
+      this.loadHide();
+    },
+
+    switchTab(name) {
+      document.querySelectorAll('.msta-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+      document.getElementById('panel-jobs').style.display = name === 'jobs' ? '' : 'none';
+      document.getElementById('panel-map').style.display  = name === 'map'  ? '' : 'none';
+      document.getElementById('panel-hide').style.display = name === 'hide' ? '' : 'none';
+    },
+
+    // ─── Jenkins Jobs ───────────────────────────────────────────
+    async loadJobs() {
+      try {
+        const [jobsRes, srvRes] = await Promise.all([
+          API.get('/ma-status/jenkins-jobs.php'),
+          API.get('/jenkins-servers/index.php'),
+        ]);
+        if (!jobsRes.ok) throw new Error(jobsRes.data?.message || 'Load jobs failed');
+        this.jobs = jobsRes.data.data.jobs || [];
+        this.jobsSource = jobsRes.data.data.source || 'default';
+        this.servers = (srvRes.ok ? (srvRes.data.data || srvRes.data) : []) || [];
+        this.renderJobs();
+      } catch (e) {
+        this.toast(e.message, true);
+      }
+    },
+
+    renderJobs() {
+      document.getElementById('tab-jobs-cnt').textContent = this.jobs.length;
+      const badge = document.getElementById('jobs-source-badge');
+      badge.textContent = this.jobsSource === 'override' ? 'Source: team override' : 'Source: hardcoded defaults (unsaved)';
+      badge.style.color = this.jobsSource === 'override' ? 'var(--ok)' : 'var(--text-muted)';
+
+      const tbody = document.getElementById('jobs-tbody');
+      if (!this.jobs.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="msta-empty">no jobs configured</td></tr>';
+        return;
+      }
+      tbody.innerHTML = this.jobs.map((j, i) => `
+        <tr>
+          <td>
+            <div style="font-weight:700;color:var(--text)">${esc(j.label)}</div>
+            ${j.note ? `<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px">${esc(j.note)}</div>` : ''}
+          </td>
+          <td><span class="chip src">${esc(j.server)}</span></td>
+          <td class="mono">${esc(j.path)}</td>
+          <td><span class="chip">${esc(j.state_param)}</span></td>
+          <td>${(j.on_values || []).map(v => `<span class="chip">${esc(String(v))}</span>`).join('')}</td>
+          <td>
+            ${j.critical ? '<span class="chip crit">CRIT</span>' : ''}
+            ${j.extra_param ? `<span class="chip">+${esc(j.extra_param)}</span>` : ''}
+          </td>
+          <td class="actions">
+            <button onclick="AdminMA.openJobModal(${i})">Edit</button>
+            <button class="danger" onclick="AdminMA.deleteJob(${i})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    },
+
+    openJobModal(idx) {
+      this.editingIdx = idx;
+      const j = idx === null ? { on_values: ['1','true'] } : this.jobs[idx];
+      document.getElementById('job-modal-title').textContent = idx === null ? 'Add Jenkins Job' : 'Edit Jenkins Job';
+
+      // Server dropdown from real jenkins-servers list
+      const opts = this.servers.map(s =>
+        `<option value="${esc(s.display)}" ${s.display === j.server ? 'selected' : ''}>${esc(s.display)} — ${esc(s.base_url || '')}</option>`
+      ).join('');
+      document.getElementById('jm-server').innerHTML = `<option value="">— select —</option>` + opts;
+      if (j.server && !this.servers.find(s => s.display === j.server)) {
+        // Missing server — add as option anyway
+        document.getElementById('jm-server').innerHTML += `<option value="${esc(j.server)}" selected>${esc(j.server)} (not in list!)</option>`;
+      }
+
+      document.getElementById('jm-label').value = j.label || '';
+      document.getElementById('jm-path').value = j.path || '';
+      document.getElementById('jm-state-param').value = j.state_param || 'IS_MAINTENANCE';
+      document.getElementById('jm-on-values').value = (j.on_values || []).join(', ');
+      document.getElementById('jm-extra-param').value = j.extra_param || '';
+      document.getElementById('jm-critical').checked = !!j.critical;
+      document.getElementById('jm-note').value = j.note || '';
+
+      document.getElementById('job-modal').classList.add('open');
+    },
+
+    closeJobModal() {
+      document.getElementById('job-modal').classList.remove('open');
+    },
+
+    async saveJob() {
+      const j = {
+        label: document.getElementById('jm-label').value.trim(),
+        server: document.getElementById('jm-server').value.trim(),
+        path: document.getElementById('jm-path').value.trim(),
+        state_param: document.getElementById('jm-state-param').value.trim(),
+        on_values: document.getElementById('jm-on-values').value.split(',').map(s => s.trim()).filter(Boolean),
+        extra_param: document.getElementById('jm-extra-param').value.trim() || null,
+        critical: document.getElementById('jm-critical').checked,
+        note: document.getElementById('jm-note').value.trim() || null,
+      };
+      if (!j.label || !j.server || !j.path || !j.state_param || !j.on_values.length) {
+        this.toast('Please fill all required fields', true);
+        return;
+      }
+      const list = this.jobs.slice();
+      if (this.editingIdx === null) list.push(j);
+      else list[this.editingIdx] = j;
+      await this.saveJobsList(list);
+      this.closeJobModal();
+    },
+
+    async deleteJob(idx) {
+      if (!confirm(`Delete "${this.jobs[idx].label}"?`)) return;
+      const list = this.jobs.slice();
+      list.splice(idx, 1);
+      await this.saveJobsList(list);
+    },
+
+    async resetJobs() {
+      if (!confirm('Delete all overrides and revert to hardcoded defaults?')) return;
+      await this.saveJobsList([]);
+    },
+
+    async saveJobsList(list) {
+      try {
+        const res = await API.put('/ma-status/jenkins-jobs.php', { jobs: list });
+        if (!res.ok) throw new Error(res.data?.message || 'Save failed');
+        this.jobs = res.data.data.jobs || [];
+        this.jobsSource = res.data.data.source || 'default';
+        this.renderJobs();
+        this.toast(res.data.data.reset ? 'Reset to defaults' : `Saved ${res.data.data.saved || list.length} jobs`);
+      } catch (e) {
+        this.toast(e.message, true);
+      }
+    },
+
+    // ─── Backoffice Mapping ─────────────────────────────────────
+    async loadMap() {
+      try {
+        const res = await API.get('/ma-status/');
+        if (!res.ok) throw new Error(res.data?.message || 'Load failed');
+        const d = res.data.data;
+
+        // Left column: all Admin Portal services from ma-services
+        this.services = (d.services || []).filter(s => s.tool_type === 'Admin Portal');
+        // Right column: unmapped + mapped backoffice items
+        const bo = (d.sources?.tmn_backoffice?.items || []).concat([]);
+        this.backoffice = bo;
+        this.boById = {};
+        bo.forEach(it => { this.boById[it.use_case_id] = it; });
+
+        // Build a reverse map: service_id → linked use_case_id (from ma-services rows that matched)
+        // Normalize service ids to strings — ma-services.json stores them as integers
+        // but we compare against string values from onclick attributes.
+        this.svcLink = {};
+        for (const s of this.services) {
+          const m = /use_case_id=(\d+)/.exec(s.upstream_ref || '');
+          if (m) this.svcLink[String(s.id)] = parseInt(m[1], 10);
+        }
+        // Reverse: use_case_id → service_id
+        this.boLink = {};
+        for (const [sid, uid] of Object.entries(this.svcLink)) {
+          this.boLink[uid] = sid;
+        }
+
+        this.renderMap();
+      } catch (e) {
+        this.toast(e.message, true);
+      }
+    },
+
+    renderMap() {
+      document.getElementById('tab-map-cnt').textContent = this.services.length;
+      document.getElementById('ma-svc-cnt').textContent = this.services.length;
+      document.getElementById('bo-cnt').textContent = this.backoffice.length;
+      this.renderSvcList();
+      this.renderBoList();
+      this.updateActionBar();
+    },
+
+    filterSvc() { this.renderSvcList(); },
+    filterBo()  { this.renderBoList(); },
+
+    renderSvcList() {
+      const q = document.getElementById('svc-search').value.toLowerCase().trim();
+      const filtered = this.services.filter(s => !q || (s.service_name || '').toLowerCase().includes(q));
+      const el = document.getElementById('svc-list');
+      if (!filtered.length) { el.innerHTML = '<div class="msta-empty">no matches</div>'; return; }
+      el.innerHTML = filtered.map(s => {
+        const sid = String(s.id);
+        const linked = this.svcLink[sid];
+        const sel = sid === this.selectedSvcId;
+        return `
+          <div class="map-row ${sel ? 'selected' : ''} ${linked ? 'linked' : ''}" onclick="AdminMA.pickSvc('${esc(sid)}')">
+            <span class="map-row-name">${esc(s.service_name)}</span>
+            ${linked ? `<span class="map-row-badge link">→ ${linked}</span>` : ''}
+            <span class="map-row-meta">${esc(s.service_type || '')}</span>
+          </div>`;
+      }).join('');
+    },
+
+    renderBoList() {
+      const q = document.getElementById('bo-search').value.toLowerCase().trim();
+      const filtered = this.backoffice.filter(it => {
+        if (!q) return true;
+        return (it.label || '').toLowerCase().includes(q) || String(it.use_case_id || '').includes(q);
+      });
+      const el = document.getElementById('bo-list');
+      if (!filtered.length) { el.innerHTML = '<div class="msta-empty">no matches</div>'; return; }
+      el.innerHTML = filtered.slice(0, 500).map(it => {
+        const linkedSvc = this.boLink[it.use_case_id];
+        const sel = it.use_case_id === this.selectedUseCaseId;
+        return `
+          <div class="map-row ${sel ? 'selected' : ''} ${linkedSvc ? 'linked' : ''}" onclick="AdminMA.pickBo(${it.use_case_id})">
+            <span class="map-row-name">${esc(it.label || '')}</span>
+            ${linkedSvc ? '<span class="map-row-badge link">linked</span>' : ''}
+            <span class="map-row-meta">#${it.use_case_id}</span>
+          </div>`;
+      }).join('');
+    },
+
+    pickSvc(id) {
+      this.selectedSvcId = String(id);
+      this.renderSvcList();
+      this.updateActionBar();
+    },
+
+    pickBo(id) {
+      this.selectedUseCaseId = id;
+      this.renderBoList();
+      this.updateActionBar();
+    },
+
+    updateActionBar() {
+      const sSvc = this.services.find(s => String(s.id) === this.selectedSvcId);
+      const sBo  = this.selectedUseCaseId ? this.boById[this.selectedUseCaseId] : null;
+      document.getElementById('sel-svc').textContent = sSvc ? sSvc.service_name : '— (pick a service)';
+      document.getElementById('sel-bo').textContent = sBo ? `${sBo.label} · #${sBo.use_case_id}` : '— (pick a backoffice item)';
+
+      const linked = sSvc && this.svcLink[String(sSvc.id)];
+      document.getElementById('btn-link').disabled = !(sSvc && sBo);
+      document.getElementById('btn-unlink').disabled = !linked;
+      document.getElementById('btn-link').innerHTML = linked ? '<i data-icon="refresh-cw"></i> Replace link' : '<i data-icon="link"></i> Link';
+    },
+
+    async doLink() {
+      if (!this.selectedSvcId || !this.selectedUseCaseId) return;
+      try {
+        const res = await API.post('/ma-status/mapping.php', {
+          service_id: this.selectedSvcId,
+          use_case_id: this.selectedUseCaseId,
+        });
+        if (!res.ok) throw new Error(res.data?.message || 'Link failed');
+        this.toast('Linked <i data-icon="check"></i>');
+        await this.loadMap();
+      } catch (e) { this.toast(e.message, true); }
+    },
+
+    async doUnlink() {
+      if (!this.selectedSvcId) return;
+      try {
+        const res = await API.post('/ma-status/mapping.php', {
+          service_id: this.selectedSvcId,
+          use_case_id: null,
+        });
+        if (!res.ok) throw new Error(res.data?.message || 'Unlink failed');
+        this.toast('Unlinked <i data-icon="check"></i>');
+        await this.loadMap();
+      } catch (e) { this.toast(e.message, true); }
+    },
+
+    // ─── Hide Items ─────────────────────────────────────────────
+    async loadHide() {
+      try {
+        // Fetch current hidden map + all source items. Force refresh so we see EVERY item
+        // (dashboard endpoint normally filters hidden ones out — we call ?refresh=1 to
+        // rebuild AND then use raw source counts from the response).
+        // Actually: to list all items INCLUDING already-hidden ones, we need a separate
+        // pass. Simplest: call the aggregator, then union the returned items with the
+        // hidden keys so the UI can still render toggle rows for hidden ones.
+        const [hRes, dRes] = await Promise.all([
+          API.get('/ma-status/hidden.php'),
+          API.get('/ma-status/?refresh=1'),
+        ]);
+        if (!hRes.ok) throw new Error(hRes.data?.message || 'Load hidden failed');
+        if (!dRes.ok) throw new Error(dRes.data?.message || 'Load dashboard failed');
+
+        const h = hRes.data.data || {};
+        this.hideMap      = { nano: h.nano||[], tmn_jenkins: h.tmn_jenkins||[], tmn_features: h.tmn_features||[], tmn_backoffice: h.tmn_backoffice||[] };
+        this.hideMapSaved = JSON.parse(JSON.stringify(this.hideMap));
+
+        const data = dRes.data.data;
+        // For each source, collect items. Hidden items were already filtered out by the
+        // backend — reconstruct them as placeholder rows so the toggle can turn them ON.
+        this.hideSrcItems = { nano: [], tmn_jenkins: [], tmn_features: [], tmn_backoffice: [] };
+
+        // NANO
+        for (const it of (data.sources?.nano?.items || [])) {
+          this.hideSrcItems.nano.push({ key: it.name, label: it.label, status: it.status, meta: `${it.product} · ${it.sub_service}` });
+        }
+        for (const k of this.hideMap.nano || []) {
+          if (!this.hideSrcItems.nano.find(x => x.key === k)) {
+            this.hideSrcItems.nano.push({ key: k, label: k, status: 'unknown', meta: '(currently hidden)' });
+          }
+        }
+
+        // Jenkins
+        for (const it of (data.sources?.tmn_jenkins?.items || [])) {
+          this.hideSrcItems.tmn_jenkins.push({ key: it.name, label: it.label, status: it.status, meta: it.link ? new URL(it.link).pathname : '' });
+        }
+        for (const k of this.hideMap.tmn_jenkins || []) {
+          if (!this.hideSrcItems.tmn_jenkins.find(x => x.key === k)) {
+            this.hideSrcItems.tmn_jenkins.push({ key: k, label: k, status: 'unknown', meta: '(currently hidden)' });
+          }
+        }
+
+        // Features
+        for (const it of (data.sources?.tmn_features?.items || [])) {
+          this.hideSrcItems.tmn_features.push({ key: it.label, label: it.label, status: it.status, meta: `${it.method || ''} ${it.url_pattern || ''}` });
+        }
+        for (const k of this.hideMap.tmn_features || []) {
+          if (!this.hideSrcItems.tmn_features.find(x => x.key === k)) {
+            this.hideSrcItems.tmn_features.push({ key: k, label: k, status: 'unknown', meta: '(currently hidden)' });
+          }
+        }
+
+        // Backoffice: use_case_id as key (int)
+        for (const it of (data.sources?.tmn_backoffice?.items || [])) {
+          this.hideSrcItems.tmn_backoffice.push({ key: it.use_case_id, label: it.label, status: it.status, meta: `#${it.use_case_id} · ${it.category || ''}` });
+        }
+        for (const k of this.hideMap.tmn_backoffice || []) {
+          if (!this.hideSrcItems.tmn_backoffice.find(x => x.key === k)) {
+            this.hideSrcItems.tmn_backoffice.push({ key: k, label: `use_case_id ${k}`, status: 'unknown', meta: '(currently hidden)' });
+          }
+        }
+
+        this.hideDirty = false;
+        this.updateHideDirty();
+        this.updateHideCounts();
+        document.getElementById('tab-hide-cnt').textContent =
+          this.hideMap.nano.length + this.hideMap.tmn_jenkins.length + this.hideMap.tmn_features.length + this.hideMap.tmn_backoffice.length;
+        this.renderHideList();
+      } catch (e) {
+        this.toast(e.message, true);
+      }
+    },
+
+    pickHideSrc(src) {
+      this.hideSrc = src;
+      document.querySelectorAll('.hide-src').forEach(b => b.classList.toggle('active', b.dataset.src === src));
+      document.getElementById('hide-search').value = '';
+      this.renderHideList();
+    },
+
+    updateHideCounts() {
+      for (const s of ['nano','tmn_jenkins','tmn_features','tmn_backoffice']) {
+        document.getElementById('hs-' + s).textContent = this.hideMap[s].length;
+      }
+    },
+
+    updateHideDirty() {
+      const same = JSON.stringify(this.hideMap) === JSON.stringify(this.hideMapSaved);
+      this.hideDirty = !same;
+      document.getElementById('hide-dirty-badge').style.display = this.hideDirty ? '' : 'none';
+    },
+
+    renderHideList() {
+      const src = this.hideSrc;
+      const q = document.getElementById('hide-search').value.toLowerCase().trim();
+      const items = (this.hideSrcItems[src] || []).slice()
+        .filter(x => !q || String(x.label || '').toLowerCase().includes(q) || String(x.key).toLowerCase().includes(q))
+        .sort((a,b) => String(a.label).localeCompare(String(b.label)));
+
+      const el = document.getElementById('hide-list');
+      if (!items.length) { el.innerHTML = '<div class="msta-empty">no matches</div>'; return; }
+      const hidden = new Set(this.hideMap[src].map(String));
+      el.innerHTML = items.map(x => {
+        const isHidden = hidden.has(String(x.key));
+        return `
+          <div class="hide-row ${isHidden ? 'is-hidden' : ''}" data-key="${esc(String(x.key))}">
+            <div class="hide-toggle ${isHidden ? 'off' : ''}" onclick="AdminMA.toggleHide('${esc(String(x.key))}')"></div>
+            <span class="hide-row-status ${x.status}">${(x.status||'').toUpperCase()}</span>
+            <span class="hide-row-name">${esc(x.label)}</span>
+            ${isHidden ? '<span class="hide-row-badge">HIDDEN</span>' : ''}
+            <span class="hide-row-meta">${esc(x.meta || '')}</span>
+          </div>`;
+      }).join('');
+    },
+
+    toggleHide(rawKey) {
+      const src = this.hideSrc;
+      // Coerce key to correct type for backoffice (int) vs others (string)
+      const key = src === 'tmn_backoffice' ? parseInt(rawKey, 10) : rawKey;
+      const arr = this.hideMap[src];
+      const idx = arr.findIndex(v => (src === 'tmn_backoffice' ? Number(v) : String(v)) === key);
+      if (idx >= 0) arr.splice(idx, 1);
+      else          arr.push(key);
+      this.updateHideCounts();
+      this.updateHideDirty();
+      this.renderHideList();
+    },
+
+    clearHideCurrentSource() {
+      const src = this.hideSrc;
+      if (!this.hideMap[src].length) return;
+      if (!confirm(`Unhide all ${this.hideMap[src].length} items in ${src}?`)) return;
+      this.hideMap[src] = [];
+      this.updateHideCounts();
+      this.updateHideDirty();
+      this.renderHideList();
+    },
+
+    async saveHide() {
+      try {
+        const res = await API.put('/ma-status/hidden.php', this.hideMap);
+        if (!res.ok) throw new Error(res.data?.message || 'Save failed');
+        this.hideMap      = res.data.data || this.hideMap;
+        this.hideMapSaved = JSON.parse(JSON.stringify(this.hideMap));
+        this.updateHideCounts();
+        this.updateHideDirty();
+        document.getElementById('tab-hide-cnt').textContent =
+          this.hideMap.nano.length + this.hideMap.tmn_jenkins.length + this.hideMap.tmn_features.length + this.hideMap.tmn_backoffice.length;
+        this.renderHideList();
+        this.toast('Saved <i data-icon="check"></i>');
+      } catch (e) { this.toast(e.message, true); }
+    },
+
+    // ─── UI helpers ─────────────────────────────────────────────
+    toast(msg, err) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'msta-toast show' + (err ? ' err' : '');
+      clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => t.className = 'msta-toast', 2200);
+    },
+  };
+
+  function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  AdminMA.init();
+  window.AdminMA = AdminMA;
+</script>
+</body>
+</html>

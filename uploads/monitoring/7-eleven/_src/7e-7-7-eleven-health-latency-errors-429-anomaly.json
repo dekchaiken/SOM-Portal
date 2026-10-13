@@ -1,0 +1,1536 @@
+{
+ "title": "7-Eleven · Health — Latency / Errors / 429 / Anomaly",
+ "uid": "711-sof-monitoring",
+ "refresh": "1m",
+ "time": {
+  "from": "now-3h",
+  "to": "now"
+ },
+ "timezone": "Asia/Bangkok",
+ "panels": [
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "จำนวน request ทั้งหมดที่เข้ามาที่ entry point แยก POS Counter (seven-custom-in-gateway) กับ POS Online (B2B Gateway)\n\nดูยังไง: ถ้า count drop กะทันหันหมายความว่า 7-11 หยุดส่ง request อาจเป็น network หรือ DNS\n\nเป็น first check — ถ้า traffic ไม่เข้ามาเลย ปัญหาอยู่ภายนอก TMN",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 453
+   },
+   "id": 9039,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(rate(http_server_requests_seconds_count{app_name=~\"seven-custom-in-gateway|acm-b2b-gateway\"}[5m]))",
+     "legendFormat": "POS Counter (seven-custom-in-gateway)",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(B2B_IN_GATEWAY_transaction_total{}[1m]))",
+     "legendFormat": "POS Online (B2B In Gateway)",
+     "refId": "B"
+    }
+   ],
+   "title": "ALB — Inbound Request Count (all HTTP)",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "req/min",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "จำนวน HTTP 5xx error ที่เกิดใน application layer\n\nดูยังไง: 500 = application error, 502 = bad gateway, 503 = service unavailable (pod ล่ม), 504 = upstream timeout\n\nถ้า 503 spike ให้ตรวจ pod status ใน EKS ก่อน",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 453
+   },
+   "id": 9040,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(http_server_requests_seconds_count{app_name=\"seven-custom-in-gateway\",status=~\"5..\"}[1m])) by (status)",
+     "legendFormat": "{{status}} seven-custom-in-gateway",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(http_server_requests_seconds_count{app_name=\"retail-seven-composite\",status=~\"5..\"}[1m])) by (status)",
+     "legendFormat": "{{status}} retail-seven-composite",
+     "refId": "B"
+    }
+   ],
+   "title": "ALB — 5xx Error Count",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "errors/min",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "Average processing time ของ Gateway แยกตาม operation\n\nดูยังไง: ค่าปกติ ~300-600ms ถ้าเกิน 1,000ms ให้ตรวจ SoF upstream\n\nดู P99 ใน Section C เพิ่มเติมเพราะ avg อาจ hide tail latency",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 461
+   },
+   "id": 9041,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_sum{service=\"CHARGE\"}[1m])) / sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_count{service=\"CHARGE\"}[1m]))",
+     "legendFormat": "CHARGE avg (s)",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_sum{service=\"CANCEL\"}[1m])) / sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_count{service=\"CANCEL\"}[1m]))",
+     "legendFormat": "CANCEL avg (s)",
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_sum{service=\"REFUNDS\"}[1m])) / sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_count{service=\"REFUNDS\"}[1m]))",
+     "legendFormat": "REFUNDS avg (s)",
+     "refId": "C"
+    }
+   ],
+   "title": "ALB — Response Time (avg) — seven-custom-in-gateway",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "seconds",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "ประมาณ concurrent request ที่กำลัง active อยู่ (คำนวณจาก delta)\n\nดูยังไง: ถ้าสูงผิดปกติอาจมี connection leak หรือ traffic spike\n\nหมายเหตุ: เป็นค่าประมาณ ไม่ใช่ exact connection count จาก ALB โดยตรง",
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "fillOpacity": 8,
+      "lineWidth": 2
+     },
+     "mappings": [],
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green"
+       }
+      ]
+     },
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 461
+   },
+   "id": 9042,
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(http_server_requests_seconds_count{app_name=\"seven-custom-in-gateway\"}) - sum(http_server_requests_seconds_count{app_name=\"seven-custom-in-gateway\"} offset 1m)",
+     "legendFormat": "Active delta (proxy)",
+     "refId": "A"
+    }
+   ],
+   "title": "ALB — Active Connections / Concurrent Requests",
+   "type": "timeseries"
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "Tail latency ของ Gateway สำหรับ CHARGE operation\n\nดูยังไง: P99 = 99% ของ request ใช้เวลาน้อยกว่าค่านี้ ถ้า P99 ขึ้นไปใกล้ 12s จะเริ่มมี session timeout ฝั่ง 7-11\n\nสำคัญ: avg อาจดูปกติแต่ P99 สูง = มีบาง request ที่ช้ามากทำให้ลูกค้า timeout",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 503
+   },
+   "id": 9014,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "histogram_quantile(0.95, sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_bucket{service=\"CHARGE\"}[5m])) by (le))",
+     "legendFormat": "P95",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "histogram_quantile(0.99, sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_bucket{service=\"CHARGE\"}[5m])) by (le))",
+     "legendFormat": "P99",
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_sum{service=\"CHARGE\"}[5m])) / sum(rate(SEVEN_CUSTOM_IN_GATEWAY_processing_time_seconds_count{service=\"CHARGE\"}[5m]))",
+     "legendFormat": "avg",
+     "refId": "C"
+    }
+   ],
+   "title": "Gateway — P95/P99 Processing Time  (CHARGE)",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "seconds",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "Tail latency ของ retail-seven-composite แยกตาม SoF type\n\nดูยังไง: SoF ที่ P99 สูงกว่าตัวอื่นชัดเจนคือตัวที่ทำให้ระบบช้า ให้ไป drill down ที่ SoF section นั้น\n\nเกี่ยวกับ: Case #1 — ใช้ panel นี้ระบุว่า SoF ไหนเป็นต้นเหตุ",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 503
+   },
+   "id": 9015,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "histogram_quantile(0.95, sum(rate(retail_seven_composite_requests_seconds_bucket{status=\"200\"}[5m])) by (le, sof_code))",
+     "legendFormat": "P95 {{sof_code}}",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "histogram_quantile(0.99, sum(rate(retail_seven_composite_requests_seconds_bucket{status=\"200\"}[5m])) by (le, sof_code))",
+     "legendFormat": "P99 {{sof_code}}",
+     "refId": "B"
+    }
+   ],
+   "title": "Seven-Composite — P95/P99 per SoF Type",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "seconds",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "Tail latency ของ Omise/OPN Gateway แยก KTC กับ BAY (Krungsri Cybersource)\n\nดูยังไง: ใช้ quantile_over_time แทน histogram เพราะ metric เป็น gauge\n\nถ้า KTC P99 สูงกว่า BAY มาก และ fail เกิน 15 นาที ให้ switch gateway ไป BAY",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 511
+   },
+   "id": 9016,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "quantile_over_time(0.95, omise_gateway_processing_time{service=\"charge\",mcc=\"711\",backend=\"ktc_v2\",status_code=\"SUCCESS\"}[5m])",
+     "legendFormat": "KTC P95",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "quantile_over_time(0.99, omise_gateway_processing_time{service=\"charge\",mcc=\"711\",backend=\"ktc_v2\",status_code=\"SUCCESS\"}[5m])",
+     "legendFormat": "KTC P99",
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "quantile_over_time(0.95, omise_gateway_processing_time{service=\"charge\",mcc=\"711\",backend=\"krungsri_cybersource\",status_code=\"SUCCESS\"}[5m])",
+     "legendFormat": "BAY P95",
+     "refId": "C"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "quantile_over_time(0.99, omise_gateway_processing_time{service=\"charge\",mcc=\"711\",backend=\"krungsri_cybersource\",status_code=\"SUCCESS\"}[5m])",
+     "legendFormat": "BAY P99",
+     "refId": "D"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "max by (backend) (omise_gateway_processing_time{service=\"charge\",mcc=\"711\",status_code=\"SUCCESS\",backend=~\"ktc_v2|krungsri_cybersource\"})",
+     "legendFormat": "{{backend}} max",
+     "refId": "E"
+    }
+   ],
+   "title": "Omise/OPN Gateway — P95/P99 Processing Time  (KTC vs BAY)",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "seconds",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "Tail latency ของ Acquiring Service แยกตาม payment_method\n\nดูยังไง: ใช้ quantile_over_time กับ gauge metric acquiring_service_time_payment_payment_method_transaction\n\nถ้า SoF ใด P99 สูงผิดปกติให้ตรวจ upstream ของ SoF นั้น",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 511
+   },
+   "id": 9017,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "quantile_over_time(0.95, acquiring_service_time_payment_payment_method_transaction{status_code=\"200\",payment_method=\"Card\"}[5m])",
+     "legendFormat": "Card P95",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "quantile_over_time(0.99, acquiring_service_time_payment_payment_method_transaction{status_code=\"200\",payment_method=\"Card\"}[5m])",
+     "legendFormat": "Card P99",
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "quantile_over_time(0.95, acquiring_service_time_payment_payment_method_transaction{status_code=\"200\",payment_method=\"Balance\"}[5m])",
+     "legendFormat": "Balance P95",
+     "refId": "C"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "quantile_over_time(0.99, acquiring_service_time_payment_payment_method_transaction{status_code=\"200\",payment_method=\"Balance\"}[5m])",
+     "legendFormat": "Balance P99",
+     "refId": "D"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "quantile_over_time(0.95, acquiring_service_time_payment_payment_method_transaction{status_code=\"200\",payment_method=\"Bank\"}[5m])",
+     "legendFormat": "Bank P95",
+     "refId": "E"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "quantile_over_time(0.99, acquiring_service_time_payment_payment_method_transaction{status_code=\"200\",payment_method=\"Bank\"}[5m])",
+     "legendFormat": "Bank P99",
+     "refId": "F"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "quantile_over_time(0.99, acquiring_service_time_payment_payment_method_transaction{status_code=\"200\",payment_method=\"PayNext\"}[5m])",
+     "legendFormat": "PayNext P99",
+     "refId": "G"
+    }
+   ],
+   "title": "Acquiring — P95/P99 Processing Time  by SoF Type",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "seconds",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "Tail latency ของ Direct Debit แยกรายธนาคาร\n\nดูยังไง: bank ที่ P99 สูงกว่าปกติหมายความว่า bank นั้น respond ช้า ให้ escalate ไปที่ bank โดยตรง",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 519
+   },
+   "id": 9018,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "histogram_quantile(0.95, sum(rate(retail_seven_composite_requests_seconds_bucket{status=\"200\",sof_type=\"BANK\"}[5m])) by (le, sof_code))",
+     "legendFormat": "P95 {{sof_code}}",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "histogram_quantile(0.99, sum(rate(retail_seven_composite_requests_seconds_bucket{status=\"200\",sof_type=\"BANK\"}[5m])) by (le, sof_code))",
+     "legendFormat": "P99 {{sof_code}}",
+     "refId": "B"
+    }
+   ],
+   "title": "Bank Gateway — P95/P99 per Bank",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "seconds",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "Tail latency ของ PayNext และ PayNext Extra ผ่าน Nano Gateway\n\nดูยังไง: ถ้า P99 ขึ้นสูงพร้อมกันทั้งคู่ ปัญหาอยู่ที่ Nano Gateway หรือ MAMBU Backend",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 519
+   },
+   "id": 9019,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "histogram_quantile(0.95, sum(rate(retail_seven_composite_requests_seconds_bucket{status=\"200\",sof_code=~\"PAY_NEXT|PAY_NEXT_EXTRA\"}[5m])) by (le, sof_code))",
+     "legendFormat": "P95 {{sof_code}}",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "histogram_quantile(0.99, sum(rate(retail_seven_composite_requests_seconds_bucket{status=\"200\",sof_code=~\"PAY_NEXT|PAY_NEXT_EXTRA\"}[5m])) by (le, sof_code))",
+     "legendFormat": "P99 {{sof_code}}",
+     "refId": "B"
+    }
+   ],
+   "title": "Nano Gateway — P95/P99  (PayNext / PayNext Extra)",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "seconds",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "จำนวน fail แยกตาม HTTP status_code ที่ Gateway layer\n\nดูยังไง:\n- 500 INTERNAL_SERVER_ERROR = app logic error\n- 504 GATEWAY_TIMEOUT = upstream timeout\n- 503 SERVICE_UNAVAILABLE = pod ล่ม/overload\n\nใช้แยกได้ทันทีว่าเป็น app bug หรือ network/infrastructure problem",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 528
+   },
+   "id": 9021,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CHARGE\",status_code!=\"200 OK\"}[1m])) by (status_code)",
+     "legendFormat": "CHARGE {{status_code}}",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CANCEL\",status_code!=\"200 OK\"}[1m])) by (status_code)",
+     "legendFormat": "CANCEL {{status_code}}",
+     "refId": "B"
+    }
+   ],
+   "title": "Gateway — Fail by Status Code  (seven-custom-in-gateway)",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "จำนวน fail ที่ Acquiring แยกตาม status_code และ reason\n\nดูยังไง:\n- invalid_payment_id = payment_id ผิดหรือ expire\n- failed_timeout = upstream ตอบช้า\n- other = ดู log เพิ่มเติม",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 528
+   },
+   "id": 9022,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(acquiring_service_total_transaction_total{status_code!=\"200\",app_name=\"acquiring-service\"}[1m])) by (status_code, status_code_reason)",
+     "legendFormat": "{{status_code}} — {{status_code_reason}}",
+     "refId": "A"
+    }
+   ],
+   "title": "Acquiring — Fail by Status Code + Reason",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "แยกประเภท error ของ Omise/OPN Gateway ให้ชัดขึ้น\n\nดูยังไง:\n- OMISE_CONNECTION_ERROR = network ถึง Omise ขาด\n- SERVICE_UNAVAILABLE = Omise API down\n- PROCESSING_FAILED = bank ปฏิเสธ transaction\n- PAYMENT_REJECT = card ถูก block หรือ limit เกิน\n\nแต่ละ type มีวิธีแก้ต่างกัน อย่า lump รวมเป็น 'fail' เดียวกัน",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 536
+   },
+   "id": 9023,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"OMISE_CONNECTION_ERROR\"}[1m]))",
+     "legendFormat": "OMISE_CONNECTION_ERROR",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"SERVICE_UNAVAILABLE\"}[1m]))",
+     "legendFormat": "SERVICE_UNAVAILABLE",
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"PROCESSING_FAILED\"}[1m]))",
+     "legendFormat": "PROCESSING_FAILED",
+     "refId": "C"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=\"PAYMENT_REJECT\"}[1m]))",
+     "legendFormat": "PAYMENT_REJECT",
+     "refId": "D"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=~\"OMISE_CONNECTION_ERROR|SERVICE_UNAVAILABLE|PROCESSING_FAILED|PAYMENT_REJECT\",status_code!~\"SUCCESS|INVALID_PARAM|INSUFFICIENT\"}[1m]))",
+     "legendFormat": "Other Fail",
+     "refId": "E"
+    }
+   ],
+   "title": "Omise/OPN — Error Type Breakdown  (Connection / Unavailable / Rejected)",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "แยก error ของ Direct Debit ตามประเภท\n\nดูยังไง:\n- timeout (-1) = bank ตอบช้าหรือ connection หลุด\n- bank error (-1016/-1017/-1018) = bank ปฏิเสธด้วย business reason\n- 500 Internal = error ใน seven-composite\n\nถ้า timeout เยอะให้ตรวจ Fund Service connection ไปที่ bank",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 536
+   },
+   "id": 9024,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status!=\"200\",sof_type=\"BANK\",status_code=\"-1\"}[1m])) by (sof_code)",
+     "legendFormat": "timeout (-1) {{sof_code}}",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status!=\"200\",sof_type=\"BANK\",status_code=~\"-1016|-1017|-1018\"}[1m])) by (sof_code, status_code)",
+     "legendFormat": "bank error {{status_code}} {{sof_code}}",
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status=\"500\",sof_type=\"BANK\"}[1m])) by (sof_code)",
+     "legendFormat": "500 Internal {{sof_code}}",
+     "refId": "C"
+    }
+   ],
+   "title": "Bank Gateway (Direct Debit) — Fail by Error Code  (seven-composite)",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "จำนวนครั้งที่ omise-gateway เรียก Omise/OPN API แล้วได้รับ 429 Too Many Requests กลับมา\n\nดูยังไง: ถ้าขึ้นมาหมายความว่า Omise API rate limit TMN แล้ว request ถัดไปจะ fail ต่อเนื่อง\n\nAction: แจ้ง Omise support ทันที พร้อมช่วงเวลาที่เกิดและ volume ที่ส่งไป",
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "fillOpacity": 15,
+      "lineWidth": 2
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green"
+       },
+       {
+        "color": "red",
+        "value": 1
+       }
+      ]
+     },
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 545
+   },
+   "id": 9036,
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(http_client_requests_seconds_count{app_name=\"omise-gateway\",status=\"429\"}[1m]))",
+     "legendFormat": "429 from Omise API",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum by (uri) (increase(http_client_requests_seconds_count{app_name=\"omise-gateway\",status=\"429\"}[1m]))",
+     "legendFormat": "{{uri}}",
+     "refId": "B"
+    }
+   ],
+   "title": "Omise API — 429 Rate Limit (outbound http_client)",
+   "type": "timeseries"
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "จำนวน transaction ใน omise_gateway_transaction_total ที่ status เกี่ยวกับ rate limit หรือ service unavailable\n\nดูยังไง: 429 จาก Omise อาจ map เป็น SERVICE_UNAVAILABLE หรือ OMISE_CONNECTION_ERROR ใน metric นี้\n\nถ้าเห็น spike พร้อมกับ panel ซ้าย = ยืนยันว่า 429 กระทบ transaction จริง",
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "fillOpacity": 15,
+      "lineWidth": 2
+     },
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 545
+   },
+   "id": 9037,
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum by (status_code) (increase(omise_gateway_transaction_total{service=\"charge\",mcc=\"711\",status_code=~\"SERVICE_UNAVAILABLE|OMISE_CONNECTION_ERROR|TOO_MANY_REQUESTS|RATE_LIMIT\"}[1m]))",
+     "legendFormat": "{{status_code}}",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum by (status_code) (increase(http_server_requests_seconds_count{app_name=\"omise-gateway\",status=\"429\"}[1m]))",
+     "legendFormat": "omise-gw returns 429 → {{status_code}}",
+     "refId": "B"
+    }
+   ],
+   "title": "Omise API — 429 Rate Limit (omise_gateway_transaction_total)",
+   "type": "timeseries"
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "แยก error ของ PayNext/PayNext Extra ตาม error code\n\nดูยังไง:\n- -1 = timeout (MAMBU/Nano GW ช้า)\n- -1016 ถึง -1320 = MAMBU business error (insufficient, limit exceed ฯลฯ)\n\nถ้า -1 เยอะให้ตรวจ MAMBU Database connection",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 553
+   },
+   "id": 9025,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status_code=\"-1\",sof_code=~\"PAY_NEXT|PAY_NEXT_EXTRA\"}[1m])) by (sof_code)",
+     "legendFormat": "timeout (-1) {{sof_code}}",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(retail_seven_composite_requests_seconds_count{status_code=~\"-1016|-1017|-1018|-1315|-1316|-1320|-1310\",sof_code=~\"PAY_NEXT|PAY_NEXT_EXTRA\"}[1m])) by (sof_code, status_code)",
+     "legendFormat": "{{status_code}} {{sof_code}}",
+     "refId": "B"
+    }
+   ],
+   "title": "PayNext / PNE — Fail by Error Code  (Nano Gateway)",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "Error ที่เกิดจากการที่ omise-gateway เรียก Omise API ไม่ได้\n\nดูยังไง: CLIENT_ERROR = HTTP 4xx จาก Omise, 500 = network error\n\nถ้า SERVICE_UNAVAILABLE/CONNECTION_ERROR ขึ้นพร้อมกัน ให้ตรวจ network ระหว่าง TMN กับ Omise ทันที",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 553
+   },
+   "id": 9026,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(http_client_requests_seconds_count{app_name=\"omise-gateway\",status=~\"CLIENT_ERROR|500\",uri=\"/charges\"}[1m])) by (status, uri)",
+     "legendFormat": "{{status}} {{uri}}",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(omise_gateway_transaction_total{status_code=~\"SERVICE_UNAVAILABLE|OMISE_CONNECTION_ERROR\"}[1m])) by (status_code)",
+     "legendFormat": "{{status_code}}",
+     "refId": "B"
+    }
+   ],
+   "title": "HTTP Client Error — Upstream Connection Fail  (omise-gateway)",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "อัตราส่วน Cancel ต่อ Charge — ปกติควรอยู่ต่ำกว่า 10%\n\nดูยังไง: threshold สีเหลือง = 10%, สีแดง = 30%\n\nถ้าพุ่งสูงกะทันหัน: ระบบภายใน 7-Eleven อาจมีปัญหาทำให้ส่ง cancel ซ้ำหรือ false cancel เข้ามา (Case #4)\n\nAction: ตรวจสอบฝั่ง 7-Eleven ว่า Cancel request มี payment_id ที่ valid หรือเปล่า",
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "fillOpacity": 8,
+      "lineWidth": 2
+     },
+     "mappings": [],
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green"
+       },
+       {
+        "color": "yellow",
+        "value": 10
+       },
+       {
+        "color": "red",
+        "value": 30
+       }
+      ]
+     },
+     "unit": "percent"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 8,
+    "w": 24,
+    "x": 0,
+    "y": 562
+   },
+   "id": 9028,
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(rate(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CANCEL\"}[5m])) / sum(rate(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CHARGE\"}[5m])) * 100",
+     "legendFormat": "Cancel/Charge ratio %",
+     "refId": "A"
+    }
+   ],
+   "title": "Cancel / Charge Ratio  (ปกติควร < 10%)  — ถ้าพุ่งแสดงว่า 7-11 ส่ง false cancel",
+   "type": "timeseries"
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "เปรียบเทียบ volume Charge OK, Cancel OK และ Cancel Fail ในกราฟเดียว\n\nดูยังไง: ถ้า Cancel OK เริ่มใกล้เคียง Charge OK มากขึ้น นั่นคือ signal ที่ผิดปกติ\n\nเกี่ยวกับ: Case #4 — ใช้ panel นี้ยืนยันว่า Cancel จริงๆ หรือ false",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 570
+   },
+   "id": 9029,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CHARGE\",status_code=\"200 OK\"}[1m]))",
+     "legendFormat": "Charge OK",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CANCEL\",status_code=\"200 OK\"}[1m]))",
+     "legendFormat": "Cancel OK",
+     "refId": "B"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CANCEL\",status_code!=\"200 OK\"}[1m]))",
+     "legendFormat": "Cancel Fail",
+     "refId": "C"
+    }
+   ],
+   "title": "Cancel — Volume vs Charge Volume  (เทียบกัน)",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "จำนวน Refund สำเร็จและ fail จาก seven-custom-in-gateway\n\nดูยังไง: ถ้า Refund Fail สูงในช่วงที่มีปัญหาหมายความว่าระบบ refund กลับลูกค้าไม่สำเร็จ\n\nเกี่ยวกับ: Case #2 — ลูกค้าถูกตัดเงินแต่ Slip ไม่พิมพ์ ต้อง refund กลับ",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 570
+   },
+   "id": 9030,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"REFUNDS\",status_code=\"200 OK\"}[1m]))",
+     "legendFormat": "Refund OK",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"REFUNDS\",status_code!=\"200 OK\"}[1m])) by (status_code)",
+     "legendFormat": "Refund Fail {{status_code}}",
+     "refId": "B"
+    }
+   ],
+   "title": "Refund — Success / Fail  (Case #2: ตัดเงินแล้ว slip ไม่พิมพ์)",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "จำนวน message ที่รอประมวลผลใน Refund Queue ของ RabbitMQ\n\nดูยังไง: ready messages ควรใกล้ 0 ถ้าสะสมขึ้นเรื่อยๆ = Consumer ประมวลผลไม่ทัน\n\ndead-letter = message ที่ fail หลาย retry แล้ว ต้อง manual intervention\n\nthreshold สีแดง = 500 messages",
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "palette-classic"
+     },
+     "custom": {
+      "fillOpacity": 8,
+      "lineWidth": 2
+     },
+     "mappings": [],
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green"
+       },
+       {
+        "color": "yellow",
+        "value": 100
+       },
+       {
+        "color": "red",
+        "value": 500
+       }
+      ]
+     },
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 578
+   },
+   "id": 9031,
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "rabbitmq_queue_messages{queue=~\"acquiring-transaction-refund-event\"}",
+     "legendFormat": "ready messages",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "rabbitmq_queue_messages{queue=~\"acquiring-transaction-refund-event-dl\"}",
+     "legendFormat": "dead-letter (stuck)",
+     "refId": "B"
+    }
+   ],
+   "title": "Refund Queue Depth  — acquiring-transaction-refund-event",
+   "type": "timeseries"
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "เปรียบเทียบ 2 error reason ที่สำคัญใน Acquiring\n\nดูยังไง:\n- invalid_payment_id spike = 7-11 ส่ง payment_id ผิดหรือ duplicate (Case #3)\n- failed_timeout spike = upstream SoF ช้า ดู P99 Section C ประกอบ\n\nถ้าทั้งคู่ขึ้นพร้อมกันให้แยก root cause ก่อนว่าเป็นคนละสาเหตุ",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 578
+   },
+   "id": 9032,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(acquiring_service_total_transaction_total{status_code!=\"200\",status_code_reason=\"invalid_payment_id\",app_name=\"acquiring-service\"}[1m]))",
+     "legendFormat": "invalid_payment_id",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(acquiring_service_total_transaction_total{status_code!=\"200\",status_code_reason=\"failed_timeout\",app_name=\"acquiring-service\"}[1m]))",
+     "legendFormat": "failed_timeout",
+     "refId": "B"
+    }
+   ],
+   "title": "Acquiring — invalid_payment_id  vs  failed_timeout  (Case #3)",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "จำนวน Cancel fail แยกตาม HTTP status_code\n\nดูยังไง: ถ้า Cancel fail สูงระหว่างที่ Cancel/Charge ratio พุ่ง อาจเป็น false cancel ที่ระบบ TMN ปฏิเสธถูกต้องแล้ว (ไม่ใช่ bug)",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 586
+   },
+   "id": 9033,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(SEVEN_CUSTOM_IN_GATEWAY_transaction_total{service=\"CANCEL\",status_code!=\"200 OK\"}[1m])) by (status_code)",
+     "legendFormat": "{{status_code}}",
+     "refId": "A"
+    }
+   ],
+   "title": "Cancel — Fail by Status Code  (แยก error type)",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  },
+  {
+   "bars": false,
+   "datasource": {
+    "type": "prometheus",
+    "uid": "wFXCXqVSk"
+   },
+   "description": "เปรียบเทียบ volume Charge และ Refund ของ 7-Delivery ISV\n\nดูยังไง: Refund ปกติน้อยกว่า Charge มาก ถ้าใกล้เคียงกันหมายความว่ามีปัญหา payment ที่ต้อง refund กลับผิดปกติ",
+   "fill": 1,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 586
+   },
+   "id": 9034,
+   "lines": true,
+   "linewidth": 1,
+   "nullPointMode": "null",
+   "stack": false,
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(B2B_IN_GATEWAY_transaction_total{service=\"payments-pay\",status_code=\"200 OK\",isv=\"010000000000292912477\"}[1m]))",
+     "legendFormat": "Pay OK",
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "wFXCXqVSk"
+     },
+     "expr": "sum(increase(B2B_IN_GATEWAY_transaction_total{service=\"payments-refund\",status_code=\"200 OK\",isv=\"010000000000292912477\"}[1m]))",
+     "legendFormat": "Refund OK",
+     "refId": "B"
+    }
+   ],
+   "title": "B2B — Refund  vs  Charge  Ratio  (7-Delivery)",
+   "type": "graph",
+   "yaxes": [
+    {
+     "format": "short",
+     "label": "",
+     "logBase": 1,
+     "show": true
+    },
+    {
+     "format": "short",
+     "show": true
+    }
+   ]
+  }
+ ]
+}

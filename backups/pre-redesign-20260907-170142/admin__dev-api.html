@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Explorer — Dev Tools</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/dev-badge.css">
+  <style>
+    .dc { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:16px; }
+    .dc-hd { display:flex; align-items:center; gap:10px; padding:12px 18px; border-bottom:1px solid var(--border); background:linear-gradient(90deg,rgba(245,158,11,.07),transparent 60%); }
+    .dc-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; background:rgba(245,158,11,.12); color:#f59e0b; }
+    .dc-title { font-size:13px; font-weight:700; color:var(--text); }
+    .dc-sub   { font-size:10px; color:var(--text-muted); margin-top:1px; }
+    .dc-body  { padding:16px 18px; }
+    .dc-foot  { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:10px 18px; border-top:1px solid var(--border); background:rgba(0,0,0,.08); }
+
+    .d-btn { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; font-size:11px; font-weight:600; border-radius:7px; cursor:pointer; font-family:inherit; border:1.5px solid var(--border); background:var(--bg); color:var(--text); transition:all .15s; }
+    .d-btn:hover { border-color:var(--orange); color:var(--orange); }
+    .d-btn.primary { background:var(--orange); color:#fff; border-color:var(--orange); }
+    .d-btn.primary:hover { background:#d04e0e; }
+    .d-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+    .d-label { font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; }
+    .d-input, .d-select, .d-textarea {
+      width:100%; padding:8px 11px; border-radius:8px;
+      border:1.5px solid var(--border); background:var(--bg);
+      color:var(--text); font-size:12px; font-family:inherit; box-sizing:border-box;
+    }
+    .d-input:focus, .d-select:focus, .d-textarea:focus { outline:none; border-color:var(--orange); }
+    .d-textarea { resize:vertical; min-height:110px; font-family:'JetBrains Mono',Consolas,monospace; font-size:11px; line-height:1.55; }
+
+    /* Request bar */
+    .req-bar { display:grid; grid-template-columns:110px 1fr; gap:10px; margin-bottom:12px; }
+    .d-select-method { padding:8px 10px; border-radius:8px; border:1.5px solid var(--border); background:var(--bg); color:var(--text); font-size:12px; font-weight:700; font-family:inherit; cursor:pointer; }
+    .d-select-method:focus { outline:none; border-color:var(--orange); }
+
+    /* Output */
+    .d-output {
+      background:#0a0a0f; border:1px solid var(--border); border-radius:8px;
+      padding:12px 14px; font-family:'JetBrains Mono',Consolas,monospace;
+      font-size:11px; line-height:1.6; color:#e2e8f0;
+      max-height:480px; overflow:auto; white-space:pre-wrap; word-break:break-word;
+      margin-top:10px;
+    }
+    .d-output:empty { display:none; }
+    .d-output.ok   { border-left:3px solid #22c55e; }
+    .d-output.err  { border-left:3px solid #ef4444; }
+    .d-output.info { border-left:3px solid #3b82f6; }
+
+    /* Method pill */
+    .m-pill { display:inline-block; padding:2px 7px; border-radius:4px; font-size:9px; font-weight:800; letter-spacing:.04em; margin-right:6px; }
+    .m-pill.GET    { background:rgba(34,197,94,.2);  color:#22c55e; }
+    .m-pill.POST   { background:rgba(59,130,246,.2); color:#3b82f6; }
+    .m-pill.PUT    { background:rgba(245,158,11,.2); color:#f59e0b; }
+    .m-pill.PATCH  { background:rgba(242,100,25,.2); color:var(--orange); }
+    .m-pill.DELETE { background:rgba(239,68,68,.2);  color:#ef4444; }
+
+    /* History */
+    .hist-list { display:flex; flex-direction:column; gap:4px; max-height:280px; overflow-y:auto; }
+    .hist-item {
+      display:grid; grid-template-columns:48px 1fr 48px 56px 80px;
+      align-items:center; gap:8px;
+      padding:6px 10px; border-radius:7px; background:rgba(255,255,255,.02);
+      border:1px solid rgba(255,255,255,.05); cursor:pointer;
+      font-size:11px; transition:background .1s;
+    }
+    .hist-item:hover { background:rgba(245,158,11,.06); border-color:rgba(245,158,11,.2); }
+    .hist-path { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-muted); font-family:'JetBrains Mono',Consolas,monospace; }
+    .hist-status.ok  { color:#22c55e; font-weight:700; }
+    .hist-status.err { color:#ef4444; font-weight:700; }
+    .hist-ms { text-align:right; color:var(--text-muted); }
+    .hist-ms.slow { color:#f59e0b; }
+    .hist-ts { text-align:right; color:var(--text-muted); font-size:9.5px; }
+    .hist-empty { color:var(--text-muted); font-size:11px; padding:16px 0; text-align:center; }
+
+    /* Shortcuts */
+    .shortcuts { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+    .shortcut-chip {
+      padding:4px 10px; border-radius:6px; font-size:10px; font-weight:600;
+      border:1px solid var(--border); background:var(--bg); color:var(--text-muted);
+      cursor:pointer; transition:all .12s; white-space:nowrap;
+    }
+    .shortcut-chip:hover { border-color:var(--orange); color:var(--orange); }
+    .shortcut-chip .pill { font-size:8px; font-weight:800; padding:1px 4px; border-radius:3px; margin-right:4px; }
+    .shortcut-chip .pill.G { background:rgba(34,197,94,.15); color:#22c55e; }
+    .shortcut-chip .pill.P { background:rgba(59,130,246,.15); color:#3b82f6; }
+
+    /* Response meta bar */
+    .meta-bar { display:flex; align-items:center; gap:10px; margin-top:8px; font-size:10px; color:var(--text-muted); }
+    .meta-status { font-weight:700; }
+    .meta-status.ok  { color:#22c55e; }
+    .meta-status.err { color:#ef4444; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="zap"></i> API Explorer</div>
+        <div class="page-sub">ยิง request ไป endpoint ใดๆ ใน /api/ — token แนบให้อัตโนมัติ · เฉพาะ Dev SM</div>
+      </div>
+      <div class="topbar-actions"></div>
+    </header>
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="zap"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Dev Tools</div>
+          <h1>API Explorer</h1>
+          <p>ยิง request ไป endpoint ใด ๆ ใน <code>/api/</code> — token แนบให้อัตโนมัติ · เฉพาะ Dev SM</p>
+        </div>
+      </section>
+
+      <!-- Request Builder -->
+      <div class="dc">
+        <div class="dc-hd">
+          <div class="dc-icon"><i data-icon="zap"></i></div>
+          <div>
+            <div class="dc-title">Request Builder</div>
+            <div class="dc-sub">เลือก method · กรอก path · กด Send</div>
+          </div>
+        </div>
+        <div class="dc-body">
+
+          <div class="d-label" style="margin-bottom:8px">Quick shortcuts</div>
+          <div class="shortcuts" id="shortcut-list"></div>
+
+          <div class="req-bar">
+            <select class="d-select-method" id="api-method">
+              <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
+            </select>
+            <input type="text" class="d-input" id="api-path" value="/health/index.php" placeholder="/users/index.php?limit=20">
+          </div>
+
+          <div style="margin-bottom:12px">
+            <div class="d-label">Request Body <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted)">(JSON — สำหรับ POST / PUT / PATCH)</span></div>
+            <textarea class="d-textarea" id="api-body" placeholder='{"key": "value"}'></textarea>
+          </div>
+
+          <div id="api-result" class="d-output"></div>
+          <div class="meta-bar" id="api-meta-bar" style="display:none">
+            <span class="meta-status" id="api-meta-status"></span>
+            <span id="api-meta-time"></span>
+            <span id="api-meta-size"></span>
+            <button class="d-btn" style="padding:2px 8px;font-size:10px;margin-left:auto" onclick="copyResponse()">Copy JSON</button>
+          </div>
+        </div>
+        <div class="dc-foot">
+          <button class="d-btn primary" onclick="sendRequest()" id="btn-send"><i data-icon="play"></i> Send Request</button>
+          <button class="d-btn" onclick="clearResult()"><i data-icon="x"></i> Clear</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)">
+            <input type="checkbox" id="pretty-print" checked> Pretty print
+          </label>
+        </div>
+      </div>
+
+      <!-- Request History -->
+      <div class="dc">
+        <div class="dc-hd">
+          <div class="dc-icon" style="background:rgba(168,85,247,.12);color:#a855f7"><i data-icon="clock"></i></div>
+          <div>
+            <div class="dc-title">Request History</div>
+            <div class="dc-sub">คลิก row เพื่อโหลด request กลับมาใหม่</div>
+          </div>
+        </div>
+        <div class="dc-body">
+          <div style="display:grid;grid-template-columns:48px 1fr 48px 56px 80px;gap:8px;padding:0 10px 6px;font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--text-muted);text-transform:uppercase;">
+            <span>Method</span><span>Path</span><span>Status</span><span style="text-align:right">Time</span><span style="text-align:right">At</span>
+          </div>
+          <div class="hist-list" id="hist-list">
+            <div class="hist-empty">ยังไม่มี history — ส่ง request ก่อน</div>
+          </div>
+        </div>
+        <div class="dc-foot">
+          <button class="d-btn" onclick="clearHistory()"><i data-icon="trash"></i> Clear History</button>
+          <span style="font-size:10px;color:var(--text-muted)" id="hist-count"></span>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+if (!Auth.requireAuth()) { /* redirected */ }
+const _u = Auth.getUser?.();
+if (_u && _u.role !== 'dev_sm') window.location.replace('./index.html');
+Layout.render('dev-api');
+
+// ── Shortcuts ──────────────────────────────────────────
+const SHORTCUTS = [
+  { m:'GET',  p:'/health/index.php',            label:'Health' },
+  { m:'GET',  p:'/auth/me.php',                 label:'Me' },
+  { m:'GET',  p:'/users/index.php',             label:'Users' },
+  { m:'GET',  p:'/board/index.php?limit=10',    label:'Board' },
+  { m:'GET',  p:'/system-settings/index.php',   label:'Settings' },
+  { m:'GET',  p:'/dev/',                        label:'Dev Stats' },
+  { m:'GET',  p:'/log/index.php?type=activity&limit=20', label:'Activity Log' },
+  { m:'GET',  p:'/log/index.php?type=security&limit=20', label:'Security Log' },
+  { m:'GET',  p:'/jenkins-servers/index.php',   label:'Jenkins Svrs' },
+  { m:'GET',  p:'/templates/index.php',         label:'Templates' },
+  { m:'GET',  p:'/notifications/index.php',     label:'Notifications' },
+  { m:'POST', p:'/auth/logout.php',             label:'Logout', b:'{}' },
+];
+
+document.getElementById('shortcut-list').innerHTML = SHORTCUTS.map((s,i) =>
+  `<span class="shortcut-chip" onclick="loadShortcut(${i})">
+    <span class="pill ${s.m==='GET'?'G':'P'}">${s.m}</span>${escHtml(s.label)}
+  </span>`
+).join('');
+
+function loadShortcut(i) {
+  const s = SHORTCUTS[i];
+  document.getElementById('api-method').value = s.m;
+  document.getElementById('api-path').value   = s.p;
+  document.getElementById('api-body').value   = s.b || '';
+}
+
+// ── State ──────────────────────────────────────────────
+let _history = [];
+let _lastResponse = null;
+
+function fmtTime(ts) {
+  return new Date(ts).toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+// ── Send ───────────────────────────────────────────────
+async function sendRequest() {
+  const method = document.getElementById('api-method').value;
+  const path   = document.getElementById('api-path').value.trim();
+  const bodyRaw= document.getElementById('api-body').value.trim();
+  const out    = document.getElementById('api-result');
+  const btn    = document.getElementById('btn-send');
+  const pretty = document.getElementById('pretty-print').checked;
+
+  if (!path) { Toast.warning('กรอก path ก่อน'); return; }
+
+  let body = null;
+  if (bodyRaw && ['POST','PUT','PATCH'].includes(method)) {
+    try { body = JSON.parse(bodyRaw); }
+    catch (e) { out.className = 'd-output err'; out.textContent = 'JSON parse error: ' + e.message; return; }
+  }
+
+  btn.disabled = true; btn.textContent = '⏳ Sending…';
+  out.className = 'd-output info';
+  out.textContent = `${method} ${path}\n\nSending…`;
+  document.getElementById('api-meta-bar').style.display = 'none';
+
+  const t0  = performance.now();
+  const res = await API.request(method, path, body);
+  const ms  = Math.round(performance.now() - t0);
+  btn.disabled = false; btn.innerHTML = '<i data-icon="play"></i> Send Request';
+
+  _lastResponse = res?.data;
+  const ok = res?.ok ?? false;
+  const st = res?.status ?? 0;
+  const json = pretty
+    ? JSON.stringify(res?.data, null, 2)
+    : JSON.stringify(res?.data);
+
+  out.className = 'd-output ' + (ok ? 'ok' : 'err');
+  out.textContent = `${method} ${path}\nHTTP ${st} · ${ms}ms\n\n${json}`;
+
+  // Meta bar
+  const metaBar = document.getElementById('api-meta-bar');
+  const metaSt  = document.getElementById('api-meta-status');
+  metaSt.textContent = `HTTP ${st}`;
+  metaSt.className   = 'meta-status ' + (ok ? 'ok' : 'err');
+  document.getElementById('api-meta-time').textContent = `${ms}ms`;
+  document.getElementById('api-meta-size').textContent = `${new TextEncoder().encode(json).length} bytes`;
+  metaBar.style.display = 'flex';
+
+  // History
+  _history.unshift({ method, path, body: bodyRaw, status: st, ok, ms, ts: Date.now() });
+  if (_history.length > 50) _history.length = 50;
+  renderHistory();
+}
+
+function clearResult() {
+  document.getElementById('api-result').className = 'd-output';
+  document.getElementById('api-result').textContent = '';
+  document.getElementById('api-meta-bar').style.display = 'none';
+  _lastResponse = null;
+}
+
+function copyResponse() {
+  if (_lastResponse == null) return;
+  navigator.clipboard?.writeText(JSON.stringify(_lastResponse, null, 2))
+    .then(() => Toast.success('Copied JSON'));
+}
+
+// ── History ────────────────────────────────────────────
+function renderHistory() {
+  const list = document.getElementById('hist-list');
+  document.getElementById('hist-count').textContent = `${_history.length} requests`;
+
+  if (!_history.length) {
+    list.innerHTML = '<div class="hist-empty">ยังไม่มี history — ส่ง request ก่อน</div>';
+    return;
+  }
+
+  list.innerHTML = _history.map((h, i) => {
+    const msClass = h.ms > 1000 ? 'slow' : '';
+    const stClass = h.ok ? 'ok' : 'err';
+    return `<div class="hist-item" onclick="restoreHistory(${i})">
+      <span class="m-pill ${h.method}">${h.method}</span>
+      <span class="hist-path" title="${escHtml(h.path)}">${escHtml(h.path)}</span>
+      <span class="hist-status ${stClass}">${h.status}</span>
+      <span class="hist-ms ${msClass}" style="text-align:right">${h.ms}ms</span>
+      <span class="hist-ts">${fmtTime(h.ts)}</span>
+    </div>`;
+  }).join('');
+}
+
+function restoreHistory(i) {
+  const h = _history[i];
+  if (!h) return;
+  document.getElementById('api-method').value = h.method;
+  document.getElementById('api-path').value   = h.path;
+  document.getElementById('api-body').value   = h.body || '';
+  Toast.success('Loaded from history');
+}
+
+function clearHistory() {
+  _history = [];
+  _lastResponse = null;
+  renderHistory();
+}
+
+// Keyboard: Ctrl+Enter to send
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    sendRequest();
+  }
+});
+</script>
+</body>
+</html>

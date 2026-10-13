@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Docs — SOM-Portal</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <style>
+    /* ═════════ Split layout ══════════════════════════════ */
+    /* Use natural flex flow so any injected topbar sibling is respected.
+       flex:1 + min-height:0 lets sheets-page-content take the remaining
+       height after topbar. We rely on .main-content being locked to
+       height:100vh via inline style below; min-height:100vh alone doesn't
+       give flex children a definite pixel basis for the iframe to fill. */
+    .sheets-page-content {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      padding: 0;
+      position: relative;
+    }
+
+    .sheets-split {
+      --sh-sidebar-w: 280px;
+      display: grid;
+      grid-template-columns: var(--sh-sidebar-w) 1fr;
+      gap: 0;
+      height: 100%;
+      width: 100%;
+      min-height: 0;
+      min-width: 0;
+      background: var(--bg);
+      position: relative;
+    }
+    /* When collapsed: sidebar column shrinks to 0, iframe takes 100% width.
+       Do NOT `display:none` the sidebar — grid auto-placement would then put
+       .sh-main into column 1 (the 0px one) and the whole pane collapses.
+       Keep sidebar in flow but width 0 + inner content hidden. */
+    .sheets-split.sidebar-collapsed {
+      --sh-sidebar-w: 0px;
+    }
+
+    /* ─── Sidebar ──────────────────────────────────────── */
+    .sh-sidebar {
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      min-height: 0; min-width: 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .sh-sidebar-head {
+      padding: 12px 14px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 8px;
+      flex-shrink: 0;
+    }
+    /* Hide all sidebar contents when collapsed — only the toggle btn remains */
+    .sidebar-collapsed .sh-sidebar > * { display: none; }
+    .sidebar-collapsed .sh-sidebar    { border-right: 0; }
+
+    .sh-search-row { display: flex; gap: 6px; }
+    .sh-search-row .search-wrap { flex: 1; min-width: 0; }
+    .sh-search-row .search-wrap input { width: 100%; font-size: 12px; }
+
+    .sh-type-tabs {
+      display: flex; gap: 3px;
+    }
+    .sh-type-tab {
+      flex: 1; text-align: center;
+      font-size: 10.5px; font-weight: 700;
+      padding: 4px 6px; border-radius: 6px;
+      background: var(--bg); color: var(--text-muted);
+      border: 1px solid var(--border);
+      cursor: pointer; transition: all .12s;
+      user-select: none;
+    }
+    .sh-type-tab:hover { color: var(--text); border-color: var(--orange); }
+    .sh-type-tab.active {
+      background: var(--orange); color: #fff; border-color: var(--orange);
+    }
+
+    .sh-sidebar-body {
+      flex: 1; overflow-y: auto; padding: 6px 6px 12px;
+      scrollbar-width: thin;
+    }
+    .sh-sidebar-body::-webkit-scrollbar { width: 6px; }
+    .sh-sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .sh-group {
+      margin-top: 8px;
+    }
+    .sh-group-head {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px;
+      font-size: 10px; font-weight: 800;
+      color: var(--text-muted); letter-spacing: .06em;
+      text-transform: uppercase;
+      cursor: pointer; user-select: none;
+      border-radius: 5px;
+      transition: color .12s, background .12s;
+    }
+    .sh-group-head:hover { color: var(--text); background: var(--bg); }
+    .sh-group-caret {
+      display: inline-block; width: 10px; font-size: 9px;
+      transition: transform .12s;
+    }
+    .sh-group.collapsed .sh-group-caret { transform: rotate(-90deg); }
+    .sh-group.collapsed .sh-group-body { display: none; }
+    .sh-group-count {
+      margin-left: auto; font-size: 10px; font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .sh-item {
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 8px 6px 22px;
+      font-size: 12px; color: var(--text);
+      cursor: pointer; border-radius: 6px;
+      transition: background .1s, color .1s;
+      position: relative;
+      user-select: none;
+    }
+    .sh-item:hover { background: var(--orange-dim); }
+    .sh-item.active {
+      background: var(--orange-dim);
+      color: var(--orange);
+      font-weight: 700;
+    }
+    .sh-item.active::before {
+      content: ''; position: absolute; left: 6px; top: 8px; bottom: 8px;
+      width: 3px; background: var(--orange); border-radius: 2px;
+    }
+    .sh-item-icon { font-size: 13px; flex-shrink: 0; }
+    .sh-item-name {
+      flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      min-width: 0;
+    }
+    .sh-item-star {
+      flex-shrink: 0; font-size: 11px; opacity: 0;
+      cursor: pointer; padding: 2px 4px; line-height: 1;
+      color: var(--text-muted); border-radius: 4px;
+      transition: opacity .1s, color .1s, background .1s;
+    }
+    .sh-item:hover .sh-item-star { opacity: .7; }
+    .sh-item-star:hover { opacity: 1 !important; background: var(--bg-card); }
+    .sh-item-star.starred { opacity: 1; color: #f59e0b; }
+
+    /* Starred group has orange caret icon */
+    .sh-group.starred-group .sh-group-head {
+      color: #f59e0b;
+    }
+
+    /* Sidebar footer */
+    .sh-sidebar-foot {
+      padding: 10px 12px; border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sh-sidebar-foot .btn { width: 100%; font-size: 11px; }
+
+    /* Collapse btn — child of .sheets-split, auto-tracks sidebar width
+       via --sh-sidebar-w custom property (no hardcoded pixels) */
+    .sh-collapse-btn {
+      position: absolute; top: 50%;
+      left: var(--sh-sidebar-w);
+      transform: translate(-50%, -50%);
+      width: 22px; height: 44px; border-radius: 6px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      cursor: pointer; z-index: 5;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: var(--text-muted);
+      transition: left .18s, transform .18s, color .12s, background .12s;
+    }
+    .sh-collapse-btn:hover { color: var(--orange); background: var(--orange-dim); }
+    /* When collapsed, make the toggle much more visible — user needs a
+       clear affordance to bring the sidebar back. */
+    .sidebar-collapsed .sh-collapse-btn {
+      left: 8px;
+      transform: translate(0, -50%);
+      width: 28px; height: 56px;
+      background: var(--orange);
+      color: #fff;
+      border-color: var(--orange);
+      font-size: 14px;
+      box-shadow: 0 2px 8px rgba(242,100,25,.25);
+    }
+    .sidebar-collapsed .sh-collapse-btn:hover {
+      background: var(--orange-hover, #d95515);
+      color: #fff;
+    }
+
+    /* ─── Main pane (iframe) ───────────────────────────── */
+    .sh-main {
+      display: flex; flex-direction: column;
+      min-width: 0; min-height: 0;
+      background: var(--bg);
+    }
+    .sh-main-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      background: var(--bg-card); flex-shrink: 0;
+      min-height: 46px;
+    }
+    .sh-main-title-wrap {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; gap: 1px;
+    }
+    .sh-main-title {
+      font-size: 13px; font-weight: 700; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sh-main-meta {
+      font-size: 10.5px; color: var(--text-muted);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .sh-main-actions { display: flex; gap: 5px; flex-shrink: 0; }
+    .sh-main-actions .btn { font-size: 11px; padding: 5px 12px; }
+    .sh-main-actions .btn-icon { padding: 5px 8px; }
+
+    /* Iframe container — absolute positioning is the only bulletproof
+       way to make <iframe> fill a flex child. Percentage-height on
+       iframe elements can collapse when the parent's height isn't
+       computed as a definite pixel value. */
+    .sh-iframe-wrap {
+      flex: 1; min-height: 0; position: relative;
+      background: var(--bg);
+      overflow: hidden;
+    }
+    .sh-iframe {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%; border: 0;
+      display: block; background: #fff;
+    }
+    .sh-iframe.loading { opacity: .3; transition: opacity .18s; }
+
+    /* Loading overlay */
+    .sh-loading {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg-card);
+      color: var(--text-muted); font-size: 12px;
+      gap: 10px; z-index: 2;
+      transition: opacity .18s;
+    }
+    .sh-loading.hidden { opacity: 0; pointer-events: none; }
+    .sh-loading .spinner {
+      width: 22px; height: 22px; border: 2.5px solid var(--border);
+      border-top-color: var(--orange); border-radius: 50%;
+      animation: sh-spin .8s linear infinite;
+    }
+    @keyframes sh-spin { to { transform: rotate(360deg); } }
+
+    /* Empty state (nothing selected) */
+    .sh-empty {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px; color: var(--text-muted);
+      padding: 40px 20px; text-align: center;
+    }
+    .sh-empty-icon {
+      font-size: 48px; opacity: .35;
+    }
+    .sh-empty-title {
+      font-size: 15px; font-weight: 700; color: var(--text);
+    }
+    .sh-empty-sub {
+      font-size: 12px; max-width: 340px; line-height: 1.6;
+    }
+
+    /* ─── Type icons in list ───────────────────────────── */
+    .sh-doc-icon-sheet { color: #0f9d58; }
+    .sh-doc-icon-doc   { color: #4285f4; }
+    .sh-doc-icon-slide { color: #f4b400; }
+    .sh-doc-icon-other { color: #9333ea; }
+
+    /* ─── Responsive ───────────────────────────────────── */
+    /* All breakpoints must set --sh-sidebar-w (not grid-template-columns
+       directly) so that .sidebar-collapsed { --sh-sidebar-w: 0px } wins. */
+
+    /* Large desktop — comfortable sidebar */
+    @media (min-width: 1400px) {
+      .sheets-split { --sh-sidebar-w: 320px; }
+    }
+
+    /* Laptop / small desktop */
+    @media (max-width: 1100px) {
+      .sheets-split { --sh-sidebar-w: 240px; }
+      .sh-item      { padding: 6px 8px 6px 20px; font-size: 11.5px; }
+      .sh-main-head { padding: 8px 12px; }
+      .sh-main-title { font-size: 12px; }
+      .sh-main-meta  { font-size: 10px; }
+    }
+
+    /* Tablet — narrower sidebar */
+    @media (max-width: 900px) {
+      .sheets-split { --sh-sidebar-w: 210px; }
+    }
+
+    /* Small tablet / large phone — stack vertically */
+    @media (max-width: 700px) {
+      .sheets-split {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(180px, 42vh) 1fr;
+      }
+      .sh-sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        min-height: 0;
+      }
+      .sh-collapse-btn { display: none; }
+      .sheets-split.sidebar-collapsed { grid-template-columns: 1fr; }
+    }
+
+    /* Phone — tighter still */
+    @media (max-width: 480px) {
+      .sheets-split {
+        grid-template-rows: minmax(160px, 38vh) 1fr;
+      }
+      .sh-sidebar-head    { padding: 8px 10px; }
+      .sh-sidebar-foot    { padding: 8px 10px; }
+      .sh-sidebar-body    { padding: 4px; }
+      .sh-main-head       { padding: 6px 10px; min-height: 40px; gap: 6px; }
+      .sh-main-actions .btn-icon { padding: 4px 6px; }
+      .sh-empty-icon      { font-size: 36px; }
+      .sh-empty-title     { font-size: 13px; }
+      .sh-empty-sub       { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content" style="display:flex;flex-direction:column;overflow:hidden;height:100vh">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">⊞ Team Docs</div>
+        <div class="page-sub">Google Sheets, Docs, Slides — เปิดดูในหน้าเดียว</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" data-action="add" onclick="openDocModal()">+ เพิ่มเอกสาร</button>
+      </div>
+    </header>
+
+    <main class="page-content sheets-page-content">
+      <div class="sheets-split" id="sheets-split">
+        <!-- ── Left sidebar (list) ── -->
+        <aside class="sh-sidebar">
+          <div class="sh-sidebar-head">
+            <div class="sh-search-row">
+              <div class="search-wrap">
+                <span class="search-icon">⌕</span>
+                <input type="text" id="search-input" class="form-control" placeholder="ค้นหาเอกสาร...">
+              </div>
+            </div>
+            <div class="sh-type-tabs" id="type-tabs">
+              <div class="sh-type-tab active" data-type=""      onclick="setType(this,'')">All</div>
+              <div class="sh-type-tab"        data-type="sheet" onclick="setType(this,'sheet')"><i data-icon="book"></i> Sheet</div>
+              <div class="sh-type-tab"        data-type="doc"   onclick="setType(this,'doc')"><i data-icon="book"></i> Doc</div>
+              <div class="sh-type-tab"        data-type="slide" onclick="setType(this,'slide')"><i data-icon="book"></i> Slide</div>
+            </div>
+          </div>
+
+          <div class="sh-sidebar-body" id="sidebar-body">
+            <div style="padding:40px 12px;text-align:center;font-size:11px;color:var(--text-muted)">
+              Loading...
+            </div>
+          </div>
+
+          <div class="sh-sidebar-foot">
+            <button class="btn btn-ghost" data-action="add" onclick="openDocModal()">+ เพิ่มเอกสาร</button>
+          </div>
+        </aside>
+
+        <!-- ── Right pane (iframe / empty state) ── -->
+        <section class="sh-main" id="main-pane">
+          <!-- Populated by renderMainPane() -->
+          <div class="sh-empty">
+            <div class="sh-empty-icon">⊞</div>
+            <div class="sh-empty-title">เลือกเอกสารจากรายการทางซ้าย</div>
+            <div class="sh-empty-sub">คลิกเอกสารเพื่อดู preview ที่นี่ — Google Sheet/Doc/Slide จะเปิดในหน้านี้เลย ไม่ต้องเปลี่ยนหน้า</div>
+          </div>
+        </section>
+
+        <!-- Collapse toggle (child of split, auto-tracks sidebar width) -->
+        <button class="sh-collapse-btn" onclick="toggleSidebar()" title="ย่อ/ขยาย sidebar">◂</button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ── Add / Edit Modal ── -->
+<div class="modal-overlay" id="doc-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title" id="doc-modal-title">เพิ่มเอกสาร</span>
+      <button class="btn-close" onclick="Modal.close('doc-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:0">
+      <input type="hidden" id="edit-doc-id">
+
+      <div class="form-group">
+        <label class="form-label">ชื่อเอกสาร <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="doc-name" class="form-control" placeholder="เช่น Weekly Report, Team Roster" maxlength="120">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">URL <span style="color:var(--danger)">*</span></label>
+        <input type="url" id="doc-url" class="form-control" placeholder="https://docs.google.com/...">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">ประเภท</label>
+          <select id="doc-type" class="form-control">
+            <option value="sheet">Google Sheet</option>
+            <option value="doc">Google Doc</option>
+            <option value="slide">Google Slide</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">หมวดหมู่</label>
+          <select id="doc-category" class="form-control">
+            <option value="">— ไม่ระบุ —</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">รายละเอียด</label>
+        <textarea id="doc-desc" class="form-control" rows="3" placeholder="อธิบายเอกสารนี้..." maxlength="300"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('doc-modal')">Cancel</button>
+      <button class="btn btn-primary" id="doc-save-btn" onclick="saveDoc()">
+        <span id="doc-save-text">บันทึก</span>
+        <span id="doc-save-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/utils.js"></script>
+<script src="./assets/js/skeletons.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script src="./assets/js/api.js"></script>
+<script src="./assets/js/csrf.js"></script>
+<script src="./assets/js/analytics.js"></script>
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/maintenance.js"></script>
+<script>
+  if (!Auth.requireAuth()) {}
+  Layout.render('sheets');
+
+  const currentUser = Auth.getUser();
+  let allDocs = [];
+  let categories = [];
+  let activeType = '';                 // '', 'sheet', 'doc', 'slide'
+  let searchQuery = '';
+  let selectedDocId = null;
+  const COLLAPSED_KEY = 'sheets_collapsed_groups';
+  const SIDEBAR_COLLAPSED_KEY = 'sheets_sidebar_collapsed';
+
+  const TYPE_META = {
+    sheet: { icon: '<i data-icon="book"></i>', label: 'Sheet', cls: 'sh-doc-icon-sheet' },
+    doc:   { icon: '<i data-icon="book"></i>', label: 'Doc',   cls: 'sh-doc-icon-doc'   },
+    slide: { icon: '<i data-icon="book"></i>', label: 'Slide', cls: 'sh-doc-icon-slide' },
+    other: { icon: '<i data-icon="file"></i>', label: 'Other', cls: 'sh-doc-icon-other' },
+  };
+
+  // ── Persisted UI state ──────────────────────────────────
+  function loadCollapsed() {
+    try { return JSON.parse(localStorage.getItem(COLLAPSED_KEY) || '{}'); }
+    catch { return {}; }
+  }
+  function saveCollapsed(state) {
+    localStorage.setItem(COLLAPSED_KEY, JSON.stringify(state));
+  }
+  let collapsedGroups = loadCollapsed();
+
+  // ── Convert Google URLs to embed-friendly versions ──────
+  function toEmbedUrl(url) {
+    try {
+      const u = new URL(url);
+      if (u.hostname === 'docs.google.com') {
+        if (u.pathname.includes('/spreadsheets/')) {
+          const gid = u.searchParams.get('gid') || u.hash.replace('#gid=', '');
+          const base = url.replace(/\/edit.*$/, '/edit');
+          return gid ? base + '#gid=' + gid : base;
+        }
+        if (u.pathname.includes('/document/')) {
+          return url.replace(/\/edit.*$/, '/preview');
+        }
+        if (u.pathname.includes('/presentation/')) {
+          return url.replace(/\/edit.*$/, '/embed');
+        }
+      }
+    } catch (_) {}
+    return url;
+  }
+
+  // ── Sidebar collapse ────────────────────────────────────
+  // Only allow collapsing when a doc is currently viewed — otherwise the
+  // user would hide the picker with no way to pick anything.
+  function toggleSidebar() {
+    const el = document.getElementById('sheets-split');
+    const willCollapse = !el.classList.contains('sidebar-collapsed');
+    if (willCollapse && !selectedDocId) {
+      Toast.warning('เลือกเอกสารก่อน แล้วค่อยย่อ sidebar');
+      return;
+    }
+    el.classList.toggle('sidebar-collapsed');
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, el.classList.contains('sidebar-collapsed') ? '1' : '0');
+    document.querySelector('.sh-collapse-btn').textContent = el.classList.contains('sidebar-collapsed') ? '▸' : '◂';
+  }
+
+  // Restore collapsed state — but ONLY if there's a doc URL param.
+  // A blank page in collapsed mode is a dead-end for users.
+  (function restoreSidebarState() {
+    const wantsCollapsed = localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
+    const hasDocParam    = !!new URLSearchParams(location.search).get('doc');
+    if (wantsCollapsed && hasDocParam) {
+      document.getElementById('sheets-split').classList.add('sidebar-collapsed');
+      document.querySelector('.sh-collapse-btn').textContent = '▸';
+    } else if (wantsCollapsed && !hasDocParam) {
+      // Stale collapsed state with no doc — clear it so a fresh load shows the list
+      localStorage.removeItem(SIDEBAR_COLLAPSED_KEY);
+    }
+  })();
+
+  // ── Type filter tabs ────────────────────────────────────
+  function setType(el, type) {
+    document.querySelectorAll('.sh-type-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    activeType = type;
+    renderSidebar();
+  }
+
+  // ── Init ────────────────────────────────────────────────
+  async function init() {
+    const [docsRes, catRes] = await Promise.all([
+      API.sheets.list(),
+      API.sheets.getCategories()
+    ]);
+    if (catRes?.ok) {
+      categories = catRes.data.data || [];
+      populateCategorySelect();
+    }
+    if (docsRes?.ok) {
+      allDocs = docsRes.data.data || [];
+      renderSidebar();
+      // Deep-link: open ?doc=id if present and matches a doc
+      const wanted = new URLSearchParams(location.search).get('doc');
+      if (wanted && allDocs.find(d => d.id === wanted)) {
+        selectDoc(wanted);
+      }
+    } else {
+      Toast.error('โหลดเอกสารไม่สำเร็จ');
+    }
+  }
+
+  // ── Render sidebar list (grouped by category) ───────────
+  function renderSidebar() {
+    const body = document.getElementById('sidebar-body');
+    let docs = allDocs.slice();
+    if (activeType) docs = docs.filter(d => (d.type || 'other') === activeType);
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      docs = docs.filter(d =>
+        (d.name || '').toLowerCase().includes(q) ||
+        (d.description || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (!docs.length) {
+      body.innerHTML = `
+        <div style="padding:36px 12px;text-align:center;font-size:11px;color:var(--text-muted);line-height:1.6">
+          <div style="font-size:28px;opacity:.4;margin-bottom:6px">⊞</div>
+          ${searchQuery || activeType ? 'ไม่พบเอกสารที่ตรงกัน' : 'ยังไม่มีเอกสาร<br>คลิก + เพิ่มเอกสาร ด้านล่าง'}
+        </div>`;
+      return;
+    }
+
+    // Group: starred (per-user) + by category (uncategorized last)
+    const starred = docs.filter(d => d.starred);
+    const groups = {};
+    docs.forEach(d => {
+      const cat = d.category || '(ไม่ระบุหมวด)';
+      (groups[cat] = groups[cat] || []).push(d);
+    });
+
+    // Sort category names — user's defined categories first (in their order), then '(ไม่ระบุหมวด)'
+    const catOrder = categories.slice();
+    catOrder.push('(ไม่ระบุหมวด)');
+    const orderedCats = catOrder.filter(c => groups[c]);
+    // Any categories present in data but not in the categories list — append
+    Object.keys(groups).forEach(c => { if (!orderedCats.includes(c)) orderedCats.push(c); });
+
+    let html = '';
+    if (starred.length) {
+      html += buildGroup('__starred__', '<i data-icon="star"></i> Starred', starred, /*forceOpen*/ true);
+    }
+    orderedCats.forEach(cat => {
+      html += buildGroup(cat, cat, groups[cat]);
+    });
+    body.innerHTML = html;
+
+    // Restore active highlight
+    if (selectedDocId) {
+      document.querySelector(`.sh-item[data-id="${selectedDocId}"]`)?.classList.add('active');
+    }
+  }
+
+  function buildGroup(key, label, docs, forceOpen = false) {
+    const isCollapsed = !forceOpen && collapsedGroups[key];
+    const items = docs.map(buildItem).join('');
+    return `
+      <div class="sh-group${isCollapsed ? ' collapsed' : ''}${key === '__starred__' ? ' starred-group' : ''}" data-group="${escHtml(key)}">
+        <div class="sh-group-head" onclick="toggleGroup(this)">
+          <span class="sh-group-caret">▼</span>
+          <span>${escHtml(label)}</span>
+          <span class="sh-group-count">${docs.length}</span>
+        </div>
+        <div class="sh-group-body">${items}</div>
+      </div>`;
+  }
+
+  function buildItem(d) {
+    const meta = TYPE_META[d.type] || TYPE_META.other;
+    const isActive = d.id === selectedDocId;
+    return `
+      <div class="sh-item${isActive ? ' active' : ''}" data-id="${escHtml(d.id)}" onclick="selectDoc('${escHtml(d.id)}')">
+        <span class="sh-item-icon ${meta.cls}">${meta.icon}</span>
+        <span class="sh-item-name" title="${escHtml(d.name)}">${escHtml(d.name)}</span>
+        <span class="sh-item-star${d.starred ? ' starred' : ''}" onclick="event.stopPropagation();toggleStar('${escHtml(d.id)}')" title="${d.starred ? 'Unstar' : 'Star'}">${d.starred ? '★' : '☆'}</span>
+      </div>`;
+  }
+
+  function toggleGroup(headEl) {
+    const grp = headEl.parentElement;
+    grp.classList.toggle('collapsed');
+    const key = grp.dataset.group;
+    if (grp.classList.contains('collapsed')) collapsedGroups[key] = true;
+    else delete collapsedGroups[key];
+    saveCollapsed(collapsedGroups);
+  }
+
+  // ── Select doc → render iframe ──────────────────────────
+  function selectDoc(id) {
+    const d = allDocs.find(x => x.id === id);
+    if (!d) return;
+
+    selectedDocId = id;
+
+    // Update active class in sidebar
+    document.querySelectorAll('.sh-item.active').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.sh-item[data-id="${id}"]`)?.classList.add('active');
+
+    // Update URL (deep link)
+    const url = new URL(location.href);
+    url.searchParams.set('doc', id);
+    history.replaceState(null, '', url.toString());
+
+    renderMainPane(d);
+  }
+
+  function renderMainPane(d) {
+    const canEdit = d.author_id === currentUser.id ||
+      ['super_admin', 'sm_admin', 'dev_sm'].includes(currentUser.role);
+
+    // Internal path? open in same window (no iframe)
+    const isInternal = /^(\.\.?\/|\/(?!\/))/.test(d.url) ||
+      (() => { try { return new URL(d.url).origin === location.origin; } catch(_) { return false; } })();
+
+    if (isInternal) {
+      // Bail out — internal navigation, no iframe
+      window.location.href = d.url;
+      return;
+    }
+
+    const embedUrl = toEmbedUrl(d.url);
+    const meta = TYPE_META[d.type] || TYPE_META.other;
+
+    document.getElementById('main-pane').innerHTML = `
+      <div class="sh-main-head">
+        <span class="sh-item-icon ${meta.cls}" style="font-size:20px">${meta.icon}</span>
+        <div class="sh-main-title-wrap">
+          <div class="sh-main-title" title="${escHtml(d.name)}">${escHtml(d.name)}</div>
+          <div class="sh-main-meta">
+            ${d.category ? `<span class="badge badge-gray" style="font-size:9.5px;padding:1px 6px">${escHtml(d.category)}</span>` : ''}
+            <span>${escHtml(d.author_name || '—')}</span>
+            <span>·</span>
+            <span>${DateTime.timeAgo(d.updated_at || d.created_at)}</span>
+          </div>
+        </div>
+        <div class="sh-main-actions">
+          <button class="btn btn-ghost btn-icon" data-tip="${d.starred ? 'Unstar' : 'Star'}" onclick="toggleStar('${escHtml(d.id)}')" id="main-star-btn" style="${d.starred ? 'color:#f59e0b' : ''}">${d.starred ? '★' : '☆'}</button>
+          <button class="btn btn-ghost btn-icon" data-tip="Copy link" onclick="copyDocLink('${escHtml(d.id)}')"><i data-icon="link"></i></button>
+          <a class="btn btn-ghost btn-icon" data-tip="Open in new tab" href="${escHtml(d.url)}" target="_blank" rel="noopener">↗</a>
+          ${canEdit ? `<button class="btn btn-ghost btn-icon" data-tip="Edit" onclick="editDoc('${escHtml(d.id)}')">✎</button>` : ''}
+          ${canEdit ? `<button class="btn btn-ghost btn-icon" data-tip="Delete" style="color:var(--danger)" onclick="deleteDoc('${escHtml(d.id)}')">✕</button>` : ''}
+        </div>
+      </div>
+      <div class="sh-iframe-wrap">
+        <div class="sh-loading" id="iframe-loading"><div class="spinner"></div><span>กำลังโหลด...</span></div>
+        <iframe class="sh-iframe loading" id="doc-iframe" src="${escHtml(embedUrl)}"
+                onload="onIframeLoad()" allow="clipboard-write; encrypted-media"></iframe>
+      </div>`;
+
+    document.title = d.name + ' — Team Docs';
+  }
+
+  function onIframeLoad() {
+    document.getElementById('iframe-loading')?.classList.add('hidden');
+    document.getElementById('doc-iframe')?.classList.remove('loading');
+  }
+
+  function copyDocLink(id) {
+    const url = new URL(location.href);
+    url.searchParams.set('doc', id);
+    navigator.clipboard.writeText(url.toString())
+      .then(() => Toast.success('คัดลอกลิงก์แล้ว'))
+      .catch(() => Toast.error('คัดลอกไม่สำเร็จ'));
+  }
+
+  // ── Star / Unstar ───────────────────────────────────────
+  async function toggleStar(id) {
+    const d = allDocs.find(x => x.id === id);
+    if (!d) return;
+    const wasStarred = !!d.starred;
+    // Optimistic
+    d.starred = !wasStarred;
+    renderSidebar();
+    // Update main-pane star button if that's the visible doc
+    if (selectedDocId === id) {
+      const btn = document.getElementById('main-star-btn');
+      if (btn) {
+        btn.innerHTML = d.starred ? '<i data-icon="star"></i>' : '<i data-icon="star"></i>';
+        btn.style.color = d.starred ? '#f59e0b' : '';
+        btn.setAttribute('data-tip', d.starred ? 'Unstar' : 'Star');
+      }
+    }
+    const res = wasStarred ? await API.sheets.unstar(id) : await API.sheets.star(id);
+    if (!res?.ok) {
+      // Rollback
+      d.starred = wasStarred;
+      renderSidebar();
+      Toast.error(res?.data?.message || 'อัปเดตไม่สำเร็จ');
+    }
+  }
+
+  // ── Modal ───────────────────────────────────────────────
+  function openDocModal(doc = null) {
+    document.getElementById('doc-modal-title').textContent = doc ? 'แก้ไขเอกสาร' : 'เพิ่มเอกสาร';
+    document.getElementById('doc-save-text').textContent   = doc ? 'บันทึก' : 'เพิ่ม';
+    document.getElementById('edit-doc-id').value           = doc?.id || '';
+    document.getElementById('doc-name').value              = doc?.name || '';
+    document.getElementById('doc-url').value               = doc?.url || '';
+    document.getElementById('doc-type').value              = doc?.type || 'sheet';
+    document.getElementById('doc-category').value          = doc?.category || '';
+    document.getElementById('doc-desc').value              = doc?.description || '';
+    Modal.open('doc-modal');
+  }
+
+  function editDoc(id) {
+    const d = allDocs.find(x => x.id === id);
+    if (d) openDocModal(d);
+  }
+
+  function populateCategorySelect() {
+    const sel = document.getElementById('doc-category');
+    sel.innerHTML = '<option value="">— ไม่ระบุ —</option>' +
+      categories.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+  }
+
+  async function saveDoc() {
+    const btn  = document.getElementById('doc-save-btn');
+    const spin = document.getElementById('doc-save-spin');
+    const id   = document.getElementById('edit-doc-id').value;
+
+    const payload = {
+      name:        document.getElementById('doc-name').value.trim(),
+      url:         document.getElementById('doc-url').value.trim(),
+      type:        document.getElementById('doc-type').value,
+      category:    document.getElementById('doc-category').value,
+      description: document.getElementById('doc-desc').value.trim(),
+    };
+
+    if (!payload.name) { Toast.warning('กรุณาใส่ชื่อเอกสาร'); return; }
+    if (!payload.url)  { Toast.warning('กรุณาใส่ URL'); return; }
+
+    btn.disabled = true; spin.classList.remove('hidden');
+
+    const res = id
+      ? await API.sheets.update(id, payload)
+      : await API.sheets.create(payload);
+
+    btn.disabled = false; spin.classList.add('hidden');
+
+    if (res?.ok) {
+      Toast.success(id ? 'แก้ไขแล้ว <i data-icon="check"></i>' : 'เพิ่มเอกสารแล้ว <i data-icon="check"></i>');
+      Modal.close('doc-modal');
+      await refreshDocs();
+      // If we just created a doc, auto-select it
+      if (!id && res.data.data?.id) selectDoc(res.data.data.id);
+    } else {
+      Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด');
+    }
+  }
+
+  async function deleteDoc(id) {
+    const confirmed = await confirmDialog('ลบเอกสารนี้? ไม่สามารถกู้คืนได้', 'ลบเอกสาร');
+    if (!confirmed) return;
+    const res = await API.sheets.delete(id);
+    if (res?.ok) {
+      Toast.success('ลบแล้ว');
+      // Reset main pane if we deleted the currently-viewed doc
+      if (selectedDocId === id) {
+        selectedDocId = null;
+        const url = new URL(location.href);
+        url.searchParams.delete('doc');
+        history.replaceState(null, '', url.toString());
+        // Force-expand sidebar so the user can pick another doc
+        const split = document.getElementById('sheets-split');
+        if (split.classList.contains('sidebar-collapsed')) {
+          split.classList.remove('sidebar-collapsed');
+          localStorage.removeItem(SIDEBAR_COLLAPSED_KEY);
+          document.querySelector('.sh-collapse-btn').textContent = '◂';
+        }
+        document.getElementById('main-pane').innerHTML = `
+          <div class="sh-empty">
+            <div class="sh-empty-icon">⊞</div>
+            <div class="sh-empty-title">เลือกเอกสารจากรายการทางซ้าย</div>
+            <div class="sh-empty-sub">คลิกเอกสารเพื่อดู preview ที่นี่</div>
+          </div>`;
+      }
+      await refreshDocs();
+    } else {
+      Toast.error(res?.data?.message || 'ลบไม่สำเร็จ');
+    }
+  }
+
+  async function refreshDocs() {
+    const res = await API.sheets.list();
+    if (res?.ok) {
+      allDocs = res.data.data || [];
+      renderSidebar();
+    }
+  }
+
+  // ── Search ──────────────────────────────────────────────
+  document.getElementById('search-input').addEventListener('input', debounce(e => {
+    searchQuery = e.target.value.trim();
+    renderSidebar();
+  }, 200));
+
+  init();
+</script>
+</body>
+</html>

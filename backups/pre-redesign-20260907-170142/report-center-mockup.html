@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Center — Mockup</title>
+  <script src="./assets/js/theme.js"></script>
+  <link rel="stylesheet" href="./assets/css/dark.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/ui-themes.css">
+  <style>
+    /* ══════════════════════════════════════════════════════════════════
+       Report Center — UI Mockup
+       Prefix: .rc-  (no global leaks)
+       Inherits: --bg-card, --border, --text, --text-muted, --shadow,
+                 --orange, --orange-dim, --radius, --radius-lg, --font
+    ══════════════════════════════════════════════════════════════════ */
+
+    .rc-wrap {
+      --rc-sidebar-w: 220px;
+      --rc-ok:    #16a34a;
+      --rc-warn:  #d97706;
+      --rc-bad:   #dc2626;
+      --rc-info:  #2563eb;
+      --rc-r:     var(--radius-lg, 12px);
+      --rc-gap:   14px;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    html[data-theme="dark"] .rc-wrap {
+      --rc-ok:   #4ade80;
+      --rc-warn: #fbbf24;
+      --rc-bad:  #f87171;
+      --rc-info: #60a5fa;
+    }
+    .rc-wrap * { box-sizing: border-box; }
+    .rc-hidden { display: none !important; }
+
+    /* ── Topbar controls ──────────────────────────────────────────── */
+    .rc-topbar-row {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 0 0 14px;
+    }
+    .rc-mode-tabs {
+      display: flex; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius, 8px); padding: 3px; gap: 2px;
+    }
+    .rc-mode-tab {
+      padding: 6px 16px; border-radius: 6px; border: none;
+      font-family: var(--font); font-size: 11.5px; font-weight: 700;
+      cursor: pointer; background: transparent; color: var(--text-muted);
+      letter-spacing: -.01em; transition: all .15s;
+    }
+    .rc-mode-tab.active {
+      background: var(--orange); color: #fff;
+      box-shadow: 0 1px 4px rgba(242,100,25,.35);
+    }
+    .rc-mode-tab:not(.active):hover { background: var(--bg); color: var(--text); }
+
+    .rc-date-nav {
+      display: flex; align-items: center; gap: 4px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius, 8px); padding: 3px 4px;
+    }
+    .rc-date-nav-btn {
+      width: 28px; height: 28px; border: none; border-radius: 6px;
+      background: transparent; color: var(--text-muted); cursor: pointer;
+      font-size: 14px; display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .rc-date-nav-btn:hover { background: var(--bg); color: var(--text); }
+    .rc-date-label {
+      padding: 0 10px; font-family: var(--font); font-size: 11.5px;
+      font-weight: 700; color: var(--text); letter-spacing: -.01em;
+      min-width: 160px; text-align: center;
+    }
+
+    .rc-spacer { flex: 1; }
+
+    .rc-top-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border: 1px solid var(--border);
+      border-radius: var(--radius, 8px); background: var(--bg-card);
+      font-family: var(--font); font-size: 11.5px; font-weight: 700;
+      color: var(--text); cursor: pointer; transition: all .15s;
+      text-decoration: none;
+    }
+    .rc-top-btn:hover { background: var(--bg); border-color: var(--text-muted); }
+    .rc-top-btn.primary {
+      background: var(--orange); border-color: var(--orange); color: #fff;
+    }
+    .rc-top-btn.primary:hover {
+      background: var(--orange-hover, #e05510); border-color: var(--orange-hover, #e05510);
+    }
+    .rc-top-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+    /* ── Main body: sidebar + content ────────────────────────────── */
+    .rc-body {
+      display: flex; gap: var(--rc-gap); align-items: flex-start;
+    }
+
+    /* ── Section picker sidebar ───────────────────────────────────── */
+    .rc-sidebar {
+      width: var(--rc-sidebar-w); flex-shrink: 0;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--rc-r); overflow: hidden;
+      position: sticky; top: 76px;
+    }
+    .rc-sidebar-head {
+      padding: 11px 14px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .rc-sidebar-title {
+      font-size: 9.5px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+    .rc-sidebar-reset {
+      font-size: 9px; font-weight: 600; color: var(--orange);
+      border: none; background: none; cursor: pointer; padding: 0;
+      font-family: var(--font); letter-spacing: .03em;
+    }
+    .rc-sidebar-reset:hover { text-decoration: underline; }
+
+    .rc-sidebar-group { border-bottom: 1px solid var(--border); }
+    .rc-sidebar-group:last-child { border-bottom: none; }
+    .rc-sidebar-group-label {
+      padding: 8px 14px 6px;
+      font-size: 8.5px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .1em;
+      background: var(--bg);
+    }
+    .rc-section-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 14px; cursor: pointer; transition: background .1s;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    }
+    .rc-section-item:last-child { border-bottom: none; }
+    .rc-section-item:hover { background: var(--bg); }
+    .rc-section-check {
+      width: 15px; height: 15px; margin-top: 1px; flex-shrink: 0;
+      accent-color: var(--orange); cursor: pointer;
+    }
+    .rc-section-info { flex: 1; min-width: 0; }
+    .rc-section-name {
+      font-size: 11.5px; font-weight: 600; color: var(--text);
+      letter-spacing: -.01em; line-height: 1.2;
+    }
+    .rc-section-sub {
+      font-size: 9.5px; color: var(--text-muted); margin-top: 2px;
+    }
+    .rc-section-badge {
+      font-size: 9px; font-weight: 700; padding: 1px 6px;
+      border-radius: 999px; letter-spacing: .02em; flex-shrink: 0;
+    }
+    .rc-section-badge.ok { background: color-mix(in srgb, var(--rc-ok) 12%, transparent); color: var(--rc-ok); }
+    .rc-section-badge.warn { background: color-mix(in srgb, var(--rc-warn) 12%, transparent); color: var(--rc-warn); }
+    .rc-section-badge.bad { background: color-mix(in srgb, var(--rc-bad) 12%, transparent); color: var(--rc-bad); }
+    .rc-section-badge.info { background: color-mix(in srgb, var(--rc-info) 12%, transparent); color: var(--rc-info); }
+    .rc-section-badge.muted { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+
+    /* ── Content area ─────────────────────────────────────────────── */
+    .rc-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--rc-gap); }
+
+    /* ── Section card (each toggled section) ─────────────────────── */
+    .rc-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--rc-r); box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .rc-card-head {
+      padding: 13px 18px 11px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .rc-card-title-row { display: flex; align-items: center; gap: 9px; }
+    .rc-card-icon {
+      width: 30px; height: 30px; border-radius: 8px; display: flex;
+      align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .rc-card-icon svg { width: 15px; height: 15px; }
+    .rc-card-title { font-size: 12.5px; font-weight: 700; letter-spacing: -.01em; }
+    .rc-card-sub { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+    .rc-card-actions { display: flex; gap: 6px; align-items: center; }
+    .rc-chip {
+      display: inline-flex; align-items: center; height: 22px; padding: 0 9px;
+      font-size: 9.5px; font-weight: 700; border-radius: 999px; letter-spacing: .03em;
+    }
+    .rc-chip.ok { background: color-mix(in srgb, var(--rc-ok) 12%, transparent); color: var(--rc-ok); }
+    .rc-chip.warn { background: color-mix(in srgb, var(--rc-warn) 12%, transparent); color: var(--rc-warn); }
+    .rc-chip.bad { background: color-mix(in srgb, var(--rc-bad) 12%, transparent); color: var(--rc-bad); }
+    .rc-chip.info { background: color-mix(in srgb, var(--rc-info) 12%, transparent); color: var(--rc-info); }
+    .rc-chip.muted { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+
+    .rc-card-body { padding: 16px 18px; }
+
+    /* ── KPI grid ─────────────────────────────────────────────────── */
+    .rc-kpi-row {
+      display: grid; gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      margin-bottom: 16px;
+    }
+    .rc-kpi {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 13px 16px;
+    }
+    .rc-kpi-label {
+      font-size: 9.5px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .rc-kpi-val {
+      font-size: 32px; font-weight: 800; letter-spacing: -.03em;
+      line-height: 1; margin: 8px 0 4px; color: var(--text);
+    }
+    .rc-kpi-val.ok   { color: var(--rc-ok); }
+    .rc-kpi-val.bad  { color: var(--rc-bad); }
+    .rc-kpi-val.warn { color: var(--rc-warn); }
+    .rc-kpi-val.info { color: var(--rc-info); }
+    .rc-kpi-delta {
+      font-size: 10px; font-weight: 600; display: flex; align-items: center; gap: 3px;
+    }
+    .rc-kpi-delta.up   { color: var(--rc-bad); }
+    .rc-kpi-delta.down { color: var(--rc-ok); }
+    .rc-kpi-delta.flat { color: var(--text-muted); }
+
+    /* ── Progress bar ─────────────────────────────────────────────── */
+    .rc-progress-wrap { margin-bottom: 12px; }
+    .rc-progress-lbl {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 10.5px; font-weight: 600; color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .rc-progress-lbl .pct { font-size: 13px; font-weight: 800; color: var(--text); }
+    .rc-progress-track {
+      height: 7px; border-radius: 999px; background: var(--bg);
+      border: 1px solid var(--border); overflow: hidden;
+    }
+    .rc-progress-fill { height: 100%; border-radius: 999px; }
+    .rc-progress-fill.ok   { background: var(--rc-ok); }
+    .rc-progress-fill.warn { background: var(--rc-warn); }
+    .rc-progress-fill.bad  { background: var(--rc-bad); }
+
+    /* ── Item list (support items) ───────────────────────────────── */
+    .rc-item-list { display: flex; flex-direction: column; gap: 6px; }
+    .rc-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 12px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .rc-item-dot {
+      width: 7px; height: 7px; border-radius: 50%; margin-top: 5px; flex-shrink: 0;
+    }
+    .rc-item-dot.ok   { background: var(--rc-ok); }
+    .rc-item-dot.bad  { background: var(--rc-bad); }
+    .rc-item-dot.warn { background: var(--rc-warn); }
+    .rc-item-dot.info { background: var(--rc-info); }
+    .rc-item-body { flex: 1; min-width: 0; }
+    .rc-item-title { font-size: 11.5px; font-weight: 600; color: var(--text); }
+    .rc-item-desc { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .rc-item-tags { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+    .rc-tag {
+      display: inline-flex; align-items: center; height: 16px; padding: 0 7px;
+      font-size: 9px; font-weight: 700; border-radius: 999px; letter-spacing: .03em;
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted);
+    }
+    .rc-tag.orange { border-color: var(--orange); color: var(--orange);
+      background: var(--orange-dim); }
+
+    /* ── Mini bar chart (alert category breakdown) ────────────────── */
+    .rc-bar-list { display: flex; flex-direction: column; gap: 8px; }
+    .rc-bar-item { display: flex; align-items: center; gap: 10px; }
+    .rc-bar-name { font-size: 10.5px; font-weight: 600; width: 82px; flex-shrink: 0; color: var(--text-muted); }
+    .rc-bar-track {
+      flex: 1; height: 6px; border-radius: 999px;
+      background: var(--bg); border: 1px solid var(--border); overflow: hidden;
+    }
+    .rc-bar-fill { height: 100%; border-radius: 999px; }
+    .rc-bar-val { font-size: 10.5px; font-weight: 700; width: 28px; text-align: right; color: var(--text); }
+    .rc-bar-delta { font-size: 9px; font-weight: 700; width: 40px; text-align: right; }
+    .rc-bar-delta.down { color: var(--rc-ok); }
+    .rc-bar-delta.up   { color: var(--rc-bad); }
+
+    /* ── Two-col card row ─────────────────────────────────────────── */
+    .rc-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: var(--rc-gap); }
+    @media (max-width: 860px) { .rc-two-col { grid-template-columns: 1fr; } }
+
+    /* ── MoM comparison block ────────────────────────────────────── */
+    .rc-mom-row {
+      display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap;
+    }
+    .rc-mom-month {
+      flex: 1; min-width: 100px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px; text-align: center;
+    }
+    .rc-mom-month.current { border-color: var(--orange); background: var(--orange-dim); }
+    .rc-mom-label { font-size: 9.5px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .06em; }
+    .rc-mom-val { font-size: 36px; font-weight: 800; letter-spacing: -.03em;
+      line-height: 1; margin: 8px 0 4px; color: var(--text); }
+    .rc-mom-month.current .rc-mom-val { color: var(--orange); }
+    .rc-mom-sub { font-size: 10px; color: var(--text-muted); }
+    .rc-mom-arrow {
+      display: flex; align-items: center; padding: 0 6px;
+      font-size: 20px; color: var(--rc-ok);
+    }
+
+    .rc-divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+    /* ══════════════════════════════════════════════════════════════
+       PRESENTATION MODE OVERLAY
+    ══════════════════════════════════════════════════════════════ */
+    .rc-pres-overlay {
+      position: fixed; inset: 0; z-index: 9000;
+      background: var(--bg, #f7f7f7);
+      display: flex; flex-direction: column;
+      font-family: var(--font);
+    }
+    html[data-theme="dark"] .rc-pres-overlay { background: #0a0a0a; }
+
+    .rc-pres-bar {
+      height: 52px; flex-shrink: 0;
+      background: var(--bg-card); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; padding: 0 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .rc-pres-bar-title {
+      flex: 1; min-width: 0;
+    }
+    .rc-pres-bar-title h1 {
+      font-size: 11px; font-weight: 800; color: var(--text);
+      letter-spacing: .04em; text-transform: uppercase; margin: 0; line-height: 1.2;
+    }
+    .rc-pres-bar-title p {
+      font-size: 9.5px; color: var(--text-muted); margin: 2px 0 0;
+    }
+    .rc-pres-counter {
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      letter-spacing: .04em; text-transform: uppercase; padding: 0 8px;
+    }
+    .rc-pres-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 12px; border: 1px solid var(--border);
+      border-radius: 6px; background: var(--bg-card);
+      font-family: var(--font); font-size: 10.5px; font-weight: 700;
+      cursor: pointer; color: var(--text); transition: all .15s;
+    }
+    .rc-pres-btn:hover { background: var(--bg); }
+    .rc-pres-btn.danger { color: #ef4444; border-color: rgba(239,68,68,.3); }
+    .rc-pres-btn.danger:hover { background: rgba(239,68,68,.08); }
+    .rc-pres-btn svg { width: 13px; height: 13px; }
+
+    .rc-pres-canvas {
+      flex: 1; position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      padding: 28px 36px;
+    }
+
+    .rc-pres-dots {
+      position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 7px; align-items: center;
+    }
+    .rc-pres-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--border); transition: all .2s; cursor: pointer;
+    }
+    .rc-pres-dot.active { background: var(--orange); width: 22px; border-radius: 999px; }
+
+    /* Slides */
+    .rc-slides { width: 100%; height: 100%; position: relative; }
+    .rc-slide {
+      position: absolute; inset: 0;
+      display: none; align-items: center; justify-content: center;
+    }
+    .rc-slide.active { display: flex; animation: rcSlideIn .28s ease; }
+    @keyframes rcSlideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .rc-slide-card {
+      width: 100%; max-width: 980px; height: 100%;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 16px; box-shadow: var(--shadow-lg);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .rc-slide-head {
+      padding: 28px 40px 22px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 16px;
+    }
+    .rc-slide-head-icon {
+      width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .rc-slide-head-icon svg { width: 26px; height: 26px; }
+    .rc-slide-head-text { flex: 1; }
+    .rc-slide-head-text h1 {
+      font-size: 22px; font-weight: 800; letter-spacing: -.03em; margin: 0 0 4px;
+      color: var(--text);
+    }
+    .rc-slide-head-text p { font-size: 12px; color: var(--text-muted); margin: 0; }
+    .rc-slide-head-badge {
+      font-size: 11px; font-weight: 700; padding: 5px 14px;
+      border-radius: 999px; letter-spacing: .03em;
+    }
+    .rc-slide-body { flex: 1; padding: 28px 40px; overflow-y: auto; }
+    .rc-slide-kpi-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+      margin-bottom: 24px;
+    }
+    .rc-slide-kpi {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px 22px;
+    }
+    .rc-slide-kpi-label {
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .rc-slide-kpi-val {
+      font-size: 48px; font-weight: 800; letter-spacing: -.04em; line-height: 1;
+      margin: 10px 0 6px; color: var(--text);
+    }
+    .rc-slide-kpi-val.ok   { color: var(--rc-ok); }
+    .rc-slide-kpi-val.bad  { color: var(--rc-bad); }
+    .rc-slide-kpi-val.warn { color: var(--rc-warn); }
+    .rc-slide-kpi-sub { font-size: 11px; color: var(--text-muted); }
+
+    .rc-slide-progress { margin-bottom: 20px; }
+    .rc-slide-progress .lbl {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;
+    }
+    .rc-slide-progress .lbl .pct {
+      font-size: 16px; font-weight: 800; color: var(--text);
+    }
+    .rc-slide-progress .track {
+      height: 10px; border-radius: 999px;
+      background: var(--bg); border: 1px solid var(--border); overflow: hidden;
+    }
+    .rc-slide-progress .fill { height: 100%; border-radius: 999px; background: var(--rc-ok); }
+
+    /* ── Mockup-only helper: content placeholder ──────────────────── */
+    .mock-note {
+      background: color-mix(in srgb, var(--orange) 6%, transparent);
+      border: 1px dashed color-mix(in srgb, var(--orange) 35%, transparent);
+      border-radius: 8px; padding: 10px 14px;
+      font-size: 10.5px; color: var(--text-muted); text-align: center;
+      font-family: var(--font); letter-spacing: .02em;
+    }
+
+    /* ── Demo toggle note ─────────────────────────────────────────── */
+    .demo-note {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--rc-r); padding: 12px 18px;
+      font-size: 11px; color: var(--text-muted);
+      display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+    }
+    .demo-note svg { flex-shrink: 0; color: var(--orange); }
+    .demo-note strong { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Report Center</div>
+        <div class="page-sub">Weekly &amp; Monthly Summary for Presentation</div>
+      </div>
+    </header>
+
+    <div class="page-body rc-wrap">
+
+      <!-- Demo note -->
+      <div class="demo-note">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
+        </svg>
+        <span><strong>UI Mockup</strong> — ข้อมูล static ใช้แสดง layout เท่านั้น
+          คลิก <strong>"Present"</strong> เพื่อดู Presentation Mode &nbsp;|&nbsp;
+          คลิก <strong>"Monthly"</strong> เพื่อดู Monthly Report view</span>
+      </div>
+
+      <!-- ── Mode tabs + date nav ──────────────────────────────────── -->
+      <div class="rc-topbar-row">
+        <div class="rc-mode-tabs">
+          <button class="rc-mode-tab active" onclick="switchMode('weekly',this)">Weekly</button>
+          <button class="rc-mode-tab" onclick="switchMode('monthly',this)">Monthly</button>
+        </div>
+
+        <!-- Weekly date nav -->
+        <div class="rc-date-nav" id="rcWeekNav">
+          <button class="rc-date-nav-btn" title="Previous">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div class="rc-date-label" id="rcWeekLabel">Week 24 &nbsp;·&nbsp; 9–15 Jun 2026</div>
+          <button class="rc-date-nav-btn" title="Next">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+
+        <!-- Monthly date nav -->
+        <div class="rc-date-nav rc-hidden" id="rcMonthNav">
+          <button class="rc-date-nav-btn" title="Previous">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div class="rc-date-label">June 2026</div>
+          <button class="rc-date-nav-btn" title="Next">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+
+        <div class="rc-spacer"></div>
+
+        <button class="rc-top-btn" onclick="openPresentation()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8m-4-4v4"/>
+          </svg>
+          Present
+        </button>
+      </div><!-- /rc-topbar-row -->
+
+      <!-- ── Body: sidebar + content ──────────────────────────────── -->
+      <div class="rc-body">
+
+        <!-- ─────────── SIDEBAR SECTION PICKER ──────────────────── -->
+        <aside class="rc-sidebar" id="rcSidebar">
+          <div class="rc-sidebar-head">
+            <span class="rc-sidebar-title">Sections</span>
+            <button class="rc-sidebar-reset" onclick="resetSections()">Reset</button>
+          </div>
+
+          <!-- Weekly sections (shown/hidden by mode) -->
+          <div id="sidebarWeekly">
+            <div class="rc-sidebar-group">
+              <div class="rc-sidebar-group-label">MA Testing</div>
+              <label class="rc-section-item">
+                <input type="checkbox" class="rc-section-check" checked onchange="toggleSection('sec-ma-test')">
+                <div class="rc-section-info">
+                  <div class="rc-section-name">MA Test Summary</div>
+                  <div class="rc-section-sub">test results &amp; plan progress</div>
+                </div>
+                <span class="rc-section-badge warn">80%</span>
+              </label>
+            </div>
+            <div class="rc-sidebar-group">
+              <div class="rc-sidebar-group-label">Ticket Analytics</div>
+              <label class="rc-section-item">
+                <input type="checkbox" class="rc-section-check" checked onchange="toggleSection('sec-incidents')">
+                <div class="rc-section-info">
+                  <div class="rc-section-name">Incidents</div>
+                  <div class="rc-section-sub">ticket &amp; SM detection</div>
+                </div>
+                <span class="rc-section-badge bad">5</span>
+              </label>
+              <label class="rc-section-item">
+                <input type="checkbox" class="rc-section-check" checked onchange="toggleSection('sec-batch')">
+                <div class="rc-section-info">
+                  <div class="rc-section-name">Batch Issues</div>
+                  <div class="rc-section-sub">batch monitoring</div>
+                </div>
+                <span class="rc-section-badge ok">2</span>
+              </label>
+              <label class="rc-section-item">
+                <input type="checkbox" class="rc-section-check" checked onchange="toggleSection('sec-monitoring')">
+                <div class="rc-section-info">
+                  <div class="rc-section-name">Monitoring</div>
+                  <div class="rc-section-sub">alert &amp; detection log</div>
+                </div>
+                <span class="rc-section-badge info">8</span>
+              </label>
+            </div>
+            <div class="rc-sidebar-group">
+              <div class="rc-sidebar-group-label">Support</div>
+              <label class="rc-section-item">
+                <input type="checkbox" class="rc-section-check" checked onchange="toggleSection('sec-support-ma')">
+                <div class="rc-section-info">
+                  <div class="rc-section-name">Support MA</div>
+                  <div class="rc-section-sub">MA team assist log</div>
+                </div>
+                <span class="rc-section-badge muted">3</span>
+              </label>
+              <label class="rc-section-item">
+                <input type="checkbox" class="rc-section-check" checked onchange="toggleSection('sec-support-dev')">
+                <div class="rc-section-info">
+                  <div class="rc-section-name">Support Dev</div>
+                  <div class="rc-section-sub">dev team assist log</div>
+                </div>
+                <span class="rc-section-badge muted">4</span>
+              </label>
+              <label class="rc-section-item">
+                <input type="checkbox" class="rc-section-check" onchange="toggleSection('sec-updates')">
+                <div class="rc-section-info">
+                  <div class="rc-section-name">Updates &amp; Alerts</div>
+                  <div class="rc-section-sub">announcements</div>
+                </div>
+                <span class="rc-section-badge muted">1</span>
+              </label>
+            </div>
+          </div><!-- /sidebarWeekly -->
+
+          <!-- Monthly sections -->
+          <div id="sidebarMonthly" class="rc-hidden">
+            <div class="rc-sidebar-group">
+              <div class="rc-sidebar-group-label">Alert Monitor</div>
+              <label class="rc-section-item">
+                <input type="checkbox" class="rc-section-check" checked onchange="toggleSection('sec-alert-summary')">
+                <div class="rc-section-info">
+                  <div class="rc-section-name">Alert Summary</div>
+                  <div class="rc-section-sub">monthly total &amp; breakdown</div>
+                </div>
+                <span class="rc-section-badge warn">142</span>
+              </label>
+              <label class="rc-section-item">
+                <input type="checkbox" class="rc-section-check" checked onchange="toggleSection('sec-mom')">
+                <div class="rc-section-info">
+                  <div class="rc-section-name">MoM Comparison</div>
+                  <div class="rc-section-sub">vs previous month</div>
+                </div>
+                <span class="rc-section-badge ok">-8%</span>
+              </label>
+            </div>
+            <div class="rc-sidebar-group">
+              <div class="rc-sidebar-group-label">Testing</div>
+              <label class="rc-section-item">
+                <input type="checkbox" class="rc-section-check" checked onchange="toggleSection('sec-ma-monthly')">
+                <div class="rc-section-info">
+                  <div class="rc-section-name">MA Test Overview</div>
+                  <div class="rc-section-sub">monthly test results</div>
+                </div>
+                <span class="rc-section-badge ok">87%</span>
+              </label>
+            </div>
+            <div class="rc-sidebar-group">
+              <div class="rc-sidebar-group-label">Analytics</div>
+              <label class="rc-section-item">
+                <input type="checkbox" class="rc-section-check" onchange="toggleSection('sec-analytics-monthly')">
+                <div class="rc-section-info">
+                  <div class="rc-section-name">Analytics KPIs</div>
+                  <div class="rc-section-sub">incident &amp; batch monthly</div>
+                </div>
+                <span class="rc-section-badge muted">—</span>
+              </label>
+            </div>
+          </div><!-- /sidebarMonthly -->
+        </aside>
+
+        <!-- ─────────── MAIN CONTENT AREA ────────────────────────── -->
+        <div class="rc-content">
+
+          <!-- ══ WEEKLY SECTIONS ══════════════════════════════════════ -->
+          <div id="weeklyContent">
+
+            <!-- MA Test Summary -->
+            <div class="rc-card" id="sec-ma-test">
+              <div class="rc-card-head">
+                <div class="rc-card-title-row">
+                  <div class="rc-card-icon" style="background:color-mix(in srgb,var(--rc-warn) 12%,transparent);color:var(--rc-warn)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                  </div>
+                  <div>
+                    <div class="rc-card-title">MA Test Summary</div>
+                    <div class="rc-card-sub">June 2026 · Plan progress &amp; results</div>
+                  </div>
+                </div>
+                <div class="rc-card-actions">
+                  <span class="rc-chip warn">In Progress</span>
+                </div>
+              </div>
+              <div class="rc-card-body">
+                <div class="rc-kpi-row">
+                  <div class="rc-kpi">
+                    <div class="rc-kpi-label">Total Planned</div>
+                    <div class="rc-kpi-val">15</div>
+                    <div class="rc-kpi-delta flat">— Test cases</div>
+                  </div>
+                  <div class="rc-kpi">
+                    <div class="rc-kpi-label">Passed</div>
+                    <div class="rc-kpi-val ok">12</div>
+                    <div class="rc-kpi-delta down">↑ +2 vs last week</div>
+                  </div>
+                  <div class="rc-kpi">
+                    <div class="rc-kpi-label">Failed / Pending</div>
+                    <div class="rc-kpi-val bad">3</div>
+                    <div class="rc-kpi-delta up">↑ still open</div>
+                  </div>
+                </div>
+                <div class="rc-progress-wrap">
+                  <div class="rc-progress-lbl">
+                    <span>Completion</span><span class="pct">80%</span>
+                  </div>
+                  <div class="rc-progress-track">
+                    <div class="rc-progress-fill warn" style="width:80%"></div>
+                  </div>
+                </div>
+                <div class="mock-note">รายละเอียด test cases รายตัว จะดึงจาก api/ma-test/results.php + plans.php</div>
+              </div>
+            </div><!-- /sec-ma-test -->
+
+            <!-- Incidents + Batch in 2-col -->
+            <div class="rc-two-col">
+
+              <!-- Incidents -->
+              <div class="rc-card" id="sec-incidents">
+                <div class="rc-card-head">
+                  <div class="rc-card-title-row">
+                    <div class="rc-card-icon" style="background:color-mix(in srgb,var(--rc-bad) 12%,transparent);color:var(--rc-bad)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <div>
+                      <div class="rc-card-title">Incidents</div>
+                      <div class="rc-card-sub">Ticket / SM Detection</div>
+                    </div>
+                  </div>
+                  <span class="rc-chip bad">5 Open</span>
+                </div>
+                <div class="rc-card-body">
+                  <div class="rc-kpi-row" style="grid-template-columns:1fr 1fr">
+                    <div class="rc-kpi">
+                      <div class="rc-kpi-label">Total</div>
+                      <div class="rc-kpi-val" style="font-size:26px">18</div>
+                    </div>
+                    <div class="rc-kpi">
+                      <div class="rc-kpi-label">SM Detected</div>
+                      <div class="rc-kpi-val ok" style="font-size:26px">11</div>
+                    </div>
+                  </div>
+                  <div class="mock-note">ดึงจาก api/analytics/stats.php (tab: server)</div>
+                </div>
+              </div><!-- /sec-incidents -->
+
+              <!-- Batch Issues -->
+              <div class="rc-card" id="sec-batch">
+                <div class="rc-card-head">
+                  <div class="rc-card-title-row">
+                    <div class="rc-card-icon" style="background:color-mix(in srgb,var(--rc-info) 12%,transparent);color:var(--rc-info)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+                    </div>
+                    <div>
+                      <div class="rc-card-title">Batch Issues</div>
+                      <div class="rc-card-sub">Unclosed batch tickets</div>
+                    </div>
+                  </div>
+                  <span class="rc-chip ok">2 Open</span>
+                </div>
+                <div class="rc-card-body">
+                  <div class="rc-item-list">
+                    <div class="rc-item">
+                      <div class="rc-item-dot warn"></div>
+                      <div class="rc-item-body">
+                        <div class="rc-item-title">BATCH-2024 · E-Wallet Reconcile Delay</div>
+                        <div class="rc-item-desc">Opened 3 days ago</div>
+                        <div class="rc-item-tags">
+                          <span class="rc-tag orange">P2</span>
+                          <span class="rc-tag">e-wallet</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="rc-item">
+                      <div class="rc-item-dot info"></div>
+                      <div class="rc-item-body">
+                        <div class="rc-item-title">BATCH-2019 · Settlement Report Missing</div>
+                        <div class="rc-item-desc">Opened 5 days ago</div>
+                        <div class="rc-item-tags">
+                          <span class="rc-tag">settlement</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div><!-- /sec-batch -->
+
+            </div><!-- /rc-two-col -->
+
+            <!-- Monitoring -->
+            <div class="rc-card" id="sec-monitoring">
+              <div class="rc-card-head">
+                <div class="rc-card-title-row">
+                  <div class="rc-card-icon" style="background:color-mix(in srgb,var(--rc-info) 12%,transparent);color:var(--rc-info)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                  </div>
+                  <div>
+                    <div class="rc-card-title">Monitoring Alerts</div>
+                    <div class="rc-card-sub">SM detection log this week</div>
+                  </div>
+                </div>
+                <span class="rc-chip info">8 alerts</span>
+              </div>
+              <div class="rc-card-body">
+                <div class="mock-note">ดึงจาก api/analytics/stats.php (tab: monitoring) — แสดงรายการ alert ที่ detect ได้สัปดาห์นี้</div>
+              </div>
+            </div><!-- /sec-monitoring -->
+
+            <!-- Support MA + Support Dev in 2-col -->
+            <div class="rc-two-col">
+
+              <!-- Support MA -->
+              <div class="rc-card" id="sec-support-ma">
+                <div class="rc-card-head">
+                  <div class="rc-card-title-row">
+                    <div class="rc-card-icon" style="background:var(--orange-dim);color:var(--orange)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    </div>
+                    <div>
+                      <div class="rc-card-title">Support MA</div>
+                      <div class="rc-card-sub">MA team assist this week</div>
+                    </div>
+                  </div>
+                  <span class="rc-chip muted">3 items</span>
+                </div>
+                <div class="rc-card-body">
+                  <div class="rc-item-list">
+                    <div class="rc-item">
+                      <div class="rc-item-dot ok"></div>
+                      <div class="rc-item-body">
+                        <div class="rc-item-title">ช่วยตรวจสอบ MA-QR payment flow</div>
+                        <div class="rc-item-desc">ส่งผล log analysis ให้ทีม MA แล้ว</div>
+                      </div>
+                    </div>
+                    <div class="rc-item">
+                      <div class="rc-item-dot ok"></div>
+                      <div class="rc-item-body">
+                        <div class="rc-item-title">Debug TopUp via ATM timeout issue</div>
+                        <div class="rc-item-desc">root cause = network latency ยืนยันแล้ว</div>
+                      </div>
+                    </div>
+                    <div class="rc-item">
+                      <div class="rc-item-dot warn"></div>
+                      <div class="rc-item-body">
+                        <div class="rc-item-title">MA Catalog data sync ติดขัด</div>
+                        <div class="rc-item-desc">กำลัง follow-up กับ ops team</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div><!-- /sec-support-ma -->
+
+              <!-- Support Dev -->
+              <div class="rc-card" id="sec-support-dev">
+                <div class="rc-card-head">
+                  <div class="rc-card-title-row">
+                    <div class="rc-card-icon" style="background:color-mix(in srgb,var(--rc-ok) 12%,transparent);color:var(--rc-ok)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    </div>
+                    <div>
+                      <div class="rc-card-title">Support Dev</div>
+                      <div class="rc-card-sub">Dev team assist this week</div>
+                    </div>
+                  </div>
+                  <span class="rc-chip muted">4 items</span>
+                </div>
+                <div class="rc-card-body">
+                  <div class="rc-item-list">
+                    <div class="rc-item">
+                      <div class="rc-item-dot ok"></div>
+                      <div class="rc-item-body">
+                        <div class="rc-item-title">Review config change — Payment gateway</div>
+                        <div class="rc-item-desc">ตรวจสอบ impact &amp; approve แล้ว</div>
+                      </div>
+                    </div>
+                    <div class="rc-item">
+                      <div class="rc-item-dot ok"></div>
+                      <div class="rc-item-body">
+                        <div class="rc-item-title">Jenkins pipeline fix — UAT env</div>
+                        <div class="rc-item-desc">แก้ไข shared library version conflict</div>
+                      </div>
+                    </div>
+                    <div class="rc-item">
+                      <div class="rc-item-dot warn"></div>
+                      <div class="rc-item-body">
+                        <div class="rc-item-title">DB connection pool ล้น — staging</div>
+                        <div class="rc-item-desc">รอ dev ยืนยัน fix ใน next sprint</div>
+                      </div>
+                    </div>
+                    <div class="rc-item">
+                      <div class="rc-item-dot info"></div>
+                      <div class="rc-item-body">
+                        <div class="rc-item-title">Grafana dashboard update request</div>
+                        <div class="rc-item-desc">เพิ่ม panel ตาม requirement ใหม่</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div><!-- /sec-support-dev -->
+
+            </div><!-- /rc-two-col support -->
+
+            <!-- Updates (hidden by default) -->
+            <div class="rc-card rc-hidden" id="sec-updates">
+              <div class="rc-card-head">
+                <div class="rc-card-title-row">
+                  <div class="rc-card-icon" style="background:var(--bg);color:var(--text-muted)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                  </div>
+                  <div>
+                    <div class="rc-card-title">Updates &amp; Alerts</div>
+                    <div class="rc-card-sub">Announcements this week</div>
+                  </div>
+                </div>
+              </div>
+              <div class="rc-card-body">
+                <div class="mock-note">ดึงจาก api/weekly-report/get.php — section updates</div>
+              </div>
+            </div>
+
+          </div><!-- /weeklyContent -->
+
+          <!-- ══ MONTHLY SECTIONS ══════════════════════════════════════ -->
+          <div id="monthlyContent" class="rc-hidden">
+
+            <!-- Alert Summary -->
+            <div class="rc-card" id="sec-alert-summary">
+              <div class="rc-card-head">
+                <div class="rc-card-title-row">
+                  <div class="rc-card-icon" style="background:color-mix(in srgb,var(--rc-warn) 12%,transparent);color:var(--rc-warn)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                  </div>
+                  <div>
+                    <div class="rc-card-title">Alert Summary — June 2026</div>
+                    <div class="rc-card-sub">All alert categories this month</div>
+                  </div>
+                </div>
+                <span class="rc-chip warn">142 total</span>
+              </div>
+              <div class="rc-card-body">
+                <div class="rc-kpi-row" style="margin-bottom:20px">
+                  <div class="rc-kpi">
+                    <div class="rc-kpi-label">Total</div>
+                    <div class="rc-kpi-val warn">142</div>
+                    <div class="rc-kpi-delta down">↓ -8% vs May</div>
+                  </div>
+                  <div class="rc-kpi">
+                    <div class="rc-kpi-label">Monitoring</div>
+                    <div class="rc-kpi-val info">89</div>
+                  </div>
+                  <div class="rc-kpi">
+                    <div class="rc-kpi-label">Batch</div>
+                    <div class="rc-kpi-val warn">41</div>
+                  </div>
+                  <div class="rc-kpi">
+                    <div class="rc-kpi-label">Other</div>
+                    <div class="rc-kpi-val" style="font-size:26px">12</div>
+                  </div>
+                </div>
+                <div class="rc-bar-list">
+                  <div class="rc-bar-item">
+                    <div class="rc-bar-name">Monitoring</div>
+                    <div class="rc-bar-track"><div class="rc-bar-fill" style="width:63%;background:var(--rc-info)"></div></div>
+                    <div class="rc-bar-val">89</div>
+                    <div class="rc-bar-delta down">-5%</div>
+                  </div>
+                  <div class="rc-bar-item">
+                    <div class="rc-bar-name">Batch</div>
+                    <div class="rc-bar-track"><div class="rc-bar-fill" style="width:29%;background:var(--rc-warn)"></div></div>
+                    <div class="rc-bar-val">41</div>
+                    <div class="rc-bar-delta down">-14%</div>
+                  </div>
+                  <div class="rc-bar-item">
+                    <div class="rc-bar-name">Other</div>
+                    <div class="rc-bar-track"><div class="rc-bar-fill" style="width:8%;background:var(--text-muted)"></div></div>
+                    <div class="rc-bar-val">12</div>
+                    <div class="rc-bar-delta up">+20%</div>
+                  </div>
+                </div>
+              </div>
+            </div><!-- /sec-alert-summary -->
+
+            <!-- MoM Comparison -->
+            <div class="rc-card" id="sec-mom">
+              <div class="rc-card-head">
+                <div class="rc-card-title-row">
+                  <div class="rc-card-icon" style="background:color-mix(in srgb,var(--rc-ok) 12%,transparent);color:var(--rc-ok)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                  </div>
+                  <div>
+                    <div class="rc-card-title">Month-over-Month Comparison</div>
+                    <div class="rc-card-sub">Alert trend vs previous months</div>
+                  </div>
+                </div>
+                <span class="rc-chip ok">-8% trending down</span>
+              </div>
+              <div class="rc-card-body">
+                <div class="rc-mom-row">
+                  <div class="rc-mom-month">
+                    <div class="rc-mom-label">Apr 2026</div>
+                    <div class="rc-mom-val">171</div>
+                    <div class="rc-mom-sub">alerts</div>
+                  </div>
+                  <div class="rc-mom-arrow">→</div>
+                  <div class="rc-mom-month">
+                    <div class="rc-mom-label">May 2026</div>
+                    <div class="rc-mom-val">154</div>
+                    <div class="rc-mom-sub">-10% vs Apr</div>
+                  </div>
+                  <div class="rc-mom-arrow" style="color:var(--rc-ok)">→</div>
+                  <div class="rc-mom-month current">
+                    <div class="rc-mom-label">Jun 2026</div>
+                    <div class="rc-mom-val">142</div>
+                    <div class="rc-mom-sub">-8% vs May</div>
+                  </div>
+                </div>
+                <div class="rc-divider"></div>
+                <div class="rc-bar-list">
+                  <div class="rc-bar-item">
+                    <div class="rc-bar-name">Apr 2026</div>
+                    <div class="rc-bar-track"><div class="rc-bar-fill" style="width:100%;background:var(--rc-bad)"></div></div>
+                    <div class="rc-bar-val">171</div>
+                    <div class="rc-bar-delta" style="color:var(--text-muted)">—</div>
+                  </div>
+                  <div class="rc-bar-item">
+                    <div class="rc-bar-name">May 2026</div>
+                    <div class="rc-bar-track"><div class="rc-bar-fill" style="width:90%;background:var(--rc-warn)"></div></div>
+                    <div class="rc-bar-val">154</div>
+                    <div class="rc-bar-delta down">-10%</div>
+                  </div>
+                  <div class="rc-bar-item">
+                    <div class="rc-bar-name">Jun 2026</div>
+                    <div class="rc-bar-track"><div class="rc-bar-fill" style="width:83%;background:var(--rc-ok)"></div></div>
+                    <div class="rc-bar-val">142</div>
+                    <div class="rc-bar-delta down">-8%</div>
+                  </div>
+                </div>
+              </div>
+            </div><!-- /sec-mom -->
+
+            <!-- MA Test Monthly -->
+            <div class="rc-card" id="sec-ma-monthly">
+              <div class="rc-card-head">
+                <div class="rc-card-title-row">
+                  <div class="rc-card-icon" style="background:color-mix(in srgb,var(--rc-ok) 12%,transparent);color:var(--rc-ok)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                  </div>
+                  <div>
+                    <div class="rc-card-title">MA Test Monthly Overview</div>
+                    <div class="rc-card-sub">June 2026 · full month results</div>
+                  </div>
+                </div>
+                <span class="rc-chip ok">87% pass rate</span>
+              </div>
+              <div class="rc-card-body">
+                <div class="rc-kpi-row">
+                  <div class="rc-kpi">
+                    <div class="rc-kpi-label">Planned</div>
+                    <div class="rc-kpi-val">45</div>
+                  </div>
+                  <div class="rc-kpi">
+                    <div class="rc-kpi-label">Executed</div>
+                    <div class="rc-kpi-val info">39</div>
+                    <div class="rc-kpi-delta flat">87% coverage</div>
+                  </div>
+                  <div class="rc-kpi">
+                    <div class="rc-kpi-label">Passed</div>
+                    <div class="rc-kpi-val ok">34</div>
+                    <div class="rc-kpi-delta down">↑ +3 vs May</div>
+                  </div>
+                  <div class="rc-kpi">
+                    <div class="rc-kpi-label">Failed</div>
+                    <div class="rc-kpi-val bad">5</div>
+                    <div class="rc-kpi-delta down">↓ -2 vs May</div>
+                  </div>
+                </div>
+                <div class="mock-note">ดึงจาก api/ma-test/results.php?month=2026-06 — grouped by plan</div>
+              </div>
+            </div>
+
+            <!-- Analytics Monthly (hidden by default) -->
+            <div class="rc-card rc-hidden" id="sec-analytics-monthly">
+              <div class="rc-card-head">
+                <div class="rc-card-title-row">
+                  <div class="rc-card-icon" style="background:var(--bg);color:var(--text-muted)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
+                  </div>
+                  <div>
+                    <div class="rc-card-title">Analytics KPIs</div>
+                    <div class="rc-card-sub">Monthly incident &amp; batch summary</div>
+                  </div>
+                </div>
+              </div>
+              <div class="rc-card-body">
+                <div class="mock-note">ดึงจาก api/analytics/stats.php — monthly aggregation</div>
+              </div>
+            </div>
+
+          </div><!-- /monthlyContent -->
+
+        </div><!-- /rc-content -->
+      </div><!-- /rc-body -->
+
+    </div><!-- /page-body -->
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     PRESENTATION MODE OVERLAY
+══════════════════════════════════════════════════════════════════ -->
+<div class="rc-pres-overlay rc-hidden" id="rcPresOverlay">
+
+  <!-- Topbar -->
+  <div class="rc-pres-bar">
+    <div class="rc-pres-bar-title">
+      <h1 id="presModeLabel">Weekly Report</h1>
+      <p id="presDateLabel">Week 24 · 9–15 June 2026</p>
+    </div>
+    <div class="rc-pres-counter" id="presCounter">SLIDE 1 OF 5</div>
+    <button class="rc-pres-btn" onclick="prevSlide()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      Prev
+    </button>
+    <button class="rc-pres-btn" onclick="nextSlide()">
+      Next
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+    <button class="rc-pres-btn danger" onclick="closePresentation()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      Close
+    </button>
+  </div>
+
+  <!-- Canvas -->
+  <div class="rc-pres-canvas">
+    <div class="rc-slides" id="rcSlides">
+
+      <!-- Slide 1: Title slide -->
+      <div class="rc-slide active" id="pSlide0">
+        <div class="rc-slide-card">
+          <div class="rc-slide-head" style="justify-content:center;display:flex;flex-direction:column;align-items:center;padding:48px 40px 40px;background:linear-gradient(135deg,color-mix(in srgb,var(--orange) 6%,var(--bg)) 0%,var(--bg-card) 60%)">
+            <div style="width:64px;height:64px;border-radius:18px;background:var(--orange-dim);color:var(--orange);display:flex;align-items:center;justify-content:center;margin-bottom:20px">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+            </div>
+            <h1 style="font-size:32px;font-weight:900;letter-spacing:-.04em;color:var(--text);margin:0 0 10px;text-align:center" id="presTitle">Weekly Report</h1>
+            <p style="font-size:14px;color:var(--text-muted);margin:0 0 24px;text-align:center" id="presSubtitle">Week 24 · 9–15 June 2026 · SM Team Operations</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+              <span class="rc-chip bad">5 Incidents</span>
+              <span class="rc-chip ok">12 MA Tests Passed</span>
+              <span class="rc-chip info">8 Alerts</span>
+            </div>
+          </div>
+          <div class="rc-slide-body" style="display:flex;align-items:center;justify-content:center">
+            <p style="font-size:13px;color:var(--text-muted);text-align:center">
+              Prepared by SM Team &nbsp;·&nbsp; สรุปประจำสัปดาห์
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 2: MA Test -->
+      <div class="rc-slide" id="pSlide1">
+        <div class="rc-slide-card">
+          <div class="rc-slide-head">
+            <div class="rc-slide-head-icon" style="background:color-mix(in srgb,var(--rc-warn) 12%,transparent);color:var(--rc-warn)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            </div>
+            <div class="rc-slide-head-text">
+              <h1>MA Test Summary</h1>
+              <p>June 2026 · Plan progress &amp; test results</p>
+            </div>
+            <span class="rc-slide-head-badge warn" style="background:color-mix(in srgb,var(--rc-warn) 12%,transparent);color:var(--rc-warn)">In Progress</span>
+          </div>
+          <div class="rc-slide-body">
+            <div class="rc-slide-kpi-row">
+              <div class="rc-slide-kpi">
+                <div class="rc-slide-kpi-label">Total Planned</div>
+                <div class="rc-slide-kpi-val">15</div>
+                <div class="rc-slide-kpi-sub">test cases</div>
+              </div>
+              <div class="rc-slide-kpi">
+                <div class="rc-slide-kpi-label">Passed</div>
+                <div class="rc-slide-kpi-val ok">12</div>
+                <div class="rc-slide-kpi-sub">↑ +2 vs last week</div>
+              </div>
+              <div class="rc-slide-kpi">
+                <div class="rc-slide-kpi-label">Failed / Pending</div>
+                <div class="rc-slide-kpi-val bad">3</div>
+                <div class="rc-slide-kpi-sub">still open</div>
+              </div>
+            </div>
+            <div class="rc-slide-progress">
+              <div class="lbl"><span>Overall Completion</span><span class="pct">80%</span></div>
+              <div class="track"><div class="fill" style="width:80%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 3: Incidents -->
+      <div class="rc-slide" id="pSlide2">
+        <div class="rc-slide-card">
+          <div class="rc-slide-head">
+            <div class="rc-slide-head-icon" style="background:color-mix(in srgb,var(--rc-bad) 12%,transparent);color:var(--rc-bad)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div class="rc-slide-head-text">
+              <h1>Incidents This Week</h1>
+              <p>Ticket / SM Detection — Week 24</p>
+            </div>
+            <span class="rc-slide-head-badge bad" style="background:color-mix(in srgb,var(--rc-bad) 12%,transparent);color:var(--rc-bad)">5 Open</span>
+          </div>
+          <div class="rc-slide-body">
+            <div class="rc-slide-kpi-row">
+              <div class="rc-slide-kpi">
+                <div class="rc-slide-kpi-label">Total Incidents</div>
+                <div class="rc-slide-kpi-val">18</div>
+                <div class="rc-slide-kpi-sub">this week</div>
+              </div>
+              <div class="rc-slide-kpi">
+                <div class="rc-slide-kpi-label">SM Detected</div>
+                <div class="rc-slide-kpi-val ok">11</div>
+                <div class="rc-slide-kpi-sub">61% detection rate</div>
+              </div>
+              <div class="rc-slide-kpi">
+                <div class="rc-slide-kpi-label">Still Open</div>
+                <div class="rc-slide-kpi-val bad">5</div>
+                <div class="rc-slide-kpi-sub">in progress</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 4: Support -->
+      <div class="rc-slide" id="pSlide3">
+        <div class="rc-slide-card">
+          <div class="rc-slide-head">
+            <div class="rc-slide-head-icon" style="background:var(--orange-dim);color:var(--orange)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            </div>
+            <div class="rc-slide-head-text">
+              <h1>Support MA &amp; Dev</h1>
+              <p>Assist log this week — SM Team</p>
+            </div>
+          </div>
+          <div class="rc-slide-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;height:100%">
+              <div>
+                <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Support MA (3)</div>
+                <div class="rc-item-list">
+                  <div class="rc-item">
+                    <div class="rc-item-dot ok"></div>
+                    <div class="rc-item-body">
+                      <div class="rc-item-title">ช่วยตรวจสอบ MA-QR payment flow</div>
+                    </div>
+                  </div>
+                  <div class="rc-item">
+                    <div class="rc-item-dot ok"></div>
+                    <div class="rc-item-body">
+                      <div class="rc-item-title">Debug TopUp via ATM timeout</div>
+                    </div>
+                  </div>
+                  <div class="rc-item">
+                    <div class="rc-item-dot warn"></div>
+                    <div class="rc-item-body">
+                      <div class="rc-item-title">MA Catalog data sync (ongoing)</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Support Dev (4)</div>
+                <div class="rc-item-list">
+                  <div class="rc-item">
+                    <div class="rc-item-dot ok"></div>
+                    <div class="rc-item-body">
+                      <div class="rc-item-title">Review Payment gateway config</div>
+                    </div>
+                  </div>
+                  <div class="rc-item">
+                    <div class="rc-item-dot ok"></div>
+                    <div class="rc-item-body">
+                      <div class="rc-item-title">Jenkins pipeline fix — UAT</div>
+                    </div>
+                  </div>
+                  <div class="rc-item">
+                    <div class="rc-item-dot warn"></div>
+                    <div class="rc-item-body">
+                      <div class="rc-item-title">DB connection pool issue</div>
+                    </div>
+                  </div>
+                  <div class="rc-item">
+                    <div class="rc-item-dot info"></div>
+                    <div class="rc-item-body">
+                      <div class="rc-item-title">Grafana dashboard update</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 5: Wrap-up -->
+      <div class="rc-slide" id="pSlide4">
+        <div class="rc-slide-card">
+          <div class="rc-slide-head" style="justify-content:center;display:flex;flex-direction:column;align-items:center;padding:40px;text-align:center;background:linear-gradient(135deg,color-mix(in srgb,var(--orange) 6%,var(--bg)) 0%,var(--bg-card) 70%)">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">End of Report</div>
+            <h1 style="font-size:28px;font-weight:900;letter-spacing:-.04em;color:var(--text);margin:0 0 8px">Week 24 Summary</h1>
+            <p style="font-size:13px;color:var(--text-muted);margin:0">9–15 June 2026</p>
+          </div>
+          <div class="rc-slide-body" style="display:flex;align-items:center;justify-content:center">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:720px;width:100%">
+              <div class="rc-slide-kpi" style="text-align:center">
+                <div class="rc-slide-kpi-label">MA Tests</div>
+                <div class="rc-slide-kpi-val ok" style="font-size:36px">12/15</div>
+                <div class="rc-slide-kpi-sub">80% pass</div>
+              </div>
+              <div class="rc-slide-kpi" style="text-align:center">
+                <div class="rc-slide-kpi-label">Incidents</div>
+                <div class="rc-slide-kpi-val" style="font-size:36px">18</div>
+                <div class="rc-slide-kpi-sub">5 open</div>
+              </div>
+              <div class="rc-slide-kpi" style="text-align:center">
+                <div class="rc-slide-kpi-label">Support</div>
+                <div class="rc-slide-kpi-val" style="font-size:36px">7</div>
+                <div class="rc-slide-kpi-sub">tasks</div>
+              </div>
+              <div class="rc-slide-kpi" style="text-align:center">
+                <div class="rc-slide-kpi-label">Alerts</div>
+                <div class="rc-slide-kpi-val info" style="font-size:36px">8</div>
+                <div class="rc-slide-kpi-sub">detected</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /rc-slides -->
+
+    <!-- Dot indicators -->
+    <div class="rc-pres-dots" id="rcPresDots"></div>
+
+  </div><!-- /rc-pres-canvas -->
+</div><!-- /rc-pres-overlay -->
+
+
+<script src="./assets/js/layout.js"></script>
+<script src="./assets/js/auth.js"></script>
+<script>
+  // ── Auth + layout ─────────────────────────────────────────────────
+  if (typeof Auth !== 'undefined') Auth.requireAuth();
+  if (typeof Layout !== 'undefined') Layout.render('report-center');
+
+  // ── Mode switching ─────────────────────────────────────────────────
+  function switchMode(mode, btn) {
+    document.querySelectorAll('.rc-mode-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+
+    const isWeekly = mode === 'weekly';
+    document.getElementById('weeklyContent').classList.toggle('rc-hidden', !isWeekly);
+    document.getElementById('monthlyContent').classList.toggle('rc-hidden', isWeekly);
+    document.getElementById('sidebarWeekly').classList.toggle('rc-hidden', !isWeekly);
+    document.getElementById('sidebarMonthly').classList.toggle('rc-hidden', isWeekly);
+    document.getElementById('rcWeekNav').classList.toggle('rc-hidden', !isWeekly);
+    document.getElementById('rcMonthNav').classList.toggle('rc-hidden', isWeekly);
+  }
+
+  // ── Section toggle ─────────────────────────────────────────────────
+  function toggleSection(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const cb = el.closest ? null : null;
+    // find the checkbox that controls this section
+    const allCBs = document.querySelectorAll('.rc-section-check');
+    allCBs.forEach(cb => {
+      if (cb.getAttribute('onchange') && cb.getAttribute('onchange').includes(`'${id}'`)) {
+        el.classList.toggle('rc-hidden', !cb.checked);
+      }
+    });
+  }
+
+  function resetSections() {
+    document.querySelectorAll('.rc-section-check').forEach(cb => {
+      cb.checked = true;
+    });
+    document.querySelectorAll('[id^="sec-"]').forEach(el => {
+      el.classList.remove('rc-hidden');
+    });
+  }
+
+  // ── Presentation mode ──────────────────────────────────────────────
+  let currentSlide = 0;
+  const totalSlides = 5;
+
+  function buildDots() {
+    const dots = document.getElementById('rcPresDots');
+    dots.innerHTML = '';
+    for (let i = 0; i < totalSlides; i++) {
+      const d = document.createElement('div');
+      d.className = 'rc-pres-dot' + (i === 0 ? ' active' : '');
+      d.onclick = () => goToSlide(i);
+      dots.appendChild(d);
+    }
+  }
+
+  function goToSlide(n) {
+    document.querySelectorAll('.rc-slide').forEach((s, i) => {
+      s.classList.toggle('active', i === n);
+    });
+    document.querySelectorAll('.rc-pres-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === n);
+    });
+    currentSlide = n;
+    document.getElementById('presCounter').textContent = `SLIDE ${n + 1} OF ${totalSlides}`;
+  }
+
+  function prevSlide() { if (currentSlide > 0) goToSlide(currentSlide - 1); }
+  function nextSlide() { if (currentSlide < totalSlides - 1) goToSlide(currentSlide + 1); }
+
+  function openPresentation() {
+    buildDots();
+    goToSlide(0);
+    document.getElementById('rcPresOverlay').classList.remove('rc-hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function closePresentation() {
+    document.getElementById('rcPresOverlay').classList.add('rc-hidden');
+    document.body.style.overflow = '';
+  }
+
+  // Keyboard nav
+  document.addEventListener('keydown', e => {
+    if (document.getElementById('rcPresOverlay').classList.contains('rc-hidden')) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prevSlide();
+    if (e.key === 'Escape') closePresentation();
+  });
+</script>
+</body>
+</html>

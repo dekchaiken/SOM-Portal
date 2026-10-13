@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alert Monitor Config — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/dev-badge.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/alert-monitor-config/alert-monitor-config.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <script>/* sb-restore */(function(){try{var h=sessionStorage.getItem('_sm_sb_html');if(!h)return;var n=sessionStorage.getItem('_sm_sb_next')||'';var d=document.createElement('div');d.innerHTML=h;var sb=d.querySelector('.sidebar');if(!sb)return;sb.querySelectorAll('.nav-item').forEach(function(a){var f=(a.getAttribute('href')||'').split('/').pop().replace(/\.html.*$/,'');a.classList.toggle('active',!!n&&f===n);});var p=sb.querySelector('#nav-active-pill');if(p)p.style.opacity='0';var m=document.getElementById('sidebar-mount');if(m)m.replaceWith(sb);}catch(e){}})();</script>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Alert Monitor · Config</div>
+        <div class="page-sub">JSM Ops classification rules &amp; sync settings</div>
+      </div>
+      <div class="topbar-actions">
+        <a class="amc-btn" href="../alert-monitor.html" style="font-size:11.5px">← กลับหน้า Dashboard</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="amc-wrap">
+
+        <div class="amc-page-head">
+          <div>
+            <h1>Alert Monitor · Config</h1>
+            <p>JSM connection, sync behavior, categories และ classification rules</p>
+          </div>
+          <div class="amc-page-actions">
+            <button class="amc-btn primary" id="btn-save-all"><i data-icon="save"></i> Save changes</button>
+          </div>
+        </div>
+
+        <!-- ── SYNC STATUS ─────────────────────────────────── -->
+        <section class="amc-card">
+          <h2>Sync Status <span class="badge" id="sync-badge">idle</span></h2>
+          <p class="desc">สถานะ backfill + delta sync ล่าสุด และปุ่ม trigger manual</p>
+
+          <div class="amc-sync-grid">
+            <div class="amc-sync-item">
+              <span class="lbl">Total alerts (cache)</span>
+              <span class="val" id="ss-total">—</span>
+              <span class="sub" id="ss-total-sub">across all months</span>
+            </div>
+            <div class="amc-sync-item">
+              <span class="lbl">Months cached</span>
+              <span class="val" id="ss-months">—</span>
+              <span class="sub" id="ss-months-sub">files on disk</span>
+            </div>
+            <div class="amc-sync-item">
+              <span class="lbl">Last sync</span>
+              <span class="val" id="ss-last">—</span>
+              <span class="sub" id="ss-last-sub">JSM Ops</span>
+            </div>
+            <div class="amc-sync-item">
+              <span class="lbl">Backfill</span>
+              <span class="val" id="ss-backfill">—</span>
+              <span class="sub" id="ss-backfill-sub"></span>
+            </div>
+          </div>
+
+          <div class="amc-sync-actions">
+            <button class="amc-btn primary" id="btn-force-sync">
+              <span id="fs-icon">↻</span> Force sync (delta)
+            </button>
+            <button class="amc-btn" id="btn-full-backfill">
+              <i data-icon="refresh-cw"></i> Full backfill (reset cursor)
+            </button>
+            <span id="sync-msg" style="font-size:11.5px;color:var(--text-muted);align-self:center;margin-left:6px"></span>
+          </div>
+        </section>
+
+        <!-- ── JSM CONNECTION ──────────────────────────────── -->
+        <section class="amc-card">
+          <h2>JSM Connection</h2>
+          <p class="desc">Atlassian tenant + team ID สำหรับ filter alerts. Credentials (email/token) มาจาก <code>.env</code></p>
+
+          <div class="amc-form-grid">
+            <div class="amc-field">
+              <label>Cloud ID <span class="hint">Atlassian tenant identifier</span></label>
+              <input type="text" id="jsm-cloud-id" placeholder="uuid">
+            </div>
+            <div class="amc-field">
+              <label>Team Name <span class="hint">display only</span></label>
+              <input type="text" id="jsm-team-name" placeholder="Service Monitoring - SM">
+            </div>
+            <div class="amc-field full">
+              <label>Team ID <span class="hint">Opsgenie team id (og-...) — used in query filter</span></label>
+              <input type="text" id="jsm-team-id" placeholder="og-...">
+            </div>
+            <div class="amc-field full">
+              <label>Responder Filter <span class="hint">JSM search query — override if Team ID doesn't work</span></label>
+              <input type="text" id="jsm-responder-filter" placeholder='responders: "og-..."'>
+            </div>
+            <div class="amc-field full">
+              <label>Base URL <span class="hint">Atlassian JSM Ops API endpoint</span></label>
+              <input type="text" id="jsm-base-url" placeholder="https://api.atlassian.com/jsm/ops/api">
+            </div>
+            <div class="amc-field">
+              <label>TLS verify <span class="hint">ปิดถ้า server ไม่มี CA bundle</span></label>
+              <div style="display:flex;align-items:center;gap:10px">
+                <label class="amc-toggle">
+                  <input type="checkbox" id="jsm-ssl-verify" checked>
+                  <span class="amc-toggle-slider"></span>
+                </label>
+                <span style="font-size:11.5px;color:var(--text-muted)">verify TLS certificate</span>
+              </div>
+            </div>
+            <div class="amc-field">
+              <label>CA bundle path <span class="hint">optional — /etc/ssl/certs/ca-certificates.crt เป็นต้น</span></label>
+              <input type="text" id="jsm-ssl-ca" placeholder="(auto-detect)">
+            </div>
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="amc-btn" id="btn-test-jsm"><i data-icon="plug"></i> Test connection</button>
+            <span id="jsm-test-status" style="font-size:11.5px;color:var(--text-muted);align-self:center"></span>
+          </div>
+          <div class="amc-test-out" id="jsm-test-out"></div>
+        </section>
+
+        <!-- ── SYNC BEHAVIOR ───────────────────────────────── -->
+        <section class="amc-card">
+          <h2>Sync Behavior</h2>
+          <p class="desc">ปรับ tempo ของ auto-sync + ขอบเขต backfill</p>
+
+          <div class="amc-form-grid">
+            <div class="amc-field">
+              <label>Min interval (seconds) <span class="hint">debounce ระหว่างครั้ง</span></label>
+              <input type="number" id="sy-min" min="0" step="5">
+            </div>
+            <div class="amc-field">
+              <label>Page size <span class="hint">JSM ignore ค่านี้อยู่แล้ว (คืน 20/page) — ใช้ป้องกันข้อผิดพลาด</span></label>
+              <input type="number" id="sy-page-size" min="1" max="100">
+            </div>
+            <div class="amc-field">
+              <label>Max pages per chunk <span class="hint">10 = ~15s ต่อ sync (ปลอดภัยกับ nginx timeout 60s)</span></label>
+              <input type="number" id="sy-max-pages" min="1" max="200">
+            </div>
+            <div class="amc-field">
+              <label>History months <span class="hint">ย้อนหลังกี่เดือน (initial backfill window)</span></label>
+              <input type="number" id="sy-history-months" min="1" max="60">
+            </div>
+            <div class="amc-field">
+              <label>Request timeout (seconds)</label>
+              <input type="number" id="sy-req-timeout" min="5" max="120">
+            </div>
+          </div>
+        </section>
+
+        <!-- ── CATEGORIES ──────────────────────────────────── -->
+        <section class="amc-card">
+          <h2>Categories</h2>
+          <p class="desc">ประเภทที่ classification rules ใช้ (id, label, color) — ปรับแล้ว refresh dashboard</p>
+
+          <div class="amc-cats" id="cats-list"></div>
+        </section>
+
+        <!-- ── CLASSIFICATION RULES ────────────────────────── -->
+        <section class="amc-card">
+          <h2>Classification Rules</h2>
+          <p class="desc">
+            ประเมินจาก priority น้อยไปมาก (rule ที่ priority ต่ำ = match ก่อน) rules ที่ match แรกจะกำหนด category<br>
+            Field: message / tags / source / alias · Match: contains / starts_with / equals / regex
+          </p>
+
+          <div class="amc-rules-wrap">
+            <table class="amc-rules">
+              <thead>
+                <tr>
+                  <th style="width:36px"></th>
+                  <th style="width:76px">Priority</th>
+                  <th style="width:100px">Field</th>
+                  <th style="width:120px">Match</th>
+                  <th>Keyword</th>
+                  <th style="width:130px">Category</th>
+                  <th style="width:70px">Enabled</th>
+                  <th style="width:70px"></th>
+                </tr>
+              </thead>
+              <tbody id="rules-tbody"></tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="amc-btn" id="btn-add-rule">+ เพิ่ม rule</button>
+            <button class="amc-btn" id="btn-resort" title="เรียง priority ตามลำดับปัจจุบัน แล้ว renumber ให้เป็น 10, 20, 30…">↕ Renumber priorities</button>
+          </div>
+        </section>
+
+        <!-- ── SYNC HISTORY ────────────────────────────────── -->
+        <section class="amc-card">
+          <h2>Recent Sync History</h2>
+          <p class="desc">30 syncs ล่าสุด — เห็น mode, ระยะเวลา, จำนวนใหม่/อัปเดต, ผู้ trigger</p>
+          <table class="amc-hist">
+            <thead>
+              <tr>
+                <th>At</th><th>Mode</th><th style="width:70px">Dur</th>
+                <th style="text-align:right">New</th><th style="text-align:right">Upd</th>
+                <th>Months</th><th>User</th>
+              </tr>
+            </thead>
+            <tbody id="hist-tbody">
+              <tr><td colspan="7" style="color:var(--text-muted);text-align:center;padding:24px">— ยังไม่มี history —</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+      </div>
+
+      <div class="amc-toast" id="toast"></div>
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/theme.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/alert-monitor-config/alert-monitor-config.js"></script>
+<script src="../assets/pages/admin/alert-monitor-config/alert-monitor-config-page.js"></script>
+
+
+</body>
+</html>

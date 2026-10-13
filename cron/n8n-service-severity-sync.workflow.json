@@ -1,0 +1,128 @@
+{
+  "name": "Service Severity Sync [Centralize-SM]",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "service-severity-sync",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1a000000-0000-0000-0000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 480],
+      "webhookId": "service-severity-sync-v1"
+    },
+
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1cS-3NNga_6A8NirDjdk-fbXlaCue7EDTchbd5MG2cRI/edit",
+          "mode": "url"
+        },
+        "sheetName": { "__rl": true, "value": "EKS TMN",  "mode": "name" },
+        "options": {}
+      },
+      "id": "1a000000-0000-0000-0000-000000000010",
+      "name": "EKS TMN Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [480, 320],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yXBlbI1eRvJbAJAh",
+          "name": "Google Sheet sm@ascendcorp.com"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1cS-3NNga_6A8NirDjdk-fbXlaCue7EDTchbd5MG2cRI/edit",
+          "mode": "url"
+        },
+        "sheetName": { "__rl": true, "value": "EKS NANO", "mode": "name" },
+        "options": {}
+      },
+      "id": "1a000000-0000-0000-0000-000000000011",
+      "name": "EKS NANO Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [720, 320],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yXBlbI1eRvJbAJAh",
+          "name": "Google Sheet sm@ascendcorp.com"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1cS-3NNga_6A8NirDjdk-fbXlaCue7EDTchbd5MG2cRI/edit",
+          "mode": "url"
+        },
+        "sheetName": { "__rl": true, "value": "OCP",      "mode": "name" },
+        "options": {}
+      },
+      "id": "1a000000-0000-0000-0000-000000000012",
+      "name": "OCP Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [960, 320],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yXBlbI1eRvJbAJAh",
+          "name": "Google Sheet sm@ascendcorp.com"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// Pull rows from each Sheet, tag with runway, default empty Priority → P3.\n// Empty Priority cells get accepted as P3 + flagged `priorityDefaulted: true`\n// so the UI can warn admins which services need explicit triage in the Sheet.\nconst SOURCES = [\n  ['EKS TMN Sheet',  'EKS TMN'],\n  ['EKS NANO Sheet', 'EKS NANO'],\n  ['OCP Sheet',      'OCP'],\n];\n\nfunction pick(obj, candidates) {\n  for (const c of candidates) {\n    if (obj[c] !== undefined && obj[c] !== null && obj[c] !== '') return obj[c];\n  }\n  const norm = s => String(s).toLowerCase().replace(/[\\s_\\-]/g, '');\n  const want = new Set(candidates.map(norm));\n  for (const k of Object.keys(obj)) {\n    if (want.has(norm(k)) && obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];\n  }\n  return undefined;\n}\n\nconst NAME_KEYS  = ['Service name', 'name', 'Service', 'service_name', 'ServiceName'];\nconst PRIO_KEYS  = ['Priority', 'priority', 'Pri'];\nconst GROUP_KEYS = ['Service group', 'serviceGroup', 'Group', 'service_group', 'ServiceGroup'];\nconst BU_KEYS    = ['BU', 'bu', 'Business Unit', 'business_unit'];\n\nconst result = [];\nconst seen   = new Set();\nconst debug  = {};\n\nfor (const [nodeName, runway] of SOURCES) {\n  let items;\n  try { items = $(nodeName).all(); }\n  catch (e) {\n    debug[runway] = { error: String(e.message || e) };\n    continue;\n  }\n\n  let kept = 0, defaulted = 0, skippedNoName = 0, skippedBadPrio = 0, skippedDup = 0;\n  const sampleKeys = items[0] ? Object.keys(items[0].json || {}) : [];\n\n  for (const it of items) {\n    const j = it.json || {};\n    const name    = String(pick(j, NAME_KEYS)  ?? '').trim();\n    const prioRaw = String(pick(j, PRIO_KEYS)  ?? '').trim().toUpperCase();\n    const group   = String(pick(j, GROUP_KEYS) ?? '').trim();\n    const bu      = String(pick(j, BU_KEYS)    ?? '').trim() || 'Truemoney';\n\n    if (!name) { skippedNoName++; continue; }\n\n    let prio, priorityDefaulted = false;\n    if (!prioRaw) {\n      prio = 'P3';\n      priorityDefaulted = true;\n    } else if (['P1','P2','P3'].includes(prioRaw)) {\n      prio = prioRaw;\n    } else {\n      skippedBadPrio++; continue;\n    }\n\n    const key = runway + '||' + name;\n    if (seen.has(key)) { skippedDup++; continue; }\n    seen.add(key);\n\n    result.push({ name, priority: prio, serviceGroup: group, bu, runway, priorityDefaulted });\n    kept++;\n    if (priorityDefaulted) defaulted++;\n  }\n\n  debug[runway] = { total: items.length, kept, defaulted, skippedNoName, skippedBadPrio, skippedDup, sampleKeys };\n}\n\n// Tail item with debug info; PHP ignores it because it has no `name`.\nresult.push({ _meta: 'debug', debug });\n\nreturn result.map(json => ({ json }));"
+      },
+      "id": "1a000000-0000-0000-0000-000000000020",
+      "name": "Combine + Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 320]
+    },
+
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $input.all().map(i => i.json) }}",
+        "options": {}
+      },
+      "id": "1a000000-0000-0000-0000-000000000030",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1440, 320]
+    }
+  ],
+
+  "connections": {
+    "Webhook":         { "main": [[{ "node": "EKS TMN Sheet",      "type": "main", "index": 0 }]] },
+    "EKS TMN Sheet":   { "main": [[{ "node": "EKS NANO Sheet",     "type": "main", "index": 0 }]] },
+    "EKS NANO Sheet":  { "main": [[{ "node": "OCP Sheet",          "type": "main", "index": 0 }]] },
+    "OCP Sheet":       { "main": [[{ "node": "Combine + Normalize","type": "main", "index": 0 }]] },
+    "Combine + Normalize": { "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]] }
+  },
+
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "tags": []
+}

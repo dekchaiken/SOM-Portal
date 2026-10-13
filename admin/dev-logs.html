@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log Viewer — Dev Tools — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/dev-logs/dev-logs.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">Log Viewer — Dev Tools</div>
+        <div class="page-sub">Activity และ Security logs แบบ real-time พร้อมค้นหา</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="dt-btn" id="btn-export" onclick="exportLogs()"><i data-icon="arrow-down"></i> Export JSON</button>
+        <button class="dt-btn primary" id="btn-load" onclick="fetchLogs(true)">↺ Load / Refresh</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="clipboard"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Dev Tools</div>
+          <h1>Log Viewer</h1>
+          <p>Activity และ Security logs แบบ real-time พร้อมค้นหา + export — เฉพาะ Dev SM</p>
+        </div>
+      </section>
+
+      <div class="dt-banner">
+        <span class="dt-banner-tag">DEV SM</span>
+        <span>Log viewer สำหรับ role <code style="color:var(--orange)">dev_sm</code> — ดู activity &amp; security logs พร้อมระบบค้นหาและ export</span>
+      </div>
+
+      <div class="dt-card">
+        <!-- Tabs -->
+        <div class="log-tabs">
+          <div class="log-tab active" data-tab="activity" onclick="switchTab('activity')"><i data-icon="clipboard"></i> Activity Logs</div>
+          <div class="log-tab"        data-tab="security" onclick="switchTab('security')"><i data-icon="lock"></i> Security Logs</div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="log-toolbar">
+          <input type="text"
+            class="log-search"
+            id="log-search"
+            placeholder="🔍 ค้นหา action หรือ user…"
+            oninput="debounceFetch()">
+          <select class="log-select" id="log-limit" onchange="fetchLogs(true)">
+            <option value="50">50 rows</option>
+            <option value="100" selected>100 rows</option>
+            <option value="200">200 rows</option>
+            <option value="500">500 rows</option>
+          </select>
+          <button class="dt-btn" onclick="clearSearch()"><i data-icon="x"></i> Clear</button>
+          <span style="flex:1"></span>
+          <span style="font-size:10px;color:var(--text-muted)" id="log-meta-right"></span>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="log-stats-bar" id="log-stats-bar" style="display:none">
+          <div class="log-stat-item">Total: <strong id="stat-total">—</strong></div>
+          <span class="log-stat-sep">·</span>
+          <div class="log-stat-item">Showing: <strong id="stat-showing">—</strong></div>
+          <span class="log-stat-sep">·</span>
+          <div class="log-stat-item">Page: <strong id="stat-page">—</strong></div>
+        </div>
+
+        <!-- Log list -->
+        <div class="dt-card-body">
+          <div class="log-header-row">
+            <div>Timestamp</div>
+            <div class="h-user">User</div>
+            <div>Action/Event</div>
+            <div>Detail</div>
+          </div>
+          <div class="log-list" id="log-list">
+            <div class="loading-row"><span class="spin"></span> กำลังโหลด logs…</div>
+          </div>
+
+          <!-- Load more / pagination -->
+          <div class="load-more-row" id="load-more-row" style="display:none">
+            <button class="dt-btn" id="btn-more" onclick="loadMore()"><i data-icon="arrow-down"></i> Load More</button>
+            <span style="font-size:10px;color:var(--text-muted)" id="load-more-info"></span>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/csrf.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/dev-logs/dev-logs.js"></script>
+</body>
+</html>

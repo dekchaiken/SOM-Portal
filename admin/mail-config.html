@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mail Config — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/mail-config/mail-config.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="mail"></i> Mail Config</div>
+        <div class="page-sub">ตั้งค่า SMTP · Global CC · Signature สำหรับส่ง Email หลัง Create Jira Ticket</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="./index.html" class="btn btn-ghost" style="font-size:11px">← Admin Panel</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="mail"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Mail Config</h1>
+          <p>ตั้งค่า SMTP · Global CC · Signature สำหรับส่ง Email หลัง Create Jira Ticket · Test connection ได้</p>
+        </div>
+      </section>
+
+      <!-- ── SMTP Settings ── -->
+      <div class="mc-card">
+        <div class="mc-card-hd">
+          <div class="mc-card-icon"><i data-icon="plug"></i></div>
+          <div>
+            <div class="mc-card-title">SMTP Settings</div>
+            <div class="mc-card-sub">ข้อมูล Mail Server ที่ใช้ส่ง Email</div>
+          </div>
+          <span class="cfg-status bad" id="smtp-status" style="margin-left:auto">
+            <span class="cfg-status-dot"></span><span id="smtp-status-txt">ยังไม่ตั้งค่า</span>
+          </span>
+        </div>
+        <div class="mc-body">
+          <div class="f-row-3">
+            <div>
+              <div class="f-label">SMTP Host <span style="color:#ef4444">*</span></div>
+              <input type="text" id="smtp-host" class="f-input" placeholder="smtp.gmail.com">
+            </div>
+            <div>
+              <div class="f-label">Port</div>
+              <input type="number" id="smtp-port" class="f-input" value="587" min="1" max="65535">
+            </div>
+            <div>
+              <div class="f-label">Encryption</div>
+              <select id="smtp-enc" class="f-input">
+                <option value="tls">TLS (port 587)</option>
+                <option value="ssl">SSL (port 465)</option>
+                <option value="none">None (port 25)</option>
+              </select>
+            </div>
+          </div>
+          <div class="f-row-2">
+            <div>
+              <div class="f-label">Username / Email</div>
+              <input type="text" id="smtp-user" class="f-input" placeholder="your@email.com" autocomplete="off">
+            </div>
+            <div>
+              <div class="f-label">Password</div>
+              <div class="pw-wrap">
+                <input type="password" id="smtp-pass" class="f-input" placeholder="••••••••  (ว่าง = ไม่เปลี่ยน)" autocomplete="new-password">
+                <button class="pw-eye" id="pw-toggle" type="button" title="Show/Hide">
+                  <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="f-row-2">
+            <div>
+              <div class="f-label">From Name <span style="color:#ef4444">*</span></div>
+              <input type="text" id="from-name" class="f-input" placeholder="Service Monitoring Center (SMC)">
+            </div>
+            <div>
+              <div class="f-label">From Email <span style="color:#ef4444">*</span></div>
+              <input type="email" id="from-email" class="f-input" placeholder="sm@company.com">
+            </div>
+          </div>
+
+          <!-- Test connection -->
+          <div style="display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap">
+            <button class="btn btn-ghost" id="btn-test-conn" style="font-size:11px;white-space:nowrap"><i data-icon="plug"></i> ทดสอบการเชื่อมต่อ</button>
+            <span style="font-size:10px;color:var(--text-muted)">ตรวจ TCP + TLS + Auth โดยไม่ส่ง email</span>
+          </div>
+          <div class="conn-steps" id="conn-steps"></div>
+
+          <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+
+          <!-- Test send -->
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="email" id="test-to" class="f-input" placeholder="ส่งทดสอบไปที่ email..." style="max-width:260px">
+            <button class="btn btn-ghost" id="btn-test-send" style="font-size:11px;white-space:nowrap"><i data-icon="mail"></i> ส่งทดสอบ</button>
+          </div>
+          <div class="test-result" id="test-result"></div>
+        </div>
+        <div class="save-bar">
+          <span class="save-hint">การเปลี่ยน password: ว่างไว้ = ไม่เปลี่ยน password เดิม</span>
+          <button class="btn btn-primary" id="btn-save-smtp" style="font-size:11px"><i data-icon="save"></i> บันทึก SMTP</button>
+        </div>
+      </div>
+
+      <!-- ── Global CC ── -->
+      <div class="mc-card">
+        <div class="mc-card-hd">
+          <div class="mc-card-icon" style="background:rgba(139,92,246,.1);color:#8b5cf6"><i data-icon="clipboard"></i></div>
+          <div>
+            <div class="mc-card-title">Global CC</div>
+            <div class="mc-card-sub">Email ที่จะ CC ทุก Email ที่ส่งออก — แก้ไขได้ตอนส่งด้วย</div>
+          </div>
+        </div>
+        <div class="mc-body">
+          <div class="f-label">CC Email (กด Enter หรือ , เพื่อเพิ่ม)</div>
+          <div class="chip-field" id="cc-field" onclick="document.getElementById('cc-input').focus()">
+            <input type="text" id="cc-input" placeholder="email@company.com" autocomplete="off">
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:6px">
+            Email เหล่านี้จะถูกดึงมาใส่ใน CC โดยอัตโนมัติทุกครั้งที่ส่ง Email หลัง Create Jira Ticket
+          </div>
+        </div>
+        <div class="save-bar">
+          <button class="btn btn-primary" id="btn-save-cc" style="font-size:11px"><i data-icon="save"></i> บันทึก CC</button>
+        </div>
+      </div>
+
+      <!-- ── Branded Email Template ── -->
+      <div class="mc-card">
+        <div class="mc-card-hd">
+          <div class="mc-card-icon" style="background:rgba(244,114,182,.12);color:#ec4899"><i data-icon="palette"></i></div>
+          <div>
+            <div class="mc-card-title">Branded Email Template</div>
+            <div class="mc-card-sub">หัวเรื่อง · subtitle · gradient color · Footer banner</div>
+          </div>
+        </div>
+        <div class="mc-body">
+          <div class="f-row">
+            <div class="f-label">Header Title</div>
+            <input type="text" id="brand-title" class="f-input"
+                   placeholder="TechOps · Service Monitoring Center">
+            <div style="font-size:10px;color:var(--text-muted);margin-top:6px">
+              ตัวหนังสือใหญ่บนหัว email — แสดงทุก email ที่ส่งจากระบบ
+            </div>
+          </div>
+
+          <div class="f-row">
+            <div class="f-label">Gradient Colors <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(4 จุดสี — ใช้เป็น divider line + พื้นหลัง pastel)</span></div>
+            <div id="theme-lock-note" style="display:none;font-size:10.5px;color:var(--orange);background:rgba(242,100,25,.1);border:1px solid rgba(242,100,25,.3);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-weight:600">
+              <i data-icon="lock"></i> <strong>Typewriter theme active</strong> — สี Bauhaus (orange · black · cream) ถูก lock ไว้แล้ว · เปลี่ยน Header/Footer เป็น Classic เพื่อปรับสี
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+              <label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-size:10px;color:var(--text-muted)">
+                <input type="color" id="brand-c1" value="#fde047" style="width:28px;height:28px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+                Stop 1
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-size:10px;color:var(--text-muted)">
+                <input type="color" id="brand-c2" value="#fb923c" style="width:28px;height:28px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+                Stop 2
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-size:10px;color:var(--text-muted)">
+                <input type="color" id="brand-c3" value="#ec4899" style="width:28px;height:28px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+                Stop 3
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-size:10px;color:var(--text-muted)">
+                <input type="color" id="brand-c4" value="#a855f7" style="width:28px;height:28px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+                Stop 4
+              </label>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button type="button" class="btn btn-ghost" style="font-size:10px;padding:5px 10px" data-preset="warm"><i data-icon="flame"></i> Warm (default)</button>
+              <button type="button" class="btn btn-ghost" style="font-size:10px;padding:5px 10px" data-preset="ocean">🌊 Ocean</button>
+              <button type="button" class="btn btn-ghost" style="font-size:10px;padding:5px 10px" data-preset="forest">🌿 Forest</button>
+              <button type="button" class="btn btn-ghost" style="font-size:10px;padding:5px 10px" data-preset="mono"><i data-icon="circle"></i> Mono</button>
+            </div>
+          </div>
+
+          <!-- Header style selector — classic (all teams) + typewriter (SM only) -->
+          <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+            <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:.04em"><i data-icon="palette"></i> HEADER STYLE</div>
+            <div style="font-size:10.5px;color:var(--text-muted);margin-bottom:10px">เลือกดีไซน์ header · Typewriter จะเข้าคู่กับ footer Typewriter · SM_</div>
+            <div class="fs-grid" id="hd-style-grid">
+              <label class="fs-card is-active" data-style="classic">
+                <input type="radio" name="hd-style" value="classic" checked>
+                <div class="fs-card-head">
+                  <div class="fs-card-title">Classic Gradient</div>
+                  <span class="fs-card-badge">ALL TEAMS</span>
+                </div>
+                <div class="fs-card-sub">พื้น pastel gradient (4 stops) + brand title (แบบเดิม)</div>
+                <div class="fs-mini" style="background:linear-gradient(135deg,#fef3c7,#fed7aa,#fbcfe8,#e9d5ff);color:#111;font-family:inherit">
+                  <div style="font-size:13px;font-weight:700;color:#0f172a">TechOps · Service Monitoring</div>
+                </div>
+              </label>
+              <label class="fs-card" data-style="typewriter" id="hd-style-typewriter">
+                <input type="radio" name="hd-style" value="typewriter">
+                <div class="fs-card-head">
+                  <div class="fs-card-title">Typewriter · Terminal</div>
+                  <span class="fs-card-badge sm-only">SM ONLY</span>
+                </div>
+                <div class="fs-card-sub">พื้นดำ · terminal chrome (● ● ●) + prompt path + mono title + orange bar</div>
+                <div class="fs-mini fs-mini-tw" style="padding:0">
+                  <!-- title bar strip (dots only) -->
+                  <div style="background:#1a1a1a;padding:5px 8px">
+                    <span style="width:7px;height:7px;background:#ff5f57;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:3px"></span>
+                    <span style="width:7px;height:7px;background:#febc2e;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:3px"></span>
+                    <span style="width:7px;height:7px;background:#28c840;border-radius:50%;display:inline-block;vertical-align:middle"></span>
+                  </div>
+                  <!-- hero -->
+                  <div style="padding:12px 10px">
+                    <div style="color:#f4f1eb;font-size:12px;font-weight:800;letter-spacing:-.01em">TechOps · Service Monitoring</div>
+                    <div style="height:2px;width:32px;background:#F26419;margin-top:6px"></div>
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Header palette (only visible when Typewriter header is selected) -->
+            <div id="hd-tw-palette-row" style="display:none;margin-top:14px;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px">
+              <div style="font-size:11px;font-weight:800;color:var(--text);letter-spacing:.04em;margin-bottom:8px"><i data-icon="palette"></i> TYPEWRITER PALETTE</div>
+              <div style="font-size:10.5px;color:var(--text-muted);margin-bottom:12px">เลือก preset หรือปรับสีเอง 3 จุด (BG · Text · Accent) — title bar strip คำนวณอัตโนมัติจาก BG</div>
+
+              <!-- Presets -->
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px" id="hd-tw-presets">
+                <button type="button" class="btn btn-ghost" style="font-size:10.5px;padding:6px;height:auto"
+                        data-hd-preset='{"bg":"#111111","text":"#f4f1eb","accent":"#F26419"}'>
+                  <div style="height:24px;background:#111;border-radius:3px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;color:#f4f1eb;font-size:9px;font-weight:800">Aa</div>
+                  Dark
+                </button>
+                <button type="button" class="btn btn-ghost" style="font-size:10.5px;padding:6px;height:auto"
+                        data-hd-preset='{"bg":"#ffffff","text":"#111111","accent":"#F26419"}'>
+                  <div style="height:24px;background:#fff;border:1px solid #e5e7eb;border-radius:3px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;color:#111;font-size:9px;font-weight:800">Aa</div>
+                  Light
+                </button>
+                <button type="button" class="btn btn-ghost" style="font-size:10.5px;padding:6px;height:auto"
+                        data-hd-preset='{"bg":"#F26419","text":"#ffffff","accent":"#111111"}'>
+                  <div style="height:24px;background:#F26419;border-radius:3px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:800">Aa</div>
+                  Orange
+                </button>
+                <button type="button" class="btn btn-ghost" style="font-size:10.5px;padding:6px;height:auto"
+                        data-hd-preset='{"bg":"#f4f1eb","text":"#111111","accent":"#F26419"}'>
+                  <div style="height:24px;background:#f4f1eb;border-radius:3px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;color:#111;font-size:9px;font-weight:800">Aa</div>
+                  Cream
+                </button>
+              </div>
+
+              <!-- Custom color pickers -->
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+                <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-card);font-size:11px">
+                  <input type="color" id="hd-tw-bg" value="#111111" style="width:32px;height:28px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+                  <div style="flex:1"><div style="color:var(--text-muted);font-size:9.5px;letter-spacing:.06em;font-weight:700">BACKGROUND</div><div id="hd-tw-bg-lbl" style="color:var(--text);font-weight:600">#111111</div></div>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-card);font-size:11px">
+                  <input type="color" id="hd-tw-text" value="#f4f1eb" style="width:32px;height:28px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+                  <div style="flex:1"><div style="color:var(--text-muted);font-size:9.5px;letter-spacing:.06em;font-weight:700">TITLE TEXT</div><div id="hd-tw-text-lbl" style="color:var(--text);font-weight:600">#f4f1eb</div></div>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-card);font-size:11px">
+                  <input type="color" id="hd-tw-accent" value="#F26419" style="width:32px;height:28px;border:none;border-radius:5px;background:none;padding:0;cursor:pointer">
+                  <div style="flex:1"><div style="color:var(--text-muted);font-size:9.5px;letter-spacing:.06em;font-weight:700">ACCENT BAR</div><div id="hd-tw-accent-lbl" style="color:var(--text);font-weight:600">#F26419</div></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Size Settings ── -->
+          <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--border)">
+            <div class="sz-section"><i data-icon="arrow-up"></i> HEADER</div>
+            <div class="sz-grid-3">
+              <div class="sz-item">
+                <div class="sz-label">Padding บน/ล่าง</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-hdr-pad" value="44" min="4" max="100" step="2">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+              <div class="sz-item">
+                <div class="sz-label">Title ขนาดตัวอักษร</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-hdr-title" value="26" min="10" max="56" step="1">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+              <div class="sz-item">
+                <div class="sz-label">Subject ขนาดตัวอักษร</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-hdr-sub" value="14" min="8" max="32" step="1">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="sz-section" style="margin-top:14px">— DIVIDER</div>
+            <div class="sz-grid">
+              <div class="sz-item">
+                <div class="sz-label">ความหนา Divider</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-divider" value="4" min="1" max="20" step="1">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="sz-section" style="margin-top:14px"><i data-icon="arrow-down"></i> FOOTER</div>
+            <div class="sz-grid-3" style="margin-bottom:10px">
+              <div class="sz-item">
+                <div class="sz-label">Padding บน/ล่าง</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-ft-pad" value="30" min="4" max="100" step="2">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+              <div class="sz-item">
+                <div class="sz-label">Title ขนาดตัวอักษร</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-ft-title" value="18" min="8" max="40" step="1">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+              <div class="sz-item">
+                <div class="sz-label">Contact ขนาดตัวอักษร</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-ft-contact" value="11.5" min="7" max="20" step="0.5">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+            </div>
+            <div class="sz-grid">
+              <div class="sz-item">
+                <div class="sz-label">Address ขนาดตัวอักษร</div>
+                <div class="sz-row">
+                  <input type="number" class="sz-input" id="sz-ft-addr" value="11" min="7" max="18" step="0.5">
+                  <span class="sz-unit">px</span>
+                </div>
+              </div>
+              <div class="sz-item">
+                <div class="sz-label">พื้นหลัง Footer</div>
+                <div class="sz-row" style="gap:8px">
+                  <input type="color" class="sz-color" id="sz-ft-bg" value="#0f172a" title="Footer background color">
+                  <span class="sz-unit" id="sz-ft-bg-label">#0f172a</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer style selector — classic (all teams) + typewriter (SM only) -->
+          <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+            <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:.04em"><i data-icon="palette"></i> FOOTER STYLE</div>
+            <div style="font-size:10.5px;color:var(--text-muted);margin-bottom:10px">เลือกดีไซน์ footer ที่จะแสดงในทุก email ที่ส่งจากระบบ · ข้อความในช่องด้านล่างจะถูกใช้ทั้ง 2 แบบ</div>
+            <div class="fs-grid" id="ft-style-grid">
+              <label class="fs-card is-active" data-style="classic">
+                <input type="radio" name="ft-style" value="classic" checked>
+                <div class="fs-card-head">
+                  <div class="fs-card-title">Classic Bauhaus</div>
+                  <span class="fs-card-badge">ALL TEAMS</span>
+                </div>
+                <div class="fs-card-sub">พื้นดำ · SMC label สีส้ม + ข้อความจัดชิดซ้าย + orange bar ทางขวา (แบบเดิม)</div>
+                <div class="fs-mini fs-mini-classic">
+                  <div class="k">SMC</div>
+                  <div class="t">Service Monitoring Center</div>
+                  <div class="g">sm@ascendcorp.com · +66 91 …</div>
+                </div>
+              </label>
+              <label class="fs-card" data-style="typewriter" id="ft-style-typewriter">
+                <input type="radio" name="ft-style" value="typewriter">
+                <div class="fs-card-head">
+                  <div class="fs-card-title">Typewriter · SM_</div>
+                  <span class="fs-card-badge sm-only">SM ONLY</span>
+                </div>
+                <div class="fs-card-sub">พื้นดำ · "SM_" cursor + Service Monitoring wordmark + terminal-style contact block</div>
+                <div class="fs-mini fs-mini-tw">
+                  <div>
+                    <span class="sm">SM<span class="cur"></span></span><span class="bar"></span><span class="sv">Service Monitoring</span>
+                  </div>
+                  <div class="lb">ASCEND MONEY · SMC</div>
+                  <div class="rw">▸ MAIL <span>sm@ascendcorp.com</span></div>
+                  <div class="rw">▸ WEB &nbsp;<span>ascendmoneygroup.com</span></div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Public Base URL (only meaningful for Typewriter footer) -->
+            <div class="f-row" id="pub-url-row" style="margin-top:14px">
+              <div class="f-label">Public Base URL <span style="font-weight:400;color:var(--orange);text-transform:none;letter-spacing:0"><i data-icon="alert-triangle"></i> ตั้งค่านี้เพื่อซ่อน <code>sm-logo.gif</code> chip ใน Gmail inbox</span></div>
+              <input type="text" id="ft-public-url" class="f-input" placeholder="https://som-portal.your-company.com">
+              <div style="font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.65;background:rgba(148,163,184,.08);padding:10px 12px;border-radius:6px;border-left:3px solid var(--orange)">
+                <strong style="color:var(--text)">ทำไมต้องตั้ง URL นี้?</strong><br>
+                Gmail มี "attachment chip" ในหน้าอินบ็อกซ์ที่แสดง inline images ทุกอันเป็นไฟล์แนบ — <strong>ซ่อนไม่ได้ผ่าน MIME header</strong> ใดๆ<br><br>
+                <strong style="color:var(--text)"><i data-icon="check-circle"></i> ตั้งค่า URL:</strong> ระบบจะโหลด GIF ผ่าน <code>&lt;img src="URL/uploads/sm-logo-typewriter.gif"&gt;</code> แทน CID → <strong>ไม่มี chip</strong><br>
+                <strong style="color:var(--text)"><i data-icon="x-circle"></i> ไม่ตั้ง:</strong> ระบบจะฝัง GIF แบบ CID attachment → <strong>ยังมี chip <code>sm-logo.gif</code></strong> ในหน้าอินบ็อกซ์<br><br>
+                <strong style="color:var(--text)">ข้อกำหนด:</strong> URL ต้องเป็น public (เข้าถึงได้จาก Gmail server) เช่น <code>https://your-domain.com</code> — <code>localhost</code> จะไม่ทำงาน
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer text fields -->
+          <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+            <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:12px;letter-spacing:.04em"><i data-icon="arrow-down"></i> FOOTER ข้อความ</div>
+
+            <div class="f-row">
+              <div class="f-label">Footer Title <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(ตัวเหลืองใหญ่ตรงกลาง)</span></div>
+              <input type="text" id="ft-title" class="f-input" placeholder="Service Monitoring Center (SMC)">
+            </div>
+
+            <div class="f-row">
+              <div class="f-label">Contact Line <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(ใช้ <code> | </code> คั่น · email auto-link)</span></div>
+              <input type="text" id="ft-contact" class="f-input" placeholder="Service Management Center, Ascend Money | M +66 91 6969 885 | sm@ascendcorp.com">
+            </div>
+
+            <div class="f-row">
+              <div class="f-label">Address</div>
+              <input type="text" id="ft-address" class="f-input" placeholder="101 True Digital Park, Phoenix Building 7th Floor...">
+            </div>
+
+            <div class="f-row">
+              <div class="f-label">Website URL <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(ใส่ http:// หรือไม่ใส่ก็ได้)</span></div>
+              <input type="text" id="ft-website" class="f-input" placeholder="www.ascendmoneygroup.com">
+            </div>
+          </div>
+
+          <!-- Live preview: full email card -->
+          <div class="f-label" style="margin-top:18px">Live Preview</div>
+          <div style="background:#f8fafc;padding:16px;border-radius:10px;border:1px solid var(--border)">
+            <div style="max-width:100%;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+              <!-- HEADER -->
+              <div id="brand-preview-header" style="padding:24px 28px">
+                <div id="brand-preview-title" style="font-size:18px;font-weight:700;color:#0f172a;line-height:1.3"></div>
+              </div>
+              <div id="brand-preview-divider1" style="height:3px"></div>
+              <!-- BODY (mock content) -->
+              <div style="padding:22px 28px;font-size:12px;color:#1e293b;line-height:1.6;background:#fff">
+                <p style="margin:0 0 8px 0">เรียน ทีมที่เกี่ยวข้อง,</p>
+                <p style="margin:0 0 8px 0">นี่คือเนื้อหาตัวอย่างของ email ที่ส่งจากระบบ — ผู้ใช้พิมพ์ส่วนนี้เอง</p>
+                <p style="margin:0">ขอบคุณค่ะ</p>
+              </div>
+              <div id="brand-preview-divider2" style="height:3px"></div>
+              <!-- FOOTER — populated dynamically -->
+              <div id="brand-preview-footer" style="padding:22px 28px;background:#0f172a;text-align:center">
+                <div id="ft-preview-title" style="font-size:15px;font-weight:700;color:#fcd34d;margin-bottom:6px"></div>
+                <div id="ft-preview-contact" style="font-size:10.5px;color:#cbd5e1;line-height:1.7"></div>
+                <div id="ft-preview-address" style="font-size:10px;color:#94a3b8;line-height:1.7;margin-top:5px"></div>
+                <div id="ft-preview-website" style="font-size:10px;color:#fcd34d;margin-top:3px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="save-bar">
+          <button class="btn btn-primary" id="btn-save-brand" style="font-size:11px"><i data-icon="save"></i> บันทึก Template</button>
+        </div>
+      </div>
+
+      <!-- ── Email Signature ── -->
+      <div class="mc-card">
+        <div class="mc-card-hd">
+          <div class="mc-card-icon" style="background:rgba(242,100,25,.1);color:var(--orange)"><i data-icon="pencil"></i></div>
+          <div>
+            <div class="mc-card-title">Email Signature</div>
+            <div class="mc-card-sub">Signature ที่จะแนบท้าย Email อัตโนมัติ (ใช้ในกรณีที่ปิด Branded Footer)</div>
+          </div>
+        </div>
+        <div class="mc-body">
+          <textarea id="email-sig" class="f-input" style="min-height:150px;font-family:monospace;font-size:12px"
+            placeholder="Best regards,&#10;&#10;Service Monitoring Center (SMC),..."></textarea>
+        </div>
+        <div class="save-bar">
+          <button class="btn btn-primary" id="btn-save-sig" style="font-size:11px"><i data-icon="save"></i> บันทึก Signature</button>
+        </div>
+      </div>
+
+      <!-- ── Advanced Email Tester ── -->
+      <div class="mc-card">
+        <div class="mc-card-hd">
+          <div class="mc-card-icon" style="background:rgba(99,102,241,.1);color:#6366f1"><i data-icon="test-tube"></i></div>
+          <div>
+            <div class="mc-card-title">Advanced Email Tester</div>
+            <div class="mc-card-sub">ส่งเมลทดสอบแบบเต็มฟีเจอร์ — รองรับรูป, จัดรูป, ลายเซ็น</div>
+          </div>
+        </div>
+        <div class="mc-body">
+          <div class="f-row">
+            <div class="f-label">Test To Email <span style="color:#ef4444">*</span></div>
+            <input type="email" id="adv-test-to" class="f-input" placeholder="test@example.com">
+          </div>
+          <div class="f-row">
+            <div class="f-label">Subject</div>
+            <input type="text" id="adv-test-subject" class="f-input" placeholder="Test Email Subject" value="[TEST] SOM-Portal Email Test">
+          </div>
+          <div class="f-row">
+            <div class="f-label">Message (with formatting)</div>
+            <div class="rich-editor-container">
+              <div class="rich-editor-toolbar">
+                <button class="editor-btn" id="adv-btn-bold" title="Bold"><strong style="font-size:11px">B</strong></button>
+                <button class="editor-btn" id="adv-btn-italic" title="Italic"><em style="font-size:11px">I</em></button>
+                <button class="editor-btn" id="adv-btn-underline" title="Underline"><u style="font-size:11px">U</u></button>
+                <button class="editor-btn" id="adv-btn-image" title="Insert Image"><i data-icon="image"></i></button>
+                <input type="file" id="adv-image-input" accept="image/*" style="display:none">
+              </div>
+              <div class="rich-editor-content" id="adv-test-body" contenteditable="true" spellcheck="true"></div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:6px">
+            <i data-icon="lightbulb"></i> ทดสอบการส่งเมลด้วย Rich HTML, รูป, และ Signature ที่ตั้งค่าไว้
+          </div>
+        </div>
+        <div class="save-bar">
+          <div style="flex:1"></div>
+          <button class="btn btn-ghost" style="font-size:11px" id="btn-clear-adv-test"><i data-icon="trash"></i> ล้าง</button>
+          <button class="btn btn-primary" style="font-size:11px" id="btn-send-adv-test"><i data-icon="mail"></i> ส่งเมลทดสอบ</button>
+        </div>
+        <div class="test-result" id="adv-test-result"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Image upload input (hidden) -->
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/mail-config/mail-config.js"></script>
+</body>
+</html>

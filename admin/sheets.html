@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Docs — Admin — SOM-Portal</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <link rel="stylesheet" href="../assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="../assets/pages/admin/sheets/sheets.css" data-page-css>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title">⊟ Manage Docs</div>
+        <div class="page-sub">จัดการ Team Docs และหมวดหมู่</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input type="text" id="search-input" class="form-control" placeholder="ค้นหา..." style="width:200px">
+        </div>
+        <button class="btn btn-primary" onclick="openDocModal()">+ เพิ่มเอกสาร</button>
+      </div>
+    </header>
+
+    <main class="page-content" style="display:flex;flex-direction:column;gap:20px">
+
+      <section class="page-hero">
+        <div class="page-hero-mark">⊟</div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Manage Docs</h1>
+          <p>จัดการ Team Docs และหมวดหมู่ — Google Sheets, Grafana, DataDog embeds</p>
+        </div>
+      </section>
+
+      <!-- Categories section -->
+      <div class="card" style="padding:18px 20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">หมวดหมู่</div>
+          <button class="btn btn-ghost btn-sm" onclick="openAddCategory()">+ เพิ่มหมวด</button>
+        </div>
+        <div id="cat-list" style="display:flex;flex-wrap:wrap;gap:8px">
+          <div data-skel="chips" data-rows="5"></div>
+        </div>
+      </div>
+
+      <!-- Docs table -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">
+            เอกสารทั้งหมด <span id="doc-count" style="color:var(--text)"></span>
+          </div>
+          <select id="filter-cat" class="form-control" style="width:160px;font-size:11px" onchange="applyFilter()">
+            <option value="">ทุกหมวด</option>
+          </select>
+        </div>
+        <div id="docs-table-wrap">
+          <div data-skel="table" data-rows="5"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Add/Edit Doc Modal ── -->
+<div class="modal-overlay" id="doc-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title" id="doc-modal-title">เพิ่มเอกสาร</span>
+      <button class="btn-close" onclick="Modal.close('doc-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:0">
+      <input type="hidden" id="edit-doc-id">
+      <div class="form-group">
+        <label class="form-label">ชื่อเอกสาร <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="doc-name" class="form-control" maxlength="120">
+      </div>
+      <div class="form-group">
+        <label class="form-label">URL <span style="color:var(--danger)">*</span></label>
+        <input type="url" id="doc-url" class="form-control" placeholder="https://docs.google.com/...">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">ประเภท</label>
+          <select id="doc-type" class="form-control">
+            <option value="sheet">Google Sheet</option>
+            <option value="doc">Google Doc</option>
+            <option value="slide">Google Slide</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">หมวดหมู่</label>
+          <select id="doc-category" class="form-control">
+            <option value="">— ไม่ระบุ —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">รายละเอียด</label>
+        <textarea id="doc-desc" class="form-control" rows="3" maxlength="300"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('doc-modal')">Cancel</button>
+      <button class="btn btn-primary" id="doc-save-btn" onclick="saveDoc()">
+        <span id="doc-save-text">บันทึก</span>
+        <span id="doc-save-spin" class="spinner hidden" style="width:12px;height:12px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:#fff"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add Category Modal ── -->
+<div class="modal-overlay" id="cat-modal">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-header">
+      <span class="modal-title">เพิ่มหมวดหมู่</span>
+      <button class="btn-close" onclick="Modal.close('cat-modal')"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">ชื่อหมวดหมู่</label>
+        <input type="text" id="cat-name" class="form-control" placeholder="เช่น Planning, Report" maxlength="60">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('cat-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCategory()">เพิ่ม</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/mobile-nav.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script src="../assets/pages/admin/sheets/sheets.js"></script>
+</body>
+</html>

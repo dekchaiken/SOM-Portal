@@ -1,0 +1,384 @@
+/* ═══════════════════════════════════════════════
+   Dev Toolbar  |  dev_sm only
+   ═══════════════════════════════════════════════ */
+
+/* ── Toggle button — lives in sidebar now ──────── */
+#dev-toolbar-toggle {
+  /* reset fixed positioning — sidebar handles layout */
+  position: static !important;
+  bottom: auto !important;
+  right: auto !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  box-shadow: none !important;
+  animation: none !important;
+  /* keep the ⚡ red glow feel */
+  background: rgba(255,32,32,.08);
+  border: 1px solid rgba(255,32,32,.3);
+  color: #ff4040;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, border-color .15s;
+  font-family: 'Courier New', monospace;
+  user-select: none;
+  flex-shrink: 0;
+}
+#dev-toolbar-toggle:hover {
+  background: rgba(255,32,32,.18);
+  border-color: rgba(255,32,32,.7);
+  transform: none;
+}
+#dev-toolbar-toggle.is-open {
+  background: rgba(255,32,32,.22);
+  border-color: rgba(255,32,32,.9);
+}
+
+/* ── Panel ─────────────────────────────────────── */
+#dev-toolbar-panel {
+  position: fixed;
+  bottom: 68px;
+  right: 18px;
+  z-index: 9999;
+  width: 480px;
+  max-height: 560px;
+  display: flex;
+  flex-direction: column;
+  background: #111;
+  border: 1px solid rgba(255,32,32,.4);
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.8), 0 0 0 1px rgba(255,32,32,.1);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #ddd;
+  opacity: 0;
+  transform: translateY(12px) scale(.97);
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+  overflow: hidden;
+}
+#dev-toolbar-panel.is-visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: all;
+}
+
+/* ── Header ────────────────────────────────────── */
+.dt-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid rgba(255,32,32,.15);
+  flex-shrink: 0;
+  cursor: grab;
+  user-select: none;
+}
+.dt-header:active { cursor: grabbing; }
+.dt-title {
+  font-weight: 700;
+  font-size: 10px;
+  color: #ff2020;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  flex: 1;
+}
+.dt-title span { color: #ff6060; }
+.dt-badge-ping {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #ff2020;
+  animation: dev-glow 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.dt-close {
+  background: none;
+  border: none;
+  color: #555;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  font-family: inherit;
+}
+.dt-close:hover { color: #ff2020; }
+
+/* ── Tabs ──────────────────────────────────────── */
+.dt-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255,32,32,.1);
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.dt-tabs::-webkit-scrollbar { display: none; }
+.dt-tab {
+  padding: 7px 14px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #777;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color .12s, border-color .12s;
+  user-select: none;
+}
+.dt-tab:hover { color: #bbb; }
+.dt-tab.active { color: #ff4040; border-bottom-color: #ff4040; }
+
+/* ── Content ───────────────────────────────────── */
+.dt-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,32,32,.2) transparent;
+}
+.dt-body::-webkit-scrollbar { width: 4px; }
+.dt-body::-webkit-scrollbar-thumb { background: rgba(255,32,32,.2); border-radius: 2px; }
+
+.dt-pane { display: none; }
+.dt-pane.active { display: block; }
+
+/* ── Shared elements ───────────────────────────── */
+.dt-section { margin-bottom: 14px; }
+.dt-section-title {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: #ff5050;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid rgba(255,32,32,.2);
+}
+.dt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  gap: 8px;
+}
+.dt-row:last-child { border-bottom: none; }
+.dt-label { color: #999; flex-shrink: 0; }
+.dt-val { color: #f0f0f0; text-align: right; word-break: break-all; }
+.dt-val.green  { color: #4ade80; }
+.dt-val.yellow { color: #facc15; }
+.dt-val.red    { color: #f87171; }
+.dt-val.cyan   { color: #67e8f9; }
+.dt-val.mono   { font-family: 'Courier New', monospace; font-size: 10px; }
+
+/* ── JWT pane ──────────────────────────────────── */
+.dt-token-preview {
+  background: rgba(255,32,32,.06);
+  border: 1px solid rgba(255,32,32,.2);
+  border-radius: 4px;
+  padding: 6px 8px;
+  word-break: break-all;
+  color: #888;
+  font-size: 9px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.dt-token-preview:hover { border-color: rgba(255,32,32,.4); color: #bbb; }
+
+.dt-exp-bar-wrap {
+  background: rgba(255,255,255,.05);
+  border-radius: 3px;
+  height: 5px;
+  overflow: hidden;
+  margin: 4px 0 2px;
+}
+.dt-exp-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .5s;
+}
+
+/* ── API Monitor pane ──────────────────────────── */
+.dt-api-toolbar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+.dt-btn {
+  background: rgba(255,32,32,.08);
+  border: 1px solid rgba(255,32,32,.2);
+  color: #ff5050;
+  font-family: 'Courier New', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: .06em;
+  transition: background .12s;
+}
+.dt-btn:hover { background: rgba(255,32,32,.18); }
+.dt-btn.pause { color: #facc15; border-color: rgba(250,204,21,.2); background: rgba(250,204,21,.06); }
+.dt-btn.pause:hover { background: rgba(250,204,21,.14); }
+
+.dt-api-count {
+  margin-left: auto;
+  color: #777;
+  font-size: 9px;
+}
+
+.dt-api-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 360px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,32,32,.15) transparent;
+}
+.dt-api-list::-webkit-scrollbar { width: 3px; }
+.dt-api-list::-webkit-scrollbar-thumb { background: rgba(255,32,32,.15); }
+
+.dt-api-item {
+  display: grid;
+  grid-template-columns: 38px 1fr 40px 50px;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.04);
+  transition: background .1s;
+  font-size: 10px;
+}
+.dt-api-item:hover { background: rgba(255,255,255,.05); }
+.dt-api-method {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-align: center;
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+.dt-api-method.GET    { background: rgba(34,197,94,.12);  color: #4ade80; }
+.dt-api-method.POST   { background: rgba(59,130,246,.12); color: #60a5fa; }
+.dt-api-method.PUT    { background: rgba(250,204,21,.1);  color: #facc15; }
+.dt-api-method.PATCH  { background: rgba(168,85,247,.1);  color: #c084fc; }
+.dt-api-method.DELETE { background: rgba(239,68,68,.12);  color: #f87171; }
+.dt-api-path { color: #ddd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dt-api-status { text-align: right; font-weight: 700; }
+.dt-api-status.ok  { color: #4ade80; }
+.dt-api-status.err { color: #f87171; }
+.dt-api-status.net { color: #aaa; }
+.dt-api-ms { text-align: right; color: #888; }
+.dt-api-ms.slow { color: #facc15; }
+.dt-api-ms.very-slow { color: #f87171; }
+
+.dt-api-empty { color: #666; text-align: center; padding: 30px 0; font-size: 10px; }
+
+/* ── System pane ───────────────────────────────── */
+.dt-mem-bar-wrap {
+  background: rgba(255,255,255,.05);
+  border-radius: 3px;
+  height: 5px;
+  overflow: hidden;
+  margin: 2px 0;
+  flex: 1;
+}
+.dt-mem-bar { height: 100%; border-radius: 3px; background: #ff2020; transition: width .4s; }
+.dt-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 200px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,32,32,.15) transparent;
+}
+.dt-file-list::-webkit-scrollbar { width: 3px; }
+.dt-file-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 100px;
+  gap: 6px;
+  padding: 3px 4px;
+  border-radius: 3px;
+  border-bottom: 1px solid rgba(255,255,255,.03);
+}
+.dt-file-row:hover { background: rgba(255,255,255,.03); }
+.dt-file-name { color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dt-file-size { color: #67e8f9; text-align: right; }
+.dt-file-time { color: #888; text-align: right; }
+
+/* ── Rate Limit pane ───────────────────────────── */
+.dt-rl-meter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.dt-rl-num { font-size: 24px; font-weight: 700; color: #ff2020; line-height: 1; }
+.dt-rl-of  { color: #555; font-size: 10px; align-self: flex-end; margin-bottom: 2px; }
+
+.dt-rl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+.dt-rl-table th {
+  text-align: left;
+  color: #888;
+  padding: 2px 4px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  font-weight: 600;
+  letter-spacing: .05em;
+}
+.dt-rl-table td {
+  padding: 3px 4px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  color: #ddd;
+}
+.dt-rl-table td:last-child { text-align: right; color: #ff6060; }
+
+/* ── Footer ────────────────────────────────────── */
+.dt-footer {
+  padding: 6px 14px;
+  border-top: 1px solid rgba(255,32,32,.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  font-size: 9px;
+  color: #777;
+}
+.dt-footer-refresh {
+  cursor: pointer;
+  color: #888;
+  transition: color .12s;
+}
+.dt-footer-refresh:hover { color: #ff5050; }
+
+/* ── Loading / error states ────────────────────── */
+.dt-loading {
+  text-align: center;
+  color: #888;
+  padding: 20px 0;
+}
+.dt-loading::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255,32,32,.2);
+  border-top-color: #ff2020;
+  border-radius: 50%;
+  animation: dt-spin .7s linear infinite;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+@keyframes dt-spin { to { transform: rotate(360deg); } }

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ops Runbook Config — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ── Layout: two-column ─────────────────────────────── */
+    .rb-layout { display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start; }
+    @media (max-width: 860px) { .rb-layout { grid-template-columns: 1fr; } }
+
+    /* ── Section List (left) ────────────────────────────── */
+    .sec-list { display: flex; flex-direction: column; gap: 4px; }
+    .sec-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px; border-radius: 10px; cursor: pointer;
+      border: 1.5px solid transparent; transition: all .13s;
+      font-size: 12px; font-weight: 600;
+    }
+    .sec-item:hover { background: var(--bg); border-color: var(--border); }
+    .sec-item.active { background: rgba(242,100,25,.08); border-color: var(--orange); color: var(--orange); }
+    .sec-item-icon { font-size: 16px; flex-shrink: 0; }
+    .sec-item-name { flex: 1; }
+    .sec-item-count { font-size: 10px; font-weight: 700; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 1px 6px; }
+    .sec-drag-handle { cursor: grab; color: var(--text-muted); font-size: 13px; opacity: .5; }
+    .sec-drag-handle:active { cursor: grabbing; }
+    .sec-item.dragging { opacity: .4; }
+    .sec-item.drag-over { border-top: 2px solid var(--orange); }
+
+    /* ── Columns table (right) ──────────────────────────── */
+    .col-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .col-table th {
+      text-align: left; padding: 9px 12px;
+      background: var(--sidebar-bg); color: var(--text-muted);
+      font-weight: 600; border-bottom: 1px solid var(--border);
+    }
+    .col-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .col-table tr:last-child td { border-bottom: none; }
+    .col-table tr:hover td { background: var(--bg); }
+
+    .type-pill {
+      display: inline-block; padding: 2px 8px; border-radius: 20px;
+      font-size: 10px; font-weight: 700;
+    }
+    .type-text     { background: rgba(107,114,128,.1); color: #4b5563; border: 1px solid rgba(107,114,128,.2); }
+    .type-dropdown { background: rgba(59,130,246,.1);  color: #2563eb; border: 1px solid rgba(59,130,246,.2); }
+    .type-url      { background: rgba(242,100,25,.1);  color: var(--orange); border: 1px solid rgba(242,100,25,.2); }
+
+    .options-list { display: flex; flex-wrap: wrap; gap: 4px; }
+    .opt-chip {
+      font-size: 10px; padding: 2px 7px; border-radius: 20px;
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    /* ── Modal ──────────────────────────────────────────── */
+    .modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1100;align-items:center;justify-content:center; }
+    .modal-overlay.open { display:flex !important; }
+    .modal-box { background:var(--bg-card);border-radius:var(--radius-lg);width:480px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.18); }
+    .modal-header { padding:18px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0; }
+    .modal-title { font-size:14px;font-weight:700; }
+    .modal-close { background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted); }
+    .modal-body { padding:20px;overflow-y:auto;flex:1; }
+    .modal-footer { padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0; }
+
+    .form-row { margin-bottom:14px; }
+    .form-label { display:block;font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px; }
+    .form-input,.form-select { width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font);font-size:12px;background:var(--bg);color:var(--text);box-sizing:border-box;transition:border-color .15s; }
+    .form-input:focus,.form-select:focus { outline:none;border-color:var(--orange); }
+    .form-hint { font-size:10px;color:var(--text-muted);margin-top:4px; }
+    .form-grid-2 { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px; }
+
+    /* Options editor for dropdown */
+    .opt-editor { display:flex;flex-direction:column;gap:6px; }
+    .opt-row { display:flex;gap:6px;align-items:center; }
+    .opt-row .form-input { flex:1;margin:0; }
+    .opt-del { background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;padding:0 4px; }
+    .opt-add-btn { font-size:11px;margin-top:4px; }
+
+    .divider { border:none;border-top:1px solid var(--border);margin:16px 0; }
+    .empty-box { text-align:center;padding:40px;color:var(--text-muted);font-size:12px; }
+
+    .danger-btn { background:#fee2e2;color:#dc2626;border:none; }
+    .danger-btn:hover { background:#fecaca; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="page-title"><i data-icon="book-open"></i> Ops Runbook Config</div>
+        <div class="page-sub">จัดการ Section, Column และ Dropdown Options</div>
+      </div>
+      <div class="topbar-actions">
+        <a href="../ops-runbook.html" class="btn btn-ghost" style="font-size:12px">↗ เปิดหน้าผู้ใช้</a>
+        <button class="btn btn-primary" id="btn-create-section">+ เพิ่ม Section</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <section class="page-hero">
+        <div class="page-hero-mark"><i data-icon="book-open"></i></div>
+        <div class="page-hero-body">
+          <div class="page-hero-eyebrow">Admin</div>
+          <h1>Ops Runbook Config</h1>
+          <p>จัดการ Section, Column และ Dropdown Options ของ runbook table — ทีม SM ใช้สำหรับ ops procedure</p>
+        </div>
+      </section>
+
+      <div class="rb-layout">
+
+        <!-- ── Left: Section list ── -->
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><i data-icon="file-text"></i> Sections</span>
+              <span class="badge badge-gray" id="sec-count">—</span>
+            </div>
+            <div class="card-body" style="padding:12px" id="sec-list-wrap">
+              <div class="empty-box">กำลังโหลด...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Right: Column editor ── -->
+        <div id="col-panel">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title" id="col-panel-title">— เลือก Section —</span>
+              <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" id="add-col-btn" disabled>+ เพิ่ม Column</button>
+            </div>
+            <div class="card-body" style="padding:0" id="col-table-wrap">
+              <div class="empty-box">เลือก Section ด้านซ้ายเพื่อจัดการ Columns</div>
+            </div>
+          </div>
+
+          <!-- Section actions -->
+          <div id="sec-action-bar" style="display:none;margin-top:12px">
+            <div class="card">
+              <div class="card-body" style="padding:14px 16px;display:flex;gap:8px;align-items:center">
+                <span style="font-size:12px;color:var(--text-muted);flex:1">จัดการ Section นี้</span>
+                <button class="btn btn-ghost" style="font-size:11px" id="btn-edit-section"><i data-icon="pencil"></i> แก้ไขชื่อ</button>
+                <button class="btn danger-btn" style="font-size:11px" id="btn-delete-section"><i data-icon="trash"></i> ลบ Section</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ═══ Section Modal ═══ -->
+<div class="modal-overlay" id="modal-section">
+  <div class="modal-box" style="width:400px">
+    <div class="modal-header">
+      <span class="modal-title" id="sec-modal-title">เพิ่ม Section</span>
+      <button class="modal-close" id="btn-close-sec-modal"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">ชื่อ Section *</label>
+        <input class="form-input" id="f-sec-name" type="text" placeholder="เช่น Block Biz Rule">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Icon (Emoji)</label>
+        <input class="form-input" id="f-sec-icon" type="text" placeholder="📋" maxlength="4">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-sec">Cancel</button>
+      <button class="btn btn-primary" id="sec-save-btn">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Column Modal ═══ -->
+<div class="modal-overlay" id="modal-column">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="col-modal-title">เพิ่ม Column</span>
+      <button class="modal-close" id="btn-close-col-modal"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div>
+          <label class="form-label">ชื่อ Column *</label>
+          <input class="form-input" id="f-col-label" type="text" placeholder="เช่น Service Name">
+        </div>
+        <div>
+          <label class="form-label">ประเภท</label>
+          <select class="form-select" id="f-col-type">
+            <option value="text">Text</option>
+            <option value="dropdown">Dropdown</option>
+            <option value="url">URL / Link</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="col-options-wrap" style="display:none">
+        <hr class="divider">
+        <div class="form-row">
+          <label class="form-label">Dropdown Options</label>
+          <div class="opt-editor" id="opt-editor"></div>
+          <button class="btn btn-ghost opt-add-btn" id="btn-add-opt">+ เพิ่ม Option</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-col">Cancel</button>
+      <button class="btn btn-primary" id="col-save-btn">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Delete Section Confirm ═══ -->
+<div class="modal-overlay" id="modal-del-section">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-header">
+      <span class="modal-title" style="color:#dc2626">ลบ Section?</span>
+      <button class="modal-close" id="btn-close-del-sec-modal"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;margin:0">ต้องการลบ <strong id="del-sec-name"></strong> ใช่ไหม?</p>
+      <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0">ข้อมูลทุก Row ใน Section นี้จะถูกลบด้วย</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-del-sec">Cancel</button>
+      <button class="btn" style="background:#dc2626;color:#fff" id="btn-confirm-del-sec">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Delete Column Confirm ═══ -->
+<div class="modal-overlay" id="modal-del-col">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-header">
+      <span class="modal-title" style="color:#dc2626">ลบ Column?</span>
+      <button class="modal-close" id="btn-close-del-col-modal"><i data-icon="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;margin:0">ต้องการลบ column <strong id="del-col-label"></strong> ใช่ไหม?</p>
+      <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0">ข้อมูลในช่องนี้จากทุก Row จะหายไป</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-del-col">Cancel</button>
+      <button class="btn" style="background:#dc2626;color:#fff" id="btn-confirm-del-col">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/skeletons.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/layout.js"></script>
+<script src="../assets/js/admin-nav.js"></script>
+<script>
+  if (!Auth.requireAdmin()) {}
+  Layout.render('admin-ops-runbook');
+
+  let sections    = [];
+  let activeSecId = null;
+  let editingSecId  = null;
+  let editingColKey = null;
+  let deletingSecId = null;
+  let deletingColKey = null;
+
+  // ─── Load ────────────────────────────────────────────────────────────────────
+  async function load() {
+    const res = await API.opsRunbook.list();
+    if (!res?.ok) {
+      document.getElementById('sec-list-wrap').innerHTML = '<div class="empty-box">โหลดไม่สำเร็จ</div>';
+      return;
+    }
+    sections = res.data.data || [];
+    renderSecList();
+    if (activeSecId) renderColPanel(activeSecId);
+  }
+
+  // ─── Section list ────────────────────────────────────────────────────────────
+  function renderSecList() {
+    document.getElementById('sec-count').textContent = sections.length;
+    const wrap = document.getElementById('sec-list-wrap');
+    if (!sections.length) {
+      wrap.innerHTML = '<div class="empty-box">ยังไม่มี Section<br>กด "+ เพิ่ม Section"</div>';
+      return;
+    }
+    wrap.innerHTML = `<div class="sec-list" id="sec-drag-list">
+      ${sections.map(s => `
+        <div class="sec-item ${s.id === activeSecId ? 'active' : ''}"
+             data-select-sec="${escHtml(s.id)}" draggable="true" data-id="${escHtml(s.id)}">
+          <span class="sec-drag-handle" title="ลากเรียงลำดับ">⠿</span>
+          <span class="sec-item-icon">${renderIcon(s.icon, '<i data-icon="clipboard"></i>')}</span>
+          <span class="sec-item-name">${escHtml(s.name)}</span>
+          <span class="sec-item-count">${(s.rows || []).length}r · ${(s.columns || []).length}c</span>
+        </div>
+      `).join('')}
+    </div>`;
+    initSectionDrag();
+  }
+
+  function selectSection(id) {
+    activeSecId = id;
+    renderSecList();
+    renderColPanel(id);
+    document.getElementById('add-col-btn').disabled = false;
+    document.getElementById('sec-action-bar').style.display = '';
+  }
+
+  // ─── Column panel ────────────────────────────────────────────────────────────
+  function renderColPanel(secId) {
+    const sec = sections.find(s => s.id === secId);
+    if (!sec) return;
+    document.getElementById('col-panel-title').textContent = `${sec.icon || '📋'} ${sec.name}`;
+
+    const cols = sec.columns || [];
+    const wrap = document.getElementById('col-table-wrap');
+
+    if (!cols.length) {
+      wrap.innerHTML = '<div class="empty-box">ยังไม่มี Column — กด "+ เพิ่ม Column"</div>';
+      return;
+    }
+
+    const rows = cols.map(col => {
+      const typePill = col.type === 'dropdown'
+        ? '<span class="type-pill type-dropdown">dropdown</span>'
+        : col.type === 'url'
+          ? '<span class="type-pill type-url">url</span>'
+          : '<span class="type-pill type-text">text</span>';
+
+      const opts = col.type === 'dropdown' && col.options?.length
+        ? `<div class="options-list">${col.options.map(o => `<span class="opt-chip">${escHtml(o)}</span>`).join('')}</div>`
+        : `<span style="color:var(--text-muted);font-size:11px">—</span>`;
+
+      return `<tr>
+        <td><strong>${escHtml(col.label)}</strong><br><span style="font-size:10px;color:var(--text-muted)">${escHtml(col.key)}</span></td>
+        <td>${typePill}</td>
+        <td>${opts}</td>
+        <td>
+          <div style="display:flex;gap:5px">
+            <button class="btn btn-ghost" style="padding:4px 9px;font-size:11px"
+              data-col-action="edit" data-col-sec="${escHtml(secId)}" data-col-key="${escHtml(col.key)}">Edit</button>
+            <button class="btn danger-btn" style="padding:4px 9px;font-size:11px"
+              data-col-action="delete" data-col-sec="${escHtml(secId)}" data-col-key="${escHtml(col.key)}" data-col-label="${escHtml(col.label)}">Del</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    wrap.innerHTML = `<table class="col-table">
+      <thead><tr>
+        <th>Column</th><th style="width:100px">Type</th><th>Options</th><th style="width:110px">Actions</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  // ─── Section CRUD ─────────────────────────────────────────────────────────────
+  function openCreateSection() {
+    editingSecId = null;
+    document.getElementById('f-sec-name').value = '';
+    document.getElementById('f-sec-icon').value = '';
+    document.getElementById('sec-modal-title').textContent = 'เพิ่ม Section';
+    document.getElementById('sec-save-btn').textContent = 'เพิ่ม Section';
+    openModal('modal-section');
+    setTimeout(() => document.getElementById('f-sec-name').focus(), 80);
+  }
+
+  function openEditSection() {
+    const sec = sections.find(s => s.id === activeSecId);
+    if (!sec) return;
+    editingSecId = activeSecId;
+    document.getElementById('f-sec-name').value = sec.name;
+    document.getElementById('f-sec-icon').value = sec.icon || '';
+    document.getElementById('sec-modal-title').textContent = 'แก้ไข Section';
+    document.getElementById('sec-save-btn').textContent = 'บันทึก';
+    openModal('modal-section');
+  }
+
+  async function saveSection() {
+    const name = document.getElementById('f-sec-name').value.trim();
+    const icon = document.getElementById('f-sec-icon').value.trim() || '<i data-icon="clipboard"></i>';
+    if (!name) { Toast.error('กรุณากรอกชื่อ Section'); return; }
+
+    const btn = document.getElementById('sec-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
+    let res;
+    if (editingSecId) {
+      res = await API.opsRunbook.updateSection(editingSecId, { name, icon });
+    } else {
+      res = await API.opsRunbook.createSection({ name, icon });
+    }
+
+    btn.disabled = false;
+    btn.textContent = editingSecId ? 'บันทึก' : 'เพิ่ม Section';
+
+    if (!res?.ok) { Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด'); return; }
+    Toast.success(editingSecId ? 'แก้ไขเรียบร้อย' : 'เพิ่ม Section เรียบร้อย');
+    if (!editingSecId) activeSecId = res.data.data?.id ?? null;
+    closeModal('modal-section');
+    await load();
+  }
+
+  function openDeleteSection() {
+    const sec = sections.find(s => s.id === activeSecId);
+    if (!sec) return;
+    deletingSecId = activeSecId;
+    document.getElementById('del-sec-name').textContent = sec.name;
+    openModal('modal-del-section');
+  }
+
+  async function confirmDeleteSection() {
+    if (!deletingSecId) return;
+    const res = await API.opsRunbook.deleteSection(deletingSecId);
+    if (!res?.ok) { Toast.error(res?.data?.message || 'ลบไม่สำเร็จ'); return; }
+    Toast.success('ลบ Section เรียบร้อย');
+    closeModal('modal-del-section');
+    activeSecId = null;
+    deletingSecId = null;
+    document.getElementById('add-col-btn').disabled = true;
+    document.getElementById('sec-action-bar').style.display = 'none';
+    document.getElementById('col-panel-title').textContent = '— เลือก Section —';
+    document.getElementById('col-table-wrap').innerHTML = '<div class="empty-box">เลือก Section ด้านซ้ายเพื่อจัดการ Columns</div>';
+    await load();
+  }
+
+  // ─── Column CRUD ──────────────────────────────────────────────────────────────
+  function onColTypeChange() {
+    const t = document.getElementById('f-col-type').value;
+    document.getElementById('col-options-wrap').style.display = t === 'dropdown' ? '' : 'none';
+  }
+
+  function addOptRow(val = '') {
+    const editor = document.getElementById('opt-editor');
+    const div = document.createElement('div');
+    div.className = 'opt-row';
+    div.innerHTML = `<input class="form-input opt-input" type="text" value="${escHtml(val)}" placeholder="Option value">
+      <button class="opt-del" title="ลบ"><i data-icon="x"></i></button>`;
+    editor.appendChild(div);
+  }
+
+  function getOptValues() {
+    return [...document.querySelectorAll('#opt-editor .opt-input')]
+      .map(i => i.value.trim()).filter(Boolean);
+  }
+
+  function openAddColumn() {
+    if (!activeSecId) return;
+    editingColKey = null;
+    document.getElementById('f-col-label').value = '';
+    document.getElementById('f-col-type').value  = 'text';
+    document.getElementById('opt-editor').innerHTML = '';
+    document.getElementById('col-options-wrap').style.display = 'none';
+    document.getElementById('col-modal-title').textContent = 'เพิ่ม Column';
+    document.getElementById('col-save-btn').textContent = 'เพิ่ม Column';
+    openModal('modal-column');
+    setTimeout(() => document.getElementById('f-col-label').focus(), 80);
+  }
+
+  function openEditColumn(secId, colKey) {
+    const sec = sections.find(s => s.id === secId);
+    const col = sec?.columns.find(c => c.key === colKey);
+    if (!col) return;
+    editingColKey = colKey;
+    activeSecId = secId;
+    document.getElementById('f-col-label').value = col.label;
+    document.getElementById('f-col-type').value  = col.type;
+    const editor = document.getElementById('opt-editor');
+    editor.innerHTML = '';
+    (col.options || []).forEach(o => addOptRow(o));
+    document.getElementById('col-options-wrap').style.display = col.type === 'dropdown' ? '' : 'none';
+    document.getElementById('col-modal-title').textContent = 'แก้ไข Column';
+    document.getElementById('col-save-btn').textContent = 'บันทึก';
+    openModal('modal-column');
+  }
+
+  async function saveColumn() {
+    const label   = document.getElementById('f-col-label').value.trim();
+    const type    = document.getElementById('f-col-type').value;
+    const options = getOptValues();
+    if (!label) { Toast.error('กรุณากรอกชื่อ Column'); return; }
+
+    const btn = document.getElementById('col-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
+    let res;
+    if (editingColKey) {
+      res = await API.opsRunbook.updateColumn(activeSecId, editingColKey, { label, type, options });
+    } else {
+      res = await API.opsRunbook.createColumn(activeSecId, { label, type, options });
+    }
+
+    btn.disabled = false;
+    btn.textContent = editingColKey ? 'บันทึก' : 'เพิ่ม Column';
+
+    if (!res?.ok) { Toast.error(res?.data?.message || 'เกิดข้อผิดพลาด'); return; }
+    Toast.success(editingColKey ? 'แก้ไขเรียบร้อย' : 'เพิ่ม Column เรียบร้อย');
+    closeModal('modal-column');
+    await load();
+  }
+
+  function openDeleteColumn(secId, colKey, colLabel) {
+    deletingColKey = { secId, colKey };
+    document.getElementById('del-col-label').textContent = colLabel;
+    openModal('modal-del-col');
+  }
+
+  async function confirmDeleteColumn() {
+    if (!deletingColKey) return;
+    const res = await API.opsRunbook.deleteColumn(deletingColKey.secId, deletingColKey.colKey);
+    if (!res?.ok) { Toast.error(res?.data?.message || 'ลบไม่สำเร็จ'); return; }
+    Toast.success('ลบ Column เรียบร้อย');
+    closeModal('modal-del-col');
+    deletingColKey = null;
+    await load();
+  }
+
+  // ─── Drag-sort sections ───────────────────────────────────────────────────────
+  function initSectionDrag() {
+    const list = document.getElementById('sec-drag-list');
+    if (!list) return;
+    let dragging = null;
+    list.querySelectorAll('.sec-item[draggable]').forEach(item => {
+      item.addEventListener('dragstart', () => { dragging = item; setTimeout(() => item.classList.add('dragging'), 0); });
+      item.addEventListener('dragend', async () => {
+        item.classList.remove('dragging');
+        const items = [...list.querySelectorAll('.sec-item[data-id]')];
+        const updates = items.map((el, i) => API.opsRunbook.updateSection(el.dataset.id, { order: i + 1 }));
+        await Promise.all(updates);
+        await load();
+        dragging = null;
+      });
+      item.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (dragging && dragging !== item) {
+          list.querySelectorAll('.sec-item').forEach(i => i.classList.remove('drag-over'));
+          item.classList.add('drag-over');
+        }
+      });
+      item.addEventListener('drop', e => {
+        e.preventDefault(); item.classList.remove('drag-over');
+        if (dragging && dragging !== item) {
+          const items = [...list.querySelectorAll('.sec-item')];
+          items.indexOf(dragging) < items.indexOf(item) ? item.after(dragging) : item.before(dragging);
+        }
+      });
+    });
+  }
+
+  // ─── Modal helpers ────────────────────────────────────────────────────────────
+  function openModal(id)  { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') ['modal-section','modal-column','modal-del-section','modal-del-col'].forEach(closeModal);
+  });
+
+  // ─── Event Listeners ──────────────────────────────────────────────────────────
+  document.addEventListener('click', e => {
+    // Section list item click
+    const secItem = e.target.closest('[data-select-sec]');
+    if (secItem) {
+      selectSection(secItem.dataset.selectSec);
+      return;
+    }
+
+    // Column action buttons
+    const colBtn = e.target.closest('[data-col-action]');
+    if (colBtn) {
+      e.preventDefault();
+      if (colBtn.dataset.colAction === 'edit') {
+        openEditColumn(colBtn.dataset.colSec, colBtn.dataset.colKey);
+      } else if (colBtn.dataset.colAction === 'delete') {
+        openDeleteColumn(colBtn.dataset.colSec, colBtn.dataset.colKey, colBtn.dataset.colLabel);
+      }
+      return;
+    }
+
+    // Option delete button
+    const optDel = e.target.closest('.opt-del');
+    if (optDel) {
+      e.preventDefault();
+      optDel.closest('.opt-row')?.remove();
+      return;
+    }
+  });
+
+  // Top buttons
+  document.getElementById('btn-create-section')?.addEventListener('click', openCreateSection);
+  document.getElementById('add-col-btn')?.addEventListener('click', openAddColumn);
+  document.getElementById('btn-edit-section')?.addEventListener('click', openEditSection);
+  document.getElementById('btn-delete-section')?.addEventListener('click', openDeleteSection);
+
+  // Section modal
+  document.getElementById('btn-close-sec-modal')?.addEventListener('click', () => closeModal('modal-section'));
+  document.getElementById('btn-cancel-sec')?.addEventListener('click', () => closeModal('modal-section'));
+  document.getElementById('sec-save-btn')?.addEventListener('click', saveSection);
+
+  // Column modal
+  document.getElementById('btn-close-col-modal')?.addEventListener('click', () => closeModal('modal-column'));
+  document.getElementById('btn-cancel-col')?.addEventListener('click', () => closeModal('modal-column'));
+  document.getElementById('col-save-btn')?.addEventListener('click', saveColumn);
+  document.getElementById('f-col-type')?.addEventListener('change', onColTypeChange);
+  document.getElementById('btn-add-opt')?.addEventListener('click', () => addOptRow());
+
+  // Delete section modal
+  document.getElementById('btn-close-del-sec-modal')?.addEventListener('click', () => closeModal('modal-del-section'));
+  document.getElementById('btn-cancel-del-sec')?.addEventListener('click', () => closeModal('modal-del-section'));
+  document.getElementById('btn-confirm-del-sec')?.addEventListener('click', confirmDeleteSection);
+
+  // Delete column modal
+  document.getElementById('btn-close-del-col-modal')?.addEventListener('click', () => closeModal('modal-del-col'));
+  document.getElementById('btn-cancel-del-col')?.addEventListener('click', () => closeModal('modal-del-col'));
+  document.getElementById('btn-confirm-del-col')?.addEventListener('click', confirmDeleteColumn);
+
+  load();
+</script>
+</body>
+</html>

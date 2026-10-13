@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MA Configuration — Admin</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <script src="../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="../assets/css/dark.css">
+  <link rel="stylesheet" href="../assets/css/style.css?v=20260724">
+  <link rel="stylesheet" href="../assets/css/ui-themes.css">
+  <style>
+    /* ── Page layout ───────────────────────────────── */
+    .config-container { display: flex; flex-direction: column; gap: 0; }
+
+    /* ── Top action bar ────────────────────────────── */
+    .config-topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 20px 0 16px;
+    }
+    .config-topbar-title { font-size: 14px; font-weight: 800; color: var(--text); }
+    .config-topbar-desc  { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+    /* ── Module list ────────────────────────────────── */
+    .module-list { display: flex; flex-direction: column; gap: 12px; }
+
+    /* ── Module row (accordion item) ───────────────── */
+    .module-row {
+      background: var(--bg-card); border: 1.5px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+      transition: border-color .15s;
+    }
+    .module-row:hover { border-color: var(--orange); }
+
+    /* Header: icon + name + badges + actions */
+    .module-row-head {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 20px; cursor: pointer;
+    }
+
+    /* Coloured left accent bar */
+    .module-accent {
+      width: 4px; height: 40px; border-radius: 3px; flex-shrink: 0;
+    }
+    .accent-amber  { background: linear-gradient(180deg,#fbbf24,#f59e0b); }
+    .accent-blue   { background: linear-gradient(180deg,#60a5fa,#3b82f6); }
+    .accent-green  { background: linear-gradient(180deg,#4ade80,#22c55e); }
+    .accent-red    { background: linear-gradient(180deg,#f87171,#ef4444); }
+    .accent-purple { background: linear-gradient(180deg,#c084fc,#a855f7); }
+    .accent-orange { background: linear-gradient(180deg,#fb923c,#f97316); }
+    .accent-gray   { background: var(--border); }
+
+    /* Icon badge */
+    .module-icon {
+      width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; border: 1.5px solid;
+    }
+    .icon-amber  { background:#fef3c7;color:#92400e;border-color:#fde68a; }
+    .icon-blue   { background:#dbeafe;color:#1e40af;border-color:#bfdbfe; }
+    .icon-green  { background:#dcfce7;color:#166534;border-color:#bbf7d0; }
+    .icon-red    { background:#fee2e2;color:#991b1b;border-color:#fecaca; }
+    .icon-purple { background:#ede9fe;color:#5b21b6;border-color:#ddd6fe; }
+    .icon-orange { background:#ffedd5;color:#9a3412;border-color:#fed7aa; }
+    .icon-gray   { background:var(--bg);color:var(--text-muted);border-color:var(--border); }
+
+    .module-meta { flex: 1; min-width: 0; }
+    .module-name { font-size: 13px; font-weight: 800; color: var(--text); }
+    .module-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .module-badges { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .mbadge {
+      padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700;
+      border: 1px solid;
+    }
+    .mbadge.builtin  { background:var(--bg);color:var(--text-muted);border-color:var(--border); }
+    .mbadge.active   { background:#dcfce7;color:#166534;border-color:#bbf7d0; }
+    .mbadge.draft    { background:#fef3c7;color:#92400e;border-color:#fde68a; }
+    .mbadge.disabled { background:var(--bg);color:var(--text-muted);border-color:var(--border); }
+
+    /* toggle */
+    .toggle-wrap { display: flex; align-items: center; gap: 5px; }
+    .toggle { position: relative; display: inline-block; width: 30px; height: 17px; cursor: pointer; }
+    .toggle input { display: none; }
+    .toggle-slider {
+      position: absolute; inset: 0; border-radius: 17px;
+      background: var(--border); transition: .2s;
+    }
+    .toggle-slider::before {
+      content:''; position:absolute; width:11px;height:11px;
+      border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s;
+    }
+    .toggle input:checked ~ .toggle-slider { background: var(--orange); }
+    .toggle input:checked ~ .toggle-slider::before { transform: translateX(13px); }
+    .toggle-lbl { font-size: 10px; color: var(--text-muted); }
+
+    /* action buttons */
+    .mod-btn {
+      padding: 5px 11px; font-size: 11px; border-radius: 6px;
+      border: 1px solid var(--border); background: transparent;
+      cursor: pointer; transition: all .12s; color: var(--text-muted);
+      font-weight: 600; font-family: inherit; flex-shrink: 0;
+    }
+    .mod-btn:hover { background: var(--bg-card); color: var(--text); }
+    .mod-btn.edit:hover   { color: var(--orange); border-color: var(--orange); }
+    .mod-btn.danger:hover { color: var(--danger);  border-color: var(--danger); }
+
+    /* chevron */
+    .module-chevron {
+      font-size: 11px; color: var(--text-muted); transition: transform .2s; flex-shrink: 0;
+    }
+    .module-row.open .module-chevron { transform: rotate(90deg); }
+
+    /* ── Types panel (accordion body) ──────────────── */
+    .module-types-panel {
+      display: none; border-top: 1.5px solid var(--border);
+    }
+    .module-row.open .module-types-panel { display: block; }
+
+    .types-panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px 10px 74px; /* indent to align under module name */
+    }
+    .types-panel-label {
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .07em;
+    }
+
+    .types-list { padding: 0 20px 16px 74px; display: flex; flex-direction: column; gap: 6px; }
+
+    .type-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; background: var(--bg);
+      border: 1.5px solid var(--border); border-radius: 8px; transition: border-color .12s;
+    }
+    .type-item:hover { border-color: var(--orange); }
+    .type-info { display: flex; align-items: center; gap: 10px; }
+    .type-badge {
+      padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid;
+    }
+    .type-badge.tmn    { background:#fef3c7;color:#92400e;border-color:#fde68a; }
+    .type-badge.nano   { background:#dbeafe;color:#1e40af;border-color:#bfdbfe; }
+    .type-badge.wealth { background:#dcfce7;color:#166534;border-color:#bbf7d0; }
+    .type-badge.bank   { background:#fee2e2;color:#991b1b;border-color:#fecaca; }
+    .type-name  { font-size: 12px; font-weight: 700; color: var(--text); }
+    .type-count { font-size: 11px; color: var(--text-muted); }
+    .type-actions { display: flex; gap: 5px; }
+
+    .types-empty { padding: 16px 0; text-align: center; color: var(--text-muted); font-size: 11px; }
+
+    /* ── Color map for type badges ─────────────────── */
+    .type-badge { padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;border:1px solid; }
+
+    /* ── Type color picker dots ─────────────────────── */
+    .color-picker { display:flex;gap:8px;flex-wrap:wrap; }
+    .color-dot {
+      width:24px;height:24px;border-radius:50%;cursor:pointer;
+      border:2.5px solid transparent;transition:.12s;
+    }
+    .color-dot.selected { border-color:var(--text);transform:scale(1.2); }
+    .color-dot[data-color="amber"]  { background:#f59e0b; }
+    .color-dot[data-color="blue"]   { background:#3b82f6; }
+    .color-dot[data-color="green"]  { background:#22c55e; }
+    .color-dot[data-color="red"]    { background:#ef4444; }
+    .color-dot[data-color="purple"] { background:#8b5cf6; }
+    .color-dot[data-color="orange"] { background:#f97316; }
+    .color-dot[data-color="gray"]   { background:#9ca3af; }
+
+    /* ── Theme picker ───────────────────────────────── */
+    .theme-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+    .theme-dot {
+      width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+      border: 2.5px solid transparent; transition: .12s;
+    }
+    .theme-dot.selected { border-color: var(--text); transform: scale(1.15); }
+    .theme-dot[data-theme="amber"]  { background:#f59e0b; }
+    .theme-dot[data-theme="blue"]   { background:#3b82f6; }
+    .theme-dot[data-theme="green"]  { background:#22c55e; }
+    .theme-dot[data-theme="red"]    { background:#ef4444; }
+    .theme-dot[data-theme="purple"] { background:#8b5cf6; }
+    .theme-dot[data-theme="orange"] { background:#f97316; }
+    .theme-dot[data-theme="gray"]   { background:#9ca3af; }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside id="sidebar-mount"></aside>
+
+    <main class="main-content">
+      <div class="topbar">
+        <div class="tb-prompt">
+          <span class="tb-path">~/sm/admin</span>
+          <span class="tb-arrow"><i data-icon="play"></i></span>
+        </div>
+        <div class="topbar-title">
+          <span class="page-title">MA Configuration</span>
+          <span class="page-sub">จัดการ Modules และ Sub-types</span>
+        </div>
+        <div class="topbar-actions">
+          <a href="./index.html" class="btn btn-ghost btn-sm" style="gap:6px;">← Back to Admin</a>
+        </div>
+      </div>
+
+      <div class="page-content">
+
+        <section class="page-hero">
+          <div class="page-hero-mark"><i data-icon="settings"></i></div>
+          <div class="page-hero-body">
+            <div class="page-hero-eyebrow">Admin</div>
+            <h1>MA Configuration</h1>
+            <p>จัดการ Modules และ Sub-types ที่ใช้ใน Maintenance Announcement</p>
+          </div>
+        </section>
+
+        <div class="config-container">
+
+          <div class="config-topbar">
+            <div>
+              <div class="config-topbar-title">MA Modules</div>
+              <div class="config-topbar-desc">แต่ละ Module มี Sub-types ของตัวเอง — คลิกที่ Module เพื่อจัดการ</div>
+            </div>
+            <button class="btn btn-primary btn-sm" data-action="add" onclick="openAddModule()">+ Add Module</button>
+          </div>
+
+          <!-- Module accordion list -->
+          <div class="module-list" id="module-list">
+            <div style="padding:40px;text-align:center;color:var(--text-muted);font-size:12px;">Loading...</div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ── Modal: Add/Edit Module ──────────────────── -->
+  <div class="modal-overlay" id="modal-module">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-module-title">Add Module</h3>
+        <button class="btn-close" onclick="closeModal('modal-module')">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="module-edit-id">
+        <div class="form-group">
+          <label class="form-label">Module Name <span style="color:var(--danger)">*</span></label>
+          <input type="text" class="form-control" id="module-name" placeholder="e.g., FundOut Services">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input type="text" class="form-control" id="module-desc" placeholder="Short description">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Icon (2–4 chars)</label>
+          <input type="text" class="form-control" id="module-icon" maxlength="4" placeholder="e.g., FO" style="text-transform:uppercase">
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="margin-bottom:8px">Theme Color</label>
+          <div class="theme-picker" id="theme-picker">
+            <div class="theme-dot selected" data-theme="amber"  onclick="selectTheme('amber')"></div>
+            <div class="theme-dot"          data-theme="blue"   onclick="selectTheme('blue')"></div>
+            <div class="theme-dot"          data-theme="green"  onclick="selectTheme('green')"></div>
+            <div class="theme-dot"          data-theme="red"    onclick="selectTheme('red')"></div>
+            <div class="theme-dot"          data-theme="purple" onclick="selectTheme('purple')"></div>
+            <div class="theme-dot"          data-theme="orange" onclick="selectTheme('orange')"></div>
+            <div class="theme-dot"          data-theme="gray"   onclick="selectTheme('gray')"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-module')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveModule()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal: Add/Edit Type ──────────────────────── -->
+  <div class="modal-overlay" id="modal-type">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-type-title">Add Type</h3>
+        <button class="btn-close" onclick="closeModal('modal-type')">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="type-kind">
+        <input type="hidden" id="type-old-name">
+        <div class="form-group">
+          <label class="form-label">Type Name <span style="color:var(--danger)">*</span></label>
+          <input type="text" class="form-control" id="type-name" placeholder="e.g., TMN, NANO, WEALTH">
+        </div>
+        <div class="form-group" id="type-desc-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" id="type-desc" rows="2" placeholder="Optional description"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="margin-bottom:8px">Badge Color</label>
+          <div class="color-picker" id="type-color-picker">
+            <div class="color-dot selected" data-color="amber"  onclick="selectTypeColor('amber')"></div>
+            <div class="color-dot"          data-color="blue"   onclick="selectTypeColor('blue')"></div>
+            <div class="color-dot"          data-color="green"  onclick="selectTypeColor('green')"></div>
+            <div class="color-dot"          data-color="red"    onclick="selectTypeColor('red')"></div>
+            <div class="color-dot"          data-color="purple" onclick="selectTypeColor('purple')"></div>
+            <div class="color-dot"          data-color="orange" onclick="selectTypeColor('orange')"></div>
+            <div class="color-dot"          data-color="gray"   onclick="selectTypeColor('gray')"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-type')">Cancel</button>
+        <button class="btn btn-primary" id="type-save-btn" onclick="saveType()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/csrf.js"></script>
+  <script src="../assets/js/analytics.js"></script>
+  <script src="../assets/js/layout.js"></script>
+  <script src="../assets/js/admin-nav.js"></script>
+  <script>
+    /* ── State ────────────────────────────────────── */
+    let selectedTheme     = 'amber';
+    let selectedTypeColor = 'amber';
+    let modulesData       = [];
+    const typesCache      = {};
+
+    /* Badge color styles */
+    const COLOR_STYLES = {
+      amber:  { bg:'#fef3c7', text:'#92400e', border:'#fde68a' },
+      blue:   { bg:'#dbeafe', text:'#1e40af', border:'#bfdbfe' },
+      green:  { bg:'#dcfce7', text:'#166534', border:'#bbf7d0' },
+      red:    { bg:'#fee2e2', text:'#991b1b', border:'#fecaca' },
+      purple: { bg:'#ede9fe', text:'#5b21b6', border:'#ddd6fe' },
+      orange: { bg:'#ffedd5', text:'#9a3412', border:'#fed7aa' },
+      gray:   { bg:'#f3f4f6', text:'#6b7280', border:'#d1d5db' },
+    };
+
+    function typeBadgeStyle(color) {
+      const c = COLOR_STYLES[color] || COLOR_STYLES.gray;
+      return `background:${c.bg};color:${c.text};border:1px solid ${c.border}`;
+    }
+
+    function selectTypeColor(color) {
+      selectedTypeColor = color;
+      document.querySelectorAll('.color-dot').forEach(d =>
+        d.classList.toggle('selected', d.dataset.color === color)
+      );
+    }
+
+    /* ── Init ─────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', () => {
+      Layout.render('admin-ma-config');
+      // Apply per-team read/full mode. When mode = 'read', style.css hides
+      // any element with data-action="add|edit|delete|write" and shows the
+      // View-only pill in the top-right corner.
+      if (typeof Auth !== 'undefined' && Auth.applyPageMode) Auth.applyPageMode('ma-config');
+      loadModules();
+    });
+
+    /* ════════════════════════════════════════════════
+       MODULES
+    ════════════════════════════════════════════════ */
+    async function loadModules() {
+      // Clear stale cache so types reload fresh after every re-render
+      Object.keys(typesCache).forEach(k => delete typesCache[k]);
+
+      const result = await API.get('/ma-modules/config.php');
+      if (result && result.data && result.data.success) {
+        modulesData = result.data.data || [];
+        renderModules(modulesData);
+        for (const m of modulesData) {
+          await toggleModule(m.id);
+        }
+      } else {
+        document.getElementById('module-list').innerHTML =
+          '<div style="padding:40px;text-align:center;color:var(--text-muted)">Failed to load modules</div>';
+      }
+    }
+
+    function renderModules(modules) {
+      const list = document.getElementById('module-list');
+      if (!modules.length) {
+        list.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:12px;">No modules configured</div>';
+        return;
+      }
+
+      list.innerHTML = modules.map(m => {
+        const theme      = m.theme || 'gray';
+        const icon       = m.icon  || m.id.slice(0,2).toUpperCase();
+        const statusBadge = m.builtin
+          ? '<span class="mbadge builtin">built-in</span>'
+          : `<span class="mbadge ${m.status || 'draft'}">${m.status || 'draft'}</span>`;
+        const deleteBtn  = !m.builtin
+          ? `<button class="mod-btn danger" data-action="delete" onclick="event.stopPropagation();deleteModule('${m.id}')">Delete</button>`
+          : '';
+
+        /* Which types API does this module use? */
+        const typesApi   = moduleTypesApi(m.id);
+        const typesLabel = moduleTypesLabel(m.id);
+
+        return `
+          <div class="module-row" id="module-row-${m.id}">
+            <!-- Header row (clickable to expand) -->
+            <div class="module-row-head" onclick="toggleModule('${m.id}')">
+              <div class="module-accent accent-${theme}"></div>
+              <div class="module-icon icon-${theme}">${escHtml(icon)}</div>
+              <div class="module-meta">
+                <div class="module-name">${escHtml(m.name)}</div>
+                <div class="module-desc">${escHtml(m.desc || '')}</div>
+              </div>
+              <div class="module-badges">
+                ${statusBadge}
+                <div class="toggle-wrap" data-action="edit" onclick="event.stopPropagation()">
+                  <label class="toggle">
+                    <input type="checkbox" ${m.enabled ? 'checked' : ''}
+                      onchange="toggleEnabled('${m.id}', this)">
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <span class="toggle-lbl" id="toggle-lbl-${m.id}">${m.enabled ? 'On' : 'Off'}</span>
+                </div>
+              </div>
+              <button class="mod-btn edit" data-action="edit" onclick="event.stopPropagation();openEditModule('${m.id}')">Edit</button>
+              ${deleteBtn}
+              <span class="module-chevron"><i data-icon="play"></i></span>
+            </div>
+
+            <!-- Types panel (expands on click) -->
+            <div class="module-types-panel" id="types-panel-${m.id}">
+              <div class="types-panel-header">
+                <span class="types-panel-label">${typesLabel}</span>
+                <button class="mod-btn edit" data-action="add" onclick="openAddType('${m.id}')">+ Add</button>
+              </div>
+              <div class="types-list" id="types-list-${m.id}">
+                <div class="types-empty">Loading...</div>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    /* Determine how to manage types for a module */
+    function moduleTypesMode(id) {
+      if (id === 'usecases') return 'builtin-svc';   // uses /ma-services/types.php
+      if (id === 'cutoffs')  return 'builtin-site';  // uses /cutoff-services/types.php
+      return 'custom';                                // stored in module JSON
+    }
+
+    function moduleTypesApi(id) {
+      if (id === 'usecases') return '/ma-services/types.php';
+      if (id === 'cutoffs')  return '/cutoff-services/types.php';
+      return null;
+    }
+
+    function moduleTypesLabel(id) {
+      if (id === 'usecases') return 'Service Types';
+      if (id === 'cutoffs')  return 'Site Types';
+      return 'Sub-types';
+    }
+
+    function moduleTypesUnit(id) {
+      if (id === 'usecases') return 'usecases';
+      if (id === 'cutoffs')  return 'cut-offs';
+      return 'items';
+    }
+
+    /* ── Accordion toggle ─────────────────────────── */
+    async function toggleModule(id) {
+      const row = document.getElementById(`module-row-${id}`);
+      const isOpen = row.classList.contains('open');
+
+      if (isOpen) {
+        row.classList.remove('open');
+        return;
+      }
+
+      row.classList.add('open');
+
+      // Lazy-load types on first open
+      if (!typesCache[id]) {
+        await loadTypesForModule(id);
+      }
+    }
+
+    /* ── Load types for one module ─────────────────── */
+    async function loadTypesForModule(id) {
+      const listEl = document.getElementById(`types-list-${id}`);
+      const mode   = moduleTypesMode(id);
+
+      if (mode === 'custom') {
+        // Use type_data from modulesData (includes color)
+        const m = modulesData.find(x => x.id === id);
+        const rawTypes = (m?.type_data || (m?.types || []).map(n => ({ name: n, color: 'gray' })));
+        typesCache[id] = rawTypes;
+        renderTypesInPanel(id, rawTypes);
+        return;
+      }
+
+      // Builtin modules: fetch from their dedicated API
+      const result = await API.get(moduleTypesApi(id));
+      const types  = result && result.data && result.data.success ? (result.data.data || []) : [];
+      typesCache[id] = types;
+      renderTypesInPanel(id, types);
+    }
+
+    function renderTypesInPanel(moduleId, types) {
+      const listEl = document.getElementById(`types-list-${moduleId}`);
+      const unit   = moduleTypesUnit(moduleId);
+
+      if (!types.length) {
+        listEl.innerHTML = '<div class="types-empty">No types yet — click "+ Add" to create one</div>';
+        return;
+      }
+
+      listEl.innerHTML = types.map(t => {
+        const color = t.color || 'gray';
+        return `
+          <div class="type-item">
+            <div class="type-info">
+              <span class="type-badge" style="${typeBadgeStyle(color)}">${escHtml(t.name)}</span>
+              <span class="type-name">${escHtml(t.description || t.name)}</span>
+              <span class="type-count">(${t.count || 0} ${unit})</span>
+            </div>
+            <div class="type-actions">
+              <button class="mod-btn edit" data-action="edit"
+                onclick="openEditType('${moduleId}','${escAttr(t.name)}','${escAttr(t.description||'')}','${color}')">
+                Edit
+              </button>
+              <button class="mod-btn danger" data-action="delete"
+                onclick="deleteType('${moduleId}','${escAttr(t.name)}')">
+                Delete
+              </button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    /* ════════════════════════════════════════════════
+       MODULE CRUD
+    ════════════════════════════════════════════════ */
+    function openAddModule() {
+      document.getElementById('modal-module-title').textContent = 'Add Module';
+      document.getElementById('module-edit-id').value = '';
+      document.getElementById('module-name').value    = '';
+      document.getElementById('module-desc').value    = '';
+      document.getElementById('module-icon').value    = '';
+      selectTheme('amber');
+      openModal('modal-module');
+    }
+
+    function openEditModule(id) {
+      const m = modulesData.find(x => x.id === id);
+      if (!m) return;
+      document.getElementById('modal-module-title').textContent = 'Edit Module';
+      document.getElementById('module-edit-id').value = m.id;
+      document.getElementById('module-name').value    = m.name;
+      document.getElementById('module-desc').value    = m.desc || '';
+      document.getElementById('module-icon').value    = m.icon || '';
+      selectTheme(m.theme || 'amber');
+      openModal('modal-module');
+    }
+
+    async function saveModule() {
+      const id   = document.getElementById('module-edit-id').value;
+      const name = document.getElementById('module-name').value.trim();
+      const desc = document.getElementById('module-desc').value.trim();
+      const icon = document.getElementById('module-icon').value.trim().toUpperCase();
+      if (!name) { alert('Module name is required'); return; }
+
+      const isEdit = !!id;
+      const body   = isEdit
+        ? { action: 'update', id, name, desc, icon, theme: selectedTheme }
+        : { action: 'add',    name, desc, icon, theme: selectedTheme };
+
+      const result = await API.post('/ma-modules/config.php', body);
+      if (result && result.data && result.data.success) {
+        // Log activity
+        await logMAConfigActivity(isEdit ? 'update' : 'create', 'module', name, 
+          `Theme: ${selectedTheme}, Icon: ${icon || 'N/A'}`);
+        
+        closeModal('modal-module');
+        loadModules();
+        showToast(isEdit ? 'Module updated' : 'Module added', 'success');
+      } else {
+        alert('Failed: ' + (result?.data?.message || 'Unknown error'));
+      }
+    }
+
+    async function toggleEnabled(id, checkbox) {
+      const lbl = document.getElementById(`toggle-lbl-${id}`);
+      const result = await API.post('/ma-modules/config.php', { action: 'toggle', id });
+      if (result && result.data && result.data.success) {
+        if (lbl) lbl.textContent = checkbox.checked ? 'On' : 'Off';
+        
+        // Log activity
+        const m = modulesData.find(x => x.id === id);
+        if (m) {
+          await logMAConfigActivity('update', 'module', m.name, 
+            `Status: ${checkbox.checked ? 'Enabled' : 'Disabled'}`);
+        }
+        
+        showToast('Module ' + (checkbox.checked ? 'enabled' : 'disabled'), 'success');
+        if (m) m.enabled = checkbox.checked;
+      } else {
+        checkbox.checked = !checkbox.checked;
+        alert('Failed: ' + (result?.data?.message || 'Unknown error'));
+      }
+    }
+
+    async function deleteModule(id) {
+      if (!confirm('Delete this module? This cannot be undone.')) return;
+      
+      const m = modulesData.find(x => x.id === id);
+      const moduleName = m ? m.name : id;
+      
+      const result = await API.delete('/ma-modules/config.php', { id });
+      if (result && result.data && result.data.success) {
+        // Log activity
+        await logMAConfigActivity('delete', 'module', moduleName, '');
+        
+        loadModules();
+        showToast('Module deleted', 'success');
+      } else {
+        alert('Failed: ' + (result?.data?.message || 'Unknown error'));
+      }
+    }
+
+    function selectTheme(theme) {
+      selectedTheme = theme;
+      document.querySelectorAll('.theme-dot').forEach(d =>
+        d.classList.toggle('selected', d.dataset.theme === theme)
+      );
+    }
+
+    /* ════════════════════════════════════════════════
+       TYPE CRUD  (scoped to moduleId)
+    ════════════════════════════════════════════════ */
+    function openAddType(moduleId) {
+      const label    = moduleTypesLabel(moduleId);
+      const isCustom = moduleTypesMode(moduleId) === 'custom';
+      document.getElementById('type-kind').value     = moduleId;
+      document.getElementById('type-old-name').value = '';
+      document.getElementById('modal-type-title').textContent = `Add ${label.replace(/s$/, '')}`;
+      document.getElementById('type-save-btn').textContent = 'Save';
+      document.getElementById('type-name').value = '';
+      document.getElementById('type-desc').value = '';
+      document.getElementById('type-desc-group').style.display = isCustom ? 'none' : '';
+      selectTypeColor('amber');
+      openModal('modal-type');
+    }
+
+    function openEditType(moduleId, name, desc, color) {
+      const label    = moduleTypesLabel(moduleId);
+      const isCustom = moduleTypesMode(moduleId) === 'custom';
+      document.getElementById('type-kind').value     = moduleId;
+      document.getElementById('type-old-name').value = name;
+      document.getElementById('modal-type-title').textContent = `Edit ${label.replace(/s$/, '')}`;
+      document.getElementById('type-save-btn').textContent = 'Update';
+      document.getElementById('type-name').value = name;
+      document.getElementById('type-desc').value = desc;
+      document.getElementById('type-desc-group').style.display = isCustom ? 'none' : '';
+      selectTypeColor(color || 'gray');
+      openModal('modal-type');
+    }
+
+    async function saveType() {
+      const moduleId = document.getElementById('type-kind').value;
+      const oldName  = document.getElementById('type-old-name').value;
+      const name     = document.getElementById('type-name').value.trim();
+      const desc     = document.getElementById('type-desc').value.trim();
+      if (!name) { alert('Please enter a name'); return; }
+
+      const mode = moduleTypesMode(moduleId);
+      let result;
+
+      if (mode === 'custom') {
+        if (oldName) {
+          result = await API.post('/ma-modules/config.php',
+            { action: 'update_type', id: moduleId, old_type: oldName, type: name, color: selectedTypeColor });
+        } else {
+          result = await API.post('/ma-modules/config.php',
+            { action: 'add_type', id: moduleId, type: name, color: selectedTypeColor });
+        }
+        // Refresh local modulesData
+        if (result && result.data && result.data.success) {
+          const m = modulesData.find(x => x.id === moduleId);
+          if (m) {
+            m.types = m.types || [];
+            m.type_data = m.type_data || [];
+            if (oldName) {
+              const idx = m.types.indexOf(oldName);
+              if (idx !== -1) { m.types[idx] = name; m.type_data[idx] = { name, color: selectedTypeColor }; }
+            } else {
+              if (!m.types.includes(name)) {
+                m.types.push(name);
+                m.type_data.push({ name, color: selectedTypeColor });
+              }
+            }
+          }
+        }
+      } else {
+        // Builtin module — use dedicated types API (includes color)
+        const path = moduleTypesApi(moduleId);
+        if (oldName) {
+          result = await API.request('PUT', path, { old_name: oldName, name, description: desc, color: selectedTypeColor });
+        } else {
+          result = await API.post(path, { name, description: desc, color: selectedTypeColor });
+        }
+      }
+
+      if (result && result.data && result.data.success) {
+        // Log activity
+        const action = oldName ? 'update' : 'create';
+        const moduleLabel = moduleTypesLabel(moduleId).replace(/s$/, '');
+        const updatedCount = result.data.updated_services || result.data.updated_cutoffs || 0;
+        const updateMsg = updatedCount > 0 ? ` (${updatedCount} items updated)` : '';
+        
+        await logMAConfigActivity(action, 'type', name, 
+          `Module: ${moduleId}, ${moduleLabel}, Color: ${selectedTypeColor}${updateMsg}`);
+        
+        closeModal('modal-type');
+        delete typesCache[moduleId];
+        await loadTypesForModule(moduleId);
+        
+        const msg = oldName 
+          ? `Type updated${updateMsg}` 
+          : 'Type added';
+        showToast(msg, 'success');
+      } else {
+        alert('Failed: ' + (result?.data?.message || 'Unknown error'));
+      }
+    }
+
+    async function deleteType(moduleId, name) {
+      if (!confirm(`Delete type "${name}"?`)) return;
+
+      const mode = moduleTypesMode(moduleId);
+      let result;
+
+      if (mode === 'custom') {
+        result = await API.post('/ma-modules/config.php',
+          { action: 'delete_type', id: moduleId, type: name });
+        if (result && result.data && result.data.success) {
+          const m = modulesData.find(x => x.id === moduleId);
+          if (m) m.types = (m.types || []).filter(t => t !== name);
+        }
+      } else {
+        const path = moduleTypesApi(moduleId) + '?name=' + encodeURIComponent(name);
+        result = await API.delete(path);
+      }
+
+      if (result && result.data && result.data.success) {
+        // Log activity
+        const moduleLabel = moduleTypesLabel(moduleId).replace(/s$/, '');
+        await logMAConfigActivity('delete', 'type', name, 
+          `Module: ${moduleId}, ${moduleLabel}`);
+        
+        delete typesCache[moduleId];
+        await loadTypesForModule(moduleId);
+        showToast('Type deleted', 'success');
+      } else {
+        alert('Failed: ' + (result?.data?.message || 'Unknown error'));
+      }
+    }
+
+    /* ── Activity Logging ───────────────────────── */
+    async function logMAConfigActivity(action, type, itemName, details = '') {
+      try {
+        // Map actions to standardized format
+        const actionMap = {
+          'create': `ma_config_${type}_create`,
+          'update': `ma_config_${type}_update`,
+          'delete': `ma_config_${type}_delete`
+        };
+        
+        const logAction = actionMap[action] || `ma_config_${type}_${action}`;
+        
+        const token = Auth.getToken();
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        
+        await fetch('../api/log/create.php', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            action: logAction,
+            detail: {
+              type: type,
+              item_name: itemName,
+              details: details
+            }
+          })
+        });
+      } catch (error) {
+        console.error('Error logging activity:', error);
+      }
+    }
+
+    /* ── Helpers ─────────────────────────────────── */
+    function openModal(id)  { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    function showToast(msg, type) {
+      if (window.Toast && window.Toast.show) Toast.show(msg, type);
+      else console.log(msg);
+    }
+
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    function escAttr(s) { return String(s).replace(/'/g,"\\'"); }
+  </script>
+</body>
+</html>

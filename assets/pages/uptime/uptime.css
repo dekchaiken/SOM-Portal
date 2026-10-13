@@ -1,0 +1,251 @@
+/* ── Grid ─────────────────────────────────────────────────── */
+    .uptime-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 860px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ── Monitor Card ─────────────────────────────────────────── */
+    .uptime-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 22px 16px;
+      transition: border-color .15s;
+    }
+    .uptime-card.is-down { border-color: rgba(239,68,68,.4); }
+
+    /* header row */
+    .uc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 2px;
+    }
+    .uc-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .uc-dot {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--border);
+      box-shadow: 0 0 0 3px transparent;
+      transition: background .3s, box-shadow .3s;
+    }
+    .uc-dot.up   { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.2); }
+    .uc-dot.down { background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.2); animation: dot-pulse 1.4s ease infinite; }
+    @keyframes dot-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .uc-status-txt {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+    .uc-status-txt.down { color: #ef4444; }
+    .uc-updated {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      opacity: .7;
+    }
+
+    /* stats row */
+    .uc-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+    .uc-stat {
+      background: var(--bg);
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .uc-stat-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+    .uc-stat-val {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+    }
+    .uc-stat-val.good  { color: #22c55e; }
+    .uc-stat-val.warn  { color: #f59e0b; }
+    .uc-stat-val.bad   { color: #ef4444; }
+
+    /* bar chart */
+    .uc-bars-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 7px;
+    }
+    .uc-bars-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .uc-bars-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-left: 5px;
+      font-weight: 400;
+    }
+    .uc-legend {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 9.5px;
+      color: var(--text-muted);
+    }
+    .uc-legend span { display: flex; align-items: center; gap: 3px; }
+    .uc-legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 2px;
+    }
+
+    .uc-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 36px;
+      margin-bottom: 5px;
+      overflow: visible;
+    }
+    .uc-bar {
+      flex: 1;
+      height: 100%;
+      border-radius: 2px;
+      cursor: default;
+      position: relative;
+      transition: opacity .1s;
+    }
+    .uc-bar:hover { opacity: .8; }
+    .uc-bar.up    { background: #22c55e; }
+    .uc-bar.slow  { background: #f59e0b; }
+    .uc-bar.down  { background: #ef4444; }
+    .uc-bar.none  { background: var(--border); opacity: .5; }
+
+    /* tooltip on hover — ใช้ data-bar-tip แทน data-tip เพื่อไม่ชนกับ global tooltip */
+    .uc-bar[data-bar-tip]:hover::after {
+      content: attr(data-bar-tip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 10px;
+      color: var(--text);
+      white-space: pre;
+      pointer-events: none;
+      z-index: 200;
+      min-width: 120px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,.4);
+    }
+    .uc-bar:nth-child(-n+6)[data-bar-tip]:hover::after {
+      left: 0; transform: translateX(0);
+    }
+    .uc-bar:nth-last-child(-n+6)[data-bar-tip]:hover::after {
+      left: auto; right: 0; transform: translateX(0);
+    }
+
+    .uc-bars-axis {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9.5px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      opacity: .7;
+    }
+
+    /* footer */
+    .uc-footer {
+      font-size: 9.5px;
+      color: var(--text-muted);
+      text-align: center;
+      opacity: .6;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+      margin-top: 2px;
+    }
+
+    /* ── Modal ─────────────────────────────────────────────────── */
+    .uptime-modal-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,.6);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .uptime-modal {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 28px 22px;
+      width: 420px; max-width: 95vw;
+    }
+    .uptime-modal h3 { font-size: 15px; font-weight: 800; margin-bottom: 18px; }
+    .uptime-modal label {
+      display: block;
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      margin-bottom: 4px; margin-top: 12px;
+    }
+    .uptime-modal input {
+      width: 100%; padding: 9px 12px;
+      background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 12px;
+      color: var(--text); font-family: var(--font);
+      outline: none; box-sizing: border-box;
+    }
+    .uptime-modal input:focus { border-color: var(--orange); }
+    .uptime-modal-actions {
+      display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px;
+    }
+
+    /* ── Skeleton / Empty ─────────────────────────────────────── */
+    .uptime-empty {
+      text-align: center; padding: 60px 20px;
+      color: var(--text-muted); font-size: 13px;
+    }
+    .uptime-empty .big { font-size: 36px; margin-bottom: 10px; }
+
+    /* ── Delete btn ───────────────────────────────────────────── */
+    .uc-delete {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 14px;
+      padding: 2px 4px; border-radius: 5px;
+      transition: color .12s, background .12s;
+      display: none;
+    }
+    .uc-delete:hover { color: #ef4444; background: rgba(239,68,68,.1); }
+    .is-admin .uc-delete { display: inline-flex; }
+
+    /* live indicator */
+    .live-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #22c55e;
+      display: inline-block; margin-right: 5px;
+      animation: rfPulse 2s ease infinite;
+    }
+    @keyframes rfPulse { 0%,100%{opacity:1} 50%{opacity:.25} }

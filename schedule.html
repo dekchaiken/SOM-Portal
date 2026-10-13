@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Team Schedule — SOM-Portal</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <script src="assets/js/theme.js"></script>
+  <link rel="stylesheet" href="assets/css/dark.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/ui-themes.css">
+  <link rel="stylesheet" href="./assets/css/enterprise-refine.css">
+  
+  <link rel="stylesheet" href="./assets/pages/schedule/schedule.css" data-page-css>
+</head>
+<body>
+<div class="app-shell">
+  <aside id="sidebar-mount"></aside>
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div class="topbar-title-left">
+          <div class="page-title"><i data-icon="calendar"></i> Team Schedule</div>
+          <div class="page-sub">ตารางเวร SM Team ประจำเดือน</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" data-action="write" onclick="openHolidayPlans()" style="font-size:11px;gap:6px">
+          <i data-icon="calendar"></i> Holiday Plans
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportCalendarImage()" style="font-size:11px;gap:6px">
+          <i data-icon="camera"></i> Export PNG
+        </button>
+        <button class="btn btn-ghost btn-sm" data-action="write" onclick="openLeaveModal()" style="font-size:11px;gap:6px">
+          <i data-icon="clipboard"></i> Leave Request
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="loadAll()" style="font-size:11px">↺</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="sched-wrap">
+
+        <!-- Month navigation + summary -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+          <div class="month-nav">
+            <div class="month-nav-left">
+              <button class="month-nav-btn" onclick="changeMonth(-1)">←</button>
+              <div class="month-nav-title" id="month-title">Loading...</div>
+              <button class="month-nav-btn" onclick="changeMonth(1)">→</button>
+              <button class="btn btn-ghost btn-sm" onclick="goToday()" style="font-size:11px;margin-left:6px">Today</button>
+              <button class="btn btn-ghost btn-sm" id="my-days-btn" onclick="toggleMyDays()" style="font-size:11px;margin-left:6px" title="แสดงเฉพาะวันที่ฉันมีงาน"><i data-icon="user"></i> เฉพาะวันของฉัน<span id="my-days-count"></span></button>
+              <button class="btn btn-ghost btn-sm" onclick="exportMyScheduleICS()" style="font-size:11px;margin-left:6px" title="ดาวน์โหลดไฟล์ .ics เฉพาะวันของฉันในเดือนนี้ — เปิดบน iPhone จะเด้ง Add to Calendar"><i data-icon="calendar"></i> ส่งเข้าปฏิทิน iPhone</button>
+            </div>
+          </div>
+          <div class="sched-summary" id="sched-summary"></div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="cal-outer">
+          <div class="cal-scroll" id="cal-scroll">
+            <table class="cal-table" id="cal-table">
+              <thead id="cal-head"></thead>
+              <tbody id="cal-body" data-skel-cal>
+                <!-- Skeleton placeholder; renderCalendar() replaces this on load -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Stats table -->
+        <div class="stats-wrap">
+          <div class="stats-hd">
+            <span><i data-icon="bar-chart"></i></span> สถิติรายบุคคล — <span id="stats-month-label" style="color:var(--text)"></span>
+            <button class="stats-export-btn" onclick="exportStatsCSV()" title="ดาวน์โหลดเป็นไฟล์ CSV"><i data-icon="inbox"></i> Export CSV</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="stats-table" id="stats-table">
+              <thead>
+                <tr>
+                  <th>ชื่อ</th>
+                  <th class="num">Shift#1<br>TDPK</th>
+                  <th class="num">Shift#1<br>W@H</th>
+                  <th class="num">Shift#2<br>W@H</th>
+                  <th class="num">รวม<br>เวร</th>
+                  <th class="num">วันลา/<br>หยุด</th>
+                  <th class="num">ลาป่วย</th>
+                  <th class="num">ลากิจ</th>
+                  <th class="num">วันลาพักร้อน<br>คงเหลือ</th>
+                </tr>
+              </thead>
+              <tbody id="stats-body" data-skel-stats></tbody>
+            </table>
+          </div>
+        </div>
+
+
+        <!-- Vacation Summary -->
+        <div class="vac-summary-wrap">
+          <div class="vac-summary-hd"><span><i data-icon="calendar"></i></span> วันลาพักร้อนประจำปี — <span id="vac-summary-year" style="color:var(--text)"></span></div>
+          <div style="overflow-x:auto">
+            <table class="vac-summary-tbl">
+              <thead><tr><th>ชื่อ</th><th class="c">โควต้าทั้งหมด</th><th class="c">ลาไปแล้ว</th><th class="c">คงเหลือ</th></tr></thead>
+              <tbody id="vac-summary-body" data-skel-vac></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /.sched-wrap -->
+
+      <!-- Holiday Plans View -->
+      <div id="hp-view">
+        <div class="hp-topbar-back">
+          <div style="display:flex;align-items:center;gap:12px">
+            <button class="hp-back-btn" onclick="closeHolidayPlans()">← กลับปฏิทิน</button>
+            <span class="hp-view-title"><i data-icon="calendar"></i> Advance Holiday Plans</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="hp-nav-center">
+              <button class="hp-month-btn" onclick="hpChangeYear(-1)">«</button>
+              <button class="hp-month-btn" onclick="hpChangeMonth(-1)">‹</button>
+              <div class="hp-month-title" id="hp-month-title">—</div>
+              <button class="hp-month-btn" onclick="hpChangeMonth(1)">›</button>
+              <button class="hp-month-btn" onclick="hpChangeYear(1)">»</button>
+              <button class="btn btn-ghost btn-sm" onclick="hpGoToday()" style="font-size:10px;margin-left:4px">วันนี้</button>
+            </div>
+            <div class="hp-stat-chip" id="hp-stat-chip">—</div>
+            <div style="position:relative">
+              <button class="hp-hol-btn" id="hp-hol-btn" onclick="toggleHolidayPopup(event)"><i data-icon="flag"></i> วันหยุด <span id="hp-hol-count"></span></button>
+              <div class="hp-hol-popup" id="hp-hol-popup">
+                <div class="hp-hol-popup-hd"><i data-icon="flag"></i> วันหยุดนักขัตฤกษ์ — <span id="hp-hol-year"></span></div>
+                <div class="hp-hol-list" id="hp-hol-list"></div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openHpModal()" style="font-size:11px;font-weight:700"><i data-icon="pencil"></i> วางแผนของฉัน</button>
+          </div>
+        </div>
+        <div class="hp-note-card"><i data-icon="pin"></i> <strong>เริ่มทำแผนวันหยุดของทีม</strong> ให้จับจองกันล่วงหน้า ใส่วันที่ต้องการหยุดด้านล่างด้วยครับ ทางหัวหน้าเขาอยากเห็นภาพว่าวันลาเหลือกันเยอะมั้ย จะได้ไม่มาลากระจุกกันเดือนสุดท้าย และ <strong>ขอเพิ่มตั้งกฎ</strong> ในทีม เช่น คนเดิมๆ ไม่ควรลาช่วงวันหยุดยาวเดิมๆ ทุกปี ต้องแบ่งเพื่อนในทีมบ้าง สลับๆ กัน</div>
+        <div class="hp-table-card">
+          <div class="hp-table-scroll">
+            <table class="hp-tbl"><thead id="hp-thead"></thead>
+              <tbody id="hp-tbody" data-skel-hp></tbody>
+            </table>
+          </div>
+          <div style="padding:12px 16px;border-top:1px solid #f0f0f0">
+            <div class="hp-legend">
+              <div style="display:flex;align-items:center;gap:5px"><div class="hp-legend-dot" style="background:#22c55e"></div><span>แผนของฉัน (คลิกเพื่อลบ)</span></div>
+              <div style="display:flex;align-items:center;gap:5px"><div class="hp-legend-dot" style="background:rgba(242,100,25,.25)"></div><span>แผนของเพื่อน</span></div>
+              <div style="display:flex;align-items:center;gap:5px"><div class="hp-legend-dot" style="background:#fffbeb;border:1px solid #e8e8e8"></div><span>วันหยุดนักขัตฤกษ์</span></div>
+              <div style="display:flex;align-items:center;gap:5px"><div class="hp-legend-dot" style="background:#fafafa;border:1px solid #e8e8e8"></div><span>เสาร์-อาทิตย์</span></div>
+              <span style="color:#bbb;margin-left:4px">| คลิกเซลล์ว่างเพื่อเพิ่ม</span>
+            </div>
+          </div>
+        </div>
+      </div><!-- /#hp-view -->
+
+    </main>
+  </div>
+</div>
+
+<!-- HP Modal -->
+<div id="hp-modal">
+  <div id="hp-modal-box">
+    <div class="hpm-hd">
+      <div><div class="hpm-hd-t"><i data-icon="pencil"></i> วางแผนวันหยุดของฉัน</div><div class="hpm-hd-sub" id="hpm-sub"></div></div>
+      <button class="hpm-close" onclick="closeHpModal()"><i data-icon="x"></i></button>
+    </div>
+    <div class="hpm-body">
+      <div class="hpm-nav">
+        <button class="hpm-nav-btn" onclick="hpmPrevMonth()">‹</button>
+        <div class="hpm-nav-title" id="hpm-title"></div>
+        <button class="hpm-nav-btn" onclick="hpmNextMonth()">›</button>
+      </div>
+      <div class="hpm-grid" id="hpm-grid"></div>
+      <div class="hpm-pills-wrap">
+        <div class="hpm-pills-title">วันที่เลือกทั้งหมด</div>
+        <div class="hpm-pills" id="hpm-pills"><span class="hpm-empty">ยังไม่ได้เลือก</span></div>
+      </div>
+    </div>
+    <div class="hpm-foot">
+      <div class="hpm-foot-count">เลือกแล้ว <strong id="hpm-count">0</strong> วัน</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="hpmClearMonth()" style="font-size:11px"><i data-icon="trash"></i> ล้างเดือนนี้</button>
+        <button class="btn btn-primary btn-sm" onclick="hpmSave()" id="hpm-save-btn" style="font-size:11px;font-weight:700"><i data-icon="save"></i> บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Leave Request Modal -->
+<div id="leave-modal">
+  <div id="leave-modal-box">
+    <div class="lm-hd">
+      <div class="lm-hd-t"><i data-icon="clipboard"></i> Leave Request</div>
+      <button class="lm-close" onclick="closeLeaveModal()"><i data-icon="x"></i></button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="lm-tabs">
+      <button class="lm-tab active" id="tab-request" onclick="switchLeaveTab('request')"><i data-icon="pencil"></i> ขอลา</button>
+      <button class="lm-tab" id="tab-history" onclick="switchLeaveTab('history')">
+        <i data-icon="calendar"></i> ประวัติขอลา<span class="lm-tab-badge" id="leave-history-badge" style="display:none"></span>
+      </button>
+    </div>
+
+    <!-- Pane: Request -->
+    <div class="lm-body" id="lm-pane-request">
+      <div class="f-label" style="margin-bottom:10px">ส่งคำขอลาใหม่</div>
+
+      <!-- Vacation Quota Display -->
+      <div id="quota-display" class="quota-display hidden">
+        <div class="quota-display-header">
+          <span class="quota-display-title"><i data-icon="calendar"></i> วันลาพักร้อนคงเหลือ</span>
+          <span class="quota-display-value" id="quota-remaining">— วัน</span>
+        </div>
+        <div class="quota-progress-bar">
+          <div class="quota-progress-fill green" id="quota-progress" style="width:100%"></div>
+        </div>
+        <div class="quota-breakdown">
+          <div class="quota-breakdown-item">
+            <span class="quota-breakdown-label">กำลังใช้</span>
+            <span class="quota-breakdown-value" id="quota-using">0</span>
+          </div>
+          <div class="quota-breakdown-item">
+            <span class="quota-breakdown-label">คงเหลือหลังลา</span>
+            <span class="quota-breakdown-value" id="quota-after">—</span>
+          </div>
+          <div class="quota-breakdown-item">
+            <span class="quota-breakdown-label">รวมทั้งหมด</span>
+            <span class="quota-breakdown-value" id="quota-total">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quota Warning -->
+      <div id="quota-warning" class="quota-warning">
+        <span class="quota-warning-icon"><i data-icon="alert-triangle"></i></span>
+        <span id="quota-warning-text">วันลาพักร้อนคงเหลือไม่เพียงพอ</span>
+      </div>
+
+      <div class="leave-form">
+        <!-- Leave Type -->
+        <div>
+          <div class="f-label">ประเภทการลา</div>
+          <div class="lf-row">
+            <button class="lf-type-btn active" id="ltype-vacation" style="--tc:#22c55e;--tb:rgba(34,197,94,.12)"
+              onclick="setLeaveType('vacation')">
+              <span class="lf-icon"><i data-icon="umbrella-beach"></i></span>Vacation / พักร้อน
+            </button>
+            <button class="lf-type-btn" id="ltype-sick" style="--tc:#ef4444;--tb:rgba(239,68,68,.12)"
+              onclick="setLeaveType('sick')">
+              <span class="lf-icon"><i data-icon="thermometer"></i></span>Sick Leave / ลาป่วย
+            </button>
+            <button class="lf-type-btn" id="ltype-business" style="--tc:#7c3aed;--tb:rgba(124,58,237,.12)"
+              onclick="setLeaveType('business')">
+              <span class="lf-icon"><i data-icon="briefcase"></i></span>Business Leave / ลากิจ
+            </button>
+          </div>
+        </div>
+
+        <!-- Calendar Picker -->
+        <div>
+          <div class="f-label">เลือกวันที่ลา <span style="font-weight:500;text-transform:none;letter-spacing:0;color:#aaa">(กดหลายวันได้)</span></div>
+          <div class="leave-calendar" id="leave-calendar"></div>
+        </div>
+
+        <!-- Duration (conditional on selected count) -->
+        <div>
+          <div class="f-label">ประเภทวันลา</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:#1c1c1e">
+              <input type="radio" name="leave-duration" value="full" checked onchange="updateLeaveDisplay()"> Full day
+            </label>
+            <label class="dur-half-row" id="half-day-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:#1c1c1e">
+              <input type="radio" name="leave-duration" value="half" id="half-radio" onchange="updateLeaveDisplay()"> Half day
+            </label>
+          </div>
+          <div id="half-day-opts" style="display:none;margin-top:10px;padding:12px;background:#fafafa;border-radius:8px">
+            <div class="f-label" style="margin-bottom:8px">เลือกช่วงเวลา</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#666">
+                <input type="radio" name="half-period" value="morning" checked> เช้า (08:00-12:00)
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#666">
+                <input type="radio" name="half-period" value="afternoon"> บ่าย (13:00-17:00)
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reason -->
+        <div>
+          <div class="f-label">เหตุผล (optional)</div>
+          <textarea class="f-ta" id="f-reason" placeholder="ระบุเหตุผลเพิ่มเติม..."></textarea>
+        </div>
+
+        <button class="btn btn-primary" onclick="submitLeave()" id="leave-submit-btn" style="font-size:12px;font-weight:700">
+          <i data-icon="upload"></i> ส่งคำขอ
+        </button>
+      </div>
+    </div>
+
+    <!-- Pane: History -->
+    <div class="lm-body" id="lm-pane-history" style="display:none">
+      <div class="f-label" style="margin-bottom:10px">ประวัติการขอลา</div>
+      <div id="my-leaves">
+        <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12px">Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/skeletons.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/csrf.js"></script>
+<script src="assets/js/analytics.js"></script>
+<script src="assets/js/analytics-features.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="./assets/js/mobile-nav.js"></script>
+<script src="assets/js/maintenance.js"></script>
+<script src="./assets/pages/schedule/schedule.js"></script>
+</body>
+</html>

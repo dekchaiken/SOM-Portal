@@ -1,0 +1,222 @@
+{
+  "_comment": "Impact Service Map — maps Prometheus app_name labels to business service names. Update this when new services are deployed.",
+
+  "prod_namespaces": [
+    "truemoney.*",
+    "truemoney-core-production",
+    "truemoney-mobile-backend-production",
+    "truemoney-alipay-gn-production",
+    "truemoney-alipay-gka-production",
+    "truemoney-common-production",
+    "truemoney-dataplatform-production",
+    "truemoney-ecatalog-production",
+    "acm.*"
+  ],
+
+  "thresholds": {
+    "restart_min":         1,
+    "http_5xx_min":        1,
+    "latency_spike_ratio": 3.0,
+    "bank_error_min":      5
+  },
+
+  "bank_map": {
+    "KBANK": "KBank (ATM/iBanking/Mobile Banking)",
+    "SCB":   "SCB (ATM/iBanking/Mobile Banking)",
+    "KTB":   "KTB Krungthai (ATM/iBanking/Mobile Banking)",
+    "GSB":   "ออมสิน (ATM/iBanking)",
+    "BBL":   "Bangkok Bank (BBL/BGW)",
+    "BAY":   "Bank of Ayudhya (Krungsri)",
+    "TTB":   "TMBThanachart (TTB)",
+    "BAAC":  "ธ.ก.ส. (BAAC)",
+    "LHB":   "LHBank",
+    "UOB":   "UOB",
+    "CIMB":  "CIMB",
+    "KKP":   "Kiatnakin Phatra (KKP)"
+  },
+
+  "service_map": {
+    "mobile-auth-service": {
+      "category": "Authentication",
+      "business_services": ["Login TrueMoney Wallet", "PIN Authentication", "Biometric Login"],
+      "is_gateway": false,
+      "severity_boost": true
+    },
+    "core-service": {
+      "category": "Core Platform",
+      "business_services": [
+        "Login TMN", "ทุก Transaction (isActive check)",
+        "Fund-in All BANK", "Direct Debit All BANK",
+        "Cash Out", "Barcode", "Financial Home",
+        "History", "Profile"
+      ],
+      "is_gateway": false,
+      "severity_boost": true,
+      "_note": "core-service /trans/isActive is called by ALL transaction flows"
+    },
+    "tmn-mobile-gateway": {
+      "category": "Mobile App Gateway",
+      "business_services": [
+        "Login TMN", "Barcode", "Cash Out", "History",
+        "Fund-in All BANK", "E-PIN From Wallet",
+        "Topup Mobile ผ่าน TMN", "Game Topup Center",
+        "Redeem Coin ABC", "CP Payment",
+        "SafeGold", "Financial Home", "POI Topup Wallet",
+        "Lotus's Online", "Lotus's HYPERMARKET"
+      ],
+      "is_gateway": true,
+      "_note": "Main API gateway for TrueMoney App — any restart affects ALL app features"
+    },
+    "wallet-payment-service": {
+      "category": "Payments",
+      "business_services": [
+        "Fund-in All BANK", "Topup Wallet Via Credit Card",
+        "POI Topup Wallet", "CP Payment",
+        "Lotus's Online", "Lotus's HYPERMARKET"
+      ],
+      "is_gateway": false,
+      "_uris": {
+        "/v3/loads":      "Fund-in / Wallet Top-up",
+        "/v2/deducts":    "Payment Deduction (QR/Barcode/Online)",
+        "/v1/cancelDeduct": "Cancel Payment",
+        "/v1/refund":     "Refund"
+      }
+    },
+    "acm-unified-alipay-gateway": {
+      "category": "Merchant / Partner",
+      "business_services": ["Lazada Payment", "TikTok Payment", "Alipay Connect (all merchants)"],
+      "is_gateway": false
+    },
+    "acm-bbl-gateway": {
+      "category": "Banking",
+      "business_services": ["Fund-in via BGW (Bangkok Bank)", "Direct Debit BBL"],
+      "is_gateway": false
+    },
+    "bank-service": {
+      "category": "Banking",
+      "business_services": [
+        "Fund-in All BANK", "Direct Debit All BANK",
+        "Binding All BANK", "Topup Wallet Via Credit Card"
+      ],
+      "is_gateway": false
+    },
+    "vas-service": {
+      "category": "VAS / Mobile Topup",
+      "business_services": [
+        "Topup Mobile ผ่าน TMN", "Game Topup Center",
+        "VAS Topup (Postpaid/Prepaid)", "Digital Content",
+        "E-PIN From Wallet"
+      ],
+      "is_gateway": false,
+      "_uris": {
+        "/api/v2/transactions/spi": "VAS SPI Transactions (all VAS services)",
+        "/api/v3/transactions":     "VAS Transactions v3",
+        "/api/v1/transactions":     "VAS Transactions v1"
+      }
+    },
+    "dtac-gateway": {
+      "category": "VAS / Mobile Topup",
+      "business_services": ["DTAC Mobile Topup", "DTAC VAS / Bill Payment"],
+      "is_gateway": false,
+      "_uris": {
+        "/api/v1/refill/confirm": "DTAC Top-up Confirm",
+        "/api/v1/refill/verify":  "DTAC Top-up Verify",
+        "/api/v1/vas/confirm":    "DTAC VAS Confirm"
+      }
+    },
+    "mobile-topup": {
+      "category": "VAS / Mobile Topup",
+      "business_services": ["Topup Mobile ผ่าน TMN", "AIS/True/DTAC Topup"],
+      "is_gateway": false
+    },
+    "kiosk-processor": {
+      "category": "7-Eleven / Kiosk",
+      "business_services": [
+        "7-Eleven Barcode (Dip chip)",
+        "7-Delivery - POS Online",
+        "POI Topup Wallet",
+        "Barcode"
+      ],
+      "is_gateway": false
+    },
+    "cross-register-composite": {
+      "category": "Registration / KYC",
+      "business_services": [
+        "KKP (saving/cashnow) register",
+        "Binding All BANK",
+        "Binding Credit Card"
+      ],
+      "is_gateway": false
+    },
+    "user-profile-composite": {
+      "category": "Profile / History",
+      "business_services": ["history", "User Profile", "Transaction History"],
+      "is_gateway": false
+    },
+    "promptpay-service": {
+      "category": "PromptPay",
+      "business_services": ["Fund-in via PromptPay", "Barcode (PromptPay QR)"],
+      "is_gateway": false
+    },
+    "coupon-gateway": {
+      "category": "Campaign / Coupon",
+      "business_services": ["Campaign Service", "Coupon / Voucher"],
+      "is_gateway": false
+    },
+    "acw-core-auth-service": {
+      "category": "Authentication",
+      "business_services": ["Login (Ascend Bank)", "ACB Authentication"],
+      "is_gateway": false
+    },
+    "acm-kk-gateway": {
+      "category": "KKP / Lending",
+      "business_services": ["KKP-Saving On-boarding", "KKP-Lending On-boarding"],
+      "is_gateway": false
+    },
+    "asset-service": {
+      "category": "SafeGold / Asset",
+      "business_services": ["SafeGold", "Asset Management"],
+      "is_gateway": false
+    },
+    "asset-binder": {
+      "category": "SafeGold / Asset",
+      "business_services": ["Binding Credit Card", "Binding All BANK"],
+      "is_gateway": false
+    },
+    "acquiring-service": {
+      "category": "Payments",
+      "business_services": ["Binding Credit Card", "Topup Wallet Via Credit Card", "CP Payment"],
+      "is_gateway": false
+    },
+    "acm-finance-home-service": {
+      "category": "Financial",
+      "business_services": ["Financial Home"],
+      "is_gateway": false
+    },
+    "acm-prov-service": {
+      "category": "PromptPay",
+      "business_services": ["PromptPay Fund-in", "PromptPay Registration"],
+      "is_gateway": false
+    },
+    "true-gateway": {
+      "category": "VAS / Mobile Topup",
+      "business_services": ["True Move H Topup", "TrueVision / TrueOnline Paybill"],
+      "is_gateway": false
+    },
+    "acm-nano-los-service": {
+      "category": "Lending / Nano",
+      "business_services": ["Cash Now Disbursement", "Cash Now On-boarding", "Cash Now Re-payment"],
+      "is_gateway": false
+    },
+    "ecatalog-composite": {
+      "category": "Catalog / Product",
+      "business_services": ["Game Topup Center", "Digital Content", "Product Catalog"],
+      "is_gateway": false
+    },
+    "acn-dp-generic-log-etl": {
+      "category": "Data Platform",
+      "business_services": ["BO Report", "Analytics Dashboard"],
+      "is_gateway": false
+    }
+  }
+}
