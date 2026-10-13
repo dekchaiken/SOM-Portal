@@ -47,14 +47,14 @@ Source: `COMPARE-PHASE2.md`. Counts are DONE / PARTIAL / MISSING.
 | Restart Monitor | 6 | 9 | 11 | No daily scheduler; no charts; no email preview; recipients file mismatch with v1 |
 | Restart Analyzer | 8 | 2 | 7 | Analysis phases 4–7, 9, 10 missing; no timeline chart |
 | Service Performance | 6 | 7 | 10 | Charts, alerts drawer, log viewer, compare, deep analysis missing; detail sections have APIs but no UI |
-| Log Explorer | 13 | 4 | 8 | Custom date range, CSV export, URL sync; delete permission not restricted to creator or lead |
+| Log Explorer | 13 | 4 | 8 | Custom date range, CSV export, URL sync |
 | Incident Launcher | 6 | 2 | 8 | v2 has 5 steps, v1 has 9; war room, partner email, maintenance job, admin config editor |
 | Mail | 4 | 3 | 3 | Compose and send has API but no UI; branding editor; mail-log filters |
 | Scheduled notifications | 7 | 3 | 5 | No automatic scheduler (v1 runs in the browser); exclude dates; test send |
 
 Cross-cutting:
 - **No cron or scheduler in v2.** v1 daily Restart Monitor run and browser-driven scheduled notifications have no v2 equivalent.
-- **Permission divergence.** v1 gates several writes on `requireSmForShared()`; v2 uses role lists in some places (MA Status toggle and mapping, Restart Monitor fetch, Log Explorer delete). To be verified in code and fixed.
+- **Permission divergence.** v1 gates several writes on `requireSmForShared()`; v2 uses role lists in some places (MA Status toggle and mapping, Restart Monitor fetch). To be verified in code and fixed.
 - **Data mismatch.** Restart Monitor recipients are stored in a different file than v1 (`grafana-monitoring/monthly-recipients.json` vs `restart-monitor-recipients.json`), so recipients saved in one portal are invisible in the other.
 
 ## Phase 3

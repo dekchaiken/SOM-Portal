@@ -2,7 +2,7 @@
 // GET/POST: manage monthly report email recipients (admin only)
 // Matches v1 api/restart-monitor/monthly-recipients.php
 import { type NextRequest, NextResponse } from 'next/server';
-import { requireRole, ADMIN_ROLES, ALL_STAFF_ROLES } from '@/auth/policy';
+import { requireRole, requireSmWrite, ADMIN_ROLES, ALL_STAFF_ROLES } from '@/auth/policy';
 import { readTeamFile, writeTeamFile } from '@/team/scope';
 import { MonthlyRecipients } from '@/restart-monitor/types';
 import { logActivity } from '@/logging/activity';
@@ -28,7 +28,7 @@ export async function GET(): Promise<Response> {
 
 export async function POST(req: NextRequest): Promise<Response> {
   try {
-    const session = await requireRole(...ADMIN_ROLES);
+    const session = await requireSmWrite(...ADMIN_ROLES);
     const body = await req.json();
     const parsed = MonthlyRecipients.parse({
       ...body,

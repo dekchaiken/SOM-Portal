@@ -1,6 +1,6 @@
 // POST /api/v1/ma-services/jenkins-trigger — trigger Jenkins build for an MA service
 // Port of api/ma-services/jenkins-trigger.php
-import { requireAuth } from '@/auth/policy';
+import { requireAuth, assertSmForShared } from '@/auth/policy';
 import { handle, jsonOk, jsonErr } from '@/jenkins/route-helpers';
 import { jenkinsServers, triggerBuild, isValidJobPath } from '@/jenkins/client';
 import { JenkinsTriggerInput } from '@/ma/types';
@@ -18,6 +18,7 @@ const RL_FILE = 'ma-jenkins-rl.json';
 export async function POST(req: NextRequest): Promise<Response> {
   return handle(async () => {
     const session = await requireAuth();
+    assertSmForShared(session);
     const body = await req.json();
     const parsed = JenkinsTriggerInput.safeParse(body);
     if (!parsed.success) {

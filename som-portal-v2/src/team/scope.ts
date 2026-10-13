@@ -7,6 +7,7 @@ import { getSession, type Session } from '@/auth/session';
 import {
   SM_WRITE_SHARED_ROLES,
   SUPER_ADMIN,
+  assertSmForShared,
   isSuperAdmin,
 } from '@/auth/policy';
 import { AuthError, ForbiddenError } from '@/lib/errors';
@@ -108,6 +109,7 @@ export async function writeSharedFile<T>(
   if (!allowed.includes(sess.role)) {
     throw new ForbiddenError('writeSharedFile requires an sm_* role');
   }
+  assertSmForShared(sess);
   const parsed = schema.parse(data);
   const adapter = getDataAdapter();
   const scope: TeamScope = { team: SHARED_TEAM };

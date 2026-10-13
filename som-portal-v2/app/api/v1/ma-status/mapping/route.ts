@@ -1,7 +1,7 @@
 // GET/POST /api/v1/ma-status/mapping — MA-to-service mapping (backoffice use_case_id)
 // Port of api/ma-status/mapping.php
 import { type NextRequest } from 'next/server';
-import { requireRole, ADMIN_ROLES } from '@/auth/policy';
+import { requireRole, requireSmWrite, ADMIN_ROLES } from '@/auth/policy';
 import { handle, jsonOk, jsonErr } from '@/jenkins/route-helpers';
 import { readServicesFile, writeServicesFile } from '@/ma/services-store';
 import { logActivity } from '@/logging/activity';
@@ -33,7 +33,7 @@ export async function GET(): Promise<Response> {
 
 export async function POST(req: NextRequest): Promise<Response> {
   return handle(async () => {
-    const session = await requireRole(...ADMIN_ROLES);
+    const session = await requireSmWrite(...ADMIN_ROLES);
 
     const body = await req.json();
     const parsed = MappingInput.safeParse(body);

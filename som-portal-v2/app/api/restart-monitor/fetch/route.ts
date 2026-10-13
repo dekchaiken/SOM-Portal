@@ -2,7 +2,7 @@
 // POST: trigger Prometheus fetch for runway+date (admin only)
 // Matches v1 api/restart-monitor/fetch.php
 import { type NextRequest, NextResponse } from 'next/server';
-import { requireRole, ADMIN_ROLES } from '@/auth/policy';
+import { requireSmWrite, ADMIN_ROLES } from '@/auth/policy';
 import { triggerFetch } from '@/restart-monitor/service';
 
 export const runtime = 'nodejs';
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest): Promise<Response> {
   try {
-    const session = await requireRole(...ADMIN_ROLES);
+    const session = await requireSmWrite(...ADMIN_ROLES);
     const q = new URL(req.url).searchParams;
     const runway = q.get('runway') ?? undefined;
     const date = q.get('date') ?? undefined;

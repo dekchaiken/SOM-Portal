@@ -155,6 +155,25 @@ test.describe('tool visibility per team (TC-TEAM-UI)', () => {
   });
 });
 
+test.describe('SM-owned writes need the SM team, not only the role (TC-TEAM-WRITE)', () => {
+  test('sm_admin in team ss cannot write MA services or MA status mapping', async ({ request }) => {
+    const res = await login(request, 'qa.ssadmin');
+    expect(res.status()).toBe(200);
+    const ma = await request.post('/v2/api/v1/ma-services', {
+      data: { service_name: 'x', service_type: 'a', tool_type: 'b' },
+    });
+    expect(ma.status()).toBe(403);
+    const mapping = await request.post('/v2/api/v1/ma-status/mapping', { data: {} });
+    expect(mapping.status()).toBe(403);
+  });
+
+  test('sm_admin in team ss cannot trigger the Restart Monitor fetch', async ({ request }) => {
+    await login(request, 'qa.ssadmin');
+    const res = await request.post('/v2/api/restart-monitor/fetch', { data: {} });
+    expect(res.status()).toBe(403);
+  });
+});
+
 test.describe('security (TC-SESS)', () => {
   test('forgot-password does not log the reset URL', async () => {
     const src = fs.readFileSync(

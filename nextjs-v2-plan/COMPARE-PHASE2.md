@@ -265,7 +265,7 @@ Checklist
 - [PARTIAL] Summary tiles (total, took, latency, status chips). Only error count shown; v1 shows total, took, 2xx, 4xx, 5xx, latency (log-explorer.html:136-144).
 - [PARTIAL] Saved folders. Folder list is display-only (:789-799). Create, rename and delete APIs exist (saved-folders/route.ts POST:32, PUT:50, DELETE:72) with no UI.
 - [PARTIAL] Save By SM tab. Saved-search panel exists (:766-830) but no separate tab, search box or counts (v1 log-explorer.html:86-87, :157-167).
-- [PARTIAL] Delete permission. v2 deleteSavedSearch (src/opensearch/saved-searches.ts:127-135) has no creator or admin/lead check. v1 restricts delete to creator or admin/lead (api/opensearch-saved-searches/index.php:4). Permission gap.
+- [DONE] Delete permission matches v1 code. Any SM member can delete a shared search (v1 index.php:235 comment says creator or admin only, but the code allows all SM members; v2 matches the code).
 - [MISSING] Custom date range (v1 html:98-111). v2 offers presets only.
 - [MISSING] CSV export (v1 log-explorer.js:1007-1016).
 - [MISSING] Open in OpenSearch Dashboards (v1 log-explorer.js:1020). proxy deeplink action exists (proxy/route.ts:229) with no UI call.
