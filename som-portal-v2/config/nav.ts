@@ -111,6 +111,8 @@ export const NAV: readonly NavItem[] = [
   { id: "log-explorer", path: "/log-explorer", label: "Log Explorer", icon: "database", group: "monitor", order: 30, menuId: "log-explorer", section: "MAIN", teams: ["sm"], denyRoles: ["super_viewer"] },
 
   // ── ma ───────────────────────────────────────────────────────────────────
+  { id: "ma-services", path: "/ma-services", label: "MA Overview", icon: "layers", group: "ma", order: 5, menuId: "ma-services", section: "MAIN" },
+  { id: "ma-usecases", path: "/ma-services/usecases", label: "MA Usecases", icon: "file", group: "ma", order: 6, menuId: "ma-services", section: "MAIN" },
   { id: "ma-status", path: "/ma-status", label: "MA Status", icon: "activity", group: "ma", order: 10 },
 
   // ── operations ───────────────────────────────────────────────────────────
