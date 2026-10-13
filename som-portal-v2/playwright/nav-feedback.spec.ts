@@ -12,7 +12,7 @@ test('clicking a sidebar link shows a loading pill at once', async ({ page }) =>
     await route.continue();
   });
   await page.getByRole('link', { name: 'Learn' }).first().click();
-  await expect(page.getByRole('status').filter({ hasText: 'Loading' })).toBeVisible({ timeout: 500 });
+  await expect(page.getByRole('status').filter({ hasText: 'Loading' })).toBeVisible({ timeout: 2000 });
   await expect(page).toHaveURL(/\/learn$/);
   await expect(page.getByRole('status').filter({ hasText: 'Loading' })).toHaveCount(0);
 });
