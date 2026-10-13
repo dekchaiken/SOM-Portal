@@ -92,6 +92,14 @@ export function MAStatusDashboard() {
   const [q, setQ] = React.useState("");
   const [auto, setAuto] = React.useState(false);
 
+  const refresh = React.useCallback(async () => {
+    try {
+      await fetch("/v2/api/v1/ma-status/refresh", { method: "POST", credentials: "include" });
+    } catch { /* the reload below still shows the last cache */ }
+    await load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const load = React.useCallback(async () => {
     try {
       const res = await fetch("/v2/api/v1/ma-status", { credentials: "include" });
@@ -160,7 +168,7 @@ export function MAStatusDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={load} className="glass-btn glass-btn-secondary inline-flex h-9 items-center gap-1.5 rounded-[var(--radius)] px-3.5 text-xs font-medium">
+          <button type="button" onClick={refresh} className="glass-btn glass-btn-secondary inline-flex h-9 items-center gap-1.5 rounded-[var(--radius)] px-3.5 text-xs font-medium">
             <Icon name="refresh" size={13} /> Refresh
           </button>
           <button type="button" onClick={() => setAuto((v) => !v)} aria-pressed={auto} className={`inline-flex h-9 items-center gap-1.5 rounded-[var(--radius)] px-3.5 text-xs font-medium ${auto ? "bg-[var(--accent)] text-white" : "glass-chip text-[var(--text-muted)]"}`}>
