@@ -1,10 +1,14 @@
 // som-portal-v2/src/mail/logs.ts
 // Mail log viewer — v1 parity with api/mail/logs.php
 
+import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { readTeamFile } from '@/team/scope';
+import { getDataAdapter } from '@/data/json-adapter';
 
 const MAIL_LOGS_FILE = 'mail_logs.json';
+/** v1 keeps the newest 2000 entries (api/mail/_mailer.php). */
+const MAX_LOG_ENTRIES = 2000;
 
 export const MailLogEntrySchema = z.object({
   id: z.string(),
@@ -21,7 +25,6 @@ export const MailLogEntrySchema = z.object({
 
 export type MailLogEntry = z.infer<typeof MailLogEntrySchema>;
 
-const MailLogsFileSchema = z.array(MailLogEntrySchema).default([]);
 
 export interface ListMailLogsOpts {
   search?: string;
@@ -31,8 +34,13 @@ export interface ListMailLogsOpts {
 }
 
 export async function listMailLogs(opts: ListMailLogsOpts = {}) {
-  let logs = await readTeamFile(MAIL_LOGS_FILE, MailLogsFileSchema);
-  logs = [...logs].reverse(); // newest first
+  // One unreadable v1 row must not hide the rest, so rows are parsed one by one.
+  const raw = await readTeamFile(MAIL_LOGS_FILE, z.array(z.unknown()));
+  let logs = raw.flatMap((r) => {
+    const parsed = MailLogEntrySchema.safeParse(r);
+    return parsed.success ? [parsed.data] : [];
+  });
+  logs = logs.reverse(); // newest first
 
   const search = (opts.search ?? '').toLowerCase().trim();
   if (search) {
@@ -58,4 +66,22 @@ export async function listMailLogs(opts: ListMailLogsOpts = {}) {
   const page = logs.slice(offset, offset + limit);
 
   return { logs: page, total, today: todayCount, failed: failedCount, limit, offset };
+}
+
+export type NewMailLog = Omit<MailLogEntry, 'id' | 'sent_at'>;
+
+/**
+ * Append one send attempt to the team's mail_logs.json (v1 _mailer.php behaviour).
+ * Locked read-modify-write. Rows this schema cannot read are kept as they are.
+ */
+export async function appendMailLog(team: string | null, entry: NewMailLog): Promise<void> {
+  const row: MailLogEntry = {
+    id: 'mlog_' + randomBytes(6).toString('hex'),
+    sent_at: new Date().toISOString(),
+    ...entry,
+  };
+  await getDataAdapter().update<unknown[]>({ team: team ?? '.' }, MAIL_LOGS_FILE, (raw) => {
+    const rows = Array.isArray(raw) ? raw : [];
+    return [...rows, row].slice(-MAX_LOG_ENTRIES);
+  });
 }

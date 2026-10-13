@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Icon } from "@/icons";
+import { parseRecipients } from "@/mail/recipients";
 
 interface MailConfig {
   smtp_host: string;
@@ -34,6 +35,7 @@ interface MailLog {
 
 export function MailConfigClient() {
   const [config, setConfig] = React.useState<MailConfig | null>(null);
+  const [ccText, setCcText] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [message, setMessage] = React.useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [testSteps, setTestSteps] = React.useState<TestStep[]>([]);
@@ -240,6 +242,32 @@ export function MailConfigClient() {
               type="email"
               value={config.from_email}
               onChange={(e) => update("from_email", e.target.value)}
+              className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-canvas)] px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="mb-1 block text-sm font-medium">Global CC</span>
+            <input
+              value={ccText ?? config.global_cc.join(", ")}
+              onChange={(e) => {
+                setCcText(e.target.value);
+                setConfig({ ...config, global_cc: parseRecipients(e.target.value).valid });
+              }}
+              placeholder="Added to every mail, comma separated"
+              className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-canvas)] px-3 py-2 text-sm"
+            />
+            {parseRecipients(ccText ?? "").invalid.length > 0 ? (
+              <span className="mt-1 block text-xs text-[var(--state-danger)]">
+                Not a valid address: {parseRecipients(ccText ?? "").invalid.join(", ")}
+              </span>
+            ) : null}
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="mb-1 block text-sm font-medium">Email signature</span>
+            <textarea
+              rows={4}
+              value={config.email_signature}
+              onChange={(e) => update("email_signature", e.target.value)}
               className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-canvas)] px-3 py-2 text-sm"
             />
           </label>

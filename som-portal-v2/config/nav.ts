@@ -142,6 +142,9 @@ export const NAV: readonly NavItem[] = [
   { id: "admin-super-team-permissions", path: "/admin/super-team-permissions", label: "Super Team Permissions", icon: "boxes", group: "admin", order: 60, roles: ["super_admin"], section: "ADMIN" },
   { id: "admin-jenkins-servers", path: "/admin/jenkins-servers", label: "Jenkins Servers", icon: "server", group: "admin", order: 70, roles: ["super_admin", "sm_admin", "dev_sm"], menuId: "jenkins-servers", section: "ADMIN", adminOnly: true, feature: "jenkins" },
   { id: "admin-mail-config", path: "/admin/mail-config", label: "Mail Config", icon: "mail", group: "admin", order: 80, roles: ["sm_admin", "super_admin"], section: "ADMIN", adminOnly: true },
+  { id: "admin-mail-send", path: "/admin/mail-send", label: "Send Email", icon: "mail", group: "admin", order: 81, roles: ["sm_admin", "super_admin"], section: "ADMIN", adminOnly: true },
+  { id: "admin-mail-logs", path: "/admin/mail-logs", label: "Mail Logs", icon: "file", group: "admin", order: 82, roles: ["sm_admin", "super_admin"], section: "ADMIN", adminOnly: true },
+  { id: "admin-mail-templates", path: "/admin/mail-templates", label: "Mail Templates", icon: "pencil", group: "admin", order: 83, roles: ["sm_admin", "super_admin"], section: "ADMIN", adminOnly: true },
   { id: "admin-scheduled-noti", path: "/admin/scheduled-noti", label: "Scheduled Notifications", icon: "clock", group: "admin", order: 90, roles: ["sm_admin", "super_admin"], section: "ADMIN", adminOnly: true },
 ] as const;
 

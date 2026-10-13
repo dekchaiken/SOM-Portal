@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic';
 
 const SendMailSchema = z.object({
   to: z.array(z.string().email()).min(1, 'At least one recipient required'),
+  cc: z.array(z.string().email()).optional().default([]),
   subject: z.string().min(1, 'Subject is required'),
   body: z.string().min(1, 'Body is required'),
   html: z.boolean().optional().default(false),
@@ -20,10 +21,12 @@ export async function POST(req: NextRequest) {
   try {
     const session = await requireRole(...ADMIN_ROLES);
     const raw = await jsonBody(req);
-    const { to, subject, body, html } = SendMailSchema.parse(raw);
+    const { to, cc, subject, body, html } = SendMailSchema.parse(raw);
 
     const result = await sendMail({
       to,
+      cc,
+      team: session.team,
       subject,
       html: html ? body : `<pre style="font-family:inherit;white-space:pre-wrap">${escapeHtml(body)}</pre>`,
       sent_by: session.sub,
@@ -35,7 +38,7 @@ export async function POST(req: NextRequest) {
       user: session.sub,
       team: session.team ?? null,
       action: 'mail.send',
-      meta: { to, subject, ok: result.ok, error: result.error },
+      meta: { to, cc, subject, ok: result.ok, error: result.error },
     });
 
     return okJson(result);
