@@ -9,10 +9,12 @@
 (function () {
   const KEY    = 'som_theme';
   const UI_KEY = 'som_ui';
-  const UI_ALLOWED  = ['glass', 'enterprise', 'console', 'warm', 'y2k', 'kawaii', 'brutalist', 'cyber', 'bento', 'aura', 'zine'];
-  const UI_GENZONLY = ['y2k', 'kawaii', 'brutalist', 'cyber', 'bento', 'aura', 'zine'];
-  const UI_DARK_ONLY = ['console', 'cyber', 'aura'];
+  // Phase 1 redesign: Liquid Glass is the only shell style. Other UI variants are retired.
+  const UI_ALLOWED  = ['glass'];
+  const UI_GENZONLY = [];
+  const UI_DARK_ONLY = [];
   const UI_DEFAULT  = 'glass';
+  const LIQUID_CSS  = 'assets/css/liquid/liquid.css?v=20261013';
 
   function _isGenzUser() {
     try {
@@ -56,8 +58,30 @@
     // GenZ-only themes: silently downgrade if user lost the flag
     if (UI_GENZONLY.indexOf(ui) !== -1 && !_isGenzUser()) ui = UI_DEFAULT;
     document.documentElement.setAttribute('data-ui', ui);
+    document.documentElement.setAttribute('data-liquid', '1');
     if (UI_GENZONLY.indexOf(ui) !== -1) _ensureGenzFonts();
   }
+
+  // Liquid Glass design system (assets/css/liquid/liquid.css). Loaded after the page's own
+  // stylesheets so it wins the cascade; re-appended on DOMContentLoaded to keep it last.
+  function _liquidHref() {
+    var cs = document.currentScript;
+    var src = cs && cs.src ? cs.src : '';
+    return src ? src.replace(/assets\/js\/theme\.js.*$/, LIQUID_CSS) : LIQUID_CSS;
+  }
+  var _liquidHrefResolved = _liquidHref();
+  function _mountLiquid() {
+    var link = document.querySelector('link[data-liquid-css]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = _liquidHrefResolved;
+      link.setAttribute('data-liquid-css', '1');
+    }
+    document.head.appendChild(link);
+  }
+  _mountLiquid();
+  document.addEventListener('DOMContentLoaded', _mountLiquid);
 
   // Apply nav style immediately (before DOM paint) so sidebar CSS hides before restore
   // Default is 'horizon' — sidebar only shows if user explicitly cleared the pref
