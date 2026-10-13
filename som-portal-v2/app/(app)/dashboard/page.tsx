@@ -17,6 +17,8 @@ import { requireBoardRead } from "@/board/access";
 import { listPosts } from "@/board/service";
 import Link from "next/link";
 import { teamFeatures } from "@/team/features";
+import { dashboardInbox } from "@/inbox/service";
+import { InboxCard } from "./_components/InboxCard";
 
 export const metadata = { title: "Dashboard · SOM Portal" };
 export const dynamic = "force-dynamic";
@@ -71,6 +73,7 @@ function greet(hour: number): string {
 
 export default async function DashboardPage() {
   const session = await getSession();
+  const inbox = session ? await dashboardInbox(session) : null;
   const stats = await loadBoardStats();
   const granted = new Set(session ? await teamFeatures(session.team).catch(() => [] as string[]) : []);
   // Bangkok time for greeting — the users are here.
@@ -251,6 +254,8 @@ export default async function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      {inbox ? <InboxCard inbox={inbox} /> : null}
 
       {/* Service health placeholder */}
       <div>
