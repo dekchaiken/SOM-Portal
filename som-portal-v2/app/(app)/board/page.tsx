@@ -195,7 +195,7 @@ async function BoardList({ sp }: { sp: SearchParams }) {
                       {row.service_type_name ? <span>· {row.service_type_name}</span> : null}
                       {row.comment_count > 0 ? (
                         <span className="inline-flex items-center gap-1">
-                          <Icon name="message-square" size={10} />
+                          <Icon name="message" size={10} />
                           {row.comment_count}
                         </span>
                       ) : null}

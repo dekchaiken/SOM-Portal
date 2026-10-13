@@ -19,7 +19,11 @@ type FormInput = z.infer<typeof Schema>;
 
 interface LoginResponse {
   ok: boolean;
-  data?: { user: { id: string; username: string }; first_login: boolean };
+  data?: {
+    user: { id: string; username: string };
+    first_login: boolean;
+    pw_change_required: boolean;
+  };
   error?: string;
   code?: string;
 }
@@ -68,8 +72,11 @@ export default function LoginPage() {
 
       setPhase("success");
       setTimeout(() => {
-        const dest =
-          nextParam && nextParam.startsWith("/v2/") ? nextParam : "/v2/dashboard";
+        const dest = json.data?.pw_change_required
+          ? "/v2/settings"
+          : nextParam && nextParam.startsWith("/v2/")
+            ? nextParam
+            : "/v2/dashboard";
         window.location.assign(dest);
       }, 900);
     } catch (e) {
@@ -96,16 +103,10 @@ export default function LoginPage() {
             background: "linear-gradient(180deg, oklch(from var(--bg-page) l c h) 0%, oklch(from var(--bg-page) l c h / 0.95) 50%, oklch(from var(--bg-page) l c h) 100%)",
           }}
         />
-        {/* floating orb accent on form side */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-20 top-1/3 h-[300px] w-[300px] rounded-full opacity-20 lg:opacity-30"
-          style={{
-            background: "radial-gradient(circle, oklch(from var(--accent) l c h / 0.4) 0%, transparent 70%)",
-            filter: "blur(60px)",
-            animation: "login-orb-drift 12s ease-in-out infinite alternate",
-          }}
-        />
+        {/* colour blobs behind the glass card so the blur has something to refract */}
+        <div aria-hidden className="login-blob login-blob-a" />
+        <div aria-hidden className="login-blob login-blob-b" />
+        <div aria-hidden className="login-blob login-blob-c" />
 
         <div className="relative z-10 flex items-center justify-between gap-4 lg:hidden">
           <BrandMark compact />
@@ -208,6 +209,7 @@ export default function LoginPage() {
       <style jsx>{`
         .login-page {
           background: var(--bg-page);
+          overflow-x: hidden;
         }
 
         .glass-card {
@@ -230,15 +232,18 @@ export default function LoginPage() {
         .glass-bg {
           position: absolute;
           inset: 0;
-          background: oklch(from var(--bg-card) l c h / 0.65);
-          backdrop-filter: blur(24px) saturate(1.5);
-          -webkit-backdrop-filter: blur(24px) saturate(1.5);
-          border: 1px solid oklch(from var(--border) l c h / 0.35);
+          background:
+            linear-gradient(160deg, oklch(1 0 0 / 0.14) 0%, oklch(1 0 0 / 0.02) 40%, transparent 70%),
+            oklch(from var(--bg-card) l c h / 0.5);
+          backdrop-filter: blur(28px) saturate(1.8);
+          -webkit-backdrop-filter: blur(28px) saturate(1.8);
+          border: 1px solid oklch(1 0 0 / 0.18);
           border-radius: inherit;
           box-shadow:
-            0 0 0 1px oklch(1 0 0 / 0.06) inset,
-            0 20px 60px -12px oklch(0 0 0 / 0.15),
-            0 0 40px oklch(from var(--accent) l c h / 0.05);
+            0 0 0 1px oklch(1 0 0 / 0.05) inset,
+            0 1px 0 0 oklch(1 0 0 / 0.35) inset,
+            0 30px 80px -20px oklch(0 0 0 / 0.35),
+            0 0 60px oklch(from var(--accent) l c h / 0.12);
         }
 
         .success-overlay {
@@ -268,9 +273,39 @@ export default function LoginPage() {
           40%, 60% { transform: translateX(4px); }
         }
 
-        @keyframes login-orb-drift {
+        .login-blob {
+          position: absolute;
+          border-radius: 9999px;
+          pointer-events: none;
+          filter: blur(70px);
+          opacity: 0.55;
+        }
+        .login-blob-a {
+          width: 340px; height: 340px; top: 8%; left: -6%;
+          background: oklch(from var(--accent) l c h / 0.55);
+          animation: login-blob-a 22s ease-in-out infinite alternate;
+        }
+        .login-blob-b {
+          width: 300px; height: 300px; bottom: 4%; right: -4%;
+          background: oklch(from var(--state-info) l c h / 0.45);
+          animation: login-blob-b 26s ease-in-out infinite alternate;
+        }
+        .login-blob-c {
+          width: 220px; height: 220px; top: 45%; left: 55%;
+          background: oklch(0.8 0.15 75 / 0.35);
+          animation: login-blob-c 18s ease-in-out infinite alternate;
+        }
+        @keyframes login-blob-a {
+          0% { transform: translate(0, 0) scale(1); }
+          100% { transform: translate(60px, 40px) scale(1.12); }
+        }
+        @keyframes login-blob-b {
+          0% { transform: translate(0, 0) scale(1); }
+          100% { transform: translate(-50px, -30px) scale(1.08); }
+        }
+        @keyframes login-blob-c {
           0% { transform: translate(0, 0); }
-          100% { transform: translate(20px, -30px); }
+          100% { transform: translate(-40px, 30px); }
         }
 
         @media (prefers-reduced-motion: reduce) {

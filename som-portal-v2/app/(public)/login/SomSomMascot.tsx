@@ -189,6 +189,26 @@ function Arms() {
   );
 }
 
+function GroundShadow() {
+  const ref = React.useRef<THREE.Mesh>(null);
+
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    const t = clock.getElapsedTime();
+    const lift = (Math.sin(t * 1.2) + 1) / 2;
+    const s = 1 - lift * 0.18;
+    ref.current.scale.set(s, s, 1);
+    (ref.current.material as THREE.MeshBasicMaterial).opacity = 0.32 - lift * 0.1;
+  });
+
+  return (
+    <mesh ref={ref} position={[0, -1.25, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.9, 0.9, 1]}>
+      <circleGeometry args={[1, 40]} />
+      <meshBasicMaterial color="#000000" transparent opacity={0.3} depthWrite={false} />
+    </mesh>
+  );
+}
+
 function FloatingSparkles({ count = 40 }: { count?: number }) {
   const ref = React.useRef<THREE.Points>(null);
 
@@ -210,7 +230,7 @@ function FloatingSparkles({ count = 40 }: { count?: number }) {
     if (!posAttr) return;
     const arr = posAttr.array as Float32Array;
     for (let i = 0; i < count; i++) {
-      arr[i * 3 + 1] += Math.sin(t * 0.5 + i) * 0.002;
+      arr[i * 3 + 1] = (arr[i * 3 + 1] ?? 0) + Math.sin(t * 0.5 + i) * 0.002;
     }
     posAttr.needsUpdate = true;
   });
@@ -250,15 +270,18 @@ export function SomSomMascot({ className }: { className?: string }) {
   return (
     <div aria-hidden className={className ?? "h-full w-full"}>
       <Canvas
-        camera={{ position: [0, 0, 4.2], fov: 45 }}
+        camera={{ position: [0, 0, 4.1], fov: 40 }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
         frameloop={reduce ? "demand" : "always"}
+        style={{ width: "100%", height: "100%" }}
       >
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[3, 4, 5]} intensity={1.2} color="#FFF5E6" />
-        <pointLight position={[-3, 2, 3]} intensity={0.8} color="#FFB36B" />
-        <pointLight position={[2, -2, 3]} intensity={0.4} color="#FF8844" />
+        <ambientLight intensity={0.85} />
+        <hemisphereLight args={["#FFF1DC", "#7A2E08", 0.7]} />
+        <directionalLight position={[3, 4, 5]} intensity={1.4} color="#FFF5E6" />
+        <pointLight position={[-3, 2, 3]} intensity={1.1} color="#FFB36B" />
+        <pointLight position={[2, -1, 2]} intensity={0.6} color="#FF8844" />
+        <GroundShadow />
         <OrangeBody />
         <FloatingSparkles />
       </Canvas>

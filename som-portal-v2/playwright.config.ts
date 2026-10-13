@@ -8,6 +8,9 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:3000/v2',
     trace: 'on-first-retry',
+    ...(process.env.CHROMIUM_PATH
+      ? { launchOptions: { executablePath: process.env.CHROMIUM_PATH } }
+      : {}),
   },
   projects: [
     {

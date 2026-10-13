@@ -9,6 +9,7 @@ import { getRateLimitBackend } from "@/lib/rate-limit";
 import { logActivity } from "@/logging/activity";
 import { logSecurity } from "@/logging/security";
 import { err, ok } from "@/lib/result";
+import { readSystemSettings } from "@/board/global-data";
 
 // Node runtime: this route reads disk (users.json) and uses bcrypt.
 export const runtime = "nodejs";
@@ -82,20 +83,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json(err("Incorrect username or password", "invalid_credentials"), { status: 401 });
   }
 
-  if (hit.user.password_expired || hit.user.must_reset_password) {
-    await logSecurity({
-      user: hit.user.id,
-      team: hit.team,
-      event: "login.blocked_expired",
-      ip,
-    });
-    return NextResponse.json(
-      err("Password must be reset before signing in.", "password_reset_required"),
-      { status: 403 },
-    );
-  }
+  const settings = await readSystemSettings();
+  const expiryDays = Number(settings.password_expiry_days ?? 60);
+  const changedAt = hit.user.password_changed_at ?? hit.user.created_at;
+  const ageDays = changedAt ? (Date.now() - new Date(changedAt).getTime()) / 86_400_000 : 0;
+  const pwChangeRequired =
+    !!hit.user.first_login ||
+    !!hit.user.must_reset_password ||
+    !!hit.user.password_expired ||
+    (!hit.user.first_login && ageDays >= expiryDays);
 
-  // Sign JWT. Claims match v1 shape so dual-run (PHP ↔ v2) honours the same token.
+  // v1 signs the user in and forces the change page; v2 does the same via the
+  // pw_change_required claim, enforced in middleware until change-password succeeds.
   const ttl = remember ? REMEMBER_TTL : STD_TTL;
   const token = await signSession(
     {
@@ -105,6 +104,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       team: hit.team,
       is_genz: hit.user.is_genz,
       dev_subteam: hit.user.dev_subteam,
+      pw_change_required: pwChangeRequired,
     },
     ttl,
   );
@@ -159,6 +159,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         nickname: hit.user.nickname,
       },
       first_login: hit.user.first_login ?? false,
+      pw_change_required: pwChangeRequired,
     }),
   );
 }
