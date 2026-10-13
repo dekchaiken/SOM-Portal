@@ -32,10 +32,10 @@ export function Topbar({ onMenu }: TopbarProps) {
     <header
       className="topbar glass sticky top-0 z-20 flex h-13 items-center gap-3 rounded-none border-x-0 border-t-0 px-4"
       style={{
-        background: "oklch(from var(--bg-canvas) l c h / 0.85)",
+        background: "var(--nav-bg)",
         backdropFilter: "blur(12px) saturate(1.5)",
         WebkitBackdropFilter: "blur(12px) saturate(1.5)",
-        borderColor: "oklch(from var(--border) l c h / 0.6)",
+        borderColor: "var(--nav-border)",
       }}
     >
       <button
