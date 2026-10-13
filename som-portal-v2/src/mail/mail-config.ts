@@ -13,6 +13,7 @@
 
 import { z } from 'zod';
 import { getDataAdapter } from '@/data/json-adapter';
+import { decryptSecret } from './secret';
 
 export const MAIL_CONFIG_FILE = 'mail_config.json';
 
@@ -22,7 +23,9 @@ export const MailConfigSchema = z
     smtp_port: z.coerce.number().default(587),
     smtp_encryption: z.string().default('tls'),
     smtp_user: z.string().default(''),
+    /** Legacy plain text, read only. New saves go to smtp_password_enc and clear this. */
     smtp_password: z.string().default(''),
+    smtp_password_enc: z.string().default(''),
     from_name: z.string().default('SOM-Portal'),
     from_email: z.string().default(''),
     global_cc: z.array(z.string()).default([]),
@@ -31,6 +34,19 @@ export const MailConfigSchema = z
   .passthrough();
 
 export type MailConfig = z.infer<typeof MailConfigSchema>;
+
+/** The SMTP password in use: decrypted when stored encrypted, else the legacy plain value. */
+export function resolveSmtpPassword(cfg: MailConfig): string {
+  if (cfg.smtp_password_enc) {
+    try {
+      return decryptSecret(cfg.smtp_password_enc);
+    } catch (e) {
+      console.error('[mail] could not decrypt the mailbox password:', e instanceof Error ? e.message : e);
+      return '';
+    }
+  }
+  return cfg.smtp_password;
+}
 
 export interface ResolvedMailConfig {
   config: MailConfig;
