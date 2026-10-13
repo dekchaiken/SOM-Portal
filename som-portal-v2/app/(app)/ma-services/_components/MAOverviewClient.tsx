@@ -227,9 +227,9 @@ export function MAOverviewClient() {
                   </span>
                 ))}
               </div>
-              <span className="mt-auto inline-flex h-10 w-fit items-center gap-2 rounded-[var(--radius)] border border-dashed border-[var(--border-strong)] px-5 text-sm text-[var(--text-muted)]">
-                Cut-off page: next step
-              </span>
+              <Link href="/ma-services/cutoff" className="glass-btn glass-btn-primary mt-auto inline-flex h-10 w-fit items-center gap-2 rounded-[var(--radius)] px-5 text-sm font-semibold text-white">
+                Open Cut-off Services <Icon name="arrow-left" size={14} className="rotate-180" />
+              </Link>
             </Card>
           </div>
         </>
