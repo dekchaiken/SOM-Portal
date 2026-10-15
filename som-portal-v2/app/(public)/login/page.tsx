@@ -28,13 +28,57 @@ interface LoginResponse {
   code?: string;
 }
 
+const SSO_ERRORS: Record<string, string> = {
+  denied: "This Keycloak account has no portal access yet. Ask your SM admin to add your email.",
+  no_session: "Keycloak sign-in did not complete. Please try again.",
+};
+
+/** Starts the Auth.js Keycloak flow with a CSRF token, then returns to the completion route. */
+async function startKeycloakSignIn(): Promise<void> {
+  const csrf = await fetch("/v2/api/auth/csrf", { credentials: "include" }).then((r) => r.json());
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = "/v2/api/auth/signin/keycloak";
+  const fields: Record<string, string> = {
+    csrfToken: csrf.csrfToken,
+    callbackUrl: "/v2/api/auth/sso/complete",
+  };
+  for (const [name, value] of Object.entries(fields)) {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = value;
+    form.appendChild(input);
+  }
+  document.body.appendChild(form);
+  form.submit();
+}
+
 export default function LoginPage() {
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [phase, setPhase] = React.useState<"idle" | "loading" | "success">("idle");
   const [shakeKey, setShakeKey] = React.useState(0);
   const [mounted, setMounted] = React.useState(false);
+  const [sso, setSso] = React.useState<{ enabled: boolean; label: string }>({ enabled: false, label: "" });
 
   React.useEffect(() => setMounted(true), []);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch("/v2/api/auth/methods", { credentials: "include" })
+      .then((r) => r.json())
+      .then((json: { ok?: boolean; data?: { sso?: boolean; sso_label?: string } }) => {
+        if (!cancelled && json.ok && json.data) setSso({ enabled: !!json.data.sso, label: json.data.sso_label ?? "" });
+      })
+      .catch(() => undefined);
+    const params = new URLSearchParams(window.location.search);
+    // Auth.js sends ?error=AccessDenied when its signIn callback rejects the user.
+    const code = params.get("sso") ?? (params.get("error") === "AccessDenied" ? "denied" : null);
+    if (code) setServerError(SSO_ERRORS[code] ?? "Keycloak sign-in failed. Try again or contact your SM admin.");
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const {
     register,
@@ -189,6 +233,28 @@ export default function LoginPage() {
 
               <SignInButton phase={phase} />
             </form>
+
+            {sso.enabled ? (
+              <>
+                <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
+                  <span className="h-px flex-1 bg-[var(--border)]" />
+                  or
+                  <span className="h-px flex-1 bg-[var(--border)]" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setServerError(null);
+                    void startKeycloakSignIn();
+                  }}
+                  disabled={disabled}
+                  className="glass-btn flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl text-sm font-semibold text-[var(--text-strong)]"
+                >
+                  <Icon name="shield" size={16} />
+                  {sso.label || "Sign in with Keycloak"}
+                </button>
+              </>
+            ) : null}
 
             <footer className="flex flex-col gap-2 pt-4 text-xs text-[var(--text-muted)]" style={{ borderTop: "1px solid oklch(from var(--border) l c h / 0.5)" }}>
               <div className="flex items-center justify-between gap-3">

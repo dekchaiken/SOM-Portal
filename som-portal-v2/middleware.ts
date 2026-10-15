@@ -15,6 +15,17 @@ const PUBLIC_PATHS = [
   '/api/auth/bridge',
   '/api/auth/forgot-password',
   '/api/auth/reset-password',
+  // Keycloak SSO: Auth.js endpoints and the completion route. The completion route checks
+  // the Auth.js session itself and issues the portal cookie. The methods route reveals no config.
+  '/api/auth/methods',
+  '/api/auth/sso/complete',
+  '/api/auth/csrf',
+  '/api/auth/providers',
+  '/api/auth/signin',
+  '/api/auth/callback',
+  '/api/auth/error',
+  '/api/auth/session',
+  '/api/auth/signout',
   '/api/health',
   '/api/internal/scheduler/tick',
 ];

@@ -31,6 +31,7 @@ export const GLOBAL_FILES: readonly string[] = [
   'n8n_severity_config.json',
   'maintenance.json',
   'requests.json',
+  'auth-config.json',
 ] as const;
 
 export function isGlobalFile(file: string): boolean {

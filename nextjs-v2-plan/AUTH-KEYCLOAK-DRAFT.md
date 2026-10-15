@@ -1,100 +1,93 @@
-# Auth draft: Keycloak SSO (NextAuth) + local username/password
+# Login redesign: Keycloak SSO (Auth.js) + username/password
 
-Status: DRAFT for review. Not implemented. Scope: som-portal-v2 login and session only.
+Status: implemented in som-portal-v2 (branch `claude/keycloak-auth-draft`). Keycloak
+itself is not configured yet. The superadmin enters the settings in the admin UI.
 
-## 1. Goals
+## 1. Model
 
-- Two login methods on the login page:
-  1. **Keycloak SSO** through NextAuth (Auth.js) with the Keycloak OIDC provider. This is the default for staff.
-  2. **Username and password**, the existing flow. It stays for teams that see a restricted set of tools: Wealth BU, Jenkins Portal and SO Jenkins.
-- Both methods produce the same internal session shape `{ sub, username, role, team, ... }`, so `src/auth/policy.ts` and every page that calls `requireAuth` / `requireRole` stay unchanged.
-- Only `super_admin` can create, edit or disable users and change their roles and teams. This is enforced on the server, not only hidden in the UI.
+- Every user has `allowed_methods`, a list drawn from `['sso', 'password']`.
+  - Missing field = legacy v1 account. It keeps password login so nothing breaks before
+    SSO is configured. The superadmin can close it in bulk (section 5).
+- New users are created by the superadmin with an email. They get `['sso']` and no password.
+- Granting `password` issues a one-time setup link (24 h, single use) through the existing
+  reset-password flow. No password is ever sent by email.
+- `super_admin` accounts always keep password as a break-glass login. The server enforces
+  this on edit, on bulk close and at login.
+- Teams `wealth`, `jenkins` and `sojenkins` (Wealth BU, Jenkins Portal, SO Jenkins) get
+  `['password']` in the bulk close.
 
-## 2. Identity model
+## 2. Sign-in flows
 
-- `data/users.json` stays the source of truth for **who may use the portal**, and for their `role` and `team`.
-- Keycloak only proves identity. After a successful Keycloak login, the portal looks the user up in `users.json` by **email** (`email` must be added to the user record and must be unique).
-- Rules:
-  - Email found and user is active: sign in with that user's `role` and `team`.
-  - Email not found, or user disabled: deny access and show a clear message. Keycloak never creates a portal user by itself.
-  - Keycloak group or role claims are **not** used for authorization in this draft. They can be added later if you want them.
+- **Keycloak:** Auth.js (next-auth 5.0.0-beta.32, pinned) with the Keycloak provider.
+  The login page shows the button only when the superadmin has finished setup
+  (`/v2/api/auth/methods`). After Keycloak signs the user in, `signIn` checks the verified
+  email against `data/users.json` (global). A legacy record or an explicit `sso` grant allows
+  SSO. Then `/v2/api/auth/sso/complete` issues the normal portal session cookie. Keycloak
+  never creates users.
+- **Password:** unchanged, except that it refuses users without `password` in
+  `allowed_methods`. A refusal gives the same generic error as a wrong password.
 
-## 3. Choosing the login method
+Session shape is the same for both methods, so `policy.ts` and every page guard are unchanged.
 
-Decision needed (see section 8). Proposed default:
+## 3. Superadmin UI and API
 
-- Each user record gets `auth_method: 'sso' | 'password'`.
-- The login page shows both buttons. The server rejects a password login for an `sso` user and rejects an SSO login for a `password` user.
-- Teams Wealth BU, Jenkins Portal and SO Jenkins are set to `password` when their accounts are created. Everyone else defaults to `sso`.
+- Page: `/v2/admin/auth-access` (nav "Login Access", super_admin only).
+  - Keycloak settings: enable switch, button label, issuer, client ID, client secret
+    (write-only; blank keeps the stored value).
+  - User table: toggle SSO and Password per user, copy setup links, search.
+  - "Add SSO user" (email, name, team, role, optional username).
+  - "Close password for legacy accounts" (bulk, asks for confirmation).
+- API (all `requireRole('super_admin')`):
+  - `GET/PUT /v2/api/v1/auth/config`
+  - `GET /v2/api/v1/auth/users`, `POST /v2/api/v1/auth/users`
+  - `PATCH /v2/api/v1/auth/users/[id]` with `{ allowed_methods }`
+  - `POST /v2/api/v1/auth/legacy-close`
 
-## 4. Flows
+## 4. Storage and secrets
 
-### 4.1 Keycloak SSO
+- `data/auth-config.json` (global). The client secret is encrypted with AES-256-GCM,
+  using the same helper as mailbox passwords and the same `MAIL_CREDS_KEY` (32+ characters).
+  Saving a secret fails if the key is not set.
+- The config API never returns the secret, only whether one is set.
+- Every change writes to the security log (`auth.config_changed`, `auth.methods_changed`,
+  `auth.user_created`, `auth.legacy_closed`).
 
-1. User clicks "Sign in with Keycloak". NextAuth starts the OIDC authorization-code flow (with PKCE) against the Keycloak realm.
-2. Keycloak returns an ID token with `email`, `preferred_username` and `sub`.
-3. A NextAuth `signIn` callback looks up `users.json` by email.
-   - If allowed, it returns the user and the callback attaches `role` and `team`.
-   - If not, it returns false and the user lands on an access-denied page.
-4. The NextAuth session is converted into the existing portal session cookie so that `getSession()` keeps working.
+## 5. Server settings for Keycloak
 
-### 4.2 Username and password
-
-Unchanged: `/api/auth/login` checks the bcrypt hash in `users.json`, then issues the current session cookie. Only applies to users with `auth_method = 'password'`.
-
-### 4.3 Logout
-
-Clears the portal session cookie and calls Keycloak's end-session endpoint for SSO users.
-
-## 5. User administration (super_admin only)
-
-- Pages and endpoints under `admin/users` require `super_admin`. Other admin roles get a 403 from the server.
-- Editable fields: name, email, username, role, team, `auth_method`, active flag.
-- Every change is written to the security log with the actor, the target and the diff.
-- Creating a user requires email, because SSO matching depends on it.
-
-## 6. Configuration
-
-Environment variables (server only):
-
-| Name | Purpose |
+| Setting | Where |
 |---|---|
-| `AUTH_SECRET` | NextAuth signing secret |
-| `AUTH_URL` | Public base URL of the portal (`/v2` basePath included) |
-| `KEYCLOAK_ISSUER` | `https://<host>/realms/<realm>` |
-| `KEYCLOAK_CLIENT_ID` | Confidential client ID |
-| `KEYCLOAK_CLIENT_SECRET` | Client secret (never committed) |
-| `JWT_SECRET` | Existing portal session secret, unchanged |
+| `AUTH_SECRET` | env (falls back to `JWT_SECRET`) |
+| `AUTH_URL` | env: `https://<portal host>/v2/api/auth`. Auth.js builds the callback from it. |
+| `MAIL_CREDS_KEY` | env, 32+ characters, needed to encrypt the client secret |
+| issuer, client ID, client secret | superadmin UI (`/v2/admin/auth-access`) |
 
-Keycloak client settings to request from the Keycloak admin:
-- Client type: confidential, standard flow on, PKCE S256.
-- Valid redirect URI: `<AUTH_URL>/api/auth/callback/keycloak`.
-- Scopes: `openid email profile`.
-- Email must be verified in Keycloak, otherwise matching is unsafe.
+Keycloak client:
+- Confidential client, standard flow on, PKCE S256.
+- Redirect URI: `<AUTH_URL>/callback/keycloak`, for example
+  `https://portal.example/v2/api/auth/callback/keycloak`.
+- Scopes `openid email profile`. Emails must be verified in Keycloak.
 
-## 7. Security notes
+## 6. Tests and what was verified
 
-- No credentials are stored in this repo. Secrets come from the environment.
-- Email matching only after a verified email claim. Unverified emails are rejected.
-- Rate limiting on the password login stays as it is.
-- An SSO user cannot log in with a password, and a password user cannot use SSO, which keeps the two paths separate.
-- Superadmin changes are logged. Removing the last superadmin is blocked.
+- Unit tests (`vitest run src/auth`, 23 tests): method rules, legacy default, break-glass,
+  SSO eligibility, verified-email rule, duplicate detection, username suggestion, no hash in
+  views, secret never exposed in public config.
+- Dev server against a copy of the data, with a local mock OIDC provider (Keycloak itself is
+  not reachable from the sandbox):
+  - password login works for legacy and granted accounts, and is refused for SSO-only accounts
+  - superadmin config API works, a non-admin gets 403
+  - create user, duplicate rejected, grant password, reset link works once
+  - bulk close keeps super_admin on password
+  - full Keycloak flow: sign-in, callback, completion route, portal session, dashboard 200
+  - denied: password-only user, unverified email
+  - browser: login page shows the Keycloak button only when enabled; the console renders
+- **Not verified:** a real Keycloak instance. Run the same checks against it on your side.
 
-## 8. Open questions
+## 7. Open items
 
-1. Which teams default to SSO and which to password? The draft assumes everyone except the three named teams uses SSO.
-2. Should SSO users ever be able to log in with a password as a fallback, for example during a Keycloak outage? Draft says no.
-3. Do you want to keep `users.json` as the store for now, or move users into a database later?
-4. Keycloak realm name, and confirmation that users' Keycloak emails match the emails in `users.json`.
-
-## 9. Test plan
-
-- Unit tests: email-to-user mapping (found, not found, disabled, unverified email), `auth_method` enforcement, superadmin-only checks on user admin routes.
-- Integration: run a local OIDC mock (for example a containerised Keycloak or a mock issuer) through the NextAuth callback. The sandbox cannot reach the internal Keycloak host, so the real Keycloak test has to run on your side.
-- E2E: Playwright login for each method, plus a denied case for a user missing from `users.json`.
-
-## 10. Out of scope for this draft
-
-- Keycloak group-to-role mapping.
-- Social login or MFA beyond what Keycloak provides.
-- Changing the team-based access model for tools and data.
+- Password reset links are shown to the superadmin to copy. Sending them by mail through the
+  team mailbox is a follow-up.
+- Keycloak group-to-role mapping is not used. Roles and teams come from `users.json`.
+- `next-auth` is installed with `--legacy-peer-deps` because its optional peer
+  `nodemailer@^7/^8` conflicts with the existing `nodemailer@6`. Upgrading nodemailer
+  would remove that flag.

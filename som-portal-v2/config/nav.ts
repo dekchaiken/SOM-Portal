@@ -140,6 +140,7 @@ export const NAV: readonly NavItem[] = [
   // ── admin ────────────────────────────────────────────────────────────────
   { id: "admin-overview", path: "/admin", label: "Admin Overview", icon: "shield", group: "admin", order: 10, roles: ["sm_admin", "super_admin"], menuId: "admin", section: "ADMIN", adminOnly: true },
   { id: "admin-users", path: "/admin/users", label: "Users", icon: "users", group: "admin", order: 20, roles: ["sm_admin", "super_admin"] },
+  { id: "admin-auth-access", path: "/admin/auth-access", label: "Login Access", icon: "shield", group: "admin", order: 25, roles: ["super_admin"] },
   { id: "admin-system-settings", path: "/admin/system-settings", label: "System Settings", icon: "settings", group: "admin", order: 30, roles: ["sm_admin", "super_admin"] },
   { id: "admin-nav-groups", path: "/admin/nav-groups", label: "Nav Groups", icon: "layers", group: "admin", order: 40, roles: ["sm_admin", "super_admin"], menuId: "nav-groups", section: "ADMIN" },
   { id: "admin-menu-permissions", path: "/admin/menu-permissions", label: "Menu Permissions", icon: "shield", group: "admin", order: 50, roles: ["sm_admin", "super_admin"], section: "ADMIN" },
