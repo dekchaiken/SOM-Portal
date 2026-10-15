@@ -1,10 +1,12 @@
 // som-portal-v2/app/api/auth/login/route.ts
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { cookies } from "next/headers";
-import { signSession, SESSION_COOKIE, USER_COOKIE } from "@/auth/session";
 import { verifyPassword } from "@/auth/password";
 import { findUserByUsername } from "@/auth/user-lookup";
+import { canUseMethod } from "@/auth/login-methods";
+import { BREAK_GLASS_ROLE } from "@/auth/user-admin";
+import { issuePortalSession, STD_TTL, REMEMBER_TTL } from "@/auth/issue-session";
+import { findUserById } from "@/account/users-store";
 import { getRateLimitBackend } from "@/lib/rate-limit";
 import { logActivity } from "@/logging/activity";
 import { logSecurity } from "@/logging/security";
@@ -19,10 +21,6 @@ const LoginSchema = z.object({
   password: z.string().min(1).max(256),
   remember: z.boolean().optional().default(false),
 });
-
-const STD_TTL = 8 * 60 * 60; // 8 h
-const REMEMBER_TTL = 30 * 24 * 60 * 60; // 30 d
-const COOKIE_PATH = "/v2";
 
 function clientIp(req: NextRequest): string {
   const xff = req.headers.get("x-forwarded-for");
@@ -71,6 +69,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json(err("Incorrect username or password", "invalid_credentials"), { status: 401 });
   }
 
+  // Sign-in methods live on the global users.json record. Fall back to the team copy
+  // for records that only exist there. A missing field means a legacy account, which keeps password.
+  const methodRecord = (await findUserById(hit.user.id)) ?? hit.user;
+  // super_admin always keeps password as break-glass, even if the record says otherwise.
+  const passwordAllowed = methodRecord.role === BREAK_GLASS_ROLE || canUseMethod(methodRecord, "password");
+  if (!passwordAllowed) {
+    await logSecurity({
+      user: hit.user.id,
+      team: hit.team,
+      event: "login.failed",
+      ip,
+      meta: { username, reason: "method_disabled" },
+    });
+    return NextResponse.json(err("Incorrect username or password", "invalid_credentials"), { status: 401 });
+  }
+
   const valid = await verifyPassword(password, hit.user.password);
   if (!valid) {
     await logSecurity({
@@ -96,49 +110,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // v1 signs the user in and forces the change page; v2 does the same via the
   // pw_change_required claim, enforced in middleware until change-password succeeds.
   const ttl = remember ? REMEMBER_TTL : STD_TTL;
-  const token = await signSession(
+  await issuePortalSession(
     {
-      sub: hit.user.id,
-      username: hit.user.username,
-      role: hit.user.role,
-      team: hit.team,
-      is_genz: hit.user.is_genz,
-      dev_subteam: hit.user.dev_subteam,
-      pw_change_required: pwChangeRequired,
-    },
-    ttl,
-  );
-
-  const expires = new Date(Date.now() + ttl * 1000);
-
-  // Set HttpOnly session cookie + a public mirror for client hydration.
-  const jar = await cookies();
-  jar.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: COOKIE_PATH,
-    expires,
-  });
-  jar.set(
-    USER_COOKIE,
-    JSON.stringify({
       id: hit.user.id,
       username: hit.user.username,
       role: hit.user.role,
-      team: hit.team,
       name: hit.user.name,
       nickname: hit.user.nickname,
-      is_genz: hit.user.is_genz ?? false,
+      is_genz: hit.user.is_genz,
       avatar_url: hit.user.avatar_url,
-    }),
-    {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: COOKIE_PATH,
-      expires,
+      dev_subteam: hit.user.dev_subteam,
     },
+    { team: hit.team, ttl, pwChangeRequired },
   );
 
   await logActivity({
