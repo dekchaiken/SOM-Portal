@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>ดินแดนสวรรค์ · Sky Realm</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 1. Splash / loading -->
+  <section id="splash" class="screen active">
+    <div class="splash-logo">
+      <div class="logo-orb"></div>
+      <h1>ดินแดนสวรรค์</h1>
+      <p class="subtitle">Sky Realm</p>
+    </div>
+    <div class="progress"><div id="splash-bar"></div></div>
+    <p class="tip" id="splash-tip">กำลังโหลดข้อมูล...</p>
+  </section>
+
+  <!-- 2. Login -->
+  <section id="login" class="screen">
+    <div class="card login-card">
+      <h1>ดินแดนสวรรค์</h1>
+      <p class="subtitle">เข้าสู่ระบบเพื่อเริ่มผจญภัย</p>
+      <div id="google-btn" class="google-slot"></div>
+      <button class="btn btn-primary btn-block" id="btn-guest">เล่นแบบ Guest</button>
+      <p class="hint" id="login-hint"></p>
+      <p class="error" id="login-error"></p>
+    </div>
+  </section>
+
+  <!-- 3. Character select -->
+  <section id="charselect" class="screen">
+    <div class="card wide">
+      <h2>เลือกตัวละคร</h2>
+      <div id="char-list" class="char-list"></div>
+      <div class="row">
+        <button class="btn" id="btn-logout">ออกจากระบบ</button>
+        <button class="btn btn-primary" id="btn-new-char">+ สร้างตัวละครใหม่</button>
+      </div>
+      <p class="error" id="charselect-error"></p>
+    </div>
+  </section>
+
+  <!-- 4. Character creator (with appearance designer) -->
+  <section id="creator" class="screen">
+    <div class="creator">
+      <div class="card preview-card">
+        <h2>ตัวละครของคุณ</h2>
+        <canvas id="preview" width="360" height="420"></canvas>
+        <div class="class-desc" id="class-desc"></div>
+        <div class="row">
+          <button class="btn" id="btn-random">🎲 สุ่มหน้าตา</button>
+        </div>
+      </div>
+      <div class="card options-card">
+        <label class="field">ชื่อตัวละคร
+          <input id="char-name" maxlength="12" placeholder="2-12 ตัวอักษร">
+        </label>
+        <div class="opt-group"><span>เพศ</span><div id="opt-gender" class="chips"></div></div>
+        <div class="opt-group"><span>อาชีพ</span><div id="opt-class" class="chips"></div></div>
+        <div class="opt-group"><span>ทรงผม</span><div id="opt-hairStyle" class="chips"></div></div>
+        <div class="opt-group"><span>สีผม</span><div id="opt-hair" class="swatches"></div></div>
+        <div class="opt-group"><span>สีผิว</span><div id="opt-skin" class="swatches"></div></div>
+        <div class="opt-group"><span>สีชุด</span><div id="opt-outfit" class="swatches"></div></div>
+        <div class="opt-group"><span>ดวงตา</span><div id="opt-eyes" class="chips"></div></div>
+        <div class="opt-group"><span>เครื่องประดับ</span><div id="opt-accessory" class="chips"></div></div>
+        <p class="error" id="creator-error"></p>
+        <div class="row">
+          <button class="btn" id="btn-creator-back">ย้อนกลับ</button>
+          <button class="btn btn-primary" id="btn-create">สร้างและเข้าเกม</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Enter-world loading animation -->
+  <section id="enter-loader" class="screen">
+    <div class="enter-stage">
+      <canvas id="enter-canvas" width="640" height="360"></canvas>
+      <h2 id="enter-title">กำลังเข้าสู่ ดินแดนสวรรค์</h2>
+      <div class="progress wide"><div id="enter-bar"></div></div>
+      <p class="tip" id="enter-tip"></p>
+    </div>
+  </section>
+
+  <!-- 6. World -->
+  <section id="game" class="screen">
+    <canvas id="world-canvas"></canvas>
+
+    <!-- top-left: character panel -->
+    <div class="hud-player" id="hud-player">
+      <div class="portrait"><canvas id="portrait" width="64" height="64"></canvas></div>
+      <div class="pbars">
+        <div class="pname"><span id="hud-name"></span> <span class="lv" id="hud-lv"></span></div>
+        <div class="bar hp"><div id="bar-hp"></div><span id="txt-hp"></span></div>
+        <div class="bar mp"><div id="bar-mp"></div><span id="txt-mp"></span></div>
+      </div>
+    </div>
+    <div class="hud-quest" id="hud-quest">
+      <div class="quest-title">📜 เส้นหลัก: เจตนารมณ์แห่งสวรรค์</div>
+      <div class="quest-step" id="quest-step">ฝึกฝนกับหุ่นฝึก 0/2</div>
+    </div>
+
+    <!-- top-right: shortcut menu icons -->
+    <div class="hud-topright" id="hud-topright"></div>
+
+    <!-- bottom-left: menu row -->
+    <div class="hud-bottomleft" id="hud-bottomleft"></div>
+
+    <!-- bottom-right: skill bar -->
+    <div class="hud-skills" id="hud-skills"></div>
+
+    <!-- chat -->
+    <div class="hud-chat">
+      <div id="chat-log"></div>
+      <input id="chat-input" placeholder="พิมพ์ข้อความ แล้วกด Enter" maxlength="120">
+    </div>
+
+    <!-- generic window -->
+    <div class="window" id="window" hidden>
+      <div class="window-head"><span id="window-title"></span><button id="window-close" class="close">✕</button></div>
+      <div class="window-body" id="window-body"></div>
+    </div>
+    <div class="toast" id="toast" hidden></div>
+  </section>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="js/api.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/sprite.js"></script>
+  <script src="js/effects.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/screens.js"></script>
+</body>
+</html>

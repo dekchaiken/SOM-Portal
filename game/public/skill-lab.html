@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skill Lab · ดินแดนสวรรค์</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { overflow: auto; }
+    .lab { display: grid; grid-template-columns: 260px 1fr; gap: 16px; width: min(1100px, 96vw); margin: 20px auto; align-items: start; }
+    .lab-side, .lab-main { background: var(--panel); border: 2px solid var(--line); border-radius: var(--radius); padding: 16px; }
+    .lab-title { position: static; display: block; width: min(1100px, 96vw); margin: 20px auto 0; }
+    .skill-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; }
+    .skill-item:hover, .skill-item.on { border-color: var(--line); background: #3d2d75aa; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+    .grid2 label { display: block; color: var(--muted); font-size: 13px; }
+    .grid2 input, .grid2 select { width: 100%; margin-top: 4px; padding: 7px; border-radius: 8px; border: 2px solid #4a3d85; background: #120d26; color: var(--text); }
+    .grid2 input[type=range] { padding: 0; }
+    .grid2 .full { grid-column: 1 / -1; }
+    .range-val { color: var(--accent); font-size: 12px; }
+    #lab-preview { width: 100%; height: 260px; border-radius: var(--radius); border: 2px solid var(--line); background: #140e28; display: block; }
+    .note { color: var(--muted); font-size: 13px; }
+    .ok { color: var(--hp); min-height: 1.2em; }
+    .btn-danger { color: var(--danger); }
+    @media (max-width: 800px) { .lab { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="lab-title">
+    <h1 style="color:var(--accent)">Skill Lab</h1>
+    <p class="note">ออกแบบสกิลและเอฟเฟกต์ได้เอง แล้วบันทึกไว้ใช้ในเกม · <a href="/" style="color:var(--line)">กลับไปหน้าเกม</a></p>
+  </div>
+
+  <div class="lab">
+    <aside class="lab-side">
+      <label class="note">อาชีพ
+        <select id="f-filter" style="width:100%;margin:6px 0 10px;padding:7px;border-radius:8px;background:#120d26;color:#fff;border:2px solid #4a3d85"></select>
+      </label>
+      <div id="skill-list"></div>
+      <div class="row"><button class="btn btn-primary" id="btn-new" style="width:100%">+ สร้างสกิลใหม่</button></div>
+    </aside>
+
+    <main class="lab-main">
+      <canvas id="lab-preview" width="520" height="260"></canvas>
+      <div class="row">
+        <button class="btn" id="btn-replay">▶ เล่นเอฟเฟกต์ซ้ำ</button>
+        <label class="note">ทิศทาง
+          <select id="f-dir" style="padding:6px;border-radius:8px;background:#120d26;color:#fff;border:2px solid #4a3d85">
+            <option value="1,0">→ ขวา</option><option value="-1,0">← ซ้าย</option>
+            <option value="0,-1">↑ บน</option><option value="0,1">↓ ล่าง</option>
+          </select>
+        </label>
+      </div>
+
+      <form id="form" class="grid2" style="margin-top:14px">
+        <div><label>ชื่อสกิล<input id="f-name" maxlength="40" required></label></div>
+        <div><label>ไอคอน (emoji)<input id="f-icon" maxlength="4"></label></div>
+        <div><label>อาชีพ<select id="f-class"></select></label></div>
+        <div><label>ปุ่มลัด (1-6)<select id="f-key"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label></div>
+        <div><label>คูลดาวน์ (ms)<input id="f-cooldown" type="number" min="100" max="60000" step="100"></label></div>
+        <div><label>MP ที่ใช้<input id="f-mp" type="number" min="0" max="999"></label></div>
+        <div><label>ดาเมจ<input id="f-damage" type="number" min="0" max="99999"></label></div>
+        <div><label>ระยะ (px)<input id="f-range" type="number" min="20" max="800"></label></div>
+
+        <div class="full"><hr style="border-color:#ffffff22">
+          <b>เอฟเฟกต์</b></div>
+        <div><label>รูปแบบ<select id="f-type">
+          <option value="burst">burst · ระเบิดรอบตัว</option>
+          <option value="nova">nova · วงคลื่น</option>
+          <option value="slash">slash · ฟันโค้ง</option>
+          <option value="projectile">projectile · ลูกพุ่ง</option>
+          <option value="beam">beam · ลำแสง</option>
+          <option value="heal">heal · พุ่งขึ้น</option>
+        </select></label></div>
+        <div><label>ระยะเวลา (ms)<input id="f-duration" type="number" min="100" max="5000" step="50"></label></div>
+        <div><label>สีหลัก<input id="f-color" type="color"></label></div>
+        <div><label>สีรอง<input id="f-color2" type="color"></label></div>
+        <div><label>จำนวนอนุภาค <span class="range-val" id="v-count"></span><input id="f-count" type="range" min="1" max="200"></label></div>
+        <div><label>ขนาด <span class="range-val" id="v-size"></span><input id="f-size" type="range" min="1" max="60"></label></div>
+        <div><label>ความเร็ว <span class="range-val" id="v-speed"></span><input id="f-speed" type="range" min="10" max="1000"></label></div>
+        <div><label>สั่นจอ <span class="range-val" id="v-shake"></span><input id="f-shake" type="range" min="0" max="20"></label></div>
+
+        <div class="full row">
+          <button type="button" class="btn btn-danger" id="btn-delete">ลบสกิลนี้</button>
+          <button type="button" class="btn" id="btn-reset">คืนค่าเริ่มต้น</button>
+          <button type="submit" class="btn btn-primary" id="btn-save">บันทึกสกิล</button>
+        </div>
+        <div class="full ok" id="save-msg"></div>
+        <div class="full error" id="save-err"></div>
+      </form>
+    </main>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/sprite.js"></script>
+  <script src="js/effects.js"></script>
+  <script src="js/skill-lab.js"></script>
+</body>
+</html>
